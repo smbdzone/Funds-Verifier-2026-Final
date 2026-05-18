@@ -56,24 +56,28 @@ export const UserProvider = ({ children }) => {
     setIsAuthenticated(true)
   }
 
-  // Load user info from access token on app load
+  // Load user on app start: /me via HttpOnly accessToken cookie first, refresh only if needed.
   const loadUserFromToken = async () => {
     try {
-      // Ensure we have an accessToken in memory (Option 2)
-      // If it's missing (e.g. page reload), use refreshToken cookie to obtain a new one.
-      if (!accessToken) {
+      let response
+      try {
+        response = await customAxios.get('/user/me', {
+          withCredentials: true,
+        })
+      } catch (meError) {
+        if (meError.response?.status !== 401) throw meError
         const newToken = await refreshAccessToken()
         setAccessTokenState(newToken)
+        response = await customAxios.get('/user/me', {
+          withCredentials: true,
+        })
       }
-
-      // Always try /me; this works with HttpOnly cookies in production.
-      const response = await customAxios.get('/user/me', {
-        withCredentials: true,
-      })
 
       applyUser(response.data)
     } catch (error) {
-      console.error('Error loading user:', error)
+      if (error.response?.status !== 401) {
+        console.error('Error loading user:', error)
+      }
       setUser(null)
       setIsAuthenticated(false)
       setAccessTokenState(null)
@@ -119,10 +123,8 @@ export const UserProvider = ({ children }) => {
       localStorage.removeItem('accessToken')
       localStorage.removeItem('role')
 
-      // Clear any non-HttpOnly cookies (best-effort)
-      document.cookie = 'accessToken=; Max-Age=-99999999; path=/'
-      document.cookie = 'role=; Max-Age=-99999999; path=/'
-      document.cookie = 'refreshToken=; Max-Age=-99999999; path=/'
+      // Auth cookies are HttpOnly — only the backend logout Set-Cookie can remove them.
+      // Do not set accessToken=; path=/ here; that leaves empty duplicate cookies in DevTools.
 
       // Clear any app state (e.g., Context or useState)
       setUser(null)
