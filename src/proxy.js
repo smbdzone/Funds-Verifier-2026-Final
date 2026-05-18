@@ -393,7 +393,7 @@ export async function proxy(request) {
       )
 
       if (!refreshRes.ok) {
-        return NextResponse.redirect(new URL('/login', request.url))
+        // return NextResponse.redirect(new URL('/login', request.url))
       }
 
       const refreshData = await refreshRes.json()
@@ -422,7 +422,7 @@ export async function proxy(request) {
       )
 
       if (!refreshRes.ok) {
-        return NextResponse.redirect(new URL('/login', request.url))
+        // return NextResponse.redirect(new URL('/login', request.url))
       }
 
       const refreshData = await refreshRes.json()
@@ -437,7 +437,7 @@ export async function proxy(request) {
 
     // ❌ If still invalid
     if (!meRes?.ok) {
-      return NextResponse.redirect(new URL('/login', request.url))
+      // return NextResponse.redirect(new URL('/login', request.url))
     }
 
     // ✅ STEP 4: Get user + role
@@ -454,7 +454,7 @@ export async function proxy(request) {
     // }
   } catch (err) {
     console.error('Proxy error:', err)
-    return NextResponse.redirect(new URL('/login', request.url))
+    // return NextResponse.redirect(new URL('/login', request.url))
   }
 
   // ✅ STEP 5: Route authorization
