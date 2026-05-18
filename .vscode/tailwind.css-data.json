@@ -1,0 +1,41 @@
+{
+  "version": 1.1,
+  "atDirectives": [
+    {
+      "name": "@tailwind",
+      "description": "Tailwind CSS: inject `base`, `components`, `utilities`, or `variants` styles."
+    },
+    {
+      "name": "@apply",
+      "description": "Tailwind CSS: compose existing utility classes into custom rules."
+    },
+    {
+      "name": "@layer",
+      "description": "Tailwind CSS: assign styles to a cascade layer (e.g. base, components, utilities)."
+    },
+    {
+      "name": "@config",
+      "description": "Tailwind CSS v4: reference a configuration file."
+    },
+    {
+      "name": "@source",
+      "description": "Tailwind CSS v4: register content paths."
+    },
+    {
+      "name": "@plugin",
+      "description": "Tailwind CSS v4: load a plugin."
+    },
+    {
+      "name": "@theme",
+      "description": "Tailwind CSS v4: define theme tokens inline."
+    },
+    {
+      "name": "@utility",
+      "description": "Tailwind CSS v4: define a custom utility."
+    },
+    {
+      "name": "@custom-variant",
+      "description": "Tailwind CSS v4: define a custom variant."
+    }
+  ]
+}

@@ -1,0 +1,768 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* * {
+  border: 2px solid black;
+} */
+
+@layer utilities {
+  .text-gradient-custom {
+    background: linear-gradient(91.94deg,
+        #a2913e -9.5%,
+        #d7c590 20.67%,
+        #a2913e 75.3%,
+        #d7c58f 137.23%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+}
+
+/* If text-gray-400 is a custom class, define it as follows */
+@layer utilities {
+  .text-gray-400 {
+    color: #9ca3af;
+    /* Example color */
+  }
+}
+
+.gradient {
+  background: linear-gradient(to right,
+      #9d8c37 0%,
+      #d7c590 24%,
+      #83742d 51%,
+      #baab7a 78%,
+      #7f6f2c 100%);
+}
+
+/* .swiper-button-prev:after, .swiper-button-next:after{
+  content: none !important;
+} */
+:root {
+  --fs-40: clamp(1.75rem, calc(1.24rem + 1.06vw), 2.5rem);
+  --fs-60: clamp(1.875rem, 1.2228rem + 3.2609vi, 3.75rem);
+}
+
+.fs-40 {
+  font-size: var(--fs-40);
+}
+
+.fs-60 {
+  font-size: var(--fs-60);
+}
+
+.dropdown-content {
+  display: none;
+  position: absolute;
+  background-color: #fff;
+  min-width: 160px;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+  z-index: 1;
+}
+
+.dropdown:hover .dropdown-content {
+  display: block;
+}
+
+.theme-container {
+  @apply xl:max-w-[1280px] mx-auto px-4;
+}
+
+.work__slider {
+  @apply block lg:hidden;
+}
+
+.work__slider .swiper-slide {
+  @apply pb-[9rem];
+}
+
+.work__slider .swiper-pagination-bullet-active {
+  @apply h-[10px] w-[10px];
+}
+
+.ql-editor {
+  color: white !important;
+}
+
+.custom-placeholder {
+  @apply absolute top-1/2 left-5 transform -translate-y-1/2 pointer-events-none text-gray-400 text-sm;
+}
+
+.custom-label {
+  @apply text-dark-grey text-[15px] font-normal ml-[8px];
+}
+
+.custom-checkbox {
+  @apply appearance-none h-[11px] w-[11px] border-[1px] border-light-gold bg-white cursor-pointer relative;
+}
+
+.custom-checkbox:checked {
+  @apply bg-light-gold border-light-gold;
+}
+
+.custom-checkbox:checked::after {
+  content: "";
+  display: block;
+  width: 3px;
+  height: 6px;
+  border: solid white;
+  border-width: 0 1px 1px 0;
+  position: absolute;
+  top: 1px;
+  left: 3px;
+  transform: rotate(45deg);
+}
+
+.relative-placeholder {
+  @apply relative w-full;
+}
+
+.custom-placeholder .optional {
+  @apply text-xs text-yellow-600;
+}
+
+.input-with-placeholder {
+  @apply pl-5;
+  /* 1.25rem padding-left */
+}
+
+form .relative-placeholder input:valid+.custom-placeholder {
+  @apply hidden;
+}
+
+.custom-placeholder {
+  @apply absolute top-1/2 left-5 transform -translate-y-1/2 pointer-events-none text-gray-400 text-sm;
+}
+
+.iti {
+  position: relative;
+  display: inline-block;
+  width: 100%;
+}
+
+.btn-gradient {
+  background: linear-gradient(to right,
+      #a2913e 0%,
+      #d7c590 31%,
+      #a2913e 64%,
+      #d7c590 97%);
+  color: white;
+}
+
+.primary-gradient {
+  background: linear-gradient(to right,
+      #002d4f 0%,
+      #5085ad 31%,
+      #002d4f 64%,
+      #5085ad 97%);
+  color: white;
+}
+
+.arrange_viewing .react-calendar__tile--active {
+  background: linear-gradient(to right,
+      #a2913e 0%,
+      #d7c590 31%,
+      #a2913e 64%,
+      #d7c590 97%) !important;
+}
+
+.homeDiv {
+  background-image: url("../assets/images/group-16@2x.png");
+  background-size: cover;
+  background-position: bottom;
+}
+
+.valuesBg {
+  background-image: url("../assets/images/group-15@2x.png");
+  background-size: cover;
+}
+
+.swiper-button-prev {
+  width: 20px !important;
+  height: 20px !important;
+  background: "linear-gradient(90deg,_#a2913e,_#d7c590_35.28%,_#a2913e_68.99%,_#d7c58f)]";
+}
+
+.inTouchBg {
+  background-image: url("../assets/images/Group 78.png");
+  background-size: cover;
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .btn-background {
+    color: black;
+  }
+
+  .btn-background:hover {
+    background: linear-gradient(to right,
+        #a2913e 0%,
+        #d7c590 31%,
+        #a2913e 64%,
+        #d7c590 97%);
+    color: white;
+  }
+
+  .my {
+    color: #ffffff53;
+  }
+}
+
+.twitter-width {
+  width: 27px;
+}
+
+.linkedin-width {
+  width: 26px;
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body,
+html {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+.content {
+  background-color: white;
+}
+
+.swiper {
+  width: 100% !important;
+  /* height: 60vh; */
+  /* max-height: 1400px; */
+}
+
+.swiper-slide {
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+}
+
+.swiper-slide img {
+  display: inherit;
+  width: inherit;
+  height: auto;
+}
+
+/* Testimonials thumbnail column: vertical Swiper slots stay aligned; global
+   width:inherit on slide images was stretching avatars and crowding text. */
+.testimonials-thumb-swiper .swiper-slide {
+  align-items: stretch !important;
+  justify-content: center !important;
+}
+
+.testimonials-thumb-swiper .swiper-slide img {
+  width: auto !important;
+  height: auto !important;
+  max-width: 72px !important;
+  max-height: 72px !important;
+  object-fit: cover;
+}
+
+/* Listing “no photo” fallback: frame fills the slide like a photo; icon stays small */
+.listing-carousel-placeholder-frame {
+  box-sizing: border-box;
+}
+
+.listing-placeholder-camera-icon {
+  width: 48px !important;
+  height: 48px !important;
+  max-width: 48px !important;
+  max-height: 48px !important;
+  min-width: 0 !important;
+  object-fit: contain !important;
+  flex-shrink: 0;
+}
+
+.select-wrapper {
+  position: relative;
+  width: 209px;
+}
+
+.select-custom {
+  appearance: none;
+  -moz-appearance: none;
+  /* Firefox */
+  -webkit-appearance: none;
+  /* Safari and Chrome */
+  display: block;
+  width: 100%;
+  height: 64px;
+  /* Adjust based on your needs */
+  padding: 0px 0px 0px 20px;
+  background: rgba(255, 255, 255, 0.8);
+  color: #002d4f;
+  border: none;
+  border-radius: 5px;
+  box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.1);
+  padding-right: 30px;
+  /* Make space for the custom arrow */
+}
+
+.select-arrow {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  transform: translateY(-50%);
+  pointer-events: none;
+  /* Makes the arrow non-clickable, passing the event to the select */
+}
+
+@keyframes marquee {
+  0% {
+    transform: translateX(0%);
+  }
+
+  100% {
+    transform: translateX(-100%);
+  }
+}
+
+.marquee-container {
+  overflow: hidden;
+  padding: 0px 20px 0px 20px;
+  background: white;
+  white-space: nowrap;
+  position: relative;
+}
+
+.marquee-container:before,
+.marquee-container:after {
+  position: absolute;
+  top: 0;
+  width: 60px;
+  height: 100%;
+  content: "";
+  z-index: 2;
+}
+
+.marquee-container:before {
+  left: 0;
+  background: linear-gradient(to left, rgba(15, 15, 15, 0), white);
+}
+
+.marquee-container:after {
+  right: 0;
+  background: linear-gradient(to right, rgba(255, 255, 255, 0), white);
+}
+
+.marquee-content {
+  animation: marquee 15s linear infinite;
+}
+
+.PhoneInputInput {
+  outline: none !important;
+  background: none !important;
+}
+
+.PhoneInputInput:valid {
+  outline: none !important;
+  background: none !important;
+}
+
+.PhoneInputInput:focus {
+  outline: none;
+  border-color: #4a90e2;
+}
+
+.dropdown-container {
+  position: relative;
+}
+
+.dropdown-option {
+  padding: 6px 10px;
+  color: #333;
+  cursor: pointer;
+  background-color: #fff;
+  border: 1px solid #ccc;
+  border-top: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  text-align: left;
+}
+
+.dropdown-option:hover {
+  background-color: #f0f0f0;
+  color: #9d8c37;
+}
+
+/* styles.css */
+.outline-with-opacity:focus {
+  outline: 2px solid rgba(153, 101, 21, 0.25);
+  /* Adjust the color and opacity as needed */
+}
+
+.PhoneInputInput {
+  outline: none !important;
+  background: none !important;
+}
+
+.PhoneInputInput:valid {
+  outline: none !important;
+  background: none !important;
+}
+
+.PhoneInputInput:focus {
+  outline: none;
+  border-color: #4a90e2;
+}
+
+.custom-container-dev {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+
+.input-field-error {
+  border: 1px solid red;
+  outline: none;
+}
+
+.input-field-error:focus {
+  outline: none;
+}
+
+/* <<<<<<<<< Temporary merge branch 1 */
+/* ========= */
+
+.custom-shadow {
+  box-shadow: 0px 0px 7px 0px rgba(0, 0, 0, 0.15);
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  background-color: rgba(141, 124, 59, 1);
+  width: 12px;
+  /* Set thumb width */
+  height: 12px;
+  /* Set thumb height */
+  border-radius: 50%;
+  /* Make thumb circular */
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.form-check-input {
+  @apply h-[13px] w-[13px] bg-white border !border-reefGold rounded disabled:cursor-not-allowed relative cursor-pointer flex-shrink-0;
+}
+
+.auction__slider .swiper-pagination-bullet {
+  @apply h-[5px] w-[5px] rounded-full !bg-white opacity-100;
+}
+
+.auction__slider .swiper-pagination-bullet-active {
+  @apply !bg-white !h-[5px] !w-[50px];
+}
+
+.auction__slider .swiper-slide-next {
+  @apply !ms-[1px];
+}
+
+.auction__slider .swiper-button-prev {
+  @apply bg-white/70 px-2 py-12 rounded;
+}
+
+.auction__slider .swiper-button-next {
+  @apply bg-white/70 px-2 py-12 rounded;
+}
+
+.swiper-button-next:after {
+  @apply text-reefGold !text-lg font-bold;
+}
+
+.swiper-button-prev:after {
+  @apply text-reefGold !text-lg font-bold;
+}
+
+.pagination_shadow {
+  box-shadow: 0px 0px 4px 0px rgba(0, 0, 0, 0.08);
+}
+
+.css-ttgsjq-MuiSlider-track {
+  @apply !bg-reefGold border-reefGold;
+}
+
+.MuiSlider-track {
+  @apply !bg-reefGold;
+}
+
+.MuiSlider-rail {
+  @apply !bg-gray;
+}
+
+.css-7o8aqz-MuiSlider-rail {
+  @apply !bg-gray;
+}
+
+.MuiSlider-valueLabel::after {
+  background-color: #a2913e !important;
+}
+
+/* MUI thumb: avoid @apply + `after:` (PostCSS/Tailwind often rejects it). */
+.MuiSlider-thumb,
+.css-cp2j25-MuiSlider-thumb {
+  height: 0 !important;
+  width: 0 !important;
+  box-shadow: none !important;
+  background: none !important;
+}
+
+.MuiSlider-thumb::after,
+.css-cp2j25-MuiSlider-thumb::after {
+  background-color: #a2913e !important;
+  height: 12px !important;
+  width: 12px !important;
+}
+
+/* >>>>>>>>> Temporary merge branch 2 */
+
+/* .swiper-slide {
+  text-align: center;
+  font-size: 18px;
+  width: 100%;
+  Center slide text vertically
+  display: flex;
+  justify-content: center;
+  align-items: center;
+} */
+
+/* .swiper-slide img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+} */
+.drop-item {
+  font-size: 18px;
+}
+
+.custom-swiper-prev {
+  background: #8d7c3b;
+  display: block;
+  width: 100%;
+  margin-bottom: 12px;
+  text-align: center;
+  display: flex;
+  justify-content: center;
+}
+
+.custom-swiper-next {
+  background: #8d7c3b;
+  display: block;
+  width: 100%;
+  margin-top: 12px;
+  text-align: center;
+  display: flex;
+  justify-content: center;
+}
+
+.ArrowDown {
+  color: white;
+}
+
+.textSize {
+  font-size: larger;
+  font-weight: 600;
+  color: #002d4f;
+  letter-spacing: 1px;
+}
+
+.priceText {
+  font-size: larger;
+  font-weight: 600;
+  color: black;
+}
+
+.boxPadding {
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+
+.custom-prev-button {
+  margin-right: 12px;
+}
+
+.custom-next-button {
+  margin-left: 12px;
+}
+
+.sliderMargin {
+  margin: auto;
+}
+
+.scroll-none::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+.scroll-none {
+  -ms-overflow-style: none;
+  /* IE and Edge */
+  scrollbar-width: none;
+  /* Firefox */
+}
+
+/* Add this in your global CSS file or within a <style> tag in your component */
+.custom-checkbox {
+  appearance: none;
+  border: 2px solid #8d7c3b;
+  width: 20px;
+  height: 20px;
+  position: relative;
+}
+
+.custom-checkbox:checked {
+  background-color: transparent;
+}
+
+.custom-checkbox:checked::after {
+  content: "✔";
+  color: #8d7c3b;
+  font-size: 20px;
+  position: absolute;
+  transform: translate(-50%, -50%);
+  top: -4px;
+  left: 2px;
+}
+
+.schedule-calendar .react-calendar__navigation {
+  @apply bg-dark-blue text-white;
+}
+
+.schedule-calendar .react-calendar__month-view__weekdays__weekday abbr {
+  @apply !no-underline text-sm font-montserrat !font-light;
+}
+
+.schedule-calendar .react-calendar__navigation button {
+  @apply text-xl !rounded-md;
+}
+
+/* .schedule-calender .react-calendar {
+  @apply  ;
+} */
+
+.schedule-calendar .react-calendar__month-view__weekdays {
+  @apply !border-none !text-base !pb-4;
+}
+
+.schedule-calendar .react-calendar__tile {
+  @apply !text-base;
+}
+
+.schedule-calendar .react-calendar__tile:hover {
+  @apply !bg-dark-blue !text-white !px-2 rounded-md;
+}
+
+.schedule-calendar .react-calendar {
+  @apply !rounded-md !border-none;
+}
+
+.modal-bg {
+  @apply bg-[#1C2434] opacity-70;
+}
+
+/* Active day tile */
+.calender_FV .react-calendar__tile--active {
+  background-color: #004f82 !important;
+  color: white;
+  border-radius: 0.5rem !important;
+}
+
+.calender_FV .react-calendar__navigation {
+  background: linear-gradient(to right,
+      #002d4f 0%,
+      #5085ad 31%,
+      #002d4f 64%,
+      #5085ad 97%) !important;
+  color: white;
+  border-radius: 0.5rem !important;
+}
+
+.calender_FV .react-calendar__navigation__label:hover,
+.calender_FV .react-calendar__navigation__arrow:hover {
+  background: linear-gradient(to right,
+      #002d4f 0%,
+      #5085ad 31%,
+      #002d4f 64%,
+      #5085ad 97%) !important;
+}
+
+.calender_FV .react-calendar__navigation__arrow .react-calendar__navigation__prev-button:disabled {
+  background: linear-gradient(to right,
+      #002d4f 0%,
+      #5085ad 31%,
+      #002d4f 64%,
+      #5085ad 97%) !important;
+}
+
+/* Custom Radio Button Styles */
+.custom-radio-button {
+  position: relative;
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  border: 2px solid #ccc;
+  /* Outer border */
+  border-radius: 50%;
+  /* Make it circular */
+  background-color: #fff;
+  /* White background */
+  cursor: pointer;
+}
+
+/* Hide the actual radio input */
+.custom-radio-button input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+/* The inner circle (hidden by default) */
+.custom-radio-button .radio-check {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 14px;
+  /* Inner circle size */
+  height: 14px;
+  background: linear-gradient(to right, #a2913e, #d7c590);
+  /* Gold gradient */
+  border-radius: 50%;
+  /* Make it circular */
+  transform: translate(-50%, -50%) scale(0);
+  /* Centered and hidden */
+  transition: transform 0.2s ease-in-out;
+  /* Smooth animation */
+}
+
+/* Show the inner circle when checked */
+.custom-radio-button input:checked+.radio-check {
+  transform: translate(-50%, -50%) scale(1);
+  /* Scale to full size */
+}
+
+/* hide scrollbar */
+.scroll-none::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+.scroll-none {
+  -ms-overflow-style: none;
+  /* IE and Edge */
+  scrollbar-width: none;
+  /* Firefox */
+}

@@ -1,0 +1,19 @@
+input[type="radio"]:checked {
+  accent-color: #000000;
+}
+
+
+.swiper-pagination-bullet-active {
+  opacity: var(--swiper-pagination-bullet-opacity, 1);
+  background: #FAFAFA;
+  width: 60px;
+  border-radius: 20px;
+}
+
+
+  .swiper-pagination-bullet {
+    opacity: 1;
+    background: #FAFAFA;
+  }
+
+

@@ -1,0 +1,26 @@
+diff --git a/node_modules/next/dist/esm/server/config.js b/node_modules/next/dist/esm/server/config.js
+index 52e89a4..dcac965 100644
+--- a/node_modules/next/dist/esm/server/config.js
++++ b/node_modules/next/dist/esm/server/config.js
+@@ -866,8 +866,6 @@ function warnCustomizedOption(config, key, defaultValue, customMessage, configFi
+             'react-bootstrap',
+             'ahooks',
+             '@ant-design/icons',
+-            '@headlessui/react',
+-            '@headlessui-float/react',
+             '@heroicons/react/20/solid',
+             '@heroicons/react/24/solid',
+             '@heroicons/react/24/outline',
+diff --git a/node_modules/next/dist/server/config.js b/node_modules/next/dist/server/config.js
+index 16609b9..2d95960 100644
+--- a/node_modules/next/dist/server/config.js
++++ b/node_modules/next/dist/server/config.js
+@@ -940,8 +940,6 @@ function warnCustomizedOption(config, key, defaultValue, customMessage, configFi
+             'react-bootstrap',
+             'ahooks',
+             '@ant-design/icons',
+-            '@headlessui/react',
+-            '@headlessui-float/react',
+             '@heroicons/react/20/solid',
+             '@heroicons/react/24/solid',
+             '@heroicons/react/24/outline',

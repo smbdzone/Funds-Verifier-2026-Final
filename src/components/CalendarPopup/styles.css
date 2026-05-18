@@ -1,0 +1,137 @@
+/* Active tile styling */
+.react-calendar__tile--active {
+  border-radius: 100% !important;
+  background-color: #8d7c3b !important;
+  color: white !important;
+  font-size: 18px !important;
+  font-weight: 500 !important;
+  height: 46px !important;
+  display: flex;
+  align-items: center;
+  justify-content: center; /* Center the content */
+}
+
+.react-calendar__tile:disabled {
+  background-color: white !important;
+  cursor: not-allowed !important;
+}
+
+.react-calendar__tile--hasActive{
+  background-color: #8d7c3b !important;
+  color: white !important; 
+}
+.react-calendar__year-view__months__month:hover{
+  background: none !important;
+}
+
+.react-calendar__year-view__months__month{
+  border-radius: 8px !important;
+}
+
+.react-calendar__year-view__months__month:hover{
+  background: none !important;
+}
+
+.react-calendar__tile:disabled:hover {
+  background: none !important;
+  color: #ababab !important;
+}
+
+.react-calendar__year-view__months__month {
+  background-color: none !important;
+}
+.react-calendar__year-view__months__month:hover {
+  background-color: #8d7c3b !important;
+}
+
+/* General tile styling */
+.react-calendar__tile {
+  height: 46px !important;
+  display: flex;
+  align-items: center;
+  justify-content: center; /* Center the content */
+}
+
+/* Hover effect for tiles */
+.react-calendar__tile:hover {
+  border-radius: 10px !important;
+  display: flex;
+  align-items: center;
+  justify-content: center; /* Ensure content stays centered on hover */
+}
+
+.react-calendar__tile--now:hover {
+  border-radius: 10px !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Custom border radius for specific parts */
+.borderTopRadius {
+  border-top-left-radius: 24px;
+}
+
+.borderBottomRadius {
+  border-bottom-left-radius: 24px;
+}
+
+/* Weekdays styling */
+.react-calendar__month-view__weekdays {
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  justify-content: center; /* Center weekdays text */
+}
+
+/* Navigation label (month/year) */
+.react-calendar__navigation__label__labelText {
+  font-size: 20px !important;
+  color: #002d4f !important;
+  font-weight: 600 !important;
+  display: flex;
+  align-items: center;
+  justify-content: center; /* Center navigation label text */
+}
+
+/* Year view month styling */
+.react-calendar__year-view__months__month {
+  border-radius: 12px !important;
+  display: flex;
+  align-items: center;
+  justify-content: center; /* Center content for month tiles */
+}
+
+/* Hover effect for year view months */
+.react-calendar__year-view__months__month:hover {
+  color: white !important;
+  display: flex;
+  align-items: center;
+  justify-content: center; /* Keep content centered on hover */
+}
+
+/* Navigation button hover effects */
+.react-calendar__navigation button:enabled:hover,
+.react-calendar__navigation button:enabled:focus {
+  background: none !important;
+}
+
+/* Hide navigation arrows */
+.react-calendar__navigation__arrow {
+  display: none !important;
+}
+
+/* Now tile hover effect */
+.react-calendar__tile
+  .react-calendar__tile--now
+  .react-calendar__tile--hasActive
+  .react-calendar__year-view__months__month:hover {
+  border-radius: 12px !important;
+  display: flex;
+  align-items: center;
+  justify-content: center; /* Ensure center alignment */
+}
+
+.react-calendar__month-view__weekdays__weekday abbr {
+  @apply no-underline font-light;
+}

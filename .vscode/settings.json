@@ -1,0 +1,12 @@
+{
+  "workbench.colorCustomizations": {
+    "activityBar.background": "#093512",
+    "titleBar.activeBackground": "#0C4B19",
+    "titleBar.activeForeground": "#F3FDF5"
+  },
+  "css.customData": [".vscode/tailwind.css-data.json"],
+  "css.lint.unknownAtRules": "ignore",
+  "scss.lint.unknownAtRules": "ignore",
+  "less.lint.unknownAtRules": "ignore",
+  "tailwindCSS.experimental.configFile": "./tailwind.config.ts"
+}

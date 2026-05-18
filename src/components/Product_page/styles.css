@@ -1,0 +1,65 @@
+.swiper-slide {
+  text-align: center;
+  font-size: 18px;
+
+  /* Center slide text vertically */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.swiper-slide img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.custom-swiper-prev {
+  background: #8d7c3b;
+  display: block;
+  width: 100%;
+  margin-bottom: 12px;
+  text-align: center;
+  display: flex;
+  justify-content: center;
+}
+.custom-swiper-next {
+  background: #8d7c3b;
+  display: block;
+  width: 100%;
+  margin-top: 12px;
+  text-align: center;
+  display: flex;
+  justify-content: center;
+}
+
+.ArrowDown {
+  color: white;
+}
+
+.textSize {
+  font-size: larger;
+  font-weight: 600;
+  color: #002d4f;
+  letter-spacing: 1px;
+}
+.priceText {
+  font-size: larger;
+  font-weight: 600;
+  color: black;
+}
+.boxPadding {
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+
+.custom-prev-button {
+  margin-right: 12px;
+}
+.custom-next-button {
+  margin-left: 12px;
+}
+.sliderMargin {
+  margin: auto;
+}

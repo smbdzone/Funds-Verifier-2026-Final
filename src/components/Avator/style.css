@@ -1,0 +1,4 @@
+input[type="checkbox"].accent-yellow:checked {
+    accent-color: #A2913E; /* Custom yellow color */
+    color: white;
+}

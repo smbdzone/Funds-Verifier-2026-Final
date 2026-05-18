@@ -1,0 +1,201 @@
+'use client'
+import Image from 'next/image'
+import Link from 'next/link'
+import { toUnitedArabEmiratesListingCountryName } from '@/libs/dummyLocationData'
+
+const DropdownComponent = ({
+  isListings,
+  handleToggleDropdown,
+  formData,
+  handleMouseLeave,
+  label,
+  handleSelectOption,
+  dropdowns,
+  dropdownOptions,
+  searchQuery,
+  setSearchQuery,
+  upperLabel,
+  setLand,
+  placeholder,
+  error,
+  errorMessage,
+  disabled, // ✅ added disabled prop
+}) => {
+  // ✅ Button (label) for dropdown
+
+  const renderLabelContent = () => (
+    <button
+      className={`dropdownButton h-full pl-2 pr-3 py-2 md:py-0 border-b md:border-b-none border-dark-grey md:border-r w-full text-start text-light-blue ${
+        disabled ? 'opacity-50 cursor-not-allowed bg-gray-100' : ''
+      }`}
+      onClick={!disabled ? handleToggleDropdown : undefined}
+      disabled={disabled}
+    >
+      <span className='sr-only'>{upperLabel}</span>
+      <div className='flex justify-between'>
+        <div>
+          <p className='xl:text-lg lg:text-base md:text-[12px] xxs:text-sm font-medium text-dark-black text-start'>
+            {label}
+          </p>
+          <p className='lg:text-xs md:text-[10px] truncate xxs:text-xs font-normal pt-[5px] text-dark-grey'>
+            {formData || ''}
+          </p>
+        </div>
+        <Image
+          width={12}
+          height={12}
+          src='/listing/arrowgold.svg'
+          alt='arrowblue'
+          className={`xl:ml-[30px] lg:ml-[20px] xxs:ml-[10px] transition-transform ${
+            disabled ? 'opacity-40' : ''
+          }`}
+        />
+      </div>
+    </button>
+  )
+
+  // ✅ Asset Type dropdown
+  const renderAssetTypeDropdown = () => (
+    <div
+      onMouseLeave={handleMouseLeave}
+      className='absolute mt-2 left-0 right-0 bg-white rounded-lg shadow-neon z-10 py-2'
+    >
+      {dropdownOptions?.map((option, index) => (
+        <Link key={index} href={`/dashboard/${option.link}-listing`}>
+          <div
+            className={`px-2 py-2 text-start ${
+              option.disabled
+                ? 'opacity-50 cursor-not-allowed'
+                : 'hover:text-[#8D7C3B] hover:bg-[#F5F5F5] text-gray-400 cursor-pointer'
+            }`}
+            onClick={
+              !option.disabled
+                ? () => handleSelectOption('assetType', option.value)
+                : undefined
+            }
+          >
+            {option.value}
+          </div>
+        </Link>
+      ))}
+    </div>
+  )
+
+  // ✅ Property Type dropdown
+  const renderPropertyTypeDropdown = () => (
+    <div
+      onMouseLeave={handleMouseLeave}
+      className='absolute mt-2 left-0 right-0 bg-white rounded-lg shadow-neon z-10 py-2'
+    >
+      {dropdownOptions?.map((type, index) => (
+        <div key={index}>
+          <div
+            onClick={type.onclick}
+            className='relative flex justify-between items-center cursor-pointer p-2 hover:bg-gray-100 hover:text-[#8D7C3B] hover:bg-[#F5F5F5] text-gray-400'
+          >
+            {type.text}
+            <Image
+              width={10}
+              height={10}
+              src='/listing/arrowgold.svg'
+              alt='arrowblue'
+              className='-rotate-90'
+            />
+          </div>
+          {type.state && (
+            <div
+              onMouseLeave={() => setLand(false)}
+              className='absolute text-xs left-[90%] top-2 !w-[135px] bg-white justify-center items-center flex flex-col rounded-lg shadow-neon z-20'
+            >
+              {type.mapData?.map((ele) => (
+                <p
+                  key={ele.id}
+                  onClick={() => handleSelectOption(ele.value)}
+                  className='cursor-pointer w-full text-center p-2 hover:bg-gray-100 hover:text-[#8D7C3B] hover:bg-[#F5F5F5] text-gray-400'
+                >
+                  {ele.value}
+                </p>
+              ))}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  )
+
+  // ✅ General dropdown (country, city, etc.)
+  const renderGeneralDropdown = () => (
+    <div className='absolute mt-2 left-0 right-0 max-h-[280px] bg-white h-96 overflow-y-auto rounded-lg shadow-neon z-10 py-2'>
+      {!['Make', 'Model', 'Category', 'Subcategory'].includes(label) && (
+        <input
+          type='text'
+          placeholder={placeholder}
+          className='w-full p-2 bg-[#F5F5F5] outline-none text-[#8D7C3B]'
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
+      )}
+      {dropdownOptions?.map((option, index) => (
+        <div
+          key={index}
+          onClick={() =>
+            handleSelectOption(
+              [
+                'All Countries',
+                'Category',
+                'Subcategory',
+                'Model',
+                'Make',
+              ].includes(label)
+                ? option
+                : ['City', 'Neighbourhood'].includes(label)
+                ? option
+                : '',
+              option
+            )
+          }
+          className='cursor-pointer p-2 truncate hover:bg-gray-100 px-2 py-2 hover:text-[#8D7C3B] hover:bg-[#F5F5F5] text-gray-400'
+        >
+          {label === 'All Countries'
+            ? toUnitedArabEmiratesListingCountryName(option.country) ||
+              option.country
+            : ['City', 'Neighbourhood'].includes(label)
+            ? option
+            : ['Category', 'Subcategory', 'Model'].includes(label)
+            ? option
+            : label === 'Make'
+            ? option.brand
+            : ''}
+        </div>
+      ))}
+    </div>
+  )
+
+  return (
+    <>
+      {isListings && (
+        <div className='relative w-full text-start dropdown-container'>
+          {renderLabelContent()}
+
+          {error && (
+            <span className='text-red-500 lg:text-sm text-xs font-medium'>
+              **{errorMessage}
+            </span>
+          )}
+
+          {/* ✅ Disable dropdown completely when disabled */}
+          {dropdowns && !disabled && (
+            <>
+              {label === 'Asset Type' && renderAssetTypeDropdown()}
+              {label === 'Property Type' && renderPropertyTypeDropdown()}
+              {!['Asset Type', 'Property Type'].includes(label) &&
+                renderGeneralDropdown()}
+            </>
+          )}
+        </div>
+      )}
+    </>
+  )
+}
+
+export default DropdownComponent

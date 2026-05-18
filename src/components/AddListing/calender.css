@@ -1,0 +1,38 @@
+/* Remove border from the full calendar */
+.react-calendar {
+    border: none;
+  }
+  
+  /* Add border to the individual date cells */
+  .react-calendar__tile {
+    border: 1px solid #e0e0e0;
+    box-sizing: border-box;
+  }
+
+  .react-calendar__month-view__days{
+    border: 1px solid #e0e0e0;
+  }
+  .react-calendar__tile--now{
+    background: none !important;
+    color: black;
+  }
+  .react-calendar__tile--active{
+    background: #BAA964;
+    color: black;
+  }
+  .react-calendar__tile--active:enabled:hover, .react-calendar__tile--active:enabled:focus{
+    background: #BAA964;
+  }
+  button.react-calendar__tile.react-calendar__month-view__days__day {
+    border: 1px solid  #e0e0e0;
+  }
+  button.react-calendar__navigation__arrow.react-calendar__navigation__prev2-button {
+    display: none;
+}
+button.react-calendar__navigation__arrow.react-calendar__navigation__next2-button {
+    display: none;
+}
+button.react-calendar__navigation__label {
+    font-weight: bold;
+}
+  

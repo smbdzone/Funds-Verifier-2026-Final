@@ -1,0 +1,17 @@
+import {
+  canRequestPremiumServices as canRequestPremiumServicesFromStatus,
+  isListingEvaluatorApproved,
+} from './listingPremiumStatus'
+
+/**
+ * Asset-holder edit lock: after evaluator approval (status 1) and an
+ * evaluation certificate exists, only price + optional service requests stay editable.
+ */
+export function isListingEvaluatorApprovedLocked(formData) {
+  return isListingEvaluatorApproved(formData)
+}
+
+/** 3D walkthrough / technical report — only after evaluator approval (Simo spec). */
+export function canRequestPremiumServices(formData) {
+  return canRequestPremiumServicesFromStatus(formData)
+}

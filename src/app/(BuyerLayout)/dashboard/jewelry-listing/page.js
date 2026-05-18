@@ -1,0 +1,860 @@
+'use client'
+import { useState, useEffect, useContext } from 'react'
+import axios from 'axios'
+import { Suspense } from 'react'
+import {
+  handleImageUpload,
+  handleVideoUpload,
+  handleFileUpload,
+  handleThumbnailUpload,
+} from '@/libs/uploadAsset'
+import {
+  applyPremiumServiceRefs,
+  listingMediaRef,
+  premiumServiceRequestId,
+} from '@/libs/listingMediaRef'
+import 'react-phone-number-input/style.css'
+import PaymentModal from '@/components/payments/PaymentModal'
+import flags from 'react-phone-number-input/flags'
+import { toast, ToastContainer } from 'react-toastify'
+import Listing from '@/components/global/Listing'
+import { ListingContext } from '@/components/ListingContext/ListingsProvider'
+import ListingsLowerComponent from '@/components/ListingsForm/ListingsLowerComponent'
+import { materials } from '@/constants/listing-data'
+import JewelryListingForm from '@/components/ListingsForm/JewelryListingForm'
+import { useRouter } from 'next/navigation'
+import PayModal from '../../../../components/Modals/PayModal'
+import { useProfile } from '../../../../context/UserContext'
+import StripeElement from '../../../../components/Stripe/StripeElement'
+import customAxios from '../../../../utils/apis/apis'
+
+function Page() {
+  const [neighbourhood, setNeighbourhood] = useState('Select Neighbourhood')
+  const { user } = useProfile()
+  const [showPayment, setShowPayment] = useState(false)
+
+  const [jeweleryListings, setJeweleryListings] = useState([
+    'Private',
+    'Public',
+  ])
+  const [dropdownVisible, setDropdownVisible] = useState(false)
+  const [models, setModels] = useState([])
+  const [isOpenModal, setIsOpenModal] = useState(false)
+  const router = useRouter()
+  const categories = {
+    "Men's Jewelry": [
+      'Belt Buckles',
+      'Bracelets',
+      'Chains & Necklaces',
+      'Cufflinks',
+      'Pins & Tie Clips',
+      'Rings',
+      'Studs',
+      'Other',
+    ],
+    "Women's Jewelry": [
+      'Body Jewelry',
+      'Bracelets',
+      'Earrings',
+      'Ethnic & Artisan Jewelry',
+      'Hair Jewelry',
+      'Pins & Brooches',
+      'Rings',
+      'Other',
+    ],
+  }
+  const initialFormData = {
+    assetType: 'Jewellery For Sale',
+    country: '',
+    city: '',
+    category: '',
+    model: '',
+    neighbourhood: '',
+    make: '',
+    grams: '',
+    title: '',
+    phoneNumber: '',
+    condition: '',
+    price: '',
+    weight: '',
+    sellerType: '',
+    description: '',
+    age: '',
+    usage: '',
+    pictures: '',
+    video: '',
+    thumbnailImg: '',
+    evaluationCertificate: null,
+    evaluationCompanies: '',
+    jewelryStyles: '',
+    jewelryMetal: '',
+    locateJewelry: '',
+    ratings: [],
+    materials: [],
+    totalrating: '',
+    warrenty: '',
+    lengthh: '',
+    technicalReport: '',
+    evaluationDateTime: '',
+  }
+  const dropdownData = {
+    country: false,
+    warrenty: false,
+    condition: false,
+    sellerType: false,
+    length: false,
+    age: false,
+    usage: false,
+    evaluationCompanies: '',
+    assetType: '',
+  }
+  const {
+    countries,
+    selectedCountry,
+    handleCountrySelect,
+    isOpen,
+    searchParams,
+    cities,
+    dropdowns,
+    totalprice,
+    neighbourhoods,
+    toggleCityDropdown,
+    toggleDropdownn,
+    toggleModelDropdown,
+    toggleNeighbourDropdown,
+    handleToggleDropdown,
+    selectedNeighbourhood,
+    isCityDropdownOpen,
+    isNeighbourDropdownOpen,
+    selectedModel,
+    modelDropdownVisible,
+    searchQuery,
+    searchQueryCity,
+    searchQueryNeighbourhood,
+    setSearchQueryNeighbourhood,
+    setSearchQuery,
+    setSearchQueryCity,
+    handleCitySelect,
+    handleModelClick,
+    handleNeighbour,
+    handleSelectOption,
+    selectedCity,
+    handleMouseLeave,
+    loading,
+    errors,
+    phoneNumber,
+    thumbnail,
+    handleOpenModal,
+    handleThumbImageRemove,
+    handleThumbImageChange,
+    handleCountryChange,
+    selectedCountryPhone,
+    maxLength,
+    handleImageChange,
+    images,
+    handleImageRemove,
+    fileInputRef,
+    isModalOpen,
+    handleCloseModal,
+    handleRequestModalData,
+    handleOpenModal1,
+    setVideo,
+    setLoading,
+    isModal1Open,
+    technicalModalData,
+    isTechnicalModalOpen,
+    handleRequestTechnicalModalData,
+    handleClose1Modal,
+    modalData,
+    handleVideoChange,
+    handlePhoneNumberChange,
+    id,
+    handleRadioChange,
+    handleCheckboxChange,
+    confirmationModal,
+    setConfirmationModal,
+    formData,
+    setFormData,
+    isValidState,
+    handleFormData,
+    setSelectType,
+    setIsCityDropdownOpen,
+    setErrors,
+    video,
+    file,
+    handleScroll,
+    setTotalSize,
+    setTotalPrice,
+    setIsTechnicalModalOpen,
+    fetchData,
+    setSelectedModel,
+    resetForm,
+    selectedCategory,
+    setSelectedCategory,
+    setPhoneNumber,
+    setIsValid,
+  } = useContext(ListingContext)
+
+  useEffect(() => {
+    resetForm()
+    handleFormData(initialFormData, dropdownData)
+  }, [])
+
+  useEffect(() => {
+    if (id) {
+      fetchData('jewelry')
+    } else {
+      setLoading(false)
+    }
+  }, [searchParams])
+
+  const handleTechnicalModal = () => {
+    setIsTechnicalModalOpen(!isTechnicalModalOpen)
+  }
+
+  const handleCloseTechnicalModal = () => {
+    setIsTechnicalModalOpen(false)
+  }
+
+  const handlePropertyTypeSelect = (type) => {
+    setSelectType(type)
+    setFormData((prevFormData) => ({
+      ...prevFormData,
+      propertyType: type,
+    }))
+    setIsCityDropdownOpen(false)
+  }
+  const handleVideoRemove = () => {
+    setVideo(null)
+  }
+
+  const handleBlur = (e) => {
+    const { name, value } = e.target
+    validateField(name, value)
+  }
+
+  const isValidNumber = (value) => {
+    setPhoneNumber(value)
+    if (value) {
+      setIsValid(isValidPhoneNumber(value))
+    } else {
+      setIsValid(true)
+    }
+    return phoneNumber
+  }
+
+  const validateForm = (data) => {
+    const errors = {}
+    const safeTrim = (value) => {
+      return typeof value === 'string' ? value.trim() : ''
+    }
+    if (images.length === 0) errors.pictures = 'Pictures are Required'
+    if (!thumbnail) errors.thumbnail = 'Thumbnail is Required'
+    if (!data.assetType.trim() || data.assetType === 'Select Asset Type')
+      errors.assetType = 'Asset Type is required'
+    if (!data.country.trim()) errors.country = 'Country is required'
+    if (!data.city.trim()) errors.city = 'City is required'
+    if (!data.neighbourhood.trim())
+      errors.neighbourhood = 'Neighbourhood is required'
+    if (!data.category.trim()) errors.category = 'Category is required'
+    if (!data.model.trim()) errors.model = 'SubCategory is required'
+    if (!data.grams.trim()) errors.grams = 'Grams is required'
+    if (!data.title.trim()) {
+      errors.title = 'Title is required'
+    } else if (data.title.length > 30) {
+      errors.title = 'Title must be less than 30 characters'
+    }
+    // Convert all values to string safely using String() and provide fallback if undefined
+    const phoneNumber = String(data.phoneNumber || '')
+    // Check for phoneNumber validation
+    if (!phoneNumber?.trim()) {
+      errors.phoneNumber = 'Phone number is required'
+    } else if (!isValidNumber(phoneNumber)) {
+      errors.phoneNumber = 'Phone number is invalid'
+    }
+    if (!String(data.description || '').trim()) {
+      errors.description = 'Description is required'
+    } else if (data.description.length > 300) {
+      errors.description = 'Description cannot exceed 300 characters.'
+    }
+    if (!data.condition.trim()) errors.condition = 'Condition is required'
+    if (!String(data.price || '').trim() && !totalprice) {
+      errors.price = 'Price is required'
+    } else if (parseInt(totalprice) === 0) {
+      errors.price = 'Price is invalid'
+    }
+
+    if (!data?.warrenty && !data?.warrenty?.trim()) {
+      errors.warrenty = 'Warrenty is required'
+    }
+    // if (!data.evaluationDateTime.trim())
+    //   errors.evaluationDateTime = "Evaluation is required";
+    if (!safeTrim(data.age)) errors.age = 'Age is required'
+    if (!safeTrim(data.usage)) errors.usage = 'Usage is required'
+
+    return errors
+  }
+
+  const isValidPhoneNumber = (phoneNumber) => {
+    return phoneNumber && phoneNumber.length >= 10
+  }
+
+  const validateField = (name, value) => {
+    let error = ''
+    switch (name) {
+      case 'title':
+        if (!value) {
+          error = 'Title is required.'
+        } else if (value.length > 30) {
+          error = 'Title cannot exceed 30 characters.'
+        }
+        break
+      case 'phoneNumber':
+        if (!value.trim()) {
+          error = 'Phone number is required'
+        } else if (!isValidPhoneNumber(value)) {
+          error = 'Phone number is invalid'
+        }
+        break
+      case 'condition':
+        if (!value.trim()) {
+          error = 'condition is required'
+        }
+        break
+      case 'price':
+        if (!value.trim()) {
+          error = 'price is required'
+        } else if (parseInt(value.trim()) === 0) {
+          error = 'price is invalid'
+        }
+        break
+      case 'weight':
+        if (!value.trim()) {
+          error = 'weight is required'
+        }
+        break
+      case 'sellerType':
+        if (!value.trim()) {
+          error = 'sellerType is required'
+        }
+        break
+      case 'description':
+        if (!value.trim()) {
+          error = 'Description is required'
+        } else if (value.length > 300) {
+          error = 'Description cannot exceed 300 characters.'
+        }
+        break
+      case 'age':
+        if (!value.trim()) {
+          error = 'age is required'
+        }
+        break
+
+      case 'usage':
+        if (!value.trim()) {
+          error = 'usage is required'
+        }
+        break
+
+      case 'locateJewelry':
+        if (!value.trim()) {
+          error = 'locateJewelry is required'
+        }
+        break
+      case 'warrenty':
+        if (!value.trim()) {
+          error = 'warrenty is required'
+        }
+        break
+      case 'jewelryMetal':
+        if (!value.trim()) {
+          error = 'jewelryMetal is required'
+        }
+        break
+
+      default:
+        break
+    }
+
+    setErrors((prevErrors) => ({ ...prevErrors, [name]: error }))
+  }
+
+  const submitConfirmation = async (e) => {
+    const validationErrors = validateForm(formData, thumbnail, images)
+
+    // Skip evaluation date validation for edit flow (when id exists)
+    if (!id && !formData?.evaluationDateTime) {
+      toast.error('Evaluation Date and time is required!')
+      return
+    }
+
+    if (id) {
+      finalizeSubmission()
+    } else {
+      if (Object.keys(validationErrors).length === 0) {
+        setConfirmationModal(true)
+      } else {
+        setErrors(validationErrors)
+        setLoading(false)
+        handleScroll()
+      }
+    }
+  }
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    setIsOpenModal(false)
+
+    // Skip payment modal for edit flow (when id exists)
+    if (id) {
+      setLoading(true)
+      setConfirmationModal(false)
+      setShowPayment(false)
+      setIsOpenModal(false)
+      finalizeSubmission()
+      return
+    }
+
+    if (!id) {
+      if (!images?.length) {
+        toast.error('At least one image is required.')
+        setLoading(false)
+        throw new Error('Image is required')
+      }
+      if (!formData?.evaluationDateTime) {
+        toast.error('Evalaution required.')
+        setLoading(false)
+        throw new Error('Evalaution required')
+      }
+
+      if (!thumbnail) {
+        toast.error('Thumbnail image is required.')
+        setLoading(false)
+        throw new Error('Thumbnail is required')
+      }
+
+      if (!video) {
+        toast.error('Video is required.')
+        setLoading(false)
+        throw new Error('Video is required')
+      }
+
+      return setShowPayment(true)
+    }
+  }
+  const HandleFormSubmit = async () => {
+    try {
+      // Skip payment logic for edit flow (when id exists)
+      if (id) {
+        setLoading(true)
+        setConfirmationModal(false)
+        setShowPayment(false)
+        setIsOpenModal(false)
+        finalizeSubmission()
+        return
+      }
+
+      if (isValidState(technicalModalData) || isValidState(modalData)) {
+        const paymentItem = JSON.parse(localStorage.getItem('FormPayment'))
+        const sessionId = JSON.stringify(
+          localStorage.getItem('checkoutSessionId')
+        )
+        if (!JSON.parse(sessionId) || JSON.parse(sessionId) === null) {
+          setIsOpenModal(true)
+        } else {
+          const sessionData = await fetchTransactionData(sessionId)
+          setIsOpenModal(false)
+          if (sessionData.payment_status === 'paid') {
+            setLoading(true)
+            finalizeSubmission(
+              paymentItem.payment_method_status === 'paid' ||
+              paymentItem.payment_method_status === 'succeeded',
+            )
+          } else {
+            setIsOpenModal(true)
+          }
+        }
+      } else {
+        setShowPayment(false)
+        setIsOpenModal(false)
+        setLoading(true)
+        setConfirmationModal(false)
+        finalizeSubmission()
+      }
+    } catch (error) {
+      console.error('Error during form submission:', error)
+      toast.error('An error occurred. Please try again.')
+      setLoading(false)
+    }
+  }
+
+  const finalizeSubmission = async (isPaymentSuccessful) => {
+    try {
+      const requests = []
+      let video3DWalkthroughID = null
+      let technicalReportID = null
+      // Only call request3D and technicalReport APIs if payment is successful
+      if (isPaymentSuccessful) {
+        const paymentItem = JSON.parse(localStorage.getItem('FormPayment') || '{}')
+        const paidPayload = {
+          payment_method_status:
+            paymentItem.payment_method_status === 'paid' ||
+              paymentItem.payment_method_status === 'succeeded'
+              ? 'paid'
+              : paymentItem.payment_method_status || 'paid',
+          payment_details: paymentItem.payment_details,
+          productUUID: id || formData?.uuid,
+          assetType: formData?.assetType,
+        }
+
+        if (isValidState(modalData)) {
+          const request3DResponse = await customAxios.post(
+            `${process.env.NEXT_PUBLIC_BASE_URL}/request3d/walkthrough-request`,
+            { ...modalData, ...paidPayload }
+          )
+          video3DWalkthroughID = premiumServiceRequestId(
+            request3DResponse?.data?.request,
+          )
+        }
+
+        if (isValidState(technicalModalData)) {
+          const technicalReportResponse = await customAxios.post(
+            `${process.env.NEXT_PUBLIC_BASE_URL}/report/technical-report`,
+            { ...technicalModalData, ...paidPayload }
+          )
+          technicalReportID = premiumServiceRequestId(
+            technicalReportResponse?.data?.report,
+          )
+        }
+      }
+
+      if (!id) {
+        const checkoutSession = JSON.parse(
+          localStorage.getItem('checkoutSession') || {}
+        )
+        if (!checkoutSession) {
+          return toast.error('Payment of 2 dirham is required!')
+        }
+      }
+
+      setConfirmationModal(false)
+
+      // ✅ Upload files only for NEW listings (no `id`)
+      let imageID = formData?.pictures
+      let thumbnailID = formData?.thumbnailImg
+      let videoID = formData?.video
+      // let fileID = formData?.evaluationCertificate
+      // Upload new files only if creating a new property (no id)
+      if (!id) {
+        const [uploadedImages, uploadedVideo, uploadedThumbnail] =
+          await Promise.all([
+            images.length > 0 ? handleImageUpload(images) : imageID,
+            video ? handleVideoUpload(video) : videoID,
+            // file ? handleFileUpload(file) : fileID,
+            thumbnail ? handleThumbnailUpload(thumbnail) : thumbnailID,
+          ])
+
+        imageID = uploadedImages
+        videoID = uploadedVideo
+        // fileID = uploadedFile
+        thumbnailID = uploadedThumbnail
+      }
+
+      const updatedFormData = {
+        ...formData,
+        userUUID: user?.uuid,
+        pictures:
+          listingMediaRef(imageID) ?? listingMediaRef(formData?.pictures),
+        video: listingMediaRef(videoID) ?? listingMediaRef(formData?.video),
+        // evaluationCertificate: fileID,
+        thumbnailImg:
+          listingMediaRef(thumbnailID) ??
+          listingMediaRef(formData?.thumbnailImg),
+        feedback: 'feedback',
+      }
+
+      applyPremiumServiceRefs(updatedFormData, formData, {
+        video3DWalkthroughID,
+        technicalReportID,
+      })
+
+      const validationErrors = validateForm(updatedFormData, thumbnail)
+      if (Object.keys(validationErrors).length === 0) {
+        setFormData(updatedFormData)
+
+        if (id) {
+          requests.push(
+            customAxios.put(
+              `${process.env.NEXT_PUBLIC_BASE_URL}/jewelry/${id}`,
+              updatedFormData
+            )
+          )
+        } else {
+          requests.push(
+            customAxios.post(
+              `${process.env.NEXT_PUBLIC_BASE_URL}/jewelry`,
+              updatedFormData
+            )
+          )
+        }
+
+        const results = await Promise.all(requests)
+
+        const response = results.find((res) => res?.data)
+        if (response) {
+          toast.success(
+            id
+              ? 'Updated successfully.'
+              : 'Submitted successfully. Evaluator will evaluate it.'
+          )
+          router.push('/seller-profile/my-listing')
+
+          if (!id) {
+            resetForm()
+            setFormData(initialFormData)
+            localStorage.removeItem('FormPayment')
+            localStorage.removeItem('checkoutSessionId')
+          }
+        }
+        setLoading(false)
+      } else {
+        setErrors(validationErrors)
+        handleScroll()
+        setLoading(false)
+        router.push('/seller-profile/my-listing')
+      }
+    } catch (error) {
+      console.error('Error during submission:', error)
+      toast.error('An error occurred during submission. Please try again.')
+      setLoading(false)
+    }
+  }
+
+  const toggleDropdown = () => {
+    setDropdownVisible(!dropdownVisible)
+  }
+
+  const handleCategoryClick = (category) => {
+    setSelectedCategory(category)
+    setModels(categories[category] || [])
+    setDropdownVisible(false)
+    setSelectedModel('All')
+    setFormData((prevFormData) => ({
+      ...prevFormData,
+      category: category,
+      model: '',
+    }))
+  }
+
+  const filteredCountries = countries.filter((country) =>
+    country.country.toLowerCase().includes(searchQuery.toLowerCase())
+  )
+
+  const handleChange = (e) => {
+    const { name, value } = e.target
+
+    if (name === 'price') {
+      const rawValue = value.replace(/,/g, '')
+
+      if (/^\d*$/.test(rawValue)) {
+        setFormData({ ...formData, [name]: rawValue })
+        const formattedValue = new Intl.NumberFormat('en-US').format(rawValue)
+        setTotalPrice(formattedValue) // This will format the displayed price
+      }
+      setErrors({ ...errors, [name]: '' })
+    } else if (name === 'sizeSQFT') {
+      const numericValue = value.replace(/\D/g, '')
+      setTotalSize(numericValue)
+      setFormData({ ...formData, [name]: numericValue })
+    } else {
+      setFormData({ ...formData, [name]: value })
+      setErrors({ ...errors, [name]: '' })
+    }
+  }
+
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <div>
+        <section>
+          {isOpenModal && !id && (
+            <PayModal
+              modalData={modalData}
+              technicalModalData={technicalModalData}
+              setIsOpenModal={setIsOpenModal}
+              isValidState={isValidState}
+            />
+          )}
+          <ToastContainer />
+          <h2 className='text-dark-grey text-center xl:text-[40px] lg:text-4xl md:text-3xl sm:text-2xl xxs:text-xl font-medium leading-normal pt-[60px]'>
+            Final Steps to Listing Your Asset
+          </h2>
+
+          <Listing
+            formData={formData}
+            dropdowns={dropdowns}
+            toggleCityDropdown={toggleCityDropdown}
+            toggleDropdownn={toggleDropdownn}
+            toggleModelDropdown={toggleModelDropdown}
+            toggleNeighbourDropdown={toggleNeighbourDropdown}
+            handleToggleDropdown={handleToggleDropdown}
+            isOpen={isOpen}
+            selectedNeighbourhood={selectedNeighbourhood}
+            isCityDropdownOpen={isCityDropdownOpen}
+            isNeighbourDropdownOpen={isNeighbourDropdownOpen}
+            neighbourhoods={neighbourhoods}
+            toggleDropdown={toggleDropdown}
+            cities={cities}
+            dropdownVisible={dropdownVisible}
+            selectedModel={selectedModel}
+            modelDropdownVisible={modelDropdownVisible}
+            searchQuery={searchQuery}
+            searchQueryCity={searchQueryCity}
+            searchQueryNeighbourhood={searchQueryNeighbourhood}
+            setSearchQueryNeighbourhood={setSearchQueryNeighbourhood}
+            setSearchQuery={setSearchQuery}
+            setSearchQueryCity={setSearchQueryCity}
+            handleMouseLeave={handleMouseLeave}
+            filteredCountries={filteredCountries}
+            categories={categories}
+            models={models}
+            handleCitySelect={handleCitySelect}
+            handleCategoryClick={handleCategoryClick}
+            handlePropertyTypeSelect={handlePropertyTypeSelect}
+            handleModelClick={handleModelClick}
+            handleNeighbour={handleNeighbour}
+            handleCountrySelect={handleCountrySelect}
+            handleSelectOption={handleSelectOption}
+            selectedCity={selectedCity}
+            selectedCountry={selectedCountry}
+            neighbourhood={neighbourhood}
+            selectedCategory={selectedCategory}
+            jewelry={true}
+            errors={errors}
+          />
+
+          <div className='px-5'>
+            <main className='max-w-[1300px] mx-auto lg:px-[35px] md:px-10 xxs:px-5 shadow-neons bg-whitee rounded-[5px]'>
+              <JewelryListingForm
+                formData={formData}
+                handleChange={handleChange}
+                handleBlur={handleBlur}
+                errors={errors}
+                flags={flags}
+                phoneNumber={phoneNumber}
+                thumbnail={thumbnail}
+                handlePhoneNumberChange={handlePhoneNumberChange}
+                handleCountryChange={handleCountryChange}
+                selectedCountryPhone={selectedCountryPhone}
+                maxLength={maxLength}
+                handleThumbImageChange={handleThumbImageChange}
+                handleThumbImageRemove={handleThumbImageRemove}
+                images={images}
+                video={video}
+                handleImageRemove={handleImageRemove}
+                handleImageChange={handleImageChange}
+                handleVideoRemove={handleVideoRemove}
+                handleVideoChange={handleVideoChange}
+                fileInputRef={fileInputRef}
+                totalprice={totalprice}
+                handleTechnicalModal={handleTechnicalModal}
+                technicalModalData={technicalModalData}
+                isTechnicalModalOpen={isTechnicalModalOpen}
+                handleCloseTechnicalModal={handleCloseTechnicalModal}
+                handleRequestTechnicalModalData={
+                  handleRequestTechnicalModalData
+                }
+                handleToggleDropdown={handleToggleDropdown}
+                handleSelectOption={handleSelectOption}
+                modalData={modalData}
+                handleOpenModal1={handleOpenModal1}
+                handleOpenModal={handleOpenModal}
+                handleCloseModal={handleCloseModal}
+                handleRequestModalData={handleRequestModalData}
+                isModal1Open={isModal1Open}
+                handleClose1Modal={handleClose1Modal}
+                isModalOpen={isModalOpen}
+                setFormData={setFormData}
+                dropdowns={dropdowns}
+              />
+              <div className='pt-[30px]'>
+                <div className='px-[19px]'>
+                  {formData.price >= 100000 ? (
+                    <>
+                      <h2 className='text-dark-black text-xl font-medium pt-5'>
+                        Listing
+                      </h2>
+                      <form className='mt-[10px] grid xl:grid-cols-5 lg:grid-cols-3 md:grid-cols-2 sm:grid-cols-2 xxs:grid-cols-1  justify-between gap-y-[10px]'>
+                        {jeweleryListings.map((listing, index) => (
+                          <div key={index} className='radio-container flex'>
+                            <input
+                              className='custom-radio visually-hidden custom-checkbox'
+                              type='radio'
+                              name='listing'
+                              value={listing}
+                              id={`listing-${index}`}
+                              checked={formData.listing === listing}
+                              onChange={(e) => handleRadioChange(e, 'listing')}
+                            />
+                            <label
+                              className='custom-label'
+                              htmlFor={`listing-${index}`}
+                            >
+                              {listing}
+                            </label>
+                          </div>
+                        ))}
+                      </form>
+                    </>
+                  ) : (
+                    <></>
+                  )}
+                  <h2 className='text-dark-black text-xl font-medium pt-5'>
+                    Materials
+                  </h2>
+                  <form className='mt-[10px] grid xl:grid-cols-5 lg:grid-cols-4 md:grid-cols-3 sm:grid-cols-2 xxs:grid-cols-2 justify-between gap-y-[10px]'>
+                    {materials.map((material, index) => (
+                      <div key={index}>
+                        <input
+                          className='custom-checkbox'
+                          type='checkbox'
+                          value={material}
+                          checked={(formData.materials || []).includes(
+                            material
+                          )}
+                          onChange={(e) => handleCheckboxChange(e, 'materials')}
+                        />
+                        <label className='custom-label'>{material}</label>
+                      </div>
+                    ))}
+                  </form>
+                </div>
+                <ListingsLowerComponent
+                  image='/listing/jewelery.png'
+                  submitConfirmation={submitConfirmation}
+                  loading={loading}
+                  confirmationModal={confirmationModal}
+                  handleSubmit={handleSubmit}
+                  setConfirmationModal={setConfirmationModal}
+                  id={id}
+                />
+              </div>
+              {!id && (
+                <StripeElement>
+                  <PaymentModal
+                    show={showPayment}
+                    onClose={() => setShowPayment(false)}
+                    formData={formData}
+                    setFormData={setFormData}
+                    HandleFormSubmit={() => HandleFormSubmit()}
+                  />
+                </StripeElement>
+              )}
+            </main>
+          </div>
+        </section>
+      </div>
+    </Suspense>
+  )
+}
+export default Page

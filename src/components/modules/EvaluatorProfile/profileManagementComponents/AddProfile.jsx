@@ -1,0 +1,177 @@
+'use client'
+
+import React, { useEffect, useState } from 'react'
+import { Formik, Form, Field, ErrorMessage } from 'formik'
+import * as Yup from 'yup'
+import customAxios from '../../../../utils/apis/apis'
+import { toast } from 'react-toastify'
+import { useProfile } from '../../../../context/UserContext'
+
+const generateStrongPassword = () => {
+  const upper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+  const lower = 'abcdefghijklmnopqrstuvwxyz'
+  const digits = '0123456789'
+  const special = '!@#$%^&*()'
+
+  const pick = (pool) =>
+    pool.charAt(Math.floor(Math.random() * pool.length))
+
+  // Backend requires upper, lower, digit, special, and length ≥ 12
+  const parts = [pick(upper), pick(lower), pick(digits), pick(special)]
+  const all = upper + lower + digits + special
+  while (parts.length < 12) {
+    parts.push(pick(all))
+  }
+  for (let i = parts.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[parts[i], parts[j]] = [parts[j], parts[i]]
+  }
+  return parts.join('')
+}
+
+const FormSchema = Yup.object().shape({
+  name: Yup.string().required('Name is required'),
+  email: Yup.string().email('Invalid email').required('Email is required'),
+  role: Yup.string().oneOf(['Sub-Evaluator']).required('Role is required'),
+})
+
+const getErrorMessage = (error) => {
+  const data = error?.response?.data
+
+  if (typeof data === 'string') return data
+  if (data?.message) return data.message
+  if (data?.error) return data.error
+  if (Array.isArray(data?.errors) && data.errors.length > 0) {
+    return data.errors[0]?.message || data.errors[0]
+  }
+
+  return error?.message || 'Something went wrong'
+}
+
+const AddEvaluator = () => {
+  const { user } = useProfile()
+
+  const [initialValues, setInitialValues] = useState({
+    name: '',
+    email: '',
+    password: generateStrongPassword(),
+    role: '',
+    parentEvaluator: '',
+  })
+
+  // ✅ Load cookie ONCE and update form values
+  useEffect(() => {
+    const userUUID = user?.uuid
+    if (userUUID) {
+      setInitialValues((prev) => ({
+        ...prev,
+        parentEvaluator: userUUID,
+      }))
+    }
+  }, [user?.uuid])
+
+  return (
+    <Formik
+      enableReinitialize
+      initialValues={initialValues}
+      validationSchema={FormSchema}
+      onSubmit={async (values, { setSubmitting }) => {
+        try {
+          await customAxios.post('/user/signup', values)
+
+          toast.success('User Created successfully!')
+          setSubmitting(false)
+        } catch (error) {
+          toast.error(getErrorMessage(error))
+          setSubmitting(false)
+        }
+      }}
+    >
+      {({ values, setFieldValue, isSubmitting }) => (
+        <Form className='space-y-4 w-full mx-auto p-4 border rounded-lg shadow-md'>
+          {/* Header */}
+          <div className='bg-gray-100 px-5 py-3 rounded-lg primary-gradient shadow-md'>
+            <h1 className='text-white font-semibold'>Fill Form</h1>
+          </div>
+
+          {/* Name */}
+          <div>
+            <label className='block font-medium mb-1'>Name</label>
+            <Field className='w-full px-3 py-2 border rounded' name='name' />
+            <ErrorMessage
+              name='name'
+              component='div'
+              className='text-red-500 text-sm'
+            />
+          </div>
+
+          {/* Email */}
+          <div>
+            <label className='block font-medium mb-1'>Email</label>
+            <Field className='w-full px-3 py-2 border rounded' name='email' />
+            <ErrorMessage
+              name='email'
+              component='div'
+              className='text-red-500 text-sm'
+            />
+          </div>
+
+          {/* Role */}
+          <div>
+            <label className='block font-medium mb-1'>Role</label>
+            <Field
+              as='select'
+              name='role'
+              className='w-full px-3 py-2 border rounded'
+            >
+              <option value=''>Select Role</option>
+              <option value='Sub-Evaluator'>Sub-Evaluator</option>
+              {/* <option value='Trustee'>Trustee</option> */}
+            </Field>
+            <ErrorMessage
+              name='role'
+              component='div'
+              className='text-red-500 text-sm'
+            />
+          </div>
+
+          {/* Password */}
+          <div>
+            <label className='block font-medium mb-1'>
+              Password (Auto-Generated)
+            </label>
+            <Field
+              type='text'
+              name='password'
+              readOnly
+              value={values.password}
+              className='w-full px-3 py-2 border rounded bg-gray-100 cursor-not-allowed'
+            />
+            <button
+              type='button'
+              className='mt-2 text-blue-500 underline'
+              onClick={() =>
+                setFieldValue('password', generateStrongPassword())
+              }
+            >
+              Regenerate Password
+            </button>
+          </div>
+
+          {/* Submit */}
+          <div className='flex justify-end pt-5'>
+            <button
+              type='submit'
+              disabled={isSubmitting}
+              className='bg-blue-500 text-white py-2 px-4 primary-gradient rounded hover:bg-blue-600'
+            >
+              Submit
+            </button>
+          </div>
+        </Form>
+      )}
+    </Formik>
+  )
+}
+
+export default AddEvaluator

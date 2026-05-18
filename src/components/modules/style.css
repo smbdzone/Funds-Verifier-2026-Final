@@ -1,0 +1,9 @@
+span.swiper-pagination-bullet {
+  background-color: white;
+  opacity: 1;
+}
+
+span.swiper-pagination-bullet.swiper-pagination-bullet-active {
+  width: 70px;
+  border-radius: 20px;
+}
