@@ -38,19 +38,6 @@ export default function Login() {
     const cookieRole = getCookies('role')
     console.log(!role && !cookieRole, role, cookieRole)
 
-    // Clear stale session if we have token but no valid role
-    // This happens when token exists but user context hasn't loaded or role is missing
-    // if (!user && !cookieRole) {
-    //   // Clear all cookies (stale session)
-    //   deleteCookie('accessToken', { path: '/' })
-    //   deleteCookie('role', { path: '/' })
-    //   deleteCookie('userUUID', { path: '/' })
-    //   // Clear localStorage for legacy cleanup
-    //   // localStorage.removeItem('accessToken')
-    //   // localStorage.removeItem('role')
-    //   toast.info('Session cleared. Please login again.')
-    // }
-
     // If OAuth code exists → fetch token
     if (code) {
       getToken()
@@ -124,12 +111,12 @@ export default function Login() {
       const targetRoute =
         data?.role === 'AssetHolder' ? '/seller-profile' : '/profile'
 
-      // if (data?.role === 'DealHunter' || data?.role === 'AssetHolder') {
-      //   // Full navigation so middleware and UserContext see new HttpOnly cookies
-      //   window.location.href = targetRoute
-      // } else {
-      //   window.location.href = '/'
-      // }
+      if (data?.role === 'DealHunter' || data?.role === 'AssetHolder') {
+        // Full navigation so middleware and UserContext see new HttpOnly cookies
+        window.location.href = targetRoute
+      } else {
+        window.location.href = '/'
+      }
     } catch (error) {
       toast.error(error.response?.data?.message || 'Login failed')
       console.error(error)

@@ -8,7 +8,9 @@ let failedQueue = []
 
 const normalizeRole = (role) => {
   if (!role) return role
-  const cleaned = String(role).replace(/[\s-_]/g, '').toLowerCase()
+  const cleaned = String(role)
+    .replace(/[\s-_]/g, '')
+    .toLowerCase()
   if (cleaned === 'assetholder') return 'AssetHolder'
   if (cleaned === 'dealhunter') return 'DealHunter'
   if (cleaned === 'subevaluator') return 'SubEvaluator'
@@ -109,7 +111,7 @@ customAxios.interceptors.response.use(
     }
 
     return Promise.reject(error)
-  }
+  },
 )
 
 export const login = async (values, router) => {
@@ -122,7 +124,7 @@ export const login = async (values, router) => {
       },
       {
         withCredentials: true, // refreshToken in cookie
-      }
+      },
     )
 
     const data = res.data
