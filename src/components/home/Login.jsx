@@ -18,6 +18,7 @@ import customAxios from '../../utils/apis/apis'
 import { getTokenFromCookie } from '../../utils/helper'
 import { useProfile } from '../../context/UserContext'
 import { deleteCookie } from 'cookies-next'
+import { setAccessToken } from '../../utils/auth/accessTokenStore'
 
 export default function Login() {
   const { user, setIsLoading: setLoading } = useProfile()
@@ -107,7 +108,9 @@ export default function Login() {
       const data = res.data
 
       // 🍪 Cookies are set by backend via Set-Cookie headers
-      // Frontend should NOT set cookies - backend handles it for security
+      if (data?.accessToken) {
+        setAccessToken(data.accessToken)
+      }
 
       toast.success('Login Successful!')
       // const dataRes = await customAxios.get('/user/me', {
@@ -118,20 +121,15 @@ export default function Login() {
       // -------------------------------
       // 🚀 REDIRECT (SAME AS login)
       // -------------------------------
-      switch (data?.role) {
-        case 'DealHunter':
-          // window.location.href = '/profile'
-          router.replace('/profile')
-          // window.location.reload()
-          break
-        case 'AssetHolder':
-          // window.location.href = '/seller-profile'
-          router.replace('/seller-profile')
-          // window.location.reload()
-          break
-        default:
-          window.location.href = '/'
-      }
+      const targetRoute =
+        data?.role === 'AssetHolder' ? '/seller-profile' : '/profile'
+
+      // if (data?.role === 'DealHunter' || data?.role === 'AssetHolder') {
+      //   // Full navigation so middleware and UserContext see new HttpOnly cookies
+      //   window.location.href = targetRoute
+      // } else {
+      //   window.location.href = '/'
+      // }
     } catch (error) {
       toast.error(error.response?.data?.message || 'Login failed')
       console.error(error)

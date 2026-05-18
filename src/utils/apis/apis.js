@@ -172,7 +172,9 @@ export const login = async (values, router) => {
     }
 
     // 🍪 Auth cookies are set by backend via Set-Cookie headers.
-    // Do not write access/refresh auth cookies from frontend.
+    if (data?.accessToken) {
+      setAccessToken(data.accessToken)
+    }
     toast.success(data?.message)
 
     switch (assignedRole) {

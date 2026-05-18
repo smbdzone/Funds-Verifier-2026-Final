@@ -339,18 +339,27 @@ export async function proxy(request) {
     return NextResponse.next()
   }
 
-  let role = normalizeRole(cookies.get('role')?.value)
-  let accessToken = cookies.get('accessToken')?.value
-  let refreshToken = cookies.get('refreshToken')?.value
+  const readCookie = (name) => {
+    const raw = cookies.get(name)?.value
+    return raw && String(raw).trim() ? String(raw).trim() : null
+  }
+
+  let role = normalizeRole(readCookie('role'))
+  let accessToken = readCookie('accessToken')
+  let refreshToken = readCookie('refreshToken')
 
   const hasRefreshToken = !!refreshToken
   const isProd = process.env.NODE_ENV === 'production'
 
-  // ✅ Cookie config (CRITICAL for UAE Pass)
+  // Match backend cookieOptions (userCtrl.js) when syncing refreshed tokens
   const cookieOptions = {
+    httpOnly: true,
     path: '/',
     secure: isProd,
     sameSite: isProd ? 'none' : 'lax',
+    ...(isProd && {
+      domain: process.env.COOKIE_DOMAIN || '.fundsverifier.com',
+    }),
   }
 
   // ❌ No tokens at all → redirect
@@ -391,15 +400,9 @@ export async function proxy(request) {
 
       accessToken = refreshData.accessToken
 
-      // ✅ SAVE TOKENS (CRITICAL FIX)
-      // response.cookies.set('accessToken', accessToken, cookieOptions)
-
-      // if (refreshData.refreshToken) {
-      //   // response.cookies.set('refreshToken', refreshData.refreshToken, {
-      //   //   ...cookieOptions,
-      //   //   httpOnly: true,
-      //   // })
-      // }
+      if (accessToken) {
+        response.cookies.set('accessToken', accessToken, cookieOptions)
+      }
     }
 
     // ✅ STEP 2: Call /me
@@ -425,15 +428,9 @@ export async function proxy(request) {
       const refreshData = await refreshRes.json()
       accessToken = refreshData.accessToken
 
-      // ✅ SAVE AGAIN
-      // response.cookies.set('accessToken', accessToken, cookieOptions)
-
-      // if (refreshData.refreshToken) {
-      //   // response.cookies.set('refreshToken', refreshData.refreshToken, {
-      //   //   ...cookieOptions,
-      //   //   httpOnly: true,
-      //   // })
-      // }
+      if (accessToken) {
+        response.cookies.set('accessToken', accessToken, cookieOptions)
+      }
 
       meRes = await fetchMe(accessToken)
     }
