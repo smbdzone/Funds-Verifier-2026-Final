@@ -5,24 +5,20 @@ import customAxios, { login, refreshAccessToken } from '../utils/apis/apis'
 import { toast } from 'react-toastify'
 import {
   clearAccessToken,
-  getAccessToken,
   setAccessToken,
 } from '../utils/auth/accessTokenStore'
-import { clearAuthSession } from '../utils/auth/clearSession'
 import {
   clearClientAuthStorage,
   endSession,
   isLoginPath,
 } from '../utils/auth/clearClientSession'
 import { getRoleHomeRoute } from '../utils/auth/roleHome'
+import {
+  isUaePassCallback,
+  POST_LOGIN_BOOTSTRAP_KEY,
+} from '../utils/auth/uaePass'
 
 export let globalLogout = () => { }
-
-/** UAE Pass returns ?code= on the home page — do not probe /me until OAuth finishes. */
-function isUaePassCallback() {
-  if (typeof window === 'undefined') return false
-  return new URLSearchParams(window.location.search).has('code')
-}
 
 export const UserContext = createContext()
 
@@ -75,6 +71,16 @@ export const UserProvider = ({ children }) => {
 
   // Load user on app start: /me via HttpOnly accessToken cookie first, refresh only if needed.
   const loadUserFromToken = async () => {
+    const bootstrapToken =
+      typeof window !== 'undefined'
+        ? sessionStorage.getItem(POST_LOGIN_BOOTSTRAP_KEY)
+        : null
+    if (bootstrapToken) {
+      sessionStorage.removeItem(POST_LOGIN_BOOTSTRAP_KEY)
+      setAccessToken(bootstrapToken)
+      setAccessTokenState(bootstrapToken)
+    }
+
     try {
       let response
       try {
@@ -84,6 +90,7 @@ export const UserProvider = ({ children }) => {
       } catch (meError) {
         if (meError.response?.status !== 401) throw meError
         const newToken = await refreshAccessToken()
+        setAccessToken(newToken)
         setAccessTokenState(newToken)
         response = await customAxios.get('/user/me', {
           withCredentials: true,
@@ -103,10 +110,7 @@ export const UserProvider = ({ children }) => {
       setIsAuthenticated(false)
       setAccessTokenState(null)
       clearAccessToken()
-      // Only clear HttpOnly cookies when we had an active client session (not a guest / OAuth in progress)
-      if (error.response?.status === 401 && getAccessToken()) {
-        await clearAuthSession(customAxios)
-      }
+      // Do not call /user/logout on failed /me — that deletes cookies (see UAE Pass login).
     } finally {
       setIsLoading(false)
     }

@@ -2,10 +2,12 @@
 
 import { useEffect, useRef } from 'react'
 import { useProfile } from '@/context/UserContext'
-import { endSession } from '@/utils/auth/clearClientSession'
+import { clearClientAuthStorage } from '@/utils/auth/clearClientSession'
+import { isUaePassCallback } from '@/utils/auth/uaePass'
 
 /**
- * Clear stale cookies/storage on sign-in pages only when the user is not logged in.
+ * Clear legacy client storage on sign-in pages. Does NOT call /user/logout
+ * (that would wipe HttpOnly cookies set by a concurrent UAE Pass login).
  */
 export function useLoginPageSessionReset() {
   const { user, loading, isAuthenticated } = useProfile()
@@ -14,8 +16,9 @@ export function useLoginPageSessionReset() {
   useEffect(() => {
     if (loading) return
     if (user || isAuthenticated) return
+    if (isUaePassCallback()) return
     if (ran.current) return
     ran.current = true
-    endSession({ callBackend: true })
+    clearClientAuthStorage()
   }, [loading, user, isAuthenticated])
 }

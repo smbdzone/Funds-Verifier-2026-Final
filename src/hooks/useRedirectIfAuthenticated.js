@@ -7,6 +7,7 @@ import {
   CONSUMER_ROLES,
   getRoleHomeRoute,
 } from '@/utils/auth/roleHome'
+import { isUaePassCallback } from '@/utils/auth/uaePass'
 
 /**
  * Client fallback when edge proxy cannot see HttpOnly cookies (e.g. localhost vs production domain).
@@ -17,6 +18,7 @@ export function useRedirectIfAuthenticated({ blockConsumerOnUserLogin = false } 
   const pathname = usePathname()
 
   useEffect(() => {
+    if (isUaePassCallback()) return
     if (loading) return
     if (!user && !isAuthenticated) return
 

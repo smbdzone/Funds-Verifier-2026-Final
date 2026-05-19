@@ -18,6 +18,7 @@ import customAxios from '../../utils/apis/apis'
 import { useProfile } from '@/context/UserContext'
 import { setAccessToken } from '../../utils/auth/accessTokenStore'
 import { getRoleHomeRoute } from '@/utils/auth/roleHome'
+import { POST_LOGIN_BOOTSTRAP_KEY } from '@/utils/auth/uaePass'
 
 export default function Login() {
   const { applyUserFromLogin, setIsLoading: setGlobalLoading } = useProfile()
@@ -86,6 +87,7 @@ export default function Login() {
 
     if (data?.accessToken) {
       setAccessToken(data.accessToken)
+      sessionStorage.setItem(POST_LOGIN_BOOTSTRAP_KEY, data.accessToken)
     }
 
     applyUserFromLogin?.(data)

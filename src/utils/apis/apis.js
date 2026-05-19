@@ -2,7 +2,6 @@ import axios from 'axios'
 import { toast } from 'react-toastify'
 import { globalLogout } from '../../context/UserContext'
 import { getAccessToken, setAccessToken } from '../auth/accessTokenStore'
-import { clearAuthSession } from '../auth/clearSession'
 let isRefreshing = false
 let failedQueue = []
 
@@ -54,11 +53,18 @@ customAxios.interceptors.response.use(
       return Promise.reject(error)
     }
 
+    const requestUrl = originalRequest.url || ''
+
+    // Session probe: UserContext handles refresh — never logout here (wipes fresh UAE Pass cookies).
+    if (error.response.status === 401 && requestUrl.includes('/user/me')) {
+      return Promise.reject(error)
+    }
+
     // 🔁 ACCESS TOKEN EXPIRED
     if (
       error.response.status === 401 &&
       !originalRequest._retry &&
-      !originalRequest.url.includes('/user/refresh')
+      !requestUrl.includes('/user/refresh')
     ) {
       originalRequest._retry = true
 
@@ -85,10 +91,7 @@ customAxios.interceptors.response.use(
         return customAxios(originalRequest)
       } catch (err) {
         processQueue(err, null)
-        const url = originalRequest.url || ''
-        if (url.includes('/user/me')) {
-          await clearAuthSession(customAxios)
-        } else if (url.includes('/user/switch-user')) {
+        if (requestUrl.includes('/user/switch-user')) {
           /* keep session; switchUserRole shows the API error */
         } else {
           globalLogout()
