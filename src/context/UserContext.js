@@ -3,11 +3,11 @@ import React, { createContext, useState, useEffect, useContext } from 'react'
 import { useRouter } from 'next/navigation'
 import customAxios, { login, refreshAccessToken } from '../utils/apis/apis'
 import { toast } from 'react-toastify'
-import { getCookie, getCookies } from 'cookies-next'
 import {
   clearAccessToken,
   setAccessToken,
 } from '../utils/auth/accessTokenStore'
+import { clearAuthSession } from '../utils/auth/clearSession'
 import {
   clearClientAuthStorage,
   endSession,
@@ -51,12 +51,6 @@ export const UserProvider = ({ children }) => {
       finalRole = 'SubEvaluator'
     }
 
-    // ⚠️ TEMPORARY: Update role cookie if transformed (Evaluator -> SubEvaluator)
-    // TODO: Backend /me endpoint should set role cookie, then remove this
-    if (finalRole !== userData.role) {
-      document.cookie = `role=${finalRole}; path=/`
-    }
-
     setUser({ ...userData, role: finalRole })
     setIsAuthenticated(true)
   }
@@ -91,8 +85,9 @@ export const UserProvider = ({ children }) => {
       setIsAuthenticated(false)
       setAccessTokenState(null)
       clearAccessToken()
-      // Do not call /user/logout here — normal refresh must not wipe cookies.
-      // Full reset runs on /login and on explicit logout only.
+      if (error.response?.status === 401) {
+        await clearAuthSession(customAxios)
+      }
     } finally {
       setIsLoading(false)
     }

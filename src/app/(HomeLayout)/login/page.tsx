@@ -1,11 +1,7 @@
 'use client'
 import Image from 'next/image'
-import Link from 'next/link'
-import { useLoginPageSessionReset } from '@/hooks/useLoginPageSessionReset'
 
 export default function Login() {
-  useLoginPageSessionReset()
-
   const handleLogin = () => {
     const authUrl = `https://id.uaepass.ae/idshub/authorize?redirect_uri=${process.env.NEXT_PUBLIC_UAE_PASS_REDIRECT_URI}/&client_id=${process.env.NEXT_PUBLIC_UAE_PASS_CLIENT_ID}&response_type=code&scope=urn:uae:digitalid:profile:general&acr_values=urn:safelayer:tws:policies:authentication:level:low;`
     window.location.href = authUrl
@@ -66,21 +62,21 @@ export default function Login() {
             </p>
 
             {/* OR Separator */}
-            <div className='w-full my-3 sm:my-5 flex justify-center flex-row items-center'>
+            {/* <div className='w-full my-3 sm:my-5 flex justify-center flex-row items-center'>
               <hr className='border-[1px] w-[48%] border-[rgba(126,126,126,1)]' />
               <span className='text-[rgba(141,124,59,1)] w-[4%] mx-2 font-medium'>
                 OR
               </span>
               <hr className='border-[1px] w-[48%] ml-3 border-[rgba(126,126,126,1)]' />
-            </div>
+            </div> */}
 
             {/* Local Sign In */}
-            <Link
+            {/* <Link
               href={'/user-login'}
               className='text-center btn-gradient px-6 py-2 w-full text-[15px] font-medium rounded shadow-md hover:scale-105 transition transform duration-200'
             >
               Sign in
-            </Link>
+            </Link> */}
           </div>
         </div>
       </div>
