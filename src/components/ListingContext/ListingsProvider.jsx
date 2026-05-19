@@ -13,6 +13,7 @@ import {
   normalizeCountriesResponse,
   normalizeCitiesResponse,
 } from '@/libs/normalizeCountriesResponse'
+import { normalizeListingPremiumRefs } from '@/libs/listingPremiumStatus'
 import {
   DUMMY_DUBAI_NEIGHBOURHOODS,
   DUMMY_FALLBACK_COUNTRIES,
@@ -134,7 +135,7 @@ const ListingsProvider = ({ children }) => {
           d.country ||
           ''
         setFormData({
-          ...d,
+          ...normalizeListingPremiumRefs(d),
           description: d.description || '',
           additionalDescription: d.additionalDescription || '',
           country: countryNorm,

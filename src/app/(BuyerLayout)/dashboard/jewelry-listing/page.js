@@ -27,6 +27,7 @@ import PayModal from '../../../../components/Modals/PayModal'
 import { useProfile } from '../../../../context/UserContext'
 import StripeElement from '../../../../components/Stripe/StripeElement'
 import customAxios from '../../../../utils/apis/apis'
+import { useRefreshListingAfterServicePayment } from '@/hooks/useRefreshListingAfterServicePayment'
 
 function Page() {
   const [neighbourhood, setNeighbourhood] = useState('Select Neighbourhood')
@@ -208,6 +209,8 @@ function Page() {
       setLoading(false)
     }
   }, [searchParams])
+
+  useRefreshListingAfterServicePayment(id, 'jewelry', fetchData)
 
   const handleTechnicalModal = () => {
     setIsTechnicalModalOpen(!isTechnicalModalOpen)

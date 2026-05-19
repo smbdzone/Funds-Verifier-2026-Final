@@ -35,6 +35,22 @@ export function mergePremiumServiceRef(newRequestId, existingValue) {
   return existing
 }
 
+/** Remove empty premium refs so MongoDB does not cast "" to ObjectId. */
+export function stripEmptyPremiumRefs(body) {
+  if (!body || typeof body !== 'object') return body
+  for (const key of [
+    'technicalReport',
+    'video3DWalkthrough',
+    'evaluationCertificate',
+  ]) {
+    const value = body[key]
+    if (value === null || value === '' || value === undefined) {
+      delete body[key]
+    }
+  }
+  return body
+}
+
 export function applyPremiumServiceRefs(target, formData, ids) {
   const video3D = mergePremiumServiceRef(
     ids.video3DWalkthroughID,
@@ -46,5 +62,5 @@ export function applyPremiumServiceRefs(target, formData, ids) {
   )
   if (video3D !== undefined) target.video3DWalkthrough = video3D
   if (technical !== undefined) target.technicalReport = technical
-  return target
+  return stripEmptyPremiumRefs(target)
 }

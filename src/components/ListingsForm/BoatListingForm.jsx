@@ -30,6 +30,10 @@ import {
   canRequestPremiumServices,
   isListingEvaluatorApprovedLocked,
 } from '@/libs/listingEditLock'
+import {
+  hasLinkedPremiumService,
+  premiumServiceFieldLabel,
+} from '@/libs/listingPremiumStatus'
 
 const BoatListingForm = ({
   formData,
@@ -110,6 +114,8 @@ const BoatListingForm = ({
   const [RequestService, setRequestService] = useState('')
   const isEvaluatorApprovedLocked = isListingEvaluatorApprovedLocked(formData)
   const canRequestPremium = canRequestPremiumServices(formData)
+  const hasTechnicalReport = hasLinkedPremiumService(formData?.technicalReport)
+  const has3DWalkthrough = hasLinkedPremiumService(formData?.video3DWalkthrough)
 
   const openPremiumGate = () => {
     setModalOpen(true)
@@ -262,15 +268,12 @@ const BoatListingForm = ({
               <ListingModalInputComponent
                 maxLength={50}
                 disabled={
-                  !canRequestPremium ||
-                  !formData?.uuid ||
-                  formData?.technicalReport?.uuid
+                  !canRequestPremium || !formData?.uuid || hasTechnicalReport
                 }
                 name='technicalReport'
                 value={
-                  formData.technicalReport
-                    ? 'Completed'
-                    : technicalModalData.dateTime
+                  premiumServiceFieldLabel(formData.technicalReport) ||
+                  technicalModalData.dateTime
                 }
                 handleChange={handleChange}
                 required={true}
@@ -329,12 +332,11 @@ const BoatListingForm = ({
               maxLength={50}
               name='video3DWalkthrough'
               value={
-                formData.video3DWalkthrough ? 'Completed' : modalData.dateTime
+                premiumServiceFieldLabel(formData.video3DWalkthrough) ||
+                modalData.dateTime
               }
               disabled={
-                !canRequestPremium ||
-                !formData?.uuid ||
-                formData?.video3DWalkthrough
+                !canRequestPremium || !formData?.uuid || has3DWalkthrough
               }
               handleChange={handleChange}
               required={true}

@@ -31,6 +31,7 @@ import { propertyType } from '../../../../constants/listing-data'
 import PayModal from '../../../../components/Modals/PayModal'
 import { useProfile } from '../../../../context/UserContext'
 import StripeElement from '../../../../components/Stripe/StripeElement'
+import { useRefreshListingAfterServicePayment } from '@/hooks/useRefreshListingAfterServicePayment'
 import customAxios from '../../../../utils/apis/apis'
 import {
   applyPremiumServiceRefs,
@@ -193,6 +194,9 @@ const Page = () => {
       setLoading(false)
     }
   }, [searchParams])
+
+  useRefreshListingAfterServicePayment(id, 'property', fetchData)
+
   const router = useRouter()
   useEffect(() => {
     resetForm()

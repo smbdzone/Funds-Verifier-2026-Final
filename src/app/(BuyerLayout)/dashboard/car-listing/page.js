@@ -34,6 +34,7 @@ import { useRouter } from 'next/navigation'
 import PayModal from '../../../../components/Modals/PayModal'
 import { useProfile } from '../../../../context/UserContext'
 import StripeElement from '../../../../components/Stripe/StripeElement'
+import { useRefreshListingAfterServicePayment } from '@/hooks/useRefreshListingAfterServicePayment'
 import customAxios from '../../../../utils/apis/apis'
 
 const initialFormData = {
@@ -207,6 +208,8 @@ function Page() {
       setLoading(false)
     }
   }, [searchParams])
+
+  useRefreshListingAfterServicePayment(id, 'car', fetchData)
 
   const filteredCountries = countries.filter((country) =>
     country.country.toLowerCase().includes(searchQuery.toLowerCase())

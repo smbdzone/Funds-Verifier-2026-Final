@@ -25,6 +25,10 @@ import {
   canRequestPremiumServices,
   isListingEvaluatorApprovedLocked,
 } from '@/libs/listingEditLock'
+import {
+  hasLinkedPremiumService,
+  premiumServiceFieldLabel,
+} from '@/libs/listingPremiumStatus'
 export const ImageUploadComponent = React.memo(
   ({
     formData,
@@ -110,6 +114,8 @@ export const ImageUploadComponent = React.memo(
     const [RequestService, setRequestService] = useState('')
     const isEvaluatorApprovedLocked = isListingEvaluatorApprovedLocked(formData)
     const canRequestPremium = canRequestPremiumServices(formData)
+    const hasTechnicalReport = hasLinkedPremiumService(formData?.technicalReport)
+    const has3DWalkthrough = hasLinkedPremiumService(formData?.video3DWalkthrough)
 
     const openPremiumGate = () => {
       setModalOpen(true)
@@ -285,15 +291,13 @@ export const ImageUploadComponent = React.memo(
             <ListingModalInputComponent
               maxLength={50}
               disabled={
-                !canRequestPremium ||
-                !formData?.uuid ||
-                formData?.video3DWalkthrough?.uuid
+                !canRequestPremium || !formData?.uuid || has3DWalkthrough
               }
               name='video3DWalkthrough'
               value={
-                formData?.video3DWalkthrough
-                  ? 'Completed'
-                  : modalData?.dateTime || ''
+                premiumServiceFieldLabel(formData?.video3DWalkthrough) ||
+                modalData?.dateTime ||
+                ''
               }
               handleChange={handleChange}
               required={true}
@@ -399,12 +403,13 @@ export const ImageUploadComponent = React.memo(
           <div className='relative-placeholder w-full'>
             <ListingModalInputComponent
               maxLength={50}
-              disabled={!formData?.uuid || formData?.technicalReport?.uuid}
+              disabled={
+                !canRequestPremium || !formData?.uuid || hasTechnicalReport
+              }
               name='technicalReport'
               value={
-                formData.technicalReport
-                  ? 'Completed'
-                  : technicalModalData.dateTime
+                premiumServiceFieldLabel(formData.technicalReport) ||
+                technicalModalData.dateTime
               }
               handleChange={handleChange}
               required={true}

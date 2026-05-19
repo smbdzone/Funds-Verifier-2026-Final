@@ -36,6 +36,10 @@ import {
   canRequestPremiumServices,
   isListingEvaluatorApprovedLocked,
 } from '@/libs/listingEditLock'
+import {
+  hasLinkedPremiumService,
+  premiumServiceFieldLabel,
+} from '@/libs/listingPremiumStatus'
 
 const CarListingForm = ({
   formData,
@@ -119,6 +123,8 @@ const CarListingForm = ({
   const [RequestService, setRequestService] = useState('')
   const isEvaluatorApprovedLocked = isListingEvaluatorApprovedLocked(formData)
   const canRequestPremium = canRequestPremiumServices(formData)
+  const hasTechnicalReport = hasLinkedPremiumService(formData?.technicalReport)
+  const has3DWalkthrough = hasLinkedPremiumService(formData?.video3DWalkthrough)
 
   const openPremiumGate = () => {
     setModalOpen(true)
@@ -299,16 +305,13 @@ const CarListingForm = ({
             <div className='relative-placeholder mt-[20px] w-full'>
               <ListingModalInputComponent
                 disabled={
-                  !canRequestPremium ||
-                  !formData?.uuid ||
-                  formData?.technicalReport?.uuid
+                  !canRequestPremium || !formData?.uuid || hasTechnicalReport
                 }
                 maxLength={50}
                 name='technicalReport'
                 value={
-                  formData.technicalReport
-                    ? 'Completed'
-                    : technicalModalData.dateTime
+                  premiumServiceFieldLabel(formData.technicalReport) ||
+                  technicalModalData.dateTime
                 }
                 handleChange={handleChange}
                 required={true}
@@ -364,13 +367,12 @@ const CarListingForm = ({
               <ListingModalInputComponent
                 maxLength={50}
                 disabled={
-                  !canRequestPremium ||
-                  !formData?.uuid ||
-                  formData?.video3DWalkthrough
+                  !canRequestPremium || !formData?.uuid || has3DWalkthrough
                 }
                 name='video3DWalkthrough'
                 value={
-                  formData.video3DWalkthrough ? 'Completed' : modalData.dateTime
+                  premiumServiceFieldLabel(formData.video3DWalkthrough) ||
+                  modalData.dateTime
                 }
                 handleChange={handleChange}
                 required={true}

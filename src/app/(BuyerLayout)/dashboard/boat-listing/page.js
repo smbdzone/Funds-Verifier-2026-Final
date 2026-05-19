@@ -26,6 +26,7 @@ import PayModal from '../../../../components/Modals/PayModal'
 import { useProfile } from '../../../../context/UserContext'
 import PaymentModal from '@/components/payments/PaymentModal'
 import StripeElement from '../../../../components/Stripe/StripeElement'
+import { useRefreshListingAfterServicePayment } from '@/hooks/useRefreshListingAfterServicePayment'
 import customAxios from '../../../../utils/apis/apis'
 
 function Page() {
@@ -182,6 +183,8 @@ function Page() {
       setLoading(false)
     }
   }, [searchParams])
+
+  useRefreshListingAfterServicePayment(id, 'boat', fetchData)
 
   const handleTechnicalModal = () => {
     setIsTechnicalModalOpen(!isTechnicalModalOpen)
