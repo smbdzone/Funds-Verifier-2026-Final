@@ -1,34 +1,10 @@
 'use client'
-import { useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { deleteCookie } from 'cookies-next'
-import { getTokenFromCookie } from '@/utils/helper'
-import { useProfile } from '@/context/UserContext'
+import { useLoginPageSessionReset } from '@/hooks/useLoginPageSessionReset'
 
 export default function Login() {
-  const { user } = useProfile()
-  // useEffect(() => {
-  //   // Check if any cookie exists
-  //   const hasAccessToken = getTokenFromCookie()
-  //   // 🧹 If cookies exist, clear only access-related cookies.
-  //   console.log(hasAccessToken, 'hasAccessToken')
-  //   if (user === undefined) return // wait for context
-  //   // Do NOT clear refreshToken here: UAE pass + middleware refresh flow relies on it.
-  //   // if (!user) {
-  //   //   deleteCookie('accessToken', { path: '/' })
-  //   //   deleteCookie('role', { path: '/' })
-  //   //   deleteCookie('userUUID', { path: '/' })
-  //   //   // Clear localStorage (legacy cleanup)
-  //   //   localStorage.removeItem('role')
-  //   //   localStorage.removeItem('accessToken')
-  //   //   // localStorage.removeItem('userUUID')
-  //   //   localStorage.clear()
-
-  //   //   // Removed window.location.reload() to prevent infinite loops
-  //   //   // when deleteCookie fails (e.g., due to Domain or Path mismatches).
-  //   // }
-  // }, [])
+  useLoginPageSessionReset()
 
   const handleLogin = () => {
     const authUrl = `https://id.uaepass.ae/idshub/authorize?redirect_uri=${process.env.NEXT_PUBLIC_UAE_PASS_REDIRECT_URI}/&client_id=${process.env.NEXT_PUBLIC_UAE_PASS_CLIENT_ID}&response_type=code&scope=urn:uae:digitalid:profile:general&acr_values=urn:safelayer:tws:policies:authentication:level:low;`

@@ -8,6 +8,11 @@ import {
   clearAccessToken,
   setAccessToken,
 } from '../utils/auth/accessTokenStore'
+import {
+  clearClientAuthStorage,
+  endSession,
+  isLoginPath,
+} from '../utils/auth/clearClientSession'
 // ADD AT TOP
 export let globalLogout = () => { }
 
@@ -86,6 +91,8 @@ export const UserProvider = ({ children }) => {
       setIsAuthenticated(false)
       setAccessTokenState(null)
       clearAccessToken()
+      // Do not call /user/logout here — normal refresh must not wipe cookies.
+      // Full reset runs on /login and on explicit logout only.
     } finally {
       setIsLoading(false)
     }
@@ -119,38 +126,30 @@ export const UserProvider = ({ children }) => {
 
   const logout = async () => {
     try {
-      // Ask backend to clear HttpOnly cookies (refreshToken/accessToken/role)
-      // Do this first so the response Set-Cookie can land before redirect.
-      await customAxios.get('/user/logout', { withCredentials: true })
+      await endSession({ callBackend: true })
 
-      // Clear localStorage (legacy cleanup - token now in cookies)
-      localStorage.removeItem('accessToken')
-      localStorage.removeItem('role')
-
-      // Auth cookies are HttpOnly — only the backend logout Set-Cookie can remove them.
-      // Do not set accessToken=; path=/ here; that leaves empty duplicate cookies in DevTools.
-
-      // Clear any app state (e.g., Context or useState)
       setUser(null)
       setIsAuthenticated(false)
       setAccessTokenState(null)
-      clearAccessToken()
 
-      // Hard redirect (ensures full cleanup)
-      // window.location.replace('/login')
-      const isPublicLoginPath = ['/login', '/user-login'].includes(
-        window.location.pathname,
-      )
-      if (!isPublicLoginPath) {
+      if (
+        typeof window !== 'undefined' &&
+        !isLoginPath(window.location.pathname)
+      ) {
         window.location.replace('/login')
       }
-
-      // This can be done asynchronously without blocking the redirect
-      // fetch('/api/auth/logout', { method: 'GET' }).catch(console.error)
     } catch (err) {
       console.error('Logout failed:', err)
-      // Fallback: redirect to home even if there's an error
-      router.replace('/')
+      clearClientAuthStorage()
+      setUser(null)
+      setIsAuthenticated(false)
+      setAccessTokenState(null)
+      if (
+        typeof window !== 'undefined' &&
+        !isLoginPath(window.location.pathname)
+      ) {
+        window.location.replace('/login')
+      }
     }
   }
   globalLogout = logout

@@ -3,6 +3,7 @@ import { getCookie } from 'cookies-next'
 import { toast } from 'react-toastify'
 import { globalLogout } from '../../context/UserContext'
 import { getAccessToken, setAccessToken } from '../auth/accessTokenStore'
+import { clearClientAuthStorage } from '../auth/clearClientSession'
 let isRefreshing = false
 let failedQueue = []
 
@@ -90,10 +91,12 @@ customAxios.interceptors.response.use(
         return customAxios(originalRequest)
       } catch (err) {
         processQueue(err, null)
-        // /user/me is a session probe: 401 + failed refresh means "not logged in", not "log out + redirect"
         const url = originalRequest.url || ''
+        // /user/me is a session probe — do not logout/redirect from here
         if (!url.includes('/user/me')) {
           globalLogout()
+        } else {
+          clearClientAuthStorage()
         }
         return Promise.reject(err)
       } finally {
