@@ -127,7 +127,6 @@ function getCookieOptions() {
   }
 }
 
-/** Mirror backend clearAuthCookies scopes so stale HttpOnly cookies are removed. */
 function clearAuthCookiesOnResponse(response) {
   const isProd = process.env.NODE_ENV === 'production'
   const domain = process.env.COOKIE_DOMAIN || '.fundsverifier.com'
@@ -219,6 +218,12 @@ async function buildRedirectWithSessionCleared(request, redirectPath) {
 }
 
 async function resolveSession(request) {
+  const base = process.env.NEXT_PUBLIC_BASE_URL
+  if (!base) {
+    console.error('Proxy: NEXT_PUBLIC_BASE_URL is not set')
+    return { ok: false, hasCookies: false }
+  }
+
   const { cookies } = request
   const readCookie = (name) => {
     const raw = cookies.get(name)?.value
@@ -229,7 +234,6 @@ async function resolveSession(request) {
   const refreshToken = readCookie('refreshToken')
   const hasRefreshToken = !!refreshToken
   const cookieHeader = request.headers.get('cookie') || ''
-  const base = process.env.NEXT_PUBLIC_BASE_URL
 
   if (!accessToken && !hasRefreshToken) {
     return { ok: false, hasCookies: false }
@@ -290,7 +294,7 @@ async function resolveSession(request) {
       cookieOptions,
     }
   } catch (err) {
-    console.error('Middleware session error:', err)
+    console.error('Proxy session error:', err)
     return { ok: false, hasCookies: true }
   }
 }
@@ -330,7 +334,8 @@ async function handleLoginRoutes(request, pathname) {
   return NextResponse.next()
 }
 
-export async function middleware(request) {
+/** Next.js 16+ edge auth — replaces deprecated `middleware` export. */
+export async function proxy(request) {
   const { nextUrl } = request
   const pathname = nextUrl.pathname
 

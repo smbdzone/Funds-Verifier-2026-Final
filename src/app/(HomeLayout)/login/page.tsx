@@ -1,7 +1,9 @@
 'use client'
 import Image from 'next/image'
+import { useRedirectIfAuthenticated } from '@/hooks/useRedirectIfAuthenticated'
 
 export default function Login() {
+  useRedirectIfAuthenticated()
   const handleLogin = () => {
     const authUrl = `https://id.uaepass.ae/idshub/authorize?redirect_uri=${process.env.NEXT_PUBLIC_UAE_PASS_REDIRECT_URI}/&client_id=${process.env.NEXT_PUBLIC_UAE_PASS_CLIENT_ID}&response_type=code&scope=urn:uae:digitalid:profile:general&acr_values=urn:safelayer:tws:policies:authentication:level:low;`
     window.location.href = authUrl

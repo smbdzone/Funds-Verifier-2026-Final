@@ -7,8 +7,10 @@ import { useRouter } from 'next/navigation'
 import { login } from '../../../utils/apis/apis'
 import Link from 'next/link'
 import { useLoginPageSessionReset } from '@/hooks/useLoginPageSessionReset'
+import { useRedirectIfAuthenticated } from '@/hooks/useRedirectIfAuthenticated'
 
 const page = () => {
+  useRedirectIfAuthenticated({ blockConsumerOnUserLogin: true })
   useLoginPageSessionReset()
   const router = useRouter()
   const [loading, setLoading] = useState(false) // ⬅️ Loader state
