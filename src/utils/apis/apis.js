@@ -1,9 +1,8 @@
 import axios from 'axios'
-import { getCookie } from 'cookies-next'
 import { toast } from 'react-toastify'
 import { globalLogout } from '../../context/UserContext'
 import { getAccessToken, setAccessToken } from '../auth/accessTokenStore'
-import { clearClientAuthStorage } from '../auth/clearClientSession'
+import { clearAuthSession } from '../auth/clearSession'
 let isRefreshing = false
 let failedQueue = []
 
@@ -40,11 +39,6 @@ customAxios.interceptors.request.use((config) => {
   const token = getAccessToken()
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
-    // Get role from cookie first, then localStorage fallback
-    const role = getCookie('role') || localStorage.getItem('role')
-    if (role) {
-      config.headers.role = role
-    }
   }
   return config
 })
@@ -92,11 +86,10 @@ customAxios.interceptors.response.use(
       } catch (err) {
         processQueue(err, null)
         const url = originalRequest.url || ''
-        // /user/me is a session probe — do not logout/redirect from here
-        if (!url.includes('/user/me')) {
-          globalLogout()
+        if (url.includes('/user/me')) {
+          await clearAuthSession(customAxios)
         } else {
-          clearClientAuthStorage()
+          globalLogout()
         }
         return Promise.reject(err)
       } finally {
@@ -169,14 +162,7 @@ export const login = async (values, router) => {
       return // stop login flow
     }
 
-    // Keep role in client-visible storage so middleware and client agree
-    // immediately after login (especially for Evaluator -> SubEvaluator mapping).
-    if (assignedRole) {
-      localStorage.setItem('role', assignedRole)
-      document.cookie = `role=${assignedRole}; path=/`
-    }
-
-    // 🍪 Auth cookies are set by backend via Set-Cookie headers.
+    // 🍪 Auth cookies (accessToken, refreshToken, role) are set by backend via Set-Cookie.
     if (data?.accessToken) {
       setAccessToken(data.accessToken)
     }
