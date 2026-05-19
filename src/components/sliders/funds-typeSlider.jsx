@@ -47,21 +47,36 @@ export default function FundsTypeSlider() {
       photos: [villaThumbnail, apartmentThumbnail, buildingThumbnail],
       context_types: ["Villa", "Apartment", "Building"],
       slide_description:
-        "Lorem ipsum placeholder or dummy text used in typesetting and graphic design for previewing layouts.",
+        "Browse evaluator-approved properties and find the right home or investment with confidence.",
+      context_descriptions: [
+        "Explore verified villas for sale and lease.",
+        "Browse approved apartments across the UAE.",
+        "View verified commercial and residential buildings.",
+      ],
     },
     {
       slide_title: "Car Types",
       photos: [sports_car, limousine_car, pickup_car],
       context_types: ["Sport cars", "Limousine cars", "Pickup cars"],
       slide_description:
-        "Lorem ipsum placeholder or dummy text used in typesetting and graphic design for previewing layouts.",
+        "Discover evaluator-approved cars listed for sale, from sports models to everyday vehicles.",
+      context_descriptions: [
+        "High-performance sports cars, verified for sale.",
+        "Luxury limousines listed with evaluator approval.",
+        "Pickup trucks ready for secure, verified purchase.",
+      ],
     },
     {
       slide_title: "Jewellery Types",
       photos: [jewellery_one, jewellery_two, jewellery_three],
-      context_types: ["Earring Jewelry ", "Necklace Jewelry", "Ring Jewelry"],
+      context_types: ["Earring Jewelry", "Necklace Jewelry", "Ring Jewelry"],
       slide_description:
-        "Lorem ipsum placeholder or dummy text used in typesetting and graphic design for previewing layouts.",
+        "Shop evaluator-approved jewellery with clear pricing and trusted verification.",
+      context_descriptions: [
+        "Verified earrings listed for sale on Funds Verifier.",
+        "Approved necklaces you can browse with confidence.",
+        "Rings evaluated and listed for secure transactions.",
+      ],
     },
   ];
 

@@ -42,6 +42,7 @@ export const RequestTab1 = () => {
   const [listingPrice, setListingPrice] = useState('')
   const [formattedListingPrice, setFormattedListingPrice] = useState('')
   const [roi, setRoi] = useState('')
+  const [warranty, setWarranty] = useState('')
   const [isSavingDetails, setIsSavingDetails] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
@@ -67,9 +68,7 @@ export const RequestTab1 = () => {
   }
   const fetchPropertyData = async () => {
     try {
-      const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/car/${propertyId}`
-      )
+      const response = await customAxios.get(`/car/${propertyId}`)
       setProperty(response.data)
       if (
         response.data.pictures.images > 0 ||
@@ -90,6 +89,7 @@ export const RequestTab1 = () => {
         setFormattedListingPrice,
       )
       setRoi(response.data.roi != null ? String(response.data.roi) : '')
+      setWarranty(response.data.warranty || '')
 
       if (response.data.evaluationCertificate) {
         setFileUrl(response.data.evaluationCertificate) // Update URL from API
@@ -169,17 +169,36 @@ export const RequestTab1 = () => {
       } else {
         fileUpload = await handleFileUpload(fileName)
       }
+      const certificateId =
+        fileUpload?._id || property?.evaluationCertificate || null
+
+      if (property?.status !== 1 && !certificateId) {
+        toast.error(
+          'Please upload an evaluation certificate before submitting.',
+        )
+        setIsLoading(false)
+        return
+      }
+
+      const approvalPayload = buildEvaluatorUpdatePayload({
+        listingPrice,
+        evaluationPrice,
+        warranty,
+        includeRoi: false,
+        includeWarranty: true,
+      })
+      if (certificateId) {
+        approvalPayload.evaluationCertificate = certificateId
+      }
+      approvalPayload.invoice = invoiceUpload?._id || property?.invoice || null
+      if (certificateId || property?.status === 1) {
+        approvalPayload.status = 1
+      }
 
       if (fileUpload?._id || invoiceUpload?._id) {
         await customAxios.put(
           `${process.env.NEXT_PUBLIC_BASE_URL}/car/${propertyId}`,
-          {
-            evaluationPrices: evaluationPrice,
-            evaluationCertificate:
-              fileUpload?._id || property?.evaluationCertificate || null,
-            invoice: invoiceUpload?._id || property?.invoice || null,
-            status: 1,
-          }
+          approvalPayload,
         )
 
         setProperty((prevProperty) => ({
@@ -210,13 +229,10 @@ export const RequestTab1 = () => {
 
           toast.success('Asset approved successfully')
         }
-      } else {
+      } else if (certificateId || property?.status === 1) {
         await customAxios.put(
           `${process.env.NEXT_PUBLIC_BASE_URL}/car/${propertyId}`,
-          {
-            evaluationPrices: evaluationPrice,
-            status: 1,
-          }
+          approvalPayload,
         )
         toast.success('Asset approved successfully')
       }
@@ -273,7 +289,9 @@ export const RequestTab1 = () => {
       listingPrice,
       evaluationPrice,
       roi,
+      warranty,
       includeRoi: true,
+      includeWarranty: true,
     })
 
     if (Object.keys(updateData).length === 0) {
@@ -323,15 +341,23 @@ export const RequestTab1 = () => {
           <InputField label='Title' value={property.title} />
           <InputField label='Car type' value={property.carType} />
         </div>
-        <div className='mb-4 grid sm:grid-cols-2 gap-4'>
-          {property?.status !== 1 ? (
-            <InputField
-              label='Price'
-              value={formatNumberWithCommas(property.price)}
-            />
-          ) : null}
-          <InputField label='Warranty' value={property.warranty} />
-        </div>
+        {property?.status !== 1 ? (
+          <EvaluatorEditableFields
+            variant='pending'
+            listingPriceLabel='Price'
+            formattedListingPrice={formattedListingPrice}
+            onListingPriceChange={handleListingPrice}
+            formattedEvaluationPrice={formattedPrice}
+            onEvaluationPriceChange={handleEvaluationPrice}
+            showEvaluationPrice={false}
+            showRoi={false}
+            showWarranty
+            warranty={warranty}
+            onWarrantyChange={setWarranty}
+            onSave={handleSaveEvaluationDetails}
+            isSaving={isSavingDetails}
+          />
+        ) : null}
         <div className='mb-4 grid sm:grid-cols-2 gap-4'>
           <InputField label='Models' value={property.model} />
           <InputField label='Make' value={property.make} />
@@ -345,6 +371,7 @@ export const RequestTab1 = () => {
         </div>
         {property?.status === 1 ? (
           <EvaluatorEditableFields
+            listingPriceLabel='Price'
             formattedListingPrice={formattedListingPrice}
             onListingPriceChange={handleListingPrice}
             formattedEvaluationPrice={formattedPrice}
@@ -352,6 +379,9 @@ export const RequestTab1 = () => {
             roi={roi}
             onRoiChange={setRoi}
             showRoi
+            showWarranty
+            warranty={warranty}
+            onWarrantyChange={setWarranty}
             onSave={handleSaveEvaluationDetails}
             isSaving={isSavingDetails}
           />

@@ -68,9 +68,7 @@ export const RequestTab3 = () => {
 
   const fetchPropertyData = async () => {
     try {
-      const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/jewelry/${propertyId}`
-      )
+      const response = await customAxios.get(`/jewelry/${propertyId}`)
       setProperty(response.data)
       if (
         response.data.pictures.images > 0 ||
@@ -174,17 +172,32 @@ export const RequestTab3 = () => {
       } else {
         fileUpload = await handleFileUpload(fileName)
       }
+      const certificateId =
+        fileUpload?._id || property?.evaluationCertificate || null
+
+      if (property?.status !== 1 && !certificateId) {
+        toast.error(
+          'Please upload an evaluation certificate before submitting.',
+        )
+        setIsLoading(false)
+        return
+      }
+
+      const approvalPayload = {
+        evaluationPrices: evaluationPrice,
+        invoice: invoiceUpload?._id || property?.invoice || null,
+      }
+      if (certificateId) {
+        approvalPayload.evaluationCertificate = certificateId
+      }
+      if (certificateId || property?.status === 1) {
+        approvalPayload.status = 1
+      }
 
       if (fileUpload?._id || invoiceUpload?._id) {
         await customAxios.put(
           `${process.env.NEXT_PUBLIC_BASE_URL}/jewelry/${propertyId}`,
-          {
-            evaluationPrices: evaluationPrice,
-            evaluationCertificate:
-              fileUpload?._id || property?.evaluationCertificate || null,
-            invoice: invoiceUpload?._id || property?.invoice || null,
-            status: 1,
-          }
+          approvalPayload,
         )
 
         setProperty((prevProperty) => ({
@@ -208,13 +221,10 @@ export const RequestTab3 = () => {
 
           toast.success('Asset approved successfully')
         }
-      } else {
+      } else if (certificateId || property?.status === 1) {
         await customAxios.put(
           `${process.env.NEXT_PUBLIC_BASE_URL}/jewelry/${propertyId}`,
-          {
-            evaluationPrices: evaluationPrice,
-            status: 1,
-          }
+          approvalPayload,
         )
         toast.success('Asset approved successfully')
       }
@@ -321,13 +331,21 @@ export const RequestTab3 = () => {
           <InputField label='Title' value={property.title} />
           <InputField label='Weight' value={property.weight} />
         </div>
+        {property?.status !== 1 ? (
+          <EvaluatorEditableFields
+            variant='pending'
+            listingPriceLabel='Price'
+            formattedListingPrice={formattedListingPrice}
+            onListingPriceChange={handleListingPrice}
+            formattedEvaluationPrice={formattedPrice}
+            onEvaluationPriceChange={handleEvaluationPrice}
+            showEvaluationPrice
+            showRoi={false}
+            onSave={handleSaveEvaluationDetails}
+            isSaving={isSavingDetails}
+          />
+        ) : null}
         <div className='mb-4 grid sm:grid-cols-2 gap-4'>
-          {property?.status !== 1 ? (
-            <InputField
-              label='Price'
-              value={formatNumberWithCommas(property.price)}
-            />
-          ) : null}
           <InputField
             label='Grams'
             value={formatNumberWithCommas(property.grams)}

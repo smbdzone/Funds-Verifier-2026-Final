@@ -1,6 +1,6 @@
-import { getCookie } from 'cookies-next'
-import { getTokenFromCookie } from '../../utils/helper'
 import { useProfile } from '../../context/UserContext'
+import { initiateServiceSubscription } from '@/libs/initiateServiceSubscription'
+import { toast } from 'react-toastify'
 
 const PayModal = ({
   modalData,
@@ -30,40 +30,46 @@ const PayModal = ({
     const currentUrl = `${window.location.origin}/service-payment-success`
     const cancelUrl = window.location.href
     try {
-      const token = getTokenFromCookie()
       const uid = userUUID || currentuserUUID
 
       if (!uid) {
-        alert('User not found. Please login.')
+        toast.error('User not found. Please login.')
         return
       }
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/services/subscribe`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
-          body: JSON.stringify({
-            userUUID: uid || currentuserUUID,
-            service,
-            price: totalPrice,
-            success_url: currentUrl,
-            cancel_url: cancelUrl,
-          }),
+
+      const source = modalData?.productId ? modalData : technicalModalData
+      const data = await initiateServiceSubscription({
+        userUUID: uid,
+        service,
+        price: totalPrice,
+        success_url: currentUrl,
+        cancel_url: cancelUrl,
+        assetType: source?.assetType || modalData?.assetType || technicalModalData?.assetType,
+        productId: source?.productId || modalData?.productId || technicalModalData?.productId,
+        productTitle: source?.productTitle || modalData?.productTitle || technicalModalData?.productTitle,
+        phone: source?.phone || modalData?.phone || technicalModalData?.phone || '',
+        dateTime: source?.dateTime || modalData?.dateTime || technicalModalData?.dateTime || '',
+        category: source?.category || modalData?.category || technicalModalData?.category,
+        subCategory: source?.subCategory || modalData?.subCategory || technicalModalData?.subCategory,
+        value: source?.value ?? modalData?.value ?? technicalModalData?.value,
+      })
+
+      if (data?.url) {
+        if (data.sessionId) {
+          localStorage.setItem('checkoutSessionId', data.sessionId)
         }
-      )
-      const data = await response.json()
-      if (response.status === 201 && data.url) {
         window.location.href = data.url
         setIsOpenModal(false)
       } else {
-        alert(data?.message || 'Payment initiation failed.')
+        toast.error(data?.message || 'Payment initiation failed.')
       }
     } catch (error) {
       console.error('Error initiating checkout:', error)
-      alert('Error initiating payment. Please try again.')
+      toast.error(
+        error?.response?.data?.message ||
+        error?.message ||
+        'Error initiating payment. Please try again.',
+      )
     }
   }
 

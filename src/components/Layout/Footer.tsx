@@ -16,6 +16,9 @@ import { Phone, Mail } from 'lucide-react'
 import { Facebook, Instagram, Linkedin, Twitter } from 'lucide-react'
 import { FaTiktok, FaFacebookF, FaLinkedinIn } from 'react-icons/fa'
 
+const FOOTER_DESCRIPTION =
+  'Funds Verifier helps buyers and sellers complete secure asset transactions with evaluator-approved listings and trusted fund verification.'
+
 const Footer = () => {
   return (
     <>
@@ -43,8 +46,7 @@ const Footer = () => {
                 </h1>
               </div>
               <p className='text-white text-[10px] sm:text-[20px] mb-2 sm:mb-5'>
-                Lorem presents the sample font and orientation of writing on web
-                pages other software applications where content.
+                {FOOTER_DESCRIPTION}
               </p>
 
               <div className='flex gap-2'>
@@ -195,8 +197,7 @@ const Footer = () => {
                 <h1 className='text-lg font-semibold'>Funds Verifier</h1>
               </div>
               <p className='text-white text-base mb-5'>
-                Lorem presents the sample font and orientation of writing on web
-                pages other software applications where content.
+                {FOOTER_DESCRIPTION}
               </p>
               <div className='flex gap-3'>
                 <Link

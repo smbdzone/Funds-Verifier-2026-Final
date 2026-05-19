@@ -120,13 +120,12 @@ export default function FundTypeSlide({ data }) {
         </div>
       </div>
       <div
-        className={`grid ${
-          itemsToShow === 3
+        className={`grid ${itemsToShow === 3
             ? "xl:grid-cols-3"
             : itemsToShow === 2
-            ? "md:grid-cols-2"
-            : "grid-cols-1"
-        } gap-x-8`}
+              ? "md:grid-cols-2"
+              : "grid-cols-1"
+          } gap-x-8`}
       >
         {data.context_types.slice(0, itemsToShow).map((type, index) => (
           <div
@@ -147,8 +146,7 @@ export default function FundTypeSlide({ data }) {
                 {data.context_types[index]}
               </div>
               <div className="text-xs leading-[22px] w-full text-center text-black inline-block px-3">
-                Lorem ipsum placeholder or dummy text used in typesetting and
-                graphic design for previewing layouts.
+                {data.context_descriptions?.[index] || data.slide_description}
               </div>
               <Link
                 href={generateUrl(data.slide_title, data.context_types[index])}

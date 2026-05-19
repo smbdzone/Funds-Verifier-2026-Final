@@ -4,21 +4,29 @@ import { Suspense } from 'react'
 import ButtomSlider from '@/components/Product_page/Buttom_slider'
 import ProductView from '@/components/views/ProductView'
 import GlobalLoader from '@/utils/GlobalLoader'
-import customAxios from '../../../../utils/apis/apis'
+
+const apiBase = process.env.NEXT_PUBLIC_BASE_URL
 
 const GetProductData = async ({ slug }) => {
   try {
-    const propertyResponse = await customAxios.get(
-      `${process.env.NEXT_PUBLIC_BASE_URL}/property/${slug}`
-    )
-    // Fetch related property data
-    const propertyDataResponse = await customAxios.get(
-      `${process.env.NEXT_PUBLIC_BASE_URL}/property`
+    const propertyResponse = await axios.get(`${apiBase}/property/${slug}`)
+    const propertyDataResponse = await axios.get(
+      `${apiBase}/property?statusFilter=1&limit=50&sort=-createdAt`,
     )
 
     const propertyInfo = propertyResponse?.data
-    const propertyData = propertyDataResponse?.data || []
-    return { propertyInfo, propertyData }
+    const propertyData = propertyDataResponse?.data
+    const relatedProducts = (propertyData?.products || []).filter(
+      (item) =>
+        Number(item?.status) === 1 &&
+        item?.uuid !== propertyInfo?.uuid &&
+        item?.slug !== propertyInfo?.slug,
+    )
+
+    return {
+      propertyInfo,
+      propertyData: { ...propertyData, products: relatedProducts },
+    }
   } catch (error) {
     return null
   }
@@ -56,12 +64,14 @@ export default async function Page({ params }) {
           </div>
         </div>
         <ProductView data={propertyInfo} />
-        <div className='theme-container '>
-          <h1 className='md:text-2xl text-lg mb-3 sm:mb-6 font-semibold text-left text-blue'>
-            Related Properties
-          </h1>
-          <ButtomSlider data={propertyData || []} />
-        </div>
+        {propertyData?.products?.length > 0 ? (
+          <div className='theme-container '>
+            <h1 className='md:text-2xl text-lg mb-3 sm:mb-6 font-semibold text-left text-blue'>
+              Related Properties
+            </h1>
+            <ButtomSlider data={propertyData} />
+          </div>
+        ) : null}
       </Suspense>
     </div>
   )

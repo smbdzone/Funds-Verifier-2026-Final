@@ -9,7 +9,7 @@ import {
   setAccessToken,
 } from '../utils/auth/accessTokenStore'
 // ADD AT TOP
-export let globalLogout = () => {}
+export let globalLogout = () => { }
 
 export const UserContext = createContext()
 
@@ -74,6 +74,10 @@ export const UserProvider = ({ children }) => {
       }
 
       applyUser(response.data)
+      if (response.data?.accessToken) {
+        setAccessToken(response.data.accessToken)
+        setAccessTokenState(response.data.accessToken)
+      }
     } catch (error) {
       if (error.response?.status !== 401) {
         console.error('Error loading user:', error)

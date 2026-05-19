@@ -7,20 +7,32 @@ import GlobalLoader from "@/utils/GlobalLoader";
 
 const GetProductData = async ({ slug }) => {
   try {
-    const Response = await axios.get(`${process.env.NEXT_PUBLIC_BASE_URL}/car/${slug}`);
-    // Fetch related property data
-    const DataResponse = await axios.get(`${process.env.NEXT_PUBLIC_BASE_URL}/car`);
+    const Response = await axios.get(
+      `${process.env.NEXT_PUBLIC_BASE_URL}/car/${slug}`,
+    )
+    const DataResponse = await axios.get(
+      `${process.env.NEXT_PUBLIC_BASE_URL}/car?statusFilter=1&limit=50`,
+    )
 
-    const carInfo = Response?.data;
-    const carData = DataResponse?.data;
+    const carInfo = Response?.data
+    const carData = DataResponse?.data
+    const relatedProducts = (carData?.products || []).filter(
+      (car) =>
+        car?.status === 1 &&
+        car?.uuid !== carInfo?.uuid &&
+        car?.slug !== carInfo?.slug,
+    )
 
-    return { carInfo, carData }
+    return {
+      carInfo,
+      carData: { ...carData, products: relatedProducts },
+    }
   } catch (error) {
     return null
   }
 }
 export default async function Page({ params }) {
-  const { slug } =await params;
+  const { slug } = await params;
   const data = await GetProductData({ slug });
   if (!data || !data.carInfo) {
     return (
@@ -49,12 +61,14 @@ export default async function Page({ params }) {
           </div>
         </div>
         <CarView data={carInfo || {}} />
-        <div className="theme-container">
-          <h1 className="md:text-2xl text-lg mb-2 sm:mb-6 font-semibold text-left text-blue">
-            Related Cars
-          </h1>
-          <ButtomSlider data={carData || []} />
-        </div>
+        {carData?.products?.length > 0 ? (
+          <div className="theme-container">
+            <h1 className="md:text-2xl text-lg mb-2 sm:mb-6 font-semibold text-left text-blue">
+              Related Cars
+            </h1>
+            <ButtomSlider data={carData} />
+          </div>
+        ) : null}
       </Suspense>
     </div>
   );

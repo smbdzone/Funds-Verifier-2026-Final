@@ -1,5 +1,6 @@
 'use client'
 
+import { warrantyOptions } from '@/constants/car-listings'
 import EvaluatorPriceInput from './EvaluatorPriceInput'
 
 const EvaluatorEditableFields = ({
@@ -11,11 +12,18 @@ const EvaluatorEditableFields = ({
   onSqftChange,
   roi = '',
   onRoiChange,
+  warranty = '',
+  onWarrantyChange,
+  length = '',
+  onLengthChange,
+  lengthOptions = [],
   variant = 'full',
   listingPriceLabel = 'Listing price',
   showEvaluationPrice = true,
   showSqft = false,
   showRoi = true,
+  showWarranty = false,
+  showLength = false,
   onSave,
   isSaving = false,
 }) => {
@@ -53,6 +61,42 @@ const EvaluatorEditableFields = ({
     </div>
   )
 
+  const renderWarrantyField = () => (
+    <div>
+      <label className={labelClass}>Warranty</label>
+      <select
+        value={warranty}
+        onChange={(e) => onWarrantyChange?.(e.target.value)}
+        className={inputClass}
+      >
+        <option value=''>Select warranty</option>
+        {warrantyOptions.map((option) => (
+          <option key={option} value={option}>
+            {option}
+          </option>
+        ))}
+      </select>
+    </div>
+  )
+
+  const renderLengthField = () => (
+    <div>
+      <label className={labelClass}>Length</label>
+      <select
+        value={length}
+        onChange={(e) => onLengthChange?.(e.target.value)}
+        className={inputClass}
+      >
+        <option value=''>Select length</option>
+        {lengthOptions.map((option) => (
+          <option key={option} value={option}>
+            {option}
+          </option>
+        ))}
+      </select>
+    </div>
+  )
+
   const renderSqftField = () => (
     <div>
       <label className={labelClass}>Size in square feet</label>
@@ -72,6 +116,9 @@ const EvaluatorEditableFields = ({
       <div className='mb-4'>
         <div className='grid sm:grid-cols-2 gap-4'>
           {renderPriceField(listingPriceLabel)}
+          {showEvaluationPrice ? renderEvaluationPriceField() : null}
+          {showWarranty ? renderWarrantyField() : null}
+          {showLength ? renderLengthField() : null}
           {showSqft ? renderSqftField() : null}
         </div>
         <div className='mt-4 flex justify-end'>
@@ -93,7 +140,7 @@ const EvaluatorEditableFields = ({
       <h2 className='text-base sm:text-lg font-semibold text-prussianBlue mb-4'>
         Update listing values
       </h2>
-      <div className='grid sm:grid-cols-2 lg:grid-cols-3 gap-4'>
+      <div className='grid sm:grid-cols-2 lg:grid-cols-4 gap-4'>
         {renderPriceField(listingPriceLabel)}
         {showEvaluationPrice ? renderEvaluationPriceField() : null}
         {showSqft ? renderSqftField() : null}
@@ -117,6 +164,8 @@ const EvaluatorEditableFields = ({
             </div>
           </div>
         ) : null}
+        {showWarranty ? renderWarrantyField() : null}
+        {showLength ? renderLengthField() : null}
       </div>
 
       <div className='mt-5 flex justify-end'>
@@ -134,3 +183,4 @@ const EvaluatorEditableFields = ({
 }
 
 export default EvaluatorEditableFields
+

@@ -28,8 +28,13 @@ import {
   getTechnicalReportSrc,
 } from '@/libs/listingCardMedia'
 
-export default function BoatView({ data }) {
+export default function BoatView({ data: boatData }) {
+  const data = boatData ?? {}
   const combinedMedia = getListingDetailMediaItems(data)
+  const extrasList = Array.isArray(data?.extras) ? data.extras : []
+  const interiorColors = Array.isArray(data?.interiorColor)
+    ? data.interiorColor
+    : []
   const [previewMedia, setPreviewMedia] = useState(
     () => combinedMedia[0] || null,
   )
@@ -55,7 +60,7 @@ export default function BoatView({ data }) {
   }
 
   const truncateTitle = (title) => {
-    const words = title?.split(' ')
+    const words = title?.split(' ') ?? []
     if (words.length > 3) {
       return words.slice(0, 3).join(' ') + '...'
     }
@@ -105,6 +110,8 @@ export default function BoatView({ data }) {
       console.error('No valid certificate URL available.')
     }
   }
+
+  if (!boatData) return null
 
   return (
     <div className='theme-container'>
@@ -200,7 +207,7 @@ export default function BoatView({ data }) {
               <span className='flex w- flex-wrap flex-row items-center  text-[9px] sm:text-xs  md:text-sm'>
                 <GoDotFill className='flex mr-1 sm:mr-2 text-gold-800' />
                 Interior Color:
-                {data?.interiorColor?.map((col, i) => (
+                {interiorColors.map((col, i) => (
                   <span key={col + i} className='mx-1'>
                     {col}
                   </span>
@@ -364,9 +371,9 @@ export default function BoatView({ data }) {
 
         {openAdditional_info && (
           <>
-            {data.extras.length !== 0 ? (
+            {extrasList.length > 0 ? (
               <div className='md:grid flex flex-wrap grid-cols-4'>
-                {data.extras.map((item, columnIndex) => (
+                {extrasList.map((item, columnIndex) => (
                   <div key={columnIndex} className='col-span-1'>
                     <div className='text-base font-normal'>
                       <div className='flex flex-row flex-wrap items-center p-2 space-x-2'>
@@ -386,7 +393,7 @@ export default function BoatView({ data }) {
 
         {openDiscription && (
           <>
-            {data.description !== '' ? (
+            {data?.description ? (
               <Description text={data.description} />
             ) : (
               <Description text={'No Description For this Product'} />

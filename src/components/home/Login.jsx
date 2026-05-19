@@ -6,6 +6,7 @@ import ValuesSec from '@/components/home/valuesSec'
 import PropertiesSale from '@/components/home/properties-sale'
 import BoatsSale from '@/components/home/boats-sale'
 import CarsSale from '@/components/home/cars-sale'
+import JewelrySale from '@/components/home/jewelry-sale'
 import Testimonials from '@/components/home/testimonials'
 import Partners from '@/components/home/partners'
 import NewsTrends from '@/components/home/newsTrends'
@@ -153,6 +154,7 @@ export default function Login() {
       <PropertiesSale />
       <BoatsSale />
       <CarsSale />
+      <JewelrySale />
       <Testimonials />
       <Partners />
       <NewsTrends />

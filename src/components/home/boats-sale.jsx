@@ -1,5 +1,4 @@
 import BoatsSlaeSlider from '../sliders/boats-sale-slider'
-import PropertiesSaleSlider from '../sliders/propertiesSaleSlider'
 
 export default function BoatsSale() {
   return (

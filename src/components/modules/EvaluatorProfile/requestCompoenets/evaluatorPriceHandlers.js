@@ -37,12 +37,18 @@ export const buildEvaluatorUpdatePayload = ({
   evaluationPrice,
   roi,
   sizeSQFT,
+  warranty,
+  length,
   includeRoi = true,
+  includeWarranty = false,
+  includeLength = false,
 }) => {
   const payload = {}
   if (listingPrice !== '') payload.price = Number(listingPrice)
   if (evaluationPrice !== '') payload.evaluationPrices = Number(evaluationPrice)
   if (includeRoi && roi !== '') payload.roi = Number(roi)
   if (sizeSQFT !== '') payload.sizeSQFT = Number(sizeSQFT)
+  if (includeWarranty && warranty) payload.warranty = warranty
+  if (includeLength && length) payload.length = length
   return payload
 }

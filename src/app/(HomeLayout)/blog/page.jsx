@@ -47,20 +47,12 @@ export default function Insight() {
   // Categories data as shown in the image
   const categories = {
     left: [
-      { label: 'Real Estate', value: 'real-estate' },
+      { label: 'Properties', value: 'properties' },
       { label: 'Cars', value: 'cars' },
       { label: 'Jewelry', value: 'jewelry' },
-      { label: 'Boats', value: 'boats' },
+      { label: 'Boat', value: 'boats' },
     ],
-    right: [
-      {
-        label: 'General',
-        value: 'general',
-      },
-      { label: 'News', value: 'news' },
-      { label: 'Regulations', value: 'regulations' },
-      { label: 'Announcement', value: 'announcement' },
-    ],
+    right: [{ label: 'General News', value: 'general-news' }],
   }
 
   useEffect(() => {
@@ -212,9 +204,8 @@ export default function Insight() {
           >
             ALL
             <svg
-              className={`ml-2 w-4 h-4 transition-transform ${
-                isDropdownOpen && activeDropdown === 'first' ? 'rotate-180' : ''
-              }`}
+              className={`ml-2 w-4 h-4 transition-transform ${isDropdownOpen && activeDropdown === 'first' ? 'rotate-180' : ''
+                }`}
               fill='none'
               stroke='currentColor'
               viewBox='0 0 24 24'
@@ -239,13 +230,12 @@ export default function Insight() {
                   <button
                     key={category}
                     onClick={() => handleCategorySelect(category.value)}
-                    className={`w-full text-left px-3 py-2 mb-2 rounded-md text-sm font-medium transition-colors ${
-                      selectedCategories.includes(category.value)
-                        ? 'bg-gradient-to-r from-[#a2913e] to-[#d7c590] text-white'
-                        : category.value === selectedCategories
+                    className={`w-full text-left px-3 py-2 mb-2 rounded-md text-sm font-medium transition-colors ${selectedCategories.includes(category.value)
+                      ? 'bg-gradient-to-r from-[#a2913e] to-[#d7c590] text-white'
+                      : category.value === selectedCategories
                         ? 'bg-gradient-to-r from-[#a2913e] to-[#d7c590] text-white'
                         : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
-                    }`}
+                      }`}
                   >
                     {category.label}
                   </button>
@@ -258,11 +248,10 @@ export default function Insight() {
                   <button
                     key={category}
                     onClick={() => handleCategorySelect(category.value)}
-                    className={`w-full text-left px-3 py-2 mb-2 rounded-md text-sm font-medium transition-colors ${
-                      selectedCategories.includes(category.value)
-                        ? 'bg-gradient-to-r from-[#a2913e] to-[#d7c590] text-white'
-                        : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
-                    }`}
+                    className={`w-full text-left px-3 py-2 mb-2 rounded-md text-sm font-medium transition-colors ${selectedCategories.includes(category.value)
+                      ? 'bg-gradient-to-r from-[#a2913e] to-[#d7c590] text-white'
+                      : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
+                      }`}
                   >
                     {category.label}
                   </button>

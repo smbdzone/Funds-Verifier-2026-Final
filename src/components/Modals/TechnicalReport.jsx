@@ -10,9 +10,7 @@ import axios from 'axios'
 import { toast } from 'react-toastify'
 import { getCookie } from 'cookies-next'
 import customAxios from '../../utils/apis/apis'
-import {
-  getTokenFromCookie,
-} from '../../utils/helper'
+import { initiateServiceSubscription } from '@/libs/initiateServiceSubscription'
 import { useProfile } from '../../context/UserContext'
 
 const TechnicalReport = ({
@@ -85,7 +83,6 @@ const TechnicalReport = ({
           ? window.location.href
           : `${origin}/dashboard/property-listing`
       const currentuserUUID = user?.uuid
-      const token = getTokenFromCookie()
       if (!currentuserUUID) return toast.error('User not found. Please login.')
 
       const APiRequestedData = {
@@ -104,20 +101,9 @@ const TechnicalReport = ({
         value: value,
       }
 
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/services/subscribe`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
-          body: JSON.stringify(APiRequestedData),
-        }
-      )
-      const data = await response.json()
+      const data = await initiateServiceSubscription(APiRequestedData)
       onSave(APiRequestedData)
-      if (response.status === 201 && data.url) {
+      if (data?.url) {
         if (data.sessionId) {
           localStorage.setItem('checkoutSessionId', data.sessionId)
         }

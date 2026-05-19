@@ -1,52 +1,124 @@
 'use client'
-import React, { useRef, useEffect, useState } from 'react'
-import { useAppContext } from '@/context/AppContext'
-import { formatPriceUS } from '@/utils'
-import { getListingThumbSrc } from '@/libs/listingCardMedia'
+
+import React, { useEffect, useRef, useState } from 'react'
 import { Swiper, SwiperSlide } from 'swiper/react'
 import 'swiper/css'
 import 'swiper/css/pagination'
 import 'swiper/css/navigation'
 import { Pagination, Autoplay } from 'swiper/modules'
-import axios from 'axios'
+import Image from 'next/image'
+import Link from 'next/link'
+import { FaStar } from 'react-icons/fa'
+import { formatPriceUS } from '@/utils'
+import {
+  getListingCarouselItems,
+  getListingThumbSrc,
+  isListingCarouselPlaceholderSlide,
+  PLACEHOLDER,
+} from '@/libs/listingCardMedia'
 import location from '@/assets/vector2.svg'
 import avator1 from '@/assets/avators/Avatars 1.png'
 import avator2 from '@/assets/avators/Avatars 2.png'
 import avator3 from '@/assets/avators/Avatars 3.png'
 import arrow_right from '@/assets/vector1.svg'
-import Image from 'next/image'
-import Link from 'next/link'
-import { FaStar } from 'react-icons/fa'
+import { usePublicTokenContext } from '@/utils/PublicTokenProvider.'
 
 const avatars = [avator1, avator2, avator3]
 
-export default function CarSaleSliderStatic() {
-  const { carsForSale } = useAppContext()
-  const swiperRef = useRef(null)
-  const [reviewCounts, setReviewCounts] = useState({})
-  const [averageRating, setAverageRating] = useState({})
+const APPROVED_CARS_URL = '/car?statusFilter=1&limit=100&sort=-createdAt'
 
-  // Handle Previous Slide
+function filterApprovedCars(products) {
+  if (!Array.isArray(products)) return []
+  return products.filter((item) => Number(item?.status) === 1)
+}
+
+function truncateTitle(title) {
+  if (!title) return 'Car'
+  const words = String(title).split(' ')
+  if (words.length > 4) {
+    return `${words.slice(0, 4).join(' ')}...`
+  }
+  return title
+}
+
+function getCarCardImageSrc(car) {
+  const items = getListingCarouselItems(car)
+  const slide = items.find(
+    (item) => item.type === 'image' && !isListingCarouselPlaceholderSlide(item),
+  )
+  if (slide?.src) return slide.src
+  const thumb = getListingThumbSrc(car)
+  return thumb !== PLACEHOLDER ? thumb : ''
+}
+
+export default function CarSaleSliderStatic() {
+  const [approvedCars, setApprovedCars] = useState([])
+  const [isLoading, setIsLoading] = useState(true)
+  const swiperRef = useRef(null)
+  const publicToken = usePublicTokenContext()
+
+  useEffect(() => {
+    let cancelled = false
+
+    const fetchApprovedCars = async () => {
+      setIsLoading(true)
+      try {
+        const base = process.env.NEXT_PUBLIC_BASE_URL
+        if (!base) {
+          setApprovedCars([])
+          return
+        }
+
+        const headers = {}
+        if (publicToken) {
+          headers['x-public-token'] = publicToken
+        }
+
+        const response = await fetch(`${base}${APPROVED_CARS_URL}`, {
+          cache: 'no-store',
+          headers,
+        })
+
+        if (!response.ok) {
+          throw new Error(`Request failed: ${response.status}`)
+        }
+
+        const data = await response.json()
+        if (!cancelled) {
+          setApprovedCars(filterApprovedCars(data?.products))
+        }
+      } catch (error) {
+        console.error('Failed to load verified cars for sale:', error)
+        if (!cancelled) {
+          setApprovedCars([])
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false)
+        }
+      }
+    }
+
+    fetchApprovedCars()
+
+    return () => {
+      cancelled = true
+    }
+  }, [publicToken])
+
   const handlePrevSlide = () => {
-    if (swiperRef.current && swiperRef.current.swiper) {
+    if (swiperRef.current?.swiper) {
       swiperRef.current.swiper.slidePrev()
     }
   }
 
-  // Handle Next Slide
   const handleNextSlide = () => {
-    if (swiperRef.current && swiperRef.current.swiper) {
+    if (swiperRef.current?.swiper) {
       swiperRef.current.swiper.slideNext()
     }
   }
 
-  const truncateTitle = (title) => {
-    const words = title.split(' ')
-    if (words.length > 3) {
-      return words.slice(0, 3).join(' ') + '...'
-    }
-    return title
-  }
+  const hasListings = approvedCars.length > 0
 
   return (
     <div className='container mx-auto'>
@@ -62,192 +134,228 @@ export default function CarSaleSliderStatic() {
         </div>
         <div className='flex leading-[30px] text-black justify-center mb-2 sm:mb-5'>
           <p className='xl:w-[35%] lg:w-[50%] md:px-5 text-xs text-center'>
-            Lorem ipsum placeholder or dummy text used in typesetting and
-            graphic design for previewing layouts.
+            Browse evaluator-approved cars listed for sale on Funds Verifier.
           </p>
         </div>
 
-        {/* ✅ Updated mobile arrows here */}
-        <div className='flex justify-center md:hidden space-x-2'>
-          <div onClick={handlePrevSlide} className='cursor-pointer'>
-            <div className='btn-gradient px-1 py-1 rounded'>
-              <Image
-                src={arrow_right}
-                alt='previous'
-                height={15}
-                width={15}
-                className='transform rotate-180 w-[10px] h-[10px]'
-              />
-            </div>
-          </div>
-          <div onClick={handleNextSlide} className='cursor-pointer'>
-            <div className='btn-gradient px-1 py-1 rounded'>
-              <Image
-                src={arrow_right}
-                alt='next'
-                height={15}
-                width={15}
-                className='transform w-[10px] h-[10px]'
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-      <div className='flex flex-row gap-3 items-center relative'>
-        <div className='hidden md:block space-x-5 pb-5'>
-          <div
-            onClick={handlePrevSlide}
-            className='cursor-pointer md:absolute md:top-[50%] lg:-left-10 md:-left-7 z-40'
-          >
-            <div className='btn-gradient px-2 py-1 rounded'>
-              <Image
-                src={arrow_right}
-                alt='previous'
-                height={20}
-                width={20}
-                className='transform h-full w-full rotate-180'
-              />
-            </div>
-          </div>
-          <div
-            onClick={handleNextSlide}
-            className='cursor-pointer md:absolute md:top-[50%] lg:-right-10 md:-right-7  z-40'
-          >
-            <div className='btn-gradient px-2 py-1 rounded'>
-              <Image
-                src={arrow_right}
-                height={20}
-                width={20}
-                className='h-full w-full'
-                alt='next'
-              />
-            </div>
-          </div>
-        </div>
-        <Swiper
-          slidesPerView={1} // default for <375px
-          spaceBetween={10}
-          loop={true}
-          hashNavigation={{
-            watchState: true,
-          }}
-          modules={[Pagination, Autoplay]}
-          autoplay={{
-            delay: 10000,
-            disableOnInteraction: false,
-          }}
-          breakpoints={{
-            375: {
-              slidesPerView: 1,
-              spaceBetween: 10,
-            },
-            768: {
-              slidesPerView: 1,
-              spaceBetween: 15,
-            },
-            1024: {
-              slidesPerView: 2,
-              spaceBetween: 15,
-            },
-            1440: {
-              slidesPerView: 3,
-              spaceBetween: 15,
-            },
-          }}
-          className='w-full'
-          ref={swiperRef}
-        >
-          {carsForSale?.products?.map((carForSale, index) => (
-            <SwiperSlide className='w-full' key={index}>
-              <div className='mx-2 w-full mb-2 shadow-[0px_0px_8px_rgba(0,_0,_0,_0.15)] rounded-md bg-white'>
+        {hasListings ? (
+          <div className='flex justify-center md:hidden space-x-2'>
+            <div onClick={handlePrevSlide} className='cursor-pointer'>
+              <div className='btn-gradient px-1 py-1 rounded'>
                 <Image
-                  width={414}
-                  height={275}
-                  className='rounded-md object-cover !h-[275px]'
-                  alt={carForSale?.make || 'Car'}
-                  src={getListingThumbSrc(carForSale, '/car.jpg')}
+                  src={arrow_right}
+                  alt='previous'
+                  height={15}
+                  width={15}
+                  className='transform rotate-180 w-[10px] h-[10px]'
                 />
+              </div>
+            </div>
+            <div onClick={handleNextSlide} className='cursor-pointer'>
+              <div className='btn-gradient px-1 py-1 rounded'>
+                <Image
+                  src={arrow_right}
+                  alt='next'
+                  height={15}
+                  width={15}
+                  className='transform w-[10px] h-[10px]'
+                />
+              </div>
+            </div>
+          </div>
+        ) : null}
+      </div>
 
-                <div className='flex w-full flex-col'>
-                  <div className='flex flex-col px-4 py-2 space-y-3'>
-                    <div className='flex flex-row items-center'>
-                      {/* Render Stars and Rating */}
-                      <div className='rating-container mr-3'>
+      {isLoading ? (
+        <p className='text-center text-sm text-[#002D4F]/70 py-12'>
+          Loading verified cars…
+        </p>
+      ) : null}
+
+      {!isLoading && !hasListings ? (
+        <p className='text-center text-sm text-[#002D4F]/70 py-12'>
+          No evaluator-approved cars for sale yet.
+        </p>
+      ) : null}
+
+      {!isLoading && hasListings ? (
+        <div className='flex flex-row gap-3 items-center relative'>
+          <div className='hidden md:block space-x-5 pb-5'>
+            <div
+              onClick={handlePrevSlide}
+              className='cursor-pointer md:absolute md:top-[50%] lg:-left-10 md:-left-7 z-40'
+            >
+              <div className='btn-gradient px-2 py-1 rounded'>
+                <Image
+                  src={arrow_right}
+                  alt='previous'
+                  height={20}
+                  width={20}
+                  className='transform h-full w-full rotate-180'
+                />
+              </div>
+            </div>
+            <div
+              onClick={handleNextSlide}
+              className='cursor-pointer md:absolute md:top-[50%] lg:-right-10 md:-right-7 z-40'
+            >
+              <div className='btn-gradient px-2 py-1 rounded'>
+                <Image
+                  src={arrow_right}
+                  height={20}
+                  width={20}
+                  className='h-full w-full'
+                  alt='next'
+                />
+              </div>
+            </div>
+          </div>
+          <Swiper
+            slidesPerView={1}
+            spaceBetween={10}
+            loop={approvedCars.length > 1}
+            hashNavigation={{ watchState: true }}
+            modules={[Pagination, Autoplay]}
+            autoplay={{
+              delay: 10000,
+              disableOnInteraction: false,
+            }}
+            breakpoints={{
+              375: {
+                slidesPerView: 1,
+                spaceBetween: 10,
+              },
+              768: {
+                slidesPerView: 1,
+                spaceBetween: 15,
+              },
+              1024: {
+                slidesPerView: 2,
+                spaceBetween: 15,
+              },
+              1440: {
+                slidesPerView: 3,
+                spaceBetween: 15,
+              },
+            }}
+            className='w-full'
+            ref={swiperRef}
+          >
+            {approvedCars.map((carForSale) => {
+              const imageSrc = getCarCardImageSrc(carForSale)
+
+              return (
+                <SwiperSlide className='w-full' key={carForSale.uuid}>
+                  <div className='mx-2 w-full mb-2 shadow-[0px_0px_8px_rgba(0,_0,_0,_0.15)] rounded-md bg-white'>
+                    {imageSrc ? (
+                      <Image
+                        width={414}
+                        height={275}
+                        className='rounded-md object-cover !h-[275px] w-full'
+                        alt={carForSale.title || carForSale.make || 'Car'}
+                        src={imageSrc}
+                      />
+                    ) : (
+                      <div className='flex justify-center items-center rounded-md bg-[#f0f4f8] !h-[275px] w-full'>
+                        <Image
+                          width={64}
+                          height={64}
+                          src={PLACEHOLDER}
+                          alt='No photo'
+                          className='opacity-40'
+                        />
+                      </div>
+                    )}
+
+                    <div className='flex w-full flex-col'>
+                      <div className='flex flex-col px-4 py-2 space-y-3'>
                         <div className='flex flex-row items-center'>
-                          {Array.from({ length: 5 }, (_, starIndex) => (
-                            <div key={starIndex} className='h-5 w-5'>
-                              <FaStar
-                                size={20}
-                                color={
-                                  starIndex <
-                                  Number(carForSale.averageRating || 0)
-                                    ? '#e1ba00' // Filled star
-                                    : '#D3D3D3' // Unfilled star
-                                }
-                              />
+                          <div className='rating-container mr-3'>
+                            <div className='flex flex-row items-center'>
+                              {Array.from({ length: 5 }, (_, starIndex) => (
+                                <div key={starIndex} className='h-5 w-5'>
+                                  <FaStar
+                                    size={20}
+                                    color={
+                                      starIndex <
+                                        Number(carForSale.averageRating || 0)
+                                        ? '#e1ba00'
+                                        : '#D3D3D3'
+                                    }
+                                  />
+                                </div>
+                              ))}
+                              <div className='ms-3 ml-2 md:text-base text-xs opacity-[50%]'>
+                                {carForSale.averageRating
+                                  ? parseFloat(
+                                    carForSale.averageRating,
+                                  ).toFixed(1)
+                                  : '0.0'}
+                              </div>
                             </div>
-                          ))}
-                          <div className='ms-3 ml-2 md:text-base text-xs opacity-[50%]'>
-                            {carForSale.averageRating
-                              ? parseFloat(carForSale.averageRating).toFixed(1)
-                              : '0.0'}
+                          </div>
+                          <div className='opacity-[50%] md:text-base text-xs ms-3'>
+                            {carForSale.reviewCount > 1
+                              ? `(${carForSale.reviewCount} Reviews)`
+                              : `(${carForSale.reviewCount || 0} Review)`}
+                          </div>
+                        </div>
+                        <Link
+                          href={`/car/${carForSale.slug || carForSale.uuid}`}
+                          className='flex truncate text-[#002D4F] capitalize md:text-xl text-sm font-medium w-full text-left'
+                        >
+                          {truncateTitle(carForSale.title)}
+                        </Link>
+                        <div className='text-[#002D4F] flex flex-row space-x-2 w-full text-base items-end'>
+                          <div className='inline-block w-3.5'>
+                            <Image
+                              width={20}
+                              height={20}
+                              alt=''
+                              src={location.src}
+                            />
+                          </div>
+                          <div className='flex justify-end truncate md:text-base text-xs overflow-ellipsis'>
+                            {carForSale.neighbourhood}
                           </div>
                         </div>
                       </div>
-                      <div className='opacity-[50%]  md:text-base text-xs ms-3'>
-                        {carForSale.reviewCount
-                          ? carForSale.reviewCount > 1
-                            ? `(${carForSale.reviewCount} Reviews)`
-                            : `(${carForSale.reviewCount} Review)`
-                          : `(0 Review)`}
-                      </div>
-                    </div>
-                    <Link href={`/car/${carForSale.uuid}`}>
-                      <div className='flex truncate text-[#002D4F] capitalize md:text-xl text-sm font-medium w-full text-left'>
-                        {truncateTitle(carForSale.title)}
-                      </div>
-                    </Link>
-                    <div className='text-[#002D4F] flex flex-row space-x-2 w-full text-base items-end'>
-                      <div className='inline-block w-3.5'>
-                        <Image
-                          width={20}
-                          height={20}
-                          alt=''
-                          src={location.src}
-                        />
-                      </div>
-                      <div className='flex justify-end truncate md:text-base text-xs overflow-ellipsis'>
-                        {carForSale.neighbourhood}
+                      <div className='w-full box-border my-3 h-0.5 border-t-[2px] border-solid border-[#969696]' />
+                      <div className='flex flex-row items-center justify-between pb-4 px-5'>
+                        <div className='flex flex-row gap-4 items-center'>
+                          <div className='flex w-[50px] h-[50px]'>
+                            <Image
+                              width={50}
+                              height={50}
+                              className='object-cover'
+                              alt=''
+                              src={
+                                avatars[
+                                (carForSale.uuid?.length || 0) %
+                                avatars.length
+                                ]
+                              }
+                            />
+                          </div>
+                          <div className='md:text-sm lg:text-base text-xs font-medium text-[#000000]'>
+                            Ref:{' '}
+                            {carForSale?.uuid
+                              ? carForSale.uuid.slice(0, 8)
+                              : 'N/A'}
+                          </div>
+                        </div>
+                        <div className='lg:text-lg md:text-sm text-xs font-semibold text-[#000000]'>
+                          AED {formatPriceUS(carForSale.price)}
+                        </div>
                       </div>
                     </div>
                   </div>
-                  <div className='w-full box-border my-3 h-0.5 border-t-[2px] border-solid border-[#969696]' />
-                  <div className='flex flex-row items-center justify-between pb-4 px-5'>
-                    <div className='flex flex-row gap-4 items-center'>
-                      <div className='flex w-[50px] h-[50px]'>
-                        <Image
-                          width={50}
-                          height={50}
-                          className='object-cover'
-                          alt=''
-                          src={avatars[index % avatars.length]}
-                        />
-                      </div>
-                      <div className='md:text-sm lg:text-base text-xs font-medium text-[#000000]'>
-                        Ref:{' '}
-                        {carForSale?.uuid ? carForSale.uuid.slice(0, 8) : 'N/A'}
-                      </div>
-                    </div>
-                    <div className='lg:text-lg md:text-sm text-xs font-semibold text-[#000000]'>
-                      AED {formatPriceUS(carForSale.price)}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </SwiperSlide>
-          ))}
-        </Swiper>
-      </div>
+                </SwiperSlide>
+              )
+            })}
+          </Swiper>
+        </div>
+      ) : null}
     </div>
   )
 }

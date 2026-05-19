@@ -1,18 +1,21 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import axios from 'axios'
 import { useRouter } from 'next/navigation'
 import { Disclosure } from '@headlessui/react'
+import { toast } from 'react-toastify'
 import { SlArrowRight } from 'react-icons/sl'
 import { SearchIcon } from '../../../components/Icons'
 import { OpenDisclosure, CloseDisclosure } from '@/components/Icons'
 import useDebounce from '../../../hooks/useDebounce'
 import Modal from '../../documents/modal'
-import { getCookie } from 'cookies-next'
 import customAxios from '../../../utils/apis/apis'
-import {  getTokenFromCookie } from '../../../utils/helper'
+import { getTokenFromCookie } from '../../../utils/helper'
 import { useProfile } from '../../../context/UserContext'
 import { getListingDocumentSrc } from '@/libs/listingCardMedia'
+import EvaluationActionDropdown, {
+  evaluationMenuItemClass,
+} from './requestCompoenets/EvaluationActionDropdown'
 
 export const BoatEvaluationTab = () => {
   const [propertyListings, setPropertyListings] = useState([])
@@ -24,8 +27,26 @@ export const BoatEvaluationTab = () => {
   const [certificateUrl, setCertificateUrl] = useState('')
   const [assignDropdownOpen, setAssignDropdownOpen] = useState(null)
   const debouncedQuery = useDebounce(searchTerm, 500)
-  const {user}=useProfile()
+  const { user } = useProfile()
+  const menuAnchorRef = useRef(null)
   const router = useRouter()
+
+  const closeActionMenu = () => {
+    setOpenDropdown(null)
+    setAssignDropdownOpen(null)
+    menuAnchorRef.current = null
+  }
+
+  const toggleActionMenu = (event, propertyUuid) => {
+    event.stopPropagation()
+    if (openDropdown === propertyUuid) {
+      closeActionMenu()
+      return
+    }
+    menuAnchorRef.current = event.currentTarget
+    setOpenDropdown(propertyUuid)
+    setAssignDropdownOpen(null)
+  }
 
   useEffect(() => {
     fetchListingsData()
@@ -91,9 +112,7 @@ export const BoatEvaluationTab = () => {
 
   const handleShowCertificate = async (boatId) => {
     try {
-      const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/boat/${boatId}`
-      )
+      const response = await customAxios.get(`/boat/${boatId}`)
       const certificateUrl = getListingDocumentSrc(
         response.data.evaluationCertificate,
       )
@@ -109,7 +128,7 @@ export const BoatEvaluationTab = () => {
       alert('Failed to load evaluation certificate')
     }
 
-    setOpenDropdown(null)
+    closeActionMenu()
   }
 
   const closeModal = () => {
@@ -141,16 +160,7 @@ export const BoatEvaluationTab = () => {
         assigneeId: evaluatorId,
       }
 
-      const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/assets/assign?userId=${userId}`,
-        requestData,
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      )
+      await customAxios.post(`/assets/assign?userId=${userId}`, requestData)
 
       alert('Evaluator assigned successfully')
       setAssignDropdownOpen(null)
@@ -212,9 +222,8 @@ export const BoatEvaluationTab = () => {
                 {({ open }) => (
                   <>
                     <Disclosure.Button
-                      className={`w-full primary-gradient rounded px-5 py-3 sm:px-7 sm:py-4 flex justify-between items-center ${
-                        open && 'mb-3'
-                      }`}
+                      className={`w-full primary-gradient rounded px-5 py-3 sm:px-7 sm:py-4 flex justify-between items-center ${open && 'mb-3'
+                        }`}
                     >
                       <span className='text-base sm:text-lg font-medium text-white'>
                         {sectionTitle}
@@ -223,8 +232,8 @@ export const BoatEvaluationTab = () => {
                         {open ? <OpenDisclosure /> : <CloseDisclosure />}
                       </span>
                     </Disclosure.Button>
-                    <Disclosure.Panel>
-                      <div className='overflow-x-auto md:px-5 px-3'>
+                    <Disclosure.Panel className='overflow-visible'>
+                      <div className='overflow-x-auto md:px-5 px-3 pb-2'>
                         <table className='w-full text-sm sm:text-base bg-white'>
                           <thead>
                             <tr>
@@ -251,7 +260,7 @@ export const BoatEvaluationTab = () => {
                               .filter((property) =>
                                 index === 0
                                   ? property.status === 0 ||
-                                    !property.hasOwnProperty('status')
+                                  !property.hasOwnProperty('status')
                                   : property.status === 1
                               )
                               .map((property) => {
@@ -267,17 +276,17 @@ export const BoatEvaluationTab = () => {
                                   !Number.isNaN(date.getTime())
                                 const formattedDate = isValidDate
                                   ? date.toLocaleDateString('en-US', {
-                                      month: 'short',
-                                      day: 'numeric',
-                                      year: 'numeric',
-                                    })
+                                    month: 'short',
+                                    day: 'numeric',
+                                    year: 'numeric',
+                                  })
                                   : '--'
                                 const formattedTime = isValidDate
                                   ? date.toLocaleTimeString('en-US', {
-                                      hour: 'numeric',
-                                      minute: '2-digit',
-                                      hour12: true,
-                                    })
+                                    hour: 'numeric',
+                                    minute: '2-digit',
+                                    hour12: true,
+                                  })
                                   : '--'
 
                                 let assignedTo = 'Super Admin'
@@ -307,92 +316,96 @@ export const BoatEvaluationTab = () => {
                                     <td className='py-3 truncate px-4'>{`${formattedDate} ${formattedTime}`}</td>
                                     {index === 0 ? (
                                       <td className='py-3 px-4'>
-                                        <div className='relative inline-block text-left'>
+                                        <button
+                                          type='button'
+                                          aria-haspopup='menu'
+                                          aria-expanded={
+                                            openDropdown === property.uuid
+                                          }
+                                          onClick={(e) =>
+                                            toggleActionMenu(e, property.uuid)
+                                          }
+                                          className='inline-flex h-9 w-9 items-center justify-center rounded-md text-blue-600 hover:bg-blue-50'
+                                        >
+                                          <SlArrowRight />
+                                        </button>
+                                        <EvaluationActionDropdown
+                                          open={openDropdown === property.uuid}
+                                          onClose={closeActionMenu}
+                                          anchorRef={menuAnchorRef}
+                                          className='w-44 min-w-[11rem]'
+                                        >
                                           <button
+                                            type='button'
                                             onClick={() =>
-                                              setOpenDropdown((prev) =>
+                                              setAssignDropdownOpen((prev) =>
                                                 prev === property.uuid
                                                   ? null
-                                                  : property.uuid
+                                                  : property.uuid,
                                               )
                                             }
-                                            className='flex items-center text-blue-600'
+                                            className={evaluationMenuItemClass}
                                           >
-                                            <SlArrowRight />
+                                            Assign To
                                           </button>
-
-                                          {openDropdown === property.uuid && (
-                                            <div className='absolute right-0 z-10 mt-2 w-40 origin-top-right rounded-md bg-white border border-gray-200 shadow-lg'>
-                                              <button
-                                                onClick={() =>
-                                                  setAssignDropdownOpen(
-                                                    (prev) =>
-                                                      prev === property.uuid
-                                                        ? null
-                                                        : property.uuid
-                                                  )
-                                                }
-                                                className='block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100'
-                                              >
-                                                Assign To
-                                              </button>
-
-                                              {assignDropdownOpen ===
-                                                property.uuid && (
-                                                <div className='absolute left-full top-0 ml-2 w-44 rounded-md h-80 bg-white border border-gray-300 shadow-md z-20'>
-                                                  <div className='max-h-80 overflow-y-auto'>
-                                                    {subEvaluators.map(
-                                                      (evaluator) => {
-                                                        const isAssigned =
-                                                          property?.evaluator ===
-                                                            evaluator.uuid ||
-                                                          property?.evaluator ===
+                                          {assignDropdownOpen ===
+                                            property.uuid && (
+                                              <div className='max-h-48 overflow-y-auto border-t border-gray-100'>
+                                                {subEvaluators.map(
+                                                  (evaluator) => {
+                                                    const isAssigned =
+                                                      property?.evaluator ===
+                                                      evaluator.uuid ||
+                                                      property?.evaluator ===
+                                                      evaluator._id ||
+                                                      property?.assignedTo ===
+                                                      evaluator.uuid ||
+                                                      property?.assignedTo ===
+                                                      evaluator._id
+                                                    return (
+                                                      <button
+                                                        key={
+                                                          evaluator._id ||
+                                                          evaluator.uuid
+                                                        }
+                                                        type='button'
+                                                        onClick={() =>
+                                                          handleAssignEvaluator(
+                                                            property._id ||
+                                                            property.uuid,
                                                             evaluator._id ||
-                                                          property?.assignedTo ===
-                                                            evaluator.uuid ||
-                                                          property?.assignedTo ===
-                                                            evaluator._id
-                                                        return (
-                                                          <button
-                                                            key={evaluator._id || evaluator.uuid}
-                                                            onClick={() =>
-                                                              handleAssignEvaluator(
-                                                                property._id || property.uuid,
-                                                                evaluator._id || evaluator.uuid
-                                                              )
-                                                            }
-                                                            className='flex justify-between items-center w-full px-3 py-2 text-left text-sm text-gray-800 hover:bg-gray-100'
-                                                          >
-                                                            <span>
-                                                              {evaluator.name}
-                                                            </span>
-                                                            {isAssigned && (
-                                                              <span className='text-green-500'>
-                                                                ✔
-                                                              </span>
-                                                            )}
-                                                          </button>
-                                                        )
-                                                      }
-                                                    )}
-                                                  </div>
-                                                </div>
-                                              )}
-
-                                              <button
-                                                onClick={() => {
-                                                  router.push(
-                                                    `/evaluator-profile/boat-evaluation/${property.uuid}`
-                                                  )
-                                                  setOpenDropdown(null)
-                                                }}
-                                                className='block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100'
-                                              >
-                                                Evaluate
-                                              </button>
-                                            </div>
-                                          )}
-                                        </div>
+                                                            evaluator.uuid,
+                                                          )
+                                                        }
+                                                        className='flex w-full items-center justify-between px-3 py-2 text-left text-sm text-gray-800 hover:bg-gray-100'
+                                                      >
+                                                        <span>
+                                                          {evaluator.name}
+                                                        </span>
+                                                        {isAssigned && (
+                                                          <span className='text-green-500'>
+                                                            ✔
+                                                          </span>
+                                                        )}
+                                                      </button>
+                                                    )
+                                                  },
+                                                )}
+                                              </div>
+                                            )}
+                                          <button
+                                            type='button'
+                                            onClick={() => {
+                                              router.push(
+                                                `/evaluator-profile/boat-evaluation/${property.uuid}`,
+                                              )
+                                              closeActionMenu()
+                                            }}
+                                            className={evaluationMenuItemClass}
+                                          >
+                                            Evaluate
+                                          </button>
+                                        </EvaluationActionDropdown>
                                       </td>
                                     ) : (
                                       <>
@@ -400,45 +413,48 @@ export const BoatEvaluationTab = () => {
                                           {assignedTo}
                                         </td>
                                         <td className='py-3 px-4'>
-                                          <div className='relative inline-block text-left'>
+                                          <button
+                                            type='button'
+                                            aria-haspopup='menu'
+                                            aria-expanded={
+                                              openDropdown === property.uuid
+                                            }
+                                            onClick={(e) =>
+                                              toggleActionMenu(e, property.uuid)
+                                            }
+                                            className='inline-flex h-9 w-9 items-center justify-center rounded-md text-xl leading-none text-gray-600 hover:bg-slate-100 hover:text-gray-900'
+                                          >
+                                            ⋯
+                                          </button>
+                                          <EvaluationActionDropdown
+                                            open={openDropdown === property.uuid}
+                                            onClose={closeActionMenu}
+                                            anchorRef={menuAnchorRef}
+                                          >
                                             <button
+                                              type='button'
                                               onClick={() =>
-                                                setOpenDropdown((prev) =>
-                                                  prev === property.uuid
-                                                    ? null
-                                                    : property.uuid
+                                                handleShowCertificate(
+                                                  property.uuid,
                                                 )
                                               }
-                                              className='text-2xl text-gray-600 hover:text-gray-800'
+                                              className={evaluationMenuItemClass}
                                             >
-                                              ⋯
+                                              Show Evaluation Certificate
                                             </button>
-                                            {openDropdown === property.uuid && (
-                                              <div className='absolute right-0 z-10 mt-2 w-52 origin-top-right rounded-md bg-white border border-gray-200 shadow-lg'>
-                                                <button
-                                                  onClick={() =>
-                                                    handleShowCertificate(
-                                                      property.uuid
-                                                    )
-                                                  }
-                                                  className='block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100'
-                                                >
-                                                  Show Evaluation Certificate
-                                                </button>
-                                                <button
-                                                  onClick={() => {
-                                                    router.push(
-                                                      `/evaluator-profile/boat-evaluation/${property.uuid}`
-                                                    )
-                                                    setOpenDropdown(null)
-                                                  }}
-                                                  className='block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100'
-                                                >
-                                                  View Full Details
-                                                </button>
-                                              </div>
-                                            )}
-                                          </div>
+                                            <button
+                                              type='button'
+                                              onClick={() => {
+                                                router.push(
+                                                  `/evaluator-profile/boat-evaluation/${property.uuid}`,
+                                                )
+                                                closeActionMenu()
+                                              }}
+                                              className={evaluationMenuItemClass}
+                                            >
+                                              View Full Details
+                                            </button>
+                                          </EvaluationActionDropdown>
                                         </td>
                                       </>
                                     )}

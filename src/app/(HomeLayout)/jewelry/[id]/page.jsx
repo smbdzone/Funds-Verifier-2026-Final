@@ -7,16 +7,27 @@ import GlobalLoader from '@/utils/GlobalLoader'
 
 const GetProductData = async ({ id }) => {
   try {
-    const propertyInfo = await api('/jewelry/' + id)
-    const propertyData = await api(`/jewelry`)
-    return { propertyInfo, propertyData }
+    const propertyInfo = await api(`/jewelry/${id}`)
+    // Only evaluator-approved jewellery (status = 1) in Related Jewellery
+    const propertyData = await api('/jewelry?statusFilter=1&limit=50', {}, 0)
+    const relatedProducts = (propertyData?.products || []).filter(
+      (item) =>
+        item?.status === 1 &&
+        item?.uuid !== propertyInfo?.uuid &&
+        item?.slug !== propertyInfo?.slug &&
+        String(item?._id) !== String(propertyInfo?._id),
+    )
+    return {
+      propertyInfo,
+      propertyData: { ...propertyData, products: relatedProducts },
+    }
   } catch (error) {
     return null
   }
 }
 
 export default async function page({ params }) {
-  const {id} =await params
+  const { id } = await params
   const data = await GetProductData({ id })
   if (!data || !data.propertyInfo) {
     return (
@@ -46,13 +57,14 @@ export default async function page({ params }) {
           </div>
         </div>
         <JewelleryView data={propertyInfo || {}} />
-        <div className='theme-container'>
-          <h1 className='md:text-2xl text-lg mb-6 font-semibold text-left text-blue '>
-            Related Jewellery
-          </h1>
-          <ButtomSlider data={propertyData || []} />
-        </div>
-        <div></div>
+        {propertyData?.products?.length > 0 ? (
+          <div className='theme-container'>
+            <h1 className='md:text-2xl text-lg mb-6 font-semibold text-left text-blue '>
+              Related Jewellery
+            </h1>
+            <ButtomSlider data={propertyData} />
+          </div>
+        ) : null}
       </Suspense>
     </div>
   )

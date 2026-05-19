@@ -28,6 +28,7 @@ import {
   getListingVideoSrc,
 } from '@/libs/listingCardMedia'
 import { useProfile } from '../../../context/UserContext'
+import { length as boatLengthOptions } from '@/constants/boat-listings'
 
 export const RequestTab2 = () => {
   const { user } = useProfile()
@@ -42,6 +43,7 @@ export const RequestTab2 = () => {
   const [listingPrice, setListingPrice] = useState('')
   const [formattedListingPrice, setFormattedListingPrice] = useState('')
   const [roi, setRoi] = useState('')
+  const [length, setLength] = useState('')
   const [isSavingDetails, setIsSavingDetails] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
@@ -68,9 +70,7 @@ export const RequestTab2 = () => {
 
   const fetchPropertyData = async () => {
     try {
-      const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/boat/${propertyId}`
-      )
+      const response = await customAxios.get(`/boat/${propertyId}`)
       setProperty(response.data)
 
       if (
@@ -92,6 +92,7 @@ export const RequestTab2 = () => {
         setFormattedListingPrice,
       )
       setRoi(response.data.roi != null ? String(response.data.roi) : '')
+      setLength(response.data.length || '')
       if (response.data.evaluationCertificate) {
         setFileUrl(response.data.evaluationCertificate) // Update URL from API
       }
@@ -171,16 +172,36 @@ export const RequestTab2 = () => {
       } else {
         fileUpload = await handleFileUpload(fileName)
       }
+      const certificateId =
+        fileUpload?._id || property?.evaluationCertificate || null
+
+      if (property?.status !== 1 && !certificateId) {
+        toast.error(
+          'Please upload an evaluation certificate before submitting.',
+        )
+        setIsLoading(false)
+        return
+      }
+
+      const approvalPayload = buildEvaluatorUpdatePayload({
+        listingPrice,
+        evaluationPrice,
+        length,
+        includeRoi: false,
+        includeLength: true,
+      })
+      if (certificateId) {
+        approvalPayload.evaluationCertificate = certificateId
+      }
+      approvalPayload.invoice = invoiceUpload?._id || property?.invoice || null
+      if (certificateId || property?.status === 1) {
+        approvalPayload.status = 1
+      }
+
       if (fileUpload?._id || invoiceUpload?._id) {
         await customAxios.put(
           `${process.env.NEXT_PUBLIC_BASE_URL}/boat/${propertyId}`,
-          {
-            evaluationPrices: evaluationPrice,
-            evaluationCertificate:
-              fileUpload?._id || property?.evaluationCertificate || null,
-            invoice: invoiceUpload?._id || property?.invoice || null,
-            status: 1,
-          }
+          approvalPayload,
         )
 
         setProperty((prevProperty) => ({
@@ -207,13 +228,10 @@ export const RequestTab2 = () => {
           }
           toast.success('Asset approved successfully')
         }
-      } else {
+      } else if (certificateId || property?.status === 1) {
         await customAxios.put(
           `${process.env.NEXT_PUBLIC_BASE_URL}/boat/${propertyId}`,
-          {
-            evaluationPrices: evaluationPrice,
-            status: 1,
-          }
+          approvalPayload,
         )
         toast.success('Asset approved successfully')
       }
@@ -271,7 +289,9 @@ export const RequestTab2 = () => {
       listingPrice,
       evaluationPrice,
       roi,
+      length,
       includeRoi: true,
+      includeLength: true,
     })
 
     if (Object.keys(updateData).length === 0) {
@@ -322,15 +342,24 @@ export const RequestTab2 = () => {
           <InputField label='Title' value={property.title} />
           <InputField label='Phone Number' value={property.phoneNumber} />
         </div>
-        <div className='mb-4 grid sm:grid-cols-2 gap-4'>
-          {property?.status !== 1 ? (
-            <InputField
-              label='Price'
-              value={formatNumberWithCommas(property.price)}
-            />
-          ) : null}
-          <InputField label='Length' value={property.length} />
-        </div>
+        {property?.status !== 1 ? (
+          <EvaluatorEditableFields
+            variant='pending'
+            listingPriceLabel='Price'
+            formattedListingPrice={formattedListingPrice}
+            onListingPriceChange={handleListingPrice}
+            formattedEvaluationPrice={formattedPrice}
+            onEvaluationPriceChange={handleEvaluationPrice}
+            showEvaluationPrice={false}
+            showRoi={false}
+            showLength
+            length={length}
+            onLengthChange={setLength}
+            lengthOptions={boatLengthOptions}
+            onSave={handleSaveEvaluationDetails}
+            isSaving={isSavingDetails}
+          />
+        ) : null}
 
         <div className='mb-4 grid sm:grid-cols-2 gap-4'>
           <InputField label='Model' value={property.model} />
@@ -351,6 +380,7 @@ export const RequestTab2 = () => {
         </div>
         {property?.status === 1 ? (
           <EvaluatorEditableFields
+            listingPriceLabel='Price'
             formattedListingPrice={formattedListingPrice}
             onListingPriceChange={handleListingPrice}
             formattedEvaluationPrice={formattedPrice}
@@ -358,6 +388,10 @@ export const RequestTab2 = () => {
             roi={roi}
             onRoiChange={setRoi}
             showRoi
+            showLength
+            length={length}
+            onLengthChange={setLength}
+            lengthOptions={boatLengthOptions}
             onSave={handleSaveEvaluationDetails}
             isSaving={isSavingDetails}
           />

@@ -8,7 +8,7 @@ import 'swiper/css/navigation'
 import { Pagination, Autoplay } from 'swiper/modules'
 import Image from 'next/image'
 import Link from 'next/link'
-import { formatPriceUS } from '@/utils'
+import { formatPriceUS, ucFirst } from '@/utils'
 import {
   getListingCarouselItems,
   getListingThumbSrc,
@@ -25,15 +25,15 @@ import { usePublicTokenContext } from '@/utils/PublicTokenProvider.'
 
 const avatars = [avatar1, avatar2, avatar3]
 
-const APPROVED_BOATS_URL = '/boat?statusFilter=1&limit=100&sort=-createdAt'
+const APPROVED_JEWELRY_URL = '/jewelry?statusFilter=1&limit=100&sort=-createdAt'
 
-function filterApprovedBoats(products) {
+function filterApprovedJewelry(products) {
   if (!Array.isArray(products)) return []
   return products.filter((item) => Number(item?.status) === 1)
 }
 
 function truncateTitle(title) {
-  if (!title) return 'Boat'
+  if (!title) return 'Jewellery'
   const words = String(title).split(' ')
   if (words.length > 4) {
     return `${words.slice(0, 4).join(' ')}...`
@@ -41,18 +41,18 @@ function truncateTitle(title) {
   return title
 }
 
-function getBoatCardImageSrc(boat) {
-  const items = getListingCarouselItems(boat)
+function getJewelryCardImageSrc(jewelry) {
+  const items = getListingCarouselItems(jewelry)
   const slide = items.find(
     (item) => item.type === 'image' && !isListingCarouselPlaceholderSlide(item),
   )
   if (slide?.src) return slide.src
-  const thumb = getListingThumbSrc(boat)
+  const thumb = getListingThumbSrc(jewelry)
   return thumb !== PLACEHOLDER ? thumb : ''
 }
 
-export default function BoatsSaleSlider() {
-  const [approvedBoats, setApprovedBoats] = useState([])
+export default function JewelrySaleSlider() {
+  const [approvedJewelry, setApprovedJewelry] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const swiperRef = useRef(null)
   const publicToken = usePublicTokenContext()
@@ -60,12 +60,12 @@ export default function BoatsSaleSlider() {
   useEffect(() => {
     let cancelled = false
 
-    const fetchApprovedBoats = async () => {
+    const fetchApprovedJewelry = async () => {
       setIsLoading(true)
       try {
         const base = process.env.NEXT_PUBLIC_BASE_URL
         if (!base) {
-          setApprovedBoats([])
+          setApprovedJewelry([])
           return
         }
 
@@ -74,7 +74,7 @@ export default function BoatsSaleSlider() {
           headers['x-public-token'] = publicToken
         }
 
-        const response = await fetch(`${base}${APPROVED_BOATS_URL}`, {
+        const response = await fetch(`${base}${APPROVED_JEWELRY_URL}`, {
           cache: 'no-store',
           headers,
         })
@@ -85,12 +85,12 @@ export default function BoatsSaleSlider() {
 
         const data = await response.json()
         if (!cancelled) {
-          setApprovedBoats(filterApprovedBoats(data?.products))
+          setApprovedJewelry(filterApprovedJewelry(data?.products))
         }
       } catch (error) {
-        console.error('Failed to load verified boats for sale:', error)
+        console.error('Failed to load verified jewellery for sale:', error)
         if (!cancelled) {
-          setApprovedBoats([])
+          setApprovedJewelry([])
         }
       } finally {
         if (!cancelled) {
@@ -99,7 +99,7 @@ export default function BoatsSaleSlider() {
       }
     }
 
-    fetchApprovedBoats()
+    fetchApprovedJewelry()
 
     return () => {
       cancelled = true
@@ -118,14 +118,14 @@ export default function BoatsSaleSlider() {
     }
   }
 
-  const hasListings = approvedBoats.length > 0
+  const hasListings = approvedJewelry.length > 0
 
   return (
     <div className='container mx-auto'>
       <div className='mb-3 sm:mb-0'>
         <div className='relative flex justify-between items-center'>
           <div className='md:text-4xl lg:text-5xl text-xl text-[#002D4F] text-center font-semibold w-full'>
-            Verified Boats for Sale
+            Verified Jewellery for Sale
           </div>
         </div>
         <div className='flex flex-row md:my-5 my-2 w-full justify-center gap-2'>
@@ -134,7 +134,8 @@ export default function BoatsSaleSlider() {
         </div>
         <div className='flex leading-[30px] text-black justify-center mb-2 sm:mb-5'>
           <p className='xl:w-[35%] lg:w-[50%] md:px-5 text-xs text-center'>
-            Browse evaluator-approved boats listed for sale on Funds Verifier.
+            Browse evaluator-approved jewellery listed for sale on Funds
+            Verifier.
           </p>
         </div>
 
@@ -168,13 +169,13 @@ export default function BoatsSaleSlider() {
 
       {isLoading ? (
         <p className='text-center text-sm text-[#002D4F]/70 py-12'>
-          Loading verified boats…
+          Loading verified jewellery…
         </p>
       ) : null}
 
       {!isLoading && !hasListings ? (
         <p className='text-center text-sm text-[#002D4F]/70 py-12'>
-          No evaluator-approved boats for sale yet.
+          No evaluator-approved jewellery for sale yet.
         </p>
       ) : null}
 
@@ -214,7 +215,7 @@ export default function BoatsSaleSlider() {
             slidesPerView={1}
             spaceBetween={10}
             hashNavigation={{ watchState: true }}
-            loop={approvedBoats.length > 1}
+            loop={approvedJewelry.length > 1}
             modules={[Pagination, Autoplay]}
             autoplay={{
               delay: 10000,
@@ -241,18 +242,18 @@ export default function BoatsSaleSlider() {
             ref={swiperRef}
             className='w-full'
           >
-            {approvedBoats.map((boatForSale) => {
-              const imageSrc = getBoatCardImageSrc(boatForSale)
+            {approvedJewelry.map((item) => {
+              const imageSrc = getJewelryCardImageSrc(item)
 
               return (
-                <SwiperSlide className='w-full' key={boatForSale.uuid}>
+                <SwiperSlide className='w-full' key={item.uuid}>
                   <div className='overflow-hidden w-full mx-2 mb-2 shadow-[0px_0px_8px_rgba(0,_0,_0,_0.15)] rounded-md bg-white'>
                     {imageSrc ? (
                       <Image
                         width={414}
                         height={275}
                         className='rounded-md object-cover !h-[275px] w-full'
-                        alt={boatForSale.title || boatForSale?.make || 'Boat'}
+                        alt={item.title || item.category || 'Jewellery'}
                         src={imageSrc}
                       />
                     ) : (
@@ -278,7 +279,7 @@ export default function BoatsSaleSlider() {
                                     size={20}
                                     color={
                                       starIndex <
-                                        Number(boatForSale.averageRating || 0)
+                                        Number(item.averageRating || 0)
                                         ? '#e1ba00'
                                         : '#D3D3D3'
                                     }
@@ -286,27 +287,29 @@ export default function BoatsSaleSlider() {
                                 </div>
                               ))}
                               <div className='ms-3 ml-2 md:text-base text-xs opacity-[50%]'>
-                                {boatForSale.averageRating
-                                  ? parseFloat(boatForSale.averageRating).toFixed(
-                                    1,
-                                  )
+                                {item.averageRating
+                                  ? parseFloat(item.averageRating).toFixed(1)
                                   : '0.0'}
                               </div>
                             </div>
                           </div>
                           <div className='opacity-[50%] md:text-base text-xs'>
-                            {(boatForSale.reviewCount ?? boatForSale.reviewCounts) >
-                              1
-                              ? `(${boatForSale.reviewCount ?? boatForSale.reviewCounts} Reviews)`
-                              : `(${boatForSale.reviewCount ?? boatForSale.reviewCounts ?? 0} Review)`}
+                            {item.reviewCount > 1
+                              ? `(${item.reviewCount} Reviews)`
+                              : `(${item.reviewCount || 0} Review)`}
                           </div>
                         </div>
                         <Link
-                          href={`/boat/${boatForSale.slug || boatForSale.uuid}`}
-                          className='flex text-[#002D4F] md:text-xl text-sm font-medium w-full text-left'
+                          href={`/jewelry/${item.slug || item.uuid}`}
+                          className='flex text-[#002D4F] md:text-xl text-sm font-medium w-full text-left capitalize'
                         >
-                          {truncateTitle(boatForSale.title)}
+                          {truncateTitle(item.title)}
                         </Link>
+                        {item.category ? (
+                          <p className='text-[#002D4F] opacity-70 md:text-sm text-xs -mt-1 capitalize'>
+                            {ucFirst(item.category)}
+                          </p>
+                        ) : null}
                         <div className='text-[#002D4F] flex flex-row space-x-2 w-full text-base items-start'>
                           <div className='inline-block w-3.5'>
                             <Image
@@ -317,7 +320,7 @@ export default function BoatsSaleSlider() {
                             />
                           </div>
                           <div className='flex md:text-base text-xs truncate overflow-ellipsis'>
-                            {boatForSale.neighbourhood}
+                            {item.neighbourhood || item.city}
                           </div>
                         </div>
                       </div>
@@ -332,20 +335,18 @@ export default function BoatsSaleSlider() {
                               alt=''
                               src={
                                 avatars[
-                                (boatForSale.uuid?.length || 0) % avatars.length
+                                (item.uuid?.length || 0) % avatars.length
                                 ]
                               }
                             />
                           </div>
                           <div className='md:text-sm lg:text-base text-xs font-medium text-[#000000]'>
                             Ref:{' '}
-                            {boatForSale?.uuid
-                              ? boatForSale.uuid.slice(0, 8)
-                              : 'N/A'}
+                            {item?.uuid ? item.uuid.slice(0, 8) : 'N/A'}
                           </div>
                         </div>
                         <div className='lg:text-lg md:text-sm text-xs font-semibold text-[#000000]'>
-                          AED {formatPriceUS(boatForSale.price)}
+                          AED {formatPriceUS(item.price)}
                         </div>
                       </div>
                     </div>

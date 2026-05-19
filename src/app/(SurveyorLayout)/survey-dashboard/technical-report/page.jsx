@@ -19,6 +19,7 @@ function Page() {
   const [selectedFile, setSelectedFile] = useState(null)
   const [Recommended, setRecommended] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [uploadSuccess, setUploadSuccess] = useState(false)
   const [isReportModalOpen, setIsReportModalOpen] = useState(false)
   const router = useRouter()
 
@@ -38,12 +39,12 @@ function Page() {
     ]
 
     if (!allowedTypes.includes(file.type)) {
-      alert('Invalid file type. Please upload a PDF or Word document.')
+      toast.error('Invalid file type. Please upload a PDF or Word document.')
       return
     }
 
     if (file.size > 2 * 1024 * 1024) {
-      alert('File size exceeds 2MB.')
+      toast.error('File size exceeds 2MB.')
       return
     }
 
@@ -52,32 +53,48 @@ function Page() {
   }
   // Upload the document
   const uploadDoc = async () => {
-    if (!selectedFile) return toast.error('Please select a file to upload.')
+    if (!selectedFile) {
+      toast.error('Please select a file to upload.')
+      return
+    }
+
+    if (!id) {
+      toast.error('Report request not found. Go back and open a report again.')
+      return
+    }
 
     try {
       setLoading(true)
+
       const fileUpload = await handleFileUpload(selectedFile)
+      if (!fileUpload?._id) {
+        throw new Error('File upload did not return a valid document id.')
+      }
 
       await customAxios.put(
         `${process.env.NEXT_PUBLIC_BASE_URL}/report/technical-report/${id}`,
         {
           assetId: productDetails?.uuid,
           IsRecommended: Recommended,
-          reportFile: fileUpload?._id,
-        }
+          reportFile: fileUpload._id,
+        },
       )
 
-      const refreshed = await customAxios.get(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/report/technical-report/${id}`
-      )
-      setReportDetails(refreshed.data)
-      setSelectedFile(null)
-      setFileName('')
-      toast.success('File uploaded successfully! You can view it below.')
+      setUploadSuccess(true)
+      setLoading(false)
+      toast.success('Technical report uploaded successfully!', {
+        autoClose: 5000,
+      })
+      setTimeout(() => {
+        router.replace('/survey-dashboard/requested-reports?uploaded=success')
+      }, 2500)
     } catch (error) {
       console.error('Error uploading document:', error)
-      toast.error('Failed to upload document.')
-    } finally {
+      const message =
+        error?.response?.data?.message ||
+        error?.message ||
+        'Failed to upload technical report. Please try again.'
+      toast.error(message)
       setLoading(false)
     }
   }
@@ -192,6 +209,15 @@ function Page() {
   return (
     <Suspense fallback={<div>Loading...</div>}>
       <div className='flex-1 bg-white md:rounded-lg'>
+        {uploadSuccess ? (
+          <div
+            role='alert'
+            className='mx-4 md:mx-24 lg:mx-44 mt-4 rounded-md border border-green-300 bg-green-50 px-4 py-3 text-sm font-medium text-green-800'
+          >
+            Technical report uploaded successfully. Returning to requested
+            reports…
+          </div>
+        ) : null}
         <div className='px-4 md:px-24 lg:px-44'>
           <div className='grid grid-cols-1 md:grid-cols-2 gap-4 mt-4'>
             {fields.map((field, index) => (

@@ -7,21 +7,34 @@ import GlobalLoader from "@/utils/GlobalLoader";
 
 const GetProductData = async ({ slug }) => {
   try {
-    const propertyResponse = await axios.get(`${process.env.NEXT_PUBLIC_BASE_URL}/boat/${slug}`);
-    // Fetch related property data
-    const propertyDataResponse = await axios.get(`${process.env.NEXT_PUBLIC_BASE_URL}/boat`);
+    const propertyResponse = await axios.get(
+      `${process.env.NEXT_PUBLIC_BASE_URL}/boat/${slug}`,
+    )
+    // Only evaluator-approved boats (status = 1) appear in Related Boats
+    const propertyDataResponse = await axios.get(
+      `${process.env.NEXT_PUBLIC_BASE_URL}/boat?statusFilter=1&limit=50`,
+    )
 
-    const boatInfo = propertyResponse?.data;
-    const boatData = propertyDataResponse?.data;
+    const boatInfo = propertyResponse?.data
+    const boatData = propertyDataResponse?.data
+    const relatedProducts = (boatData?.products || []).filter(
+      (boat) =>
+        boat?.status === 1 &&
+        boat?.uuid !== boatInfo?.uuid &&
+        boat?.slug !== boatInfo?.slug,
+    )
 
-    return { boatInfo, boatData }
+    return {
+      boatInfo,
+      boatData: { ...boatData, products: relatedProducts },
+    }
   } catch (error) {
     return null
   }
 }
 
 export default async function Page({ params }) {
-  const { slug } =await params;
+  const { slug } = await params;
 
   const data = await GetProductData({ slug });
   if (!data || !data.boatInfo) {
@@ -51,12 +64,14 @@ export default async function Page({ params }) {
           </div>
         </div>
         <BoatView data={boatInfo} />
-        <div className="theme-container">
-          <h1 className="md:text-2xl text-lg mb-6 font-semibold text-left text-blue">
-            Related Boats
-          </h1>
-          <ButtomSlider data={boatData || []} />
-        </div>
+        {boatData?.products?.length > 0 ? (
+          <div className="theme-container">
+            <h1 className="md:text-2xl text-lg mb-6 font-semibold text-left text-blue">
+              Related Boats
+            </h1>
+            <ButtomSlider data={boatData} />
+          </div>
+        ) : null}
       </Suspense>
     </div>
   );

@@ -1,6 +1,6 @@
 import React from 'react'
 import { AppProvider } from '@/context/AppContext' // Adjust the import based on your project structure
-import {api} from "../../config/"
+import { api } from "../../config/"
 
 
 export default async function ServerComponent({ children }) {
@@ -22,14 +22,18 @@ export default async function ServerComponent({ children }) {
     buildingTypeProperty,
   ].flat()
   const propertiesForSale = await api(
-    '/property?propertyForSale=Yes&limit=100&status=1'
+    '/property?limit=100&statusFilter=1',
+    {},
+    0,
   )
   const propertiesForLease = await api(
-    '/property?propertyForLease=Yes&limit=100&status=1'
+    '/property?propertyForLease=Yes&limit=100&statusFilter=1',
+    {},
+    0,
   )
 
-  const carsForSale = await api('/car?limit=10&status=1')
-  const boatsForSale = await api('/boat?limit=100&status=1')
+  const carsForSale = await api('/car?limit=10&statusFilter=1', {}, 0)
+  const boatsForSale = await api('/boat?limit=100&statusFilter=1', {}, 0)
 
   const contextValue = {
     propertyTypeData,
