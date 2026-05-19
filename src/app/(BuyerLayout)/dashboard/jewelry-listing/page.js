@@ -96,6 +96,7 @@ function Page() {
     lengthh: '',
     technicalReport: '',
     evaluationDateTime: '',
+    video3DWalkthrough: null,
   }
   const dropdownData = {
     country: false,
@@ -240,7 +241,7 @@ function Page() {
     } else {
       setIsValid(true)
     }
-    return phoneNumber
+    return isValidPhoneNumber(value)
   }
 
   const validateForm = (data) => {
@@ -250,16 +251,16 @@ function Page() {
     }
     if (images.length === 0) errors.pictures = 'Pictures are Required'
     if (!thumbnail) errors.thumbnail = 'Thumbnail is Required'
-    if (!data.assetType.trim() || data.assetType === 'Select Asset Type')
+    if (!safeTrim(data.assetType) || data.assetType === 'Select Asset Type')
       errors.assetType = 'Asset Type is required'
-    if (!data.country.trim()) errors.country = 'Country is required'
-    if (!data.city.trim()) errors.city = 'City is required'
-    if (!data.neighbourhood.trim())
+    if (!safeTrim(data.country)) errors.country = 'Country is required'
+    if (!safeTrim(data.city)) errors.city = 'City is required'
+    if (!safeTrim(data.neighbourhood))
       errors.neighbourhood = 'Neighbourhood is required'
-    if (!data.category.trim()) errors.category = 'Category is required'
-    if (!data.model.trim()) errors.model = 'SubCategory is required'
-    if (!data.grams.trim()) errors.grams = 'Grams is required'
-    if (!data.title.trim()) {
+    if (!safeTrim(data.category)) errors.category = 'Category is required'
+    if (!safeTrim(data.model)) errors.model = 'SubCategory is required'
+    if (!safeTrim(data.grams)) errors.grams = 'Grams is required'
+    if (!safeTrim(data.title)) {
       errors.title = 'Title is required'
     } else if (data.title.length > 30) {
       errors.title = 'Title must be less than 30 characters'
@@ -277,7 +278,7 @@ function Page() {
     } else if (data.description.length > 300) {
       errors.description = 'Description cannot exceed 300 characters.'
     }
-    if (!data.condition.trim()) errors.condition = 'Condition is required'
+    if (!safeTrim(data.condition)) errors.condition = 'Condition is required'
     if (!String(data.price || '').trim() && !totalprice) {
       errors.price = 'Price is required'
     } else if (parseInt(totalprice) === 0) {
@@ -647,7 +648,7 @@ function Page() {
     }))
   }
 
-  const filteredCountries = countries.filter((country) =>
+  const filteredCountries = (countries ?? []).filter((country) =>
     country.country.toLowerCase().includes(searchQuery.toLowerCase())
   )
 

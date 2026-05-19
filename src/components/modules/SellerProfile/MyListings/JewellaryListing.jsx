@@ -47,10 +47,8 @@ function JewelryListing({ query }) {
   }
 
   useEffect(() => {
-    if (token) {
-      fetchJewellaryListings(currentPage)
-    }
-  }, [currentPage, debouncedQuery, token])
+    fetchJewellaryListings(currentPage)
+  }, [currentPage, debouncedQuery])
 
   const handleDeleteClick = (listing) => {
     setListingToDelete(listing)

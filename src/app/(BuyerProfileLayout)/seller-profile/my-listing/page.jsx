@@ -2,12 +2,13 @@
 import React, { useEffect, useState } from 'react'
 import MyListingTabClient from '@/components/modules/SellerProfile/MyListings/MyListingsTabClient'
 import { useProfile } from '@/context/UserContext'
-import { fetchAllAssetHolderListings } from '@/libs/fetchAllDashboardProducts'
+import { fetchAssetHolderListingsProgressive } from '@/libs/fetchAllDashboardProducts'
 import { toast } from 'react-toastify'
 
 const MyListingTab = () => {
   const [listings, setListings] = useState([])
   const [listingsLoading, setListingsLoading] = useState(true)
+  const [isLoadingMore, setIsLoadingMore] = useState(false)
   const { isAuthenticated, loading: authLoading } = useProfile()
 
   useEffect(() => {
@@ -16,6 +17,7 @@ const MyListingTab = () => {
     if (!isAuthenticated) {
       setListings([])
       setListingsLoading(false)
+      setIsLoadingMore(false)
       return
     }
 
@@ -23,16 +25,24 @@ const MyListingTab = () => {
 
     const loadListings = async () => {
       setListingsLoading(true)
+      setIsLoadingMore(false)
       try {
-        const all = await fetchAllAssetHolderListings()
-        if (!cancelled) setListings(all)
+        await fetchAssetHolderListingsProgressive((partial) => {
+          if (cancelled) return
+          setListings(partial)
+          setListingsLoading(false)
+          setIsLoadingMore(true)
+        })
       } catch (error) {
         console.error('Error fetching listings:', error)
         if (!cancelled) {
           toast.error('Could not load all listings. Please refresh the page.')
         }
       } finally {
-        if (!cancelled) setListingsLoading(false)
+        if (!cancelled) {
+          setListingsLoading(false)
+          setIsLoadingMore(false)
+        }
       }
     }
 
@@ -43,10 +53,16 @@ const MyListingTab = () => {
     }
   }, [authLoading, isAuthenticated])
 
+  const handleListingDeleted = (uuid) => {
+    setListings((prev) => prev.filter((l) => l.uuid !== uuid))
+  }
+
   return (
     <MyListingTabClient
       listings={listings}
       listingsLoading={listingsLoading || authLoading}
+      isLoadingMore={isLoadingMore}
+      onListingDeleted={handleListingDeleted}
     />
   )
 }

@@ -1,6 +1,7 @@
 'use client'
 import { handleImageUpload } from '@/libs/uploadAsset'
 import axios from 'axios'
+import customAxios from '@/utils/apis/apis'
 import { getExampleNumber } from 'libphonenumber-js'
 import metadata from 'libphonenumber-js/min/metadata'
 import { useSearchParams } from 'next/navigation'
@@ -125,9 +126,7 @@ const ListingsProvider = ({ children }) => {
 
   const fetchData = async (routeName) => {
     try {
-      const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/${routeName}/${id}`,
-      )
+      const response = await customAxios.get(`/${routeName}/${id}`)
       if (response.status === 200) {
         const d = response.data
         const countryNorm =

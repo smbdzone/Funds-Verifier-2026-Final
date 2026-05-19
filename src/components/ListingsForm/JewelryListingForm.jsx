@@ -10,6 +10,7 @@ import ListingTextareaComponent from '@/components/ListingsImageComponent/Listin
 import ListingsDropdownInputComponents from '@/components/ListingsImageComponent/ListingsDropdownInputComponents'
 import ListingModalInputComponent from '@/components/ListingsImageComponent/ListingModalInputComponent'
 import ListingCustomPlacholderInput from '@/components/ListingFormInput/ListingCustomPlacholderInput'
+import Modal2 from '@/components/3dModal/Modal'
 import {
   age,
   conditionOptions,
@@ -73,10 +74,11 @@ const JewelryListingForm = ({
     text: brand,
   }))
   const [data, setData] = useState()
+  const [data2, setData2] = useState()
 
   const getIdByRole = async () => {
     try {
-      const response = await customAxios.get(`/user/role-id/TechnicalReport`) // Fetch user details
+      const response = await customAxios.get(`/user/role-id/TechnicalReport`)
 
       if (response?.data) {
         setData(response?.data[0])
@@ -85,12 +87,33 @@ const JewelryListingForm = ({
       console.error('Error loading user:', error)
     }
   }
+
+  const getIdByRole3d = async () => {
+    try {
+      const response = await customAxios.get(`/user/role-id/3dWalkthrough`)
+
+      if (response?.data) {
+        setData2(response?.data[0])
+      }
+    } catch (error) {
+      console.error('Error loading 3D walkthrough user:', error)
+    }
+  }
+
   useEffect(() => {
     getIdByRole()
+    getIdByRole3d()
   }, [])
 
   const [modalOpen, setModalOpen] = useState(false)
   const [RequestService, setRequestService] = useState('')
+  const isEvaluatorApprovedLocked = isListingEvaluatorApprovedLocked(formData)
+  const canRequestPremium = canRequestPremiumServices(formData)
+
+  const openPremiumGate = () => {
+    setModalOpen(true)
+    setRequestService('Evaluator Approval')
+  }
 
   const ConfirmationModal = () => {
     if (!modalOpen) return null
@@ -299,6 +322,50 @@ const JewelryListingForm = ({
               productTitle={formData?.title}
               productId={formData?.uuid}
               userUUID={data?.uuid}
+            />
+          </div>
+          <div className='relative-placeholder w-full'>
+            <ListingModalInputComponent
+              maxLength={50}
+              name='video3DWalkthrough'
+              value={
+                formData.video3DWalkthrough ? 'Completed' : modalData?.dateTime
+              }
+              disabled={
+                !canRequestPremium ||
+                !formData?.uuid ||
+                formData?.video3DWalkthrough
+              }
+              handleChange={handleChange}
+              required={true}
+              errors={errors.video3DWalkthrough}
+              errorMessage={errors.video3DWalkthrough}
+              dateTime={modalData?.dateTime !== ''}
+              handleOpenModal={
+                !canRequestPremium
+                  ? openPremiumGate
+                  : formData?.uuid
+                    ? handleOpenModal
+                    : () => {
+                      setModalOpen(true)
+                      setRequestService('3D Walkthrough')
+                    }
+              }
+              customPlaceholder='3D Walkthrough Embedded Link'
+              subPlaceholder=' (Optional)'
+              icon='/icons/3dicon.png'
+            />
+            <Modal2
+              isOpen={isModalOpen}
+              onClose={handleCloseModal}
+              onSave={handleRequestModalData}
+              setFormData={setFormData}
+              type='Jewellery For Sale'
+              dropdown={groupedData}
+              title='Jewellery'
+              productId={formData?.uuid}
+              productTitle={formData?.title}
+              userUUID={data2?.uuid}
             />
           </div>
           <div className='w-full col-span-2 flex flex-col gap-5'>

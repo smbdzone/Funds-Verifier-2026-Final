@@ -47,10 +47,8 @@ function AllListings({ query }) {
   }
 
   useEffect(() => {
-    if (token) {
-      fetchPropertyListings(currentPage)
-    }
-  }, [currentPage, debouncedQuery, token])
+    fetchPropertyListings(currentPage)
+  }, [currentPage, debouncedQuery])
 
   const handleDeleteClick = (listing) => {
     setListingToDelete(listing)
