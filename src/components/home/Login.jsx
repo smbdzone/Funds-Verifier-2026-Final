@@ -1,6 +1,6 @@
 'use client'
 import SearchInputs from '@/components/Inputs/SearchInputs'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import FundsTypeSlider from '@/components/sliders/funds-typeSlider'
 import ValuesSec from '@/components/home/valuesSec'
 import PropertiesSale from '@/components/home/properties-sale'
@@ -11,120 +11,91 @@ import Testimonials from '@/components/home/testimonials'
 import Partners from '@/components/home/partners'
 import NewsTrends from '@/components/home/newsTrends'
 import InTouch from '@/components/home/inTouch'
-import { useRouter, useSearchParams } from 'next/navigation'
-import { getCookie, getCookies } from 'cookies-next'
+import { useSearchParams } from 'next/navigation'
 import { toast } from 'react-toastify'
 import Loader from '../../components/modules/EvaluatorProfile/requestCompoenets/Loader'
 import customAxios from '../../utils/apis/apis'
-import { getTokenFromCookie } from '../../utils/helper'
-import { useProfile } from '../../context/UserContext'
-import { deleteCookie } from 'cookies-next'
+import { useProfile } from '@/context/UserContext'
 import { setAccessToken } from '../../utils/auth/accessTokenStore'
+import { getRoleHomeRoute } from '@/utils/auth/roleHome'
 
 export default function Login() {
-  const { user, setIsLoading: setLoading } = useProfile()
+  const { applyUserFromLogin, setIsLoading: setGlobalLoading } = useProfile()
   const [isLoading, setIsLoading] = useState(false)
   const searchParams = useSearchParams()
-  const router = useRouter()
   const code = searchParams.get('code')
+  const oauthStarted = useRef(false)
 
   useEffect(() => {
-    if (typeof window === 'undefined') return
-    if (user === undefined) return // wait for context
-    // Get role from user context (from /me endpoint)
-    const role = user?.role
-    // Get token from cookies (primary storage)
-    // const token = getTokenFromCookie()
-    // Get role from cookie as fallback
-    const cookieRole = getCookies('role')
-    console.log(!role && !cookieRole, role, cookieRole)
+    if (!code || oauthStarted.current) return
+    oauthStarted.current = true
+    exchangeUaePassCode(code)
+  }, [code])
 
-    // If OAuth code exists → fetch token
-    if (code) {
-      getToken()
-    }
-  }, [code, user])
-
-  // Fetch access token from backend
-  const getToken = async () => {
+  const exchangeUaePassCode = async (authCode) => {
     setIsLoading(true)
-    setLoading(true)
+    setGlobalLoading(true)
     try {
-      const res = await customAxios.post('/user/get-token', { code })
+      const res = await customAxios.post('/user/get-token', { code: authCode })
 
-      if (res?.data.message === 'User exist') {
-        await handleSubmit(res?.data.user)
-      } else if (res?.data) {
-        await handleSubmit(res?.data)
+      if (res?.data?.message === 'User exist' && res?.data?.user) {
+        await completeUaePassLogin(res.data.user)
+      } else if (res?.data?.email || res?.data?.uuid) {
+        await completeUaePassLogin(res.data)
       } else {
-        toast.error('Something went wrong')
+        toast.error(res?.data?.error || 'Something went wrong')
       }
     } catch (error) {
-      toast.error(`${error.message}`)
+      toast.error(
+        error.response?.data?.message ||
+          error.response?.data?.error ||
+          error.message ||
+          'UAE Pass login failed',
+      )
     } finally {
       setIsLoading(false)
-      setLoading(false)
+      setGlobalLoading(false)
     }
   }
 
-  // Handle login submission
-  const handleSubmit = async (user) => {
+  const completeUaePassLogin = async (uaeUser) => {
     const payload = {
-      name: user?.fullnameEN,
-      lastname: user?.lastnameEN,
-      email: user?.email,
+      name: uaeUser?.fullnameEN,
+      lastname: uaeUser?.lastnameEN,
+      email: uaeUser?.email,
       role: 'DealHunter',
-      uuid: user?.uuid,
-      userType: user?.userType,
-      phone: user?.mobile,
+      uuid: uaeUser?.uuid,
+      userType: uaeUser?.userType,
+      phone: uaeUser?.mobile,
     }
 
-    try {
-      if (user?.userType === 'SOP1') {
-        localStorage.setItem(
-          'error',
-          'You are not eligible to access this service.',
-        )
-        window.location.href = '/error'
-        return
-      }
-
-      const res = await customAxios.post('/user/store-user', payload, {
-        withCredentials: true, // ✅ IMPORTANT (refreshToken cookie)
-      })
-
-      const data = res.data
-
-      // 🍪 Cookies are set by backend via Set-Cookie headers
-      if (data?.accessToken) {
-        setAccessToken(data.accessToken)
-      }
-
-      toast.success('Login Successful!')
-      // const dataRes = await customAxios.get('/user/me', {
-      //   withCredentials: true,
-      // })
-      // console.log(dataRes, 'dataRes')
-
-      // -------------------------------
-      // 🚀 REDIRECT (SAME AS login)
-      // -------------------------------
-      const targetRoute =
-        data?.role === 'AssetHolder' ? '/seller-profile' : '/profile'
-
-      if (data?.role === 'DealHunter' || data?.role === 'AssetHolder') {
-        // Full navigation so middleware and UserContext see new HttpOnly cookies
-        window.location.href = targetRoute
-      } else {
-        window.location.href = '/'
-      }
-    } catch (error) {
-      toast.error(error.response?.data?.message || 'Login failed')
-      console.error(error)
+    if (uaeUser?.userType === 'SOP1') {
+      localStorage.setItem(
+        'error',
+        'You are not eligible to access this service.',
+      )
+      window.location.href = '/error'
+      return
     }
+
+    const res = await customAxios.post('/user/store-user', payload, {
+      withCredentials: true,
+    })
+
+    const data = res.data
+
+    if (data?.accessToken) {
+      setAccessToken(data.accessToken)
+    }
+
+    applyUserFromLogin?.(data)
+
+    toast.success(data?.message || 'Login Successful!')
+
+    const role = data?.role === 'AssetHolder' ? 'AssetHolder' : 'DealHunter'
+    window.location.replace(getRoleHomeRoute(role))
   }
 
-  // Block UI until redirection
   if (isLoading) return <Loader isOpen={true} />
 
   return (

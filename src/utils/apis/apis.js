@@ -30,7 +30,7 @@ const processQueue = (error, token = null) => {
 }
 
 const customAxios = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_BASE_URL,
+  baseURL: (process.env.NEXT_PUBLIC_BASE_URL || '').trim(),
   withCredentials: true, // refresh token cookie
 })
 
@@ -88,6 +88,8 @@ customAxios.interceptors.response.use(
         const url = originalRequest.url || ''
         if (url.includes('/user/me')) {
           await clearAuthSession(customAxios)
+        } else if (url.includes('/user/switch-user')) {
+          /* keep session; switchUserRole shows the API error */
         } else {
           globalLogout()
         }

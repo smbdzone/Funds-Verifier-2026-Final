@@ -349,6 +349,17 @@ export async function proxy(request) {
     if (session.hasCookies) {
       return buildRedirectWithSessionCleared(request, '/login')
     }
+
+    // Local dev: API sets cookies on :4000; Next runs on :5002 — edge cannot see them.
+    // Let the page load; axios calls still send cookies to the API origin.
+    const isLocalHost =
+      nextUrl.hostname === 'localhost' || nextUrl.hostname === '127.0.0.1'
+    const hasFrontendAuthCookie =
+      request.cookies.get('accessToken') || request.cookies.get('refreshToken')
+    if (isLocalHost && !hasFrontendAuthCookie) {
+      return NextResponse.next()
+    }
+
     return NextResponse.redirect(new URL('/login', request.url))
   }
 

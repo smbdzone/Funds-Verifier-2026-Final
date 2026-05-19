@@ -5,6 +5,7 @@ import customAxios, { login, refreshAccessToken } from '../utils/apis/apis'
 import { toast } from 'react-toastify'
 import {
   clearAccessToken,
+  getAccessToken,
   setAccessToken,
 } from '../utils/auth/accessTokenStore'
 import { clearAuthSession } from '../utils/auth/clearSession'
@@ -13,8 +14,15 @@ import {
   endSession,
   isLoginPath,
 } from '../utils/auth/clearClientSession'
-// ADD AT TOP
+import { getRoleHomeRoute } from '../utils/auth/roleHome'
+
 export let globalLogout = () => { }
+
+/** UAE Pass returns ?code= on the home page — do not probe /me until OAuth finishes. */
+function isUaePassCallback() {
+  if (typeof window === 'undefined') return false
+  return new URLSearchParams(window.location.search).has('code')
+}
 
 export const UserContext = createContext()
 
@@ -55,6 +63,16 @@ export const UserProvider = ({ children }) => {
     setIsAuthenticated(true)
   }
 
+  /** Called after UAE Pass / store-user so context matches before full page redirect. */
+  const applyUserFromLogin = (userData) => {
+    if (!userData) return
+    applyUser(userData)
+    if (userData.accessToken) {
+      setAccessToken(userData.accessToken)
+      setAccessTokenState(userData.accessToken)
+    }
+  }
+
   // Load user on app start: /me via HttpOnly accessToken cookie first, refresh only if needed.
   const loadUserFromToken = async () => {
     try {
@@ -85,7 +103,8 @@ export const UserProvider = ({ children }) => {
       setIsAuthenticated(false)
       setAccessTokenState(null)
       clearAccessToken()
-      if (error.response?.status === 401) {
+      // Only clear HttpOnly cookies when we had an active client session (not a guest / OAuth in progress)
+      if (error.response?.status === 401 && getAccessToken()) {
         await clearAuthSession(customAxios)
       }
     } finally {
@@ -94,8 +113,11 @@ export const UserProvider = ({ children }) => {
   }
 
   useEffect(() => {
+    if (isUaePassCallback()) {
+      setIsLoading(false)
+      return
+    }
     loadUserFromToken()
-    // fetchProfile()
   }, [])
   useEffect(() => {
     router.prefetch('/profile')
@@ -204,42 +226,43 @@ export const UserProvider = ({ children }) => {
   const switchUserRole = async (newRole) => {
     if (!user) return
 
+    const userUuid = user.uuid
+    if (!userUuid) {
+      toast.error('Unable to switch role. Please sign out and sign in again.')
+      return
+    }
+
     try {
       setIsSwitchingRole(true)
 
-      // 1️⃣ Call backend to switch role
       const response = await customAxios.put(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/user/switch-user/${user.uuid}`,
+        `/user/switch-user/${userUuid}`,
         { role: newRole },
-        { withCredentials: true }, // Important for refreshToken cookie
+        { withCredentials: true },
       )
 
-      if (response.status === 200) {
-        const { user: updatedUser, accessToken } = response.data
+      const { user: updatedUser, accessToken } = response.data || {}
 
-        // 2️⃣ Update client state (role comes from /me response via applyUser)
-        setUser({ ...updatedUser, role: updatedUser.role })
-
-        // 🍪 Cookies are set by backend via Set-Cookie headers
-        // Frontend should NOT set cookies - backend handles it for security
-
-        toast.success(`Switched role to ${updatedUser.role}`)
-
-        // 4️⃣ Redirect using full page reload
-        const targetRoute =
-          normalizeRole(updatedUser.role) === 'DealHunter'
-            ? '/profile'
-            : '/seller-profile'
-
-        // Use full reload so middleware sees new cookies
-        window.location.href = targetRoute
-      } else {
-        console.error('Failed to switch role:', response)
-        toast.error('Could not switch role')
+      if (accessToken) {
+        setAccessToken(accessToken)
+        setAccessTokenState(accessToken)
       }
+
+      if (updatedUser) {
+        applyUser(updatedUser)
+      }
+
+      const finalRole = normalizeRole(updatedUser?.role || newRole)
+      toast.success(`Switched role to ${finalRole}`)
+
+      window.location.href = getRoleHomeRoute(finalRole)
     } catch (error) {
-      console.error('Error switching role:', error)
-      toast.error('Something went wrong while switching role')
+      const message =
+        error.response?.data?.message ||
+        error.message ||
+        'Something went wrong while switching role'
+      console.error('Error switching role:', error.response?.data || error)
+      toast.error(message)
     } finally {
       setIsSwitchingRole(false)
     }
@@ -255,6 +278,7 @@ export const UserProvider = ({ children }) => {
         login: handleLogin,
         logout,
         fetchProfile,
+        applyUserFromLogin,
         switchUserRole,
         isSwitchingRole,
         loading,
