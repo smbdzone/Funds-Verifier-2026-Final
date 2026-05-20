@@ -2,7 +2,10 @@
 import React, { useRef, useEffect, useState } from 'react'
 import { useAppContext } from '@/context/AppContext'
 import { formatPriceUS, ucFirst } from '@/utils'
-import { getListingThumbSrc } from '@/libs/listingCardMedia'
+import {
+  getListingCardImageSrc,
+  PLACEHOLDER,
+} from '@/libs/listingCardMedia'
 import { Swiper, SwiperSlide } from 'swiper/react'
 import 'swiper/css'
 import 'swiper/css/pagination'
@@ -82,20 +85,17 @@ export default function CarForSale() {
 
   // Shuffle cars when page loads and every 10 seconds
   useEffect(() => {
-    if (carsForSale) {
-      // Shuffle the cars on page load
-      const shuffled = shuffleArray(carsForSale)
-      setShuffledCars(shuffled)
+    const products = carsForSale?.products || []
+    if (products.length) {
+      setShuffledCars(shuffleArray(products))
 
-      // Set up a timer to shuffle every 10 seconds
       const intervalId = setInterval(() => {
-        const reshuffled = shuffleArray(carsForSale)
-        setShuffledCars(reshuffled)
-      }, 10000) // 10 seconds
+        setShuffledCars(shuffleArray(products))
+      }, 10000)
 
-      // Clean up the interval on component unmount
       return () => clearInterval(intervalId)
     }
+    setShuffledCars([])
   }, [carsForSale])
 
   const truncateTitle = (title) => {
@@ -135,96 +135,112 @@ export default function CarForSale() {
           }}
           ref={swiperRef}
         >
-          {shuffledCars?.map((car, index) => (
-            <SwiperSlide key={index}>
-              <div className='mx-2 mb-2 shadow-[0px_0px_8px_rgba(0,_0,_0,_0.15)] rounded-md bg-white'>
-                <figure className=''>
-                  <Image
-                    width={414}
-                    height={275}
-                    className='rounded-md object-cover !h-[275px]'
-                    alt={car?.make || 'Car'}
-                    src={getListingThumbSrc(car, '/car.jpg')}
-                  />
-                </figure>
-                <div className='flex flex-col'>
-                  <div className='flex flex-col px-4 py-2 space-y-3'>
-                    <div className='flex flex-row items-center'>
-                      {/* Render Stars and Rating */}
-                      <div className='rating-container mr-3'>
-                        <div className='flex flex-row items-center'>
-                          {Array.from({ length: 5 }, (_, starIndex) => (
-                            <div key={starIndex} className='h-5 w-5'>
-                              <FaStar
-                                size={20}
-                                color={
-                                  starIndex <
-                                  Number(averageRating[car.uuid] || 0)
-                                    ? '#e1ba00' // Filled star
-                                    : '#D3D3D3' // Unfilled star
-                                }
-                              />
+          {shuffledCars.map((car, index) => {
+            const imageSrc = getListingCardImageSrc(car)
+
+            return (
+              <SwiperSlide key={car.uuid || index}>
+                <div className='mx-2 mb-2 shadow-[0px_0px_8px_rgba(0,_0,_0,_0.15)] rounded-md bg-white'>
+                  <figure className=''>
+                    {imageSrc ? (
+                      <Image
+                        width={414}
+                        height={275}
+                        className='rounded-md object-cover !h-[275px]'
+                        alt={car?.make || 'Car'}
+                        src={imageSrc}
+                      />
+                    ) : (
+                      <div className='flex justify-center items-center rounded-md bg-[#f0f4f8] !h-[275px] w-full'>
+                        <Image
+                          width={64}
+                          height={64}
+                          src={PLACEHOLDER}
+                          alt='No photo'
+                          className='opacity-40'
+                        />
+                      </div>
+                    )}
+                  </figure>
+                  <div className='flex flex-col'>
+                    <div className='flex flex-col px-4 py-2 space-y-3'>
+                      <div className='flex flex-row items-center'>
+                        {/* Render Stars and Rating */}
+                        <div className='rating-container mr-3'>
+                          <div className='flex flex-row items-center'>
+                            {Array.from({ length: 5 }, (_, starIndex) => (
+                              <div key={starIndex} className='h-5 w-5'>
+                                <FaStar
+                                  size={20}
+                                  color={
+                                    starIndex <
+                                      Number(averageRating[car.uuid] || 0)
+                                      ? '#e1ba00' // Filled star
+                                      : '#D3D3D3' // Unfilled star
+                                  }
+                                />
+                              </div>
+                            ))}
+                            <div className='ms-3 opacity-[50%]'>
+                              {averageRating[car.uuid]
+                                ? parseFloat(averageRating[car.uuid]).toFixed(1)
+                                : '0.0'}
                             </div>
-                          ))}
-                          <div className='ms-3 opacity-[50%]'>
-                            {averageRating[car.uuid]
-                              ? parseFloat(averageRating[car.uuid]).toFixed(1)
-                              : '0.0'}
                           </div>
                         </div>
+                        <div className='opacity-[50%]'>
+                          {reviewCounts[car.uuid]
+                            ? reviewCounts[car.uuid] > 1
+                              ? `(${reviewCounts[car.uuid]} Reviews)`
+                              : `(${reviewCounts[car.uuid]} Review)`
+                            : `(0 Review)`}
+                        </div>
                       </div>
-                      <div className='opacity-[50%]'>
-                        {reviewCounts[car.uuid]
-                          ? reviewCounts[car.uuid] > 1
-                            ? `(${reviewCounts[car.uuid]} Reviews)`
-                            : `(${reviewCounts[car.uuid]} Review)`
-                          : `(0 Review)`}
-                      </div>
-                    </div>
-                    <Link
-                      href={'/car/' + car.uuid}
-                      className='flex text-[#002D4F] text-xl font-medium w-full text-left'
-                    >
-                      {ucFirst(car.carType)}
-                    </Link>
-                    <div className='text-[#002D4F] flex flex-row space-x-2 w-full text-base items-start'>
-                      <div className='inline-block w-3.5'>
-                        <Image
-                          width={20}
-                          height={20}
-                          alt=''
-                          src={location.src}
-                        />
-                      </div>
-                      <div className='truncate overflow-ellipsis'>
-                        {truncateTitle(car.neighbourhood)}
-                      </div>
-                    </div>
-                  </div>
-                  <div className='box-border my-3 w-full h-0.5 border-t-[2px] border-solid border-[#969696]' />
-                  <div className='flex flex-row items-center justify-between pb-4 px-5'>
-                    <div className='flex flex-row gap-4 items-center'>
-                      <div className='flex w-[50px] h-[50px]'>
-                        <Image
-                          width={50}
-                          height={50}
-                          className='object-cover'
-                          alt=''
-                          src={avatars[index % avatars.length]}
-                        />
-                      </div>
-                      <div className='text-base font-medium text-[#000000]'>
-                        Ref: {car?.uuid ? car.uuid.slice(0, 8) : 'N/A'}
+                      <Link
+                        href={`/car/${car.slug || car.uuid}`}
+                        className='flex text-[#002D4F] text-xl font-medium w-full text-left'
+                      >
+                        {ucFirst(car.carType)}
+                      </Link>
+                      <div className='text-[#002D4F] flex flex-row space-x-2 w-full text-base items-start'>
+                        <div className='inline-block w-3.5'>
+                          <Image
+                            width={20}
+                            height={20}
+                            alt=''
+                            src={location.src}
+                          />
+                        </div>
+                        <div className='truncate overflow-ellipsis'>
+                          {truncateTitle(car.neighbourhood)}
+                        </div>
                       </div>
                     </div>
-                    <div className='text-lg font-semibold text-[#000000]'>
-                      AED {formatPriceUS(car.price)}
+                    <div className='box-border my-3 w-full h-0.5 border-t-[2px] border-solid border-[#969696]' />
+                    <div className='flex flex-row items-center justify-between pb-4 px-5'>
+                      <div className='flex flex-row gap-4 items-center'>
+                        <div className='flex w-[50px] h-[50px]'>
+                          <Image
+                            width={50}
+                            height={50}
+                            className='object-cover'
+                            alt=''
+                            src={avatars[index % avatars.length]}
+                          />
+                        </div>
+                        <div className='text-base font-medium text-[#000000]'>
+                          Ref: {car?.uuid ? car.uuid.slice(0, 8) : 'N/A'}
+                        </div>
+                      </div>
+                      <div className='text-lg font-semibold text-[#000000]'>
+                        AED {formatPriceUS(car.price)}
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            </SwiperSlide>
-          ))}
+              </SwiperSlide>
+            )
+          })}
         </Swiper>
         <div
           onClick={handleNextSlide}

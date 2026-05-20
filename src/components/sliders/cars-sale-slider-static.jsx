@@ -11,9 +11,7 @@ import Link from 'next/link'
 import { FaStar } from 'react-icons/fa'
 import { formatPriceUS } from '@/utils'
 import {
-  getListingCarouselItems,
-  getListingThumbSrc,
-  isListingCarouselPlaceholderSlide,
+  getListingCardImageSrc,
   PLACEHOLDER,
 } from '@/libs/listingCardMedia'
 import location from '@/assets/vector2.svg'
@@ -242,7 +240,7 @@ export default function CarSaleSliderStatic() {
             ref={swiperRef}
           >
             {approvedCars.map((carForSale) => {
-              const imageSrc = getCarCardImageSrc(carForSale)
+              const imageSrc = getListingCardImageSrc(carForSale)
 
               return (
                 <SwiperSlide className='w-full' key={carForSale.uuid}>

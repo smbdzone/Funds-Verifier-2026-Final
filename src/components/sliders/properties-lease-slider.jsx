@@ -3,7 +3,10 @@ import React, { useRef } from 'react'
 import { FaStar } from 'react-icons/fa'
 import { useAppContext } from '@/context/AppContext'
 import { formatPriceUS, ucFirst } from '@/utils'
-import { getListingThumbSrc } from '@/libs/listingCardMedia'
+import {
+  getListingCardImageSrc,
+  PLACEHOLDER,
+} from '@/libs/listingCardMedia'
 import { Swiper, SwiperSlide } from 'swiper/react'
 import 'swiper/css'
 import 'swiper/css/pagination'
@@ -156,13 +159,28 @@ export default function PropertyLeaseSlider() {
               key={index}
             >
               <div className='mx-2 mb-2 w-full shadow-[0px_0px_8px_rgba(0,_0,_0,_0.15)] rounded-md bg-white'>
-                <Image
-                  width={414}
-                  height={275}
-                  className='rounded-md object-cover !h-[275px]'
-                  alt={propertyForLease?.propertyType || 'Property'}
-                  src={getListingThumbSrc(propertyForLease, '/villa.jpg')}
-                />
+                {(() => {
+                  const imageSrc = getListingCardImageSrc(propertyForLease)
+                  return imageSrc ? (
+                    <Image
+                      width={414}
+                      height={275}
+                      className='rounded-md object-cover !h-[275px]'
+                      alt={propertyForLease?.propertyType || 'Property'}
+                      src={imageSrc}
+                    />
+                  ) : (
+                    <div className='flex justify-center items-center rounded-md bg-[#f0f4f8] !h-[275px] w-full'>
+                      <Image
+                        width={64}
+                        height={64}
+                        src={PLACEHOLDER}
+                        alt='No photo'
+                        className='opacity-40'
+                      />
+                    </div>
+                  )
+                })()}
                 <div className='flex flex-col'>
                   <div className='flex flex-col px-4 py-2 space-y-3'>
                     <div className='flex flex-row items-center'>
@@ -174,7 +192,7 @@ export default function PropertyLeaseSlider() {
                                 size={20}
                                 color={
                                   starIndex <
-                                  Number(propertyForLease.averageRating || 0)
+                                    Number(propertyForLease.averageRating || 0)
                                     ? '#e1ba00'
                                     : '#D3D3D3'
                                 }
@@ -184,8 +202,8 @@ export default function PropertyLeaseSlider() {
                           <div className='ms-3 ml-2 md:text-base text-xs opacity-[50%]'>
                             {propertyForLease.averageRating
                               ? parseFloat(
-                                  propertyForLease.averageRating
-                                ).toFixed(1)
+                                propertyForLease.averageRating
+                              ).toFixed(1)
                               : '0.0'}
                           </div>
                         </div>
@@ -197,7 +215,7 @@ export default function PropertyLeaseSlider() {
                       </div>
                     </div>
                     <Link
-                      href={`/property/${propertyForLease.uuid}`}
+                      href={`/property/${propertyForLease.slug || propertyForLease.uuid}`}
                       className='flex text-[#002D4F] md:text-xl text-sm font-medium w-full text-left'
                     >
                       {ucFirst(propertyForLease.propertyType)} For Lease

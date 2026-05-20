@@ -10,9 +10,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { formatPriceUS, ucFirst } from '@/utils'
 import {
-  getListingCarouselItems,
-  getListingThumbSrc,
-  isListingCarouselPlaceholderSlide,
+  getListingCardImageSrc,
   PLACEHOLDER,
 } from '@/libs/listingCardMedia'
 import { FaStar } from 'react-icons/fa'
@@ -243,7 +241,7 @@ export default function JewelrySaleSlider() {
             className='w-full'
           >
             {approvedJewelry.map((item) => {
-              const imageSrc = getJewelryCardImageSrc(item)
+              const imageSrc = getListingCardImageSrc(item)
 
               return (
                 <SwiperSlide className='w-full' key={item.uuid}>

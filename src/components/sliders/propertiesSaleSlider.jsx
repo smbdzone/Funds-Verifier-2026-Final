@@ -11,9 +11,7 @@ import Link from 'next/link'
 import { FaStar } from 'react-icons/fa'
 import { formatPriceUS, ucFirst } from '@/utils'
 import {
-  getListingCarouselItems,
-  getListingThumbSrc,
-  isListingCarouselPlaceholderSlide,
+  getListingCardImageSrc,
   PLACEHOLDER,
 } from '@/libs/listingCardMedia'
 import avatar1 from '@/assets/avators/Avatars 1.png'
@@ -262,7 +260,7 @@ export default function PropertySaleSlider() {
             ref={swiperRef}
           >
             {approvedProperties.map((propertyForSale) => {
-              const imageSrc = getPropertyCardImageSrc(propertyForSale)
+              const imageSrc = getListingCardImageSrc(propertyForSale)
 
               return (
                 <SwiperSlide className='w-full' key={propertyForSale.uuid}>

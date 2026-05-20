@@ -10,9 +10,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { formatPriceUS } from '@/utils'
 import {
-  getListingCarouselItems,
-  getListingThumbSrc,
-  isListingCarouselPlaceholderSlide,
+  getListingCardImageSrc,
   PLACEHOLDER,
 } from '@/libs/listingCardMedia'
 import { FaStar } from 'react-icons/fa'
@@ -39,16 +37,6 @@ function truncateTitle(title) {
     return `${words.slice(0, 4).join(' ')}...`
   }
   return title
-}
-
-function getBoatCardImageSrc(boat) {
-  const items = getListingCarouselItems(boat)
-  const slide = items.find(
-    (item) => item.type === 'image' && !isListingCarouselPlaceholderSlide(item),
-  )
-  if (slide?.src) return slide.src
-  const thumb = getListingThumbSrc(boat)
-  return thumb !== PLACEHOLDER ? thumb : ''
 }
 
 export default function BoatsSaleSlider() {
@@ -242,7 +230,7 @@ export default function BoatsSaleSlider() {
             className='w-full'
           >
             {approvedBoats.map((boatForSale) => {
-              const imageSrc = getBoatCardImageSrc(boatForSale)
+              const imageSrc = getListingCardImageSrc(boatForSale)
 
               return (
                 <SwiperSlide className='w-full' key={boatForSale.uuid}>

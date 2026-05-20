@@ -9,22 +9,21 @@ import { Pagination } from 'swiper/modules'
 import { Swiper, SwiperSlide } from 'swiper/react'
 import { useRouter } from 'next/navigation'
 import { formatPriceUS } from '@/utils'
-import axios from 'axios' // Import axios
+import axios from 'axios'
 import { IoIosArrowDown, IoIosArrowUp } from 'react-icons/io'
 import {
-  getListingImageSrc,
+  getListingCardImageSrc,
   PLACEHOLDER,
 } from '@/libs/listingCardMedia'
 
 const ButtomSlider = ({ data }) => {
   const router = useRouter()
   const swiperRef = useRef(null)
+  const products = data?.products || []
 
-  // State to store review counts and average ratings
   const [reviewCounts, setReviewCounts] = useState({})
   const [averageRatings, setAverageRatings] = useState({})
 
-  // Handle previous and next slide actions
   const handlePrevSlide = () => {
     if (swiperRef.current?.swiper) {
       swiperRef.current.swiper.slidePrev()
@@ -37,13 +36,11 @@ const ButtomSlider = ({ data }) => {
     }
   }
 
-  // Function to truncate the title
   const truncateTitle = (title) => {
     const words = title.split(' ')
     return words.length > 2 ? `${words.slice(0, 2).join(' ')}...` : title
   }
 
-  // Function to handle click and navigate based on asset type
   const handleClick = (value) => {
     let pathToGo = ''
 
@@ -65,11 +62,10 @@ const ButtomSlider = ({ data }) => {
         pathToGo = ''
     }
     if (pathToGo) {
-      router.push(`/${pathToGo}/${value.uuid}`)
+      router.push(`/${pathToGo}/${value.slug || value.uuid}`)
     }
   }
 
-  // Fetch review count and average rating for each property
   useEffect(() => {
     const fetchReviewData = async () => {
       try {
@@ -77,14 +73,14 @@ const ButtomSlider = ({ data }) => {
         const ratings = {}
 
         await Promise.all(
-          data?.map(async (property) => {
+          products.map(async (property) => {
             const response = await axios.post(
               `${process.env.NEXT_PUBLIC_BASE_URL}/reviews/count`,
-              { productId: property.uuid }
+              { productId: property.uuid },
             )
             counts[property.uuid] = response.data.count || 0
             ratings[property.uuid] = response.data.averageRating || 0
-          })
+          }),
         )
 
         setReviewCounts(counts)
@@ -94,10 +90,10 @@ const ButtomSlider = ({ data }) => {
       }
     }
 
-    if (data?.length) {
+    if (products.length) {
       fetchReviewData()
     }
-  }, [data])
+  }, [products])
 
   return (
     <div className='lg:px-10'>
@@ -148,57 +144,62 @@ const ButtomSlider = ({ data }) => {
           ref={swiperRef}
           className='h-[380px] !pb-[40px] w-full'
         >
-          {data?.products?.map((property, index) => (
-            <SwiperSlide key={index} className='md:mt-8 mt-4'>
-              <div
-                onClick={() => handleClick(property)}
-                className='cursor-pointer w-full rounded-lg h-auto shadow mx-1 flex flex-col justify-between'
-              >
-                <div className='relative lg:w-full h-[250px]'>
-                  <Image
-                    src={(() => {
-                      const thumb = property?.thumbnailImg?.images?.[0]
-                      const firstPic = property?.pictures?.images?.[0]
-                      const candidate = thumb || firstPic
-                      const src = candidate
-                        ? getListingImageSrc(candidate)
-                        : PLACEHOLDER
-                      return src === PLACEHOLDER
-                        ? '/product/rectangle-105@2x.png'
-                        : src
-                    })()}
-                    alt={`slide-${index}`}
-                    className='object-cover rounded-[12px]'
-                    width={300}
-                    height={300}
-                  />
-                </div>
-                <div className='p-3'>
-                  <h2 className='lg:text-xl md:text-lg text-base capitalize font-medium text-blue'>
-                    {truncateTitle(property.title)}
-                  </h2>
-                  <div className='flex flex-row justify-center items-center space-x-3'>
-                    {/* Use dynamic rating and review count */}
-                    <Rating
-                      className='text-xs'
-                      name='half-rating-read'
-                      value={averageRatings[property.uuid] || 0}
-                      precision={0.5}
-                      readOnly
-                    />
-                    <span className='text-xs underline'>
-                      {reviewCounts[property.uuid] || 0} Reviews
-                    </span>
+          {products.map((property, index) => {
+            const imageSrc = getListingCardImageSrc(property)
+
+            return (
+              <SwiperSlide key={property.uuid || index} className='md:mt-8 mt-4'>
+                <div
+                  onClick={() => handleClick(property)}
+                  className='cursor-pointer w-full rounded-lg h-auto shadow mx-1 flex flex-col justify-between'
+                >
+                  <div className='relative lg:w-full h-[250px]'>
+                    {imageSrc ? (
+                      <Image
+                        src={imageSrc}
+                        alt={property.title || 'Listing'}
+                        className='object-cover rounded-[12px] w-full h-[250px]'
+                        width={300}
+                        height={300}
+                      />
+                    ) : (
+                      <div className='flex h-[250px] w-full items-center justify-center rounded-[12px] bg-gradient-to-br from-[#eef0f3] to-[#e2e6ec]'>
+                        <Image
+                          src={PLACEHOLDER}
+                          alt='No photo'
+                          width={64}
+                          height={64}
+                          className='opacity-40'
+                        />
+                      </div>
+                    )}
                   </div>
-                  <div className='md:pt-2'>
-                    <span className='font-medium lg:text-xl md:text-base text-sm'>
-                      AED {formatPriceUS(property.price || 0)}
-                    </span>
+                  <div className='p-3'>
+                    <h2 className='lg:text-xl md:text-lg text-base capitalize font-medium text-blue'>
+                      {truncateTitle(property.title)}
+                    </h2>
+                    <div className='flex flex-row justify-center items-center space-x-3'>
+                      <Rating
+                        className='text-xs'
+                        name='half-rating-read'
+                        value={averageRatings[property.uuid] || 0}
+                        precision={0.5}
+                        readOnly
+                      />
+                      <span className='text-xs underline'>
+                        {reviewCounts[property.uuid] || 0} Reviews
+                      </span>
+                    </div>
+                    <div className='md:pt-2'>
+                      <span className='font-medium lg:text-xl md:text-base text-sm'>
+                        AED {formatPriceUS(property.price || 0)}
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </SwiperSlide>
-          ))}
+              </SwiperSlide>
+            )
+          })}
         </Swiper>
       </div>
     </div>

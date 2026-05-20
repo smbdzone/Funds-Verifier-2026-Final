@@ -151,9 +151,18 @@ export function getListingGalleryImages(listing) {
  */
 export function getListingThumbSrc(listing, fallback = PLACEHOLDER) {
   const candidate =
-    listing?.thumbnailImg?.images?.[0] || listing?.pictures?.images?.[0]
+    listing?.pictures?.images?.[0] || listing?.thumbnailImg?.images?.[0]
   const src = getListingImageSrc(candidate)
   return src && src !== PLACEHOLDER ? src : fallback
+}
+
+/** First uploaded gallery/thumbnail image for listing cards — never a static asset. */
+export function getListingCardImageSrc(listing) {
+  const items = getListingCarouselItems(listing)
+  const slide = items.find(
+    (item) => item.type === 'image' && !isListingCarouselPlaceholderSlide(item),
+  )
+  return slide?.src || ''
 }
 
 function certificatePdfStreamUrl(uuid) {
