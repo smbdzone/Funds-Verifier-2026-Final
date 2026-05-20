@@ -17,7 +17,7 @@ const NotificationDropdown = ({ className }) => {
   const [notifications, setNotifications] = useState([])
   const [loading, setLoading] = useState(true)
   const lastFetchTimeRef = useRef(Date.now())
-  
+
   // Socket connection for real-time notifications with reconnection callback
   const handleReconnect = useCallback(() => {
     console.log('Socket reconnected, refreshing notifications...')
@@ -27,9 +27,9 @@ const NotificationDropdown = ({ className }) => {
     }, 500)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.uuid]) // fetchNotifications is stable, no need to include it
-  
+
   const { socket, isConnected, isConnecting } = useNotificationSocket(user, handleReconnect)
-  
+
   let role
 
   const fetchNotifications = async () => {
@@ -41,24 +41,22 @@ const NotificationDropdown = ({ className }) => {
     }
 
     try {
-      let url = `${process.env.NEXT_PUBLIC_BASE_URL}/notifications/role/${role}?limit=50`
-      if (role === 'AssetHolder' || role === 'DealHunter')
-        url += `&userUUID=${user?.uuid}`
-
-      const { data } = await customAxios.get(url)
+      const { data } = await customAxios.get(
+        `/notifications/role/${role}?limit=50`
+      )
 
       if (data?.success && Array.isArray(data?.notifications)) {
         // Merge with existing notifications (deduplicate by UUID)
         setNotifications((prev) => {
           const notificationMap = new Map()
-          
+
           // Add existing notifications to map
           prev.forEach((n) => {
             if (n?.uuid) {
               notificationMap.set(n.uuid, n)
             }
           })
-          
+
           // Add/update with new notifications (newer ones take precedence)
           data.notifications.forEach((n) => {
             if (n?.uuid) {
@@ -69,7 +67,7 @@ const NotificationDropdown = ({ className }) => {
               }
             }
           })
-          
+
           // Convert map back to array and sort by creation time (newest first)
           return Array.from(notificationMap.values()).sort((a, b) => {
             const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0
@@ -77,7 +75,7 @@ const NotificationDropdown = ({ className }) => {
             return timeB - timeA
           })
         })
-        
+
         lastFetchTimeRef.current = Date.now()
       } else {
         setNotifications([])
@@ -170,7 +168,7 @@ const NotificationDropdown = ({ className }) => {
       setNotifications(previousState)
       toast.error(
         err?.response?.data?.message ||
-          'Failed to delete or notification not found.'
+        'Failed to delete or notification not found.'
       )
     }
   }
@@ -312,9 +310,8 @@ const NotificationDropdown = ({ className }) => {
               notifications.map((notification) => (
                 <div
                   key={notification?.uuid}
-                  className={`mb-2 p-2 rounded ${
-                    notification?.isRead ? '' : 'bg-gray-3'
-                  }`}
+                  className={`mb-2 p-2 rounded ${notification?.isRead ? '' : 'bg-gray-3'
+                    }`}
                 >
                   <p
                     className='text-sm font-medium cursor-pointer'

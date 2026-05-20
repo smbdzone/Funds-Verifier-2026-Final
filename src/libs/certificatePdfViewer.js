@@ -40,7 +40,7 @@ async function loadStreamPdfBlob(url) {
 
   const res = await fetch(fullUrl, {
     method: 'GET',
-    credentials: 'omit',
+    credentials: 'include',
     cache: 'no-store',
   })
 

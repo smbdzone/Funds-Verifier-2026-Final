@@ -15,6 +15,7 @@ import ListingModalInputComponent from '@/components/ListingsImageComponent/List
 import ListingCustomPlacholderInput from '@/components/ListingFormInput/ListingCustomPlacholderInput'
 import ListingCustomPlaceholderDropdown from '@/components/ListingsImageComponent/ListingCustomPlaceholderDropdown'
 import customAxios from '../../utils/apis/apis'
+import { toast } from 'react-toastify'
 import EvaluationModal from '@/components/Evaluation/evaluationmodal.jsx'
 import {
   LISTING_IMAGE_FORMATS_LABEL,
@@ -84,13 +85,17 @@ export const ImageUploadComponent = React.memo(
 
     const getIdByRole = async () => {
       try {
-        const response = await customAxios.get(`/user/role-id/TechnicalReport`) // Fetch user details
+        const response = await customAxios.get(
+          `/user/service-providers/TechnicalReport`
+        )
 
-        if (response?.data) {
-          setData(response?.data[0])
+        const providers = Array.isArray(response?.data) ? response.data : []
+        if (providers.length > 0) {
+          setData(providers[0])
         }
       } catch (error) {
-        console.error('Error loading user:', error)
+        console.error('Error loading technical report provider:', error)
+        toast.error('Could not load technical report availability')
       }
     }
     useEffect(() => {
@@ -100,13 +105,17 @@ export const ImageUploadComponent = React.memo(
 
     const getIdByRole3d = async () => {
       try {
-        const response = await customAxios.get(`/user/role-id/3dWalkthrough`) // Fetch user details
+        const response = await customAxios.get(
+          `/user/service-providers/3dWalkthrough`
+        )
 
-        if (response?.data) {
-          setData2(response?.data[0])
+        const providers = Array.isArray(response?.data) ? response.data : []
+        if (providers.length > 0) {
+          setData2(providers[0])
         }
       } catch (error) {
-        console.error('Error loading user:', error)
+        console.error('Error loading 3D walkthrough provider:', error)
+        toast.error('Could not load 3D walkthrough availability')
       }
     }
 

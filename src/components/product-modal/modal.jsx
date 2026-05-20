@@ -1,8 +1,8 @@
-import React, { useState } from "react";
-import PDFViewer from "./pdfviewer";
+import React from "react";
 import { FaDownload } from "react-icons/fa6";
 import Image from "next/image";
-import { getFileExtensionFromUrl } from "@/utils";
+import { DocumentPreviewBody } from "@/components/product-modal/DocumentPdfPreview";
+import { loadPdfBlobUrlForViewer } from "@/libs/certificatePdfViewer";
 
 const Modal = ({ isOpen, onClose, fileUrl }) => {
   if (!isOpen) return null;
@@ -34,7 +34,7 @@ const Modal = ({ isOpen, onClose, fileUrl }) => {
 
   return (
     <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
-      <div className="bg-white rounded-md shadow- md:max-w-[60%] w-[95%] h-[80vh] overflow-y-hidden">
+      <div className="flex h-[85vh] max-h-[900px] w-[95%] max-w-4xl flex-col overflow-hidden rounded-md bg-white shadow-md">
         <div className="w-full p-6 relative">
           <div className="absolute top-3 right-4 flex justify-end items-center mb-0">
             <button
@@ -72,31 +72,8 @@ const Modal = ({ isOpen, onClose, fileUrl }) => {
             </div>
           </div>
         </div>
-        <div className="text-gray-700 mb-0 h-full overflow-auto">
-          {fileExtension === "pdf" ? (
-            <PDFViewer fileUrl={fileUrl} />
-          ) : fileExtension === "jpg" ||
-            fileExtension === "jpeg" ||
-            fileExtension === "png" ? (
-            <img
-              src={fileUrl}
-              alt="Uploaded file"
-              style={{ maxWidth: "100%", maxHeight: "500px" }}
-            />
-          ) : fileExtension === "doc" ||
-            fileExtension === "docx" ||
-            fileExtension === "xlsx" ? (
-            <a
-              href={fileUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-500 hover:underline"
-            >
-              View or Download {fileExtension === "xlsx" ? "Excel" : "Document"}
-            </a>
-          ) : (
-            <p className="text-center w-full p-2">Unsupported file type.</p>
-          )}
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-2 pb-4">
+          <DocumentPreviewBody fileUrl={fileUrl} alt="Technical report" />
         </div>
       </div>
     </div>

@@ -50,13 +50,16 @@ const securityHeaders = [
     key: "Content-Security-Policy",
     value: [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com",
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: https: blob:",
       "font-src 'self' data:",
       `connect-src ${connectSrc}`,
+      // Allow PDF/3D previews inside modals (blob + CloudFront/API URLs)
+      "frame-src 'self' blob: https: data:",
       "frame-ancestors 'none'",
       "object-src 'none'",
+      "worker-src 'self' blob: https://cdnjs.cloudflare.com",
       "base-uri 'self'",
       "form-action 'self'",
     ].join("; "),

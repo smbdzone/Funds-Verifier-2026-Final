@@ -13,6 +13,13 @@ const getToday = () => {
   return new Date(today.setHours(0, 0, 0, 0)) // Start of today
 }
 
+const formatLocalDate = (date) => {
+  const correctedDate = new Date(
+    date.getTime() - date.getTimezoneOffset() * 60000
+  )
+  return correctedDate.toISOString().split('T')[0]
+}
+
 const EvaluationModal = ({ isOpen, onClose, setFormData }) => {
   const [selectedDate, setSelectedDate] = useState(getToday())
   const [selectedTime, setSelectedTime] = useState(null)
@@ -36,13 +43,20 @@ const EvaluationModal = ({ isOpen, onClose, setFormData }) => {
   const getIdByRole = async () => {
     setEvaluatorLoading(true)
     try {
-      const response = await customAxios.get(`/user/role-id/Evaluator`)
+      const response = await customAxios.get(
+        `/user/service-providers/Evaluator`
+      )
 
-      if (response?.data) {
-        setData(response?.data[0])
+      const providers = Array.isArray(response?.data) ? response.data : []
+      if (providers.length > 0) {
+        setData(providers[0])
+      } else {
+        setData(null)
+        toast.error('No evaluator is available for booking')
       }
     } catch (error) {
       console.error('Error loading user:', error)
+      setData(null)
       toast.error('Could not load evaluator availability')
     } finally {
       setEvaluatorLoading(false)
@@ -50,8 +64,10 @@ const EvaluationModal = ({ isOpen, onClose, setFormData }) => {
   }
 
   useEffect(() => {
-    getIdByRole()
-  }, [])
+    if (isOpen) {
+      getIdByRole()
+    }
+  }, [isOpen])
 
   const fetchSlots = async () => {
     if (!data?.uuid || !selectedDate) return
@@ -115,10 +131,10 @@ const EvaluationModal = ({ isOpen, onClose, setFormData }) => {
         })
 
         customAxios
-          .put(
-            `${process.env.NEXT_PUBLIC_BASE_URL}/arrange-view/timeslot/update/${id}`,
-            { timeSlots: newUpdatedSlot, date: selectedDate } // Include updated date
-          )
+          .put(`/arrange-view/timeslot/update/${id}`, {
+            timeSlots: newUpdatedSlot,
+            date: formatLocalDate(selectedDate),
+          })
           .then(() => {
             toast.success('Time updated successfully!')
             fetchSlots()
@@ -197,8 +213,8 @@ const EvaluationModal = ({ isOpen, onClose, setFormData }) => {
                         type='button'
                         onClick={() => handleTimeSelect(time.time)}
                         className={`px-6 py-2 border border-[#B7A55E] text-[#B7A55E] rounded whitespace-nowrap ${selectedTime === time.time
-                            ? 'bg-blue-500 text-white btn-gradient'
-                            : 'bg-gray-200 text-black hover:bg-gray-300'
+                          ? 'bg-blue-500 text-white btn-gradient'
+                          : 'bg-gray-200 text-black hover:bg-gray-300'
                           }`}
                       >
                         {time?.time}
@@ -231,8 +247,8 @@ const EvaluationModal = ({ isOpen, onClose, setFormData }) => {
             <button
               onClick={handleSubmit}
               className={`btn-gradient text-white px-8 py-2 font-bold ${!isFormValid || !isChecked
-                  ? 'cursor-not-allowed opacity-50'
-                  : ''
+                ? 'cursor-not-allowed opacity-50'
+                : ''
                 }`}
               disabled={!isFormValid || !isChecked}
             >

@@ -39,7 +39,7 @@ const Modal2 = ({ isOpen, onClose, formData, setFormData, userUUID }) => {
 
     try {
       const response = await customAxios.get(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/arrange-view/slot-by-date?userUUID=${userUUID}&date=${formatLocalDate(date)}`
+        `/arrange-view/slot-by-date?userUUID=${userUUID}&date=${formatLocalDate(date)}`
       )
 
       setSlots(response?.data[0]?.times || [])
@@ -82,10 +82,7 @@ const Modal2 = ({ isOpen, onClose, formData, setFormData, userUUID }) => {
         })
 
         customAxios
-          .put(
-            `${process.env.NEXT_PUBLIC_BASE_URL}/arrange-view/timeslot/update/${id}`,
-            { timeSlots: newUpdatedSlot }
-          )
+          .put(`/arrange-view/timeslot/update/${id}`, { timeSlots: newUpdatedSlot })
           .then(() => {
             toast.success('Time updated successfully!')
             fetchBookingsForDate(selectedDate)
@@ -172,11 +169,10 @@ const Modal2 = ({ isOpen, onClose, formData, setFormData, userUUID }) => {
                       key={time.uuid}
                       type='button'
                       onClick={() => handleTimeSelect(time.time)}
-                      className={`px-6 py-2 border border-[#B7A55E] text-[#B7A55E] rounded whitespace-nowrap ${
-                        selectedTime === time.time
+                      className={`px-6 py-2 border border-[#B7A55E] text-[#B7A55E] rounded whitespace-nowrap ${selectedTime === time.time
                           ? 'bg-blue-500 text-white btn-gradient'
                           : 'bg-gray-200 text-black hover:bg-gray-300'
-                      }`}
+                        }`}
                     >
                       {time.time}
                     </button>
@@ -208,9 +204,8 @@ const Modal2 = ({ isOpen, onClose, formData, setFormData, userUUID }) => {
           <button
             type='button'
             onClick={handleSubmit}
-            className={`btn-gradient text-white px-8 py-2 font-bold ${
-              !selectedTime || !isChecked ? 'cursor-not-allowed opacity-50' : ''
-            }`}
+            className={`btn-gradient text-white px-8 py-2 font-bold ${!selectedTime || !isChecked ? 'cursor-not-allowed opacity-50' : ''
+              }`}
             disabled={!selectedTime || !isChecked}
           >
             Submit

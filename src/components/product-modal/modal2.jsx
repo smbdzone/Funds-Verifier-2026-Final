@@ -1,13 +1,10 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React from 'react'
 import { FaDownload } from 'react-icons/fa6'
 import Image from 'next/image'
-import { getFileExtensionFromUrl } from '@/utils'
-import {
-  isEvaluationCertificateStreamUrl,
-  loadPdfBlobUrlForViewer,
-} from '@/libs/certificatePdfViewer'
+import { DocumentPreviewBody } from '@/components/product-modal/DocumentPdfPreview'
+import { loadPdfBlobUrlForViewer } from '@/libs/certificatePdfViewer'
 
 /** Try CORS blob download; if that fails, open the URL in a new tab. */
 async function downloadFromUrl(url, filename = 'evaluation-certificate.pdf') {
@@ -28,153 +25,6 @@ async function downloadFromUrl(url, filename = 'evaluation-certificate.pdf') {
   }
 }
 
-/**
- * Load PDF via fetch → blob URL so the iframe is same-origin to the tab.
- * Many S3/CloudFront URLs forbid embedding the remote URL directly (blank iframe).
- */
-function PdfIframePreview({ file2Url }) {
-  const [blobUrl, setBlobUrl] = useState(null)
-  const [directUrl, setDirectUrl] = useState(null)
-  const [loadError, setLoadError] = useState(null)
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    let cancelled = false
-    let objectUrl = null
-
-    const run = async () => {
-      setLoading(true)
-      setBlobUrl(null)
-      setDirectUrl(null)
-      setLoadError(null)
-
-      const result = await loadPdfBlobUrlForViewer(file2Url)
-
-      if (cancelled) {
-        if (result.blobUrl) URL.revokeObjectURL(result.blobUrl)
-        return
-      }
-
-      objectUrl = result.blobUrl
-      setBlobUrl(result.blobUrl)
-      setDirectUrl(result.directUrl)
-      setLoadError(result.error)
-      setLoading(false)
-    }
-
-    run()
-    return () => {
-      cancelled = true
-      if (objectUrl) URL.revokeObjectURL(objectUrl)
-    }
-  }, [file2Url])
-
-  const iframeSrc = blobUrl || directUrl
-
-  if (loading) {
-    return (
-      <div className='flex min-h-[52vh] flex-1 items-center justify-center text-sm text-gray-600'>
-        Loading PDF…
-      </div>
-    )
-  }
-
-  if (loadError && !iframeSrc) {
-    return (
-      <div className='flex min-h-[52vh] flex-1 flex-col items-center justify-center gap-3 px-4 text-center'>
-        <p className='text-sm text-red-600'>{loadError}</p>
-        <a
-          href={file2Url}
-          target='_blank'
-          rel='noopener noreferrer'
-          className='rounded bg-[#002d4f] px-3 py-1.5 text-sm font-medium text-white hover:opacity-90'
-        >
-          Open PDF in new tab
-        </a>
-      </div>
-    )
-  }
-
-  if (!iframeSrc) {
-    return (
-      <div className='flex min-h-[52vh] flex-1 items-center justify-center text-sm text-gray-600'>
-        No preview available.
-      </div>
-    )
-  }
-
-  return (
-    <div className='flex min-h-0 flex-1 flex-col gap-2'>
-      <iframe
-        title='Document preview'
-        src={iframeSrc}
-        className='min-h-0 w-full flex-1 rounded-sm border border-gray-200 bg-neutral-100'
-        style={{ minHeight: '52vh' }}
-      />
-      <div className='flex shrink-0 flex-wrap items-center justify-center gap-3 text-xs text-gray-600'>
-        <a
-          href={file2Url}
-          target='_blank'
-          rel='noopener noreferrer'
-          className='rounded bg-[#002d4f] px-3 py-1.5 font-medium text-white hover:opacity-90'
-        >
-          Open PDF in new tab
-        </a>
-        {directUrl && !blobUrl ? (
-          <span className='text-center text-gray-500'>
-            Using direct link preview.
-          </span>
-        ) : null}
-      </div>
-    </div>
-  )
-}
-
-function CertificateBody({ file2Url, ext }) {
-  const isImage = ['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(ext)
-  const pathBeforeQuery = (file2Url || '').split('?')[0] || ''
-  const hasPdfInPath = /\.pdf$/i.test(pathBeforeQuery)
-  const isPdf =
-    ext === 'pdf' ||
-    hasPdfInPath ||
-    isEvaluationCertificateStreamUrl(file2Url) ||
-    (ext === '' && /^https?:\/\//i.test(file2Url))
-
-  if (isImage) {
-    return (
-      <img
-        src={file2Url}
-        alt='Evaluation certificate'
-        className='mx-auto max-h-[62vh] w-auto max-w-full object-contain'
-      />
-    )
-  }
-
-  if (isPdf) {
-    return <PdfIframePreview file2Url={file2Url} />
-  }
-
-  if (['doc', 'docx', 'xlsx'].includes(ext)) {
-    return (
-      <a
-        href={file2Url}
-        target='_blank'
-        rel='noopener noreferrer'
-        className='text-blue-600 underline'
-      >
-        Open document in new tab
-      </a>
-    )
-  }
-
-  return (
-    <p className='text-center text-sm text-gray-600'>
-      Preview is not available for this file type. Use Download or open the link
-      in a new tab.
-    </p>
-  )
-}
-
 const Modal2 = ({
   isOpen,
   onClose,
@@ -184,7 +34,6 @@ const Modal2 = ({
 }) => {
   if (!isOpen) return null
 
-  const ext = getFileExtensionFromUrl(file2Url || '')
   const safeName =
     typeof downloadFileName === 'string' && downloadFileName.trim()
       ? downloadFileName.trim()
@@ -239,7 +88,10 @@ const Modal2 = ({
               No document link is available.
             </p>
           ) : (
-            <CertificateBody file2Url={file2Url} ext={ext} />
+            <DocumentPreviewBody
+              fileUrl={file2Url}
+              alt='Evaluation certificate'
+            />
           )}
         </div>
       </div>

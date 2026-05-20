@@ -27,13 +27,23 @@ const ViewModal = ({ handleClickOutside, handleCloseModal, selectedMedia }) => {
             className="w-full h-full object-contain"
           />
         ) : (
-          <iframe
-            src={selectedMedia}
-            className="w-full h-full object-contain"
-            frameBorder="0"
-            allowFullScreen
-            title="3D Walkthrough"
-          />
+          <div className="flex h-full min-h-0 w-full flex-col gap-2">
+            <iframe
+              src={selectedMedia}
+              className="min-h-0 w-full flex-1 object-contain"
+              frameBorder="0"
+              allowFullScreen
+              title="3D Walkthrough"
+            />
+            <a
+              href={selectedMedia}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="shrink-0 text-center text-sm text-[#002d4f] underline"
+            >
+              Open in new tab
+            </a>
+          </div>
         )}
       </div>
     </div>
