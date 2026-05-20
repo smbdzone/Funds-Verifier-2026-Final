@@ -1,4 +1,5 @@
 import React from 'react'
+import { ExternalLinkPreview } from '@/components/product-modal/DocumentPdfPreview'
 
 const Open3dModal = ({ selectedMedia, setSelectedMedia, link }) => {
   return (
@@ -27,23 +28,7 @@ const Open3dModal = ({ selectedMedia, setSelectedMedia, link }) => {
               className='w-full h-full object-contain'
             />
           ) : (
-            <div className='flex h-full min-h-0 w-full flex-col gap-2'>
-              <iframe
-                src={link}
-                className='min-h-0 w-full flex-1 object-contain'
-                frameBorder='0'
-                allowFullScreen
-                title='3D Walkthrough'
-              />
-              <a
-                href={link}
-                target='_blank'
-                rel='noopener noreferrer'
-                className='shrink-0 text-center text-sm text-[#002d4f] underline'
-              >
-                Open 3D walkthrough in new tab
-              </a>
-            </div>
+            <ExternalLinkPreview href={link} title='3D Walkthrough' />
           )}
         </div>
       </div>

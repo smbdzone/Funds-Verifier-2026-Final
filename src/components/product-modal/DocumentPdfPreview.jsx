@@ -1,114 +1,92 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
+import { ExternalLink, Download } from 'lucide-react'
 import { getFileExtensionFromUrl } from '@/utils'
 import {
+  downloadPdfFile,
+  getPdfOriginalSrc,
   isEvaluationCertificateStreamUrl,
-  loadPdfBlobUrlForViewer,
+  openPdfInNewTab,
 } from '@/libs/certificatePdfViewer'
 
-/**
- * Load PDF via fetch → blob URL for iframe preview (avoids X-Frame-Options on S3/CloudFront).
- */
-export function PdfIframePreview({ fileUrl }) {
-  const [blobUrl, setBlobUrl] = useState(null)
-  const [directUrl, setDirectUrl] = useState(null)
-  const [loadError, setLoadError] = useState(null)
-  const [loading, setLoading] = useState(true)
+export function PdfDocumentActions({
+  fileUrl,
+  downloadFileName = 'document.pdf',
+  onDone,
+}) {
+  const [downloading, setDownloading] = useState(false)
+  const originalSrc = getPdfOriginalSrc(fileUrl)
+  const safeName =
+    typeof downloadFileName === 'string' && downloadFileName.trim()
+      ? downloadFileName.trim()
+      : 'document.pdf'
 
-  useEffect(() => {
-    let cancelled = false
-    let objectUrl = null
-
-    const run = async () => {
-      setLoading(true)
-      setBlobUrl(null)
-      setDirectUrl(null)
-      setLoadError(null)
-
-      const result = await loadPdfBlobUrlForViewer(fileUrl)
-
-      if (cancelled) {
-        if (result.blobUrl) URL.revokeObjectURL(result.blobUrl)
-        return
-      }
-
-      objectUrl = result.blobUrl
-      setBlobUrl(result.blobUrl)
-      setDirectUrl(result.directUrl)
-      setLoadError(result.error)
-      setLoading(false)
+  const handleOpen = () => {
+    const opened = openPdfInNewTab(fileUrl)
+    if (opened) {
+      onDone?.()
+    } else {
+      window.alert(
+        'Could not open a new tab. Please allow pop-ups for this site, then try again.'
+      )
     }
-
-    run()
-    return () => {
-      cancelled = true
-      if (objectUrl) URL.revokeObjectURL(objectUrl)
-    }
-  }, [fileUrl])
-
-  const iframeSrc = blobUrl || directUrl
-
-  if (loading) {
-    return (
-      <div className='flex min-h-[52vh] flex-1 items-center justify-center text-sm text-gray-600'>
-        Loading PDF…
-      </div>
-    )
   }
 
-  if (loadError && !iframeSrc) {
-    return (
-      <div className='flex min-h-[52vh] flex-1 flex-col items-center justify-center gap-3 px-4 text-center'>
-        <p className='text-sm text-red-600'>{loadError}</p>
-        <a
-          href={fileUrl}
-          target='_blank'
-          rel='noopener noreferrer'
-          className='rounded bg-[#002d4f] px-3 py-1.5 text-sm font-medium text-white hover:opacity-90'
-        >
-          Open PDF in new tab
-        </a>
-      </div>
-    )
+  const handleDownload = async () => {
+    setDownloading(true)
+    try {
+      await downloadPdfFile(fileUrl, safeName)
+      onDone?.()
+    } finally {
+      setDownloading(false)
+    }
   }
 
-  if (!iframeSrc) {
+  if (!originalSrc) {
     return (
-      <div className='flex min-h-[52vh] flex-1 items-center justify-center text-sm text-gray-600'>
-        No preview available.
-      </div>
+      <p className='px-6 py-10 text-center text-sm text-gray-600'>
+        No document link is available.
+      </p>
     )
   }
 
   return (
-    <div className='flex min-h-0 flex-1 flex-col gap-2'>
-      <iframe
-        title='Document preview'
-        src={iframeSrc}
-        className='min-h-0 w-full flex-1 rounded-sm border border-gray-200 bg-neutral-100'
-        style={{ minHeight: '52vh' }}
-      />
-      <div className='flex shrink-0 flex-wrap items-center justify-center gap-3 text-xs text-gray-600'>
-        <a
-          href={fileUrl}
-          target='_blank'
-          rel='noopener noreferrer'
-          className='rounded bg-[#002d4f] px-3 py-1.5 font-medium text-white hover:opacity-90'
+    <div className='flex flex-col items-center justify-center gap-8 px-6 py-12 text-center'>
+      <p className='max-w-sm text-sm text-gray-600'>
+        This document cannot be previewed here. Open it in a new tab or download
+        it to your device.
+      </p>
+      <div className='flex w-full max-w-xs flex-col gap-3 sm:max-w-none sm:flex-row sm:justify-center'>
+        <button
+          type='button'
+          onClick={handleOpen}
+          disabled={downloading}
+          className='btn-gradient flex items-center justify-center gap-2 rounded-lg px-8 py-3 text-sm font-semibold text-white disabled:opacity-50'
         >
-          Open PDF in new tab
-        </a>
-        {directUrl && !blobUrl ? (
-          <span className='text-center text-gray-500'>
-            Using direct link preview.
-          </span>
-        ) : null}
+          <ExternalLink className='h-4 w-4' />
+          Open
+        </button>
+        <button
+          type='button'
+          onClick={handleDownload}
+          disabled={downloading}
+          className='flex items-center justify-center gap-2 rounded-lg border-2 border-[#002d4f] bg-white px-8 py-3 text-sm font-semibold text-[#002d4f] hover:bg-gray-50 disabled:opacity-50'
+        >
+          <Download className='h-4 w-4' />
+          {downloading ? 'Downloading…' : 'Download'}
+        </button>
       </div>
     </div>
   )
 }
 
-export function DocumentPreviewBody({ fileUrl, alt = 'Document' }) {
+export function DocumentPreviewBody({
+  fileUrl,
+  alt = 'Document',
+  downloadFileName,
+  onDone,
+}) {
   const ext = getFileExtensionFromUrl(fileUrl || '')
   const pathBeforeQuery = (fileUrl || '').split('?')[0] || ''
   const hasPdfInPath = /\.pdf$/i.test(pathBeforeQuery)
@@ -138,25 +116,72 @@ export function DocumentPreviewBody({ fileUrl, alt = 'Document' }) {
   }
 
   if (isPdf) {
-    return <PdfIframePreview fileUrl={fileUrl} />
+    return (
+      <PdfDocumentActions
+        fileUrl={fileUrl}
+        downloadFileName={downloadFileName}
+        onDone={onDone}
+      />
+    )
   }
 
   if (['doc', 'docx', 'xlsx'].includes(ext)) {
     return (
-      <a
-        href={fileUrl}
-        target='_blank'
-        rel='noopener noreferrer'
-        className='text-blue-600 underline'
-      >
-        Open document in new tab
-      </a>
+      <PdfDocumentActions
+        fileUrl={fileUrl}
+        downloadFileName={downloadFileName}
+        onDone={onDone}
+      />
     )
   }
 
   return (
-    <p className='text-center text-sm text-gray-600'>
-      Preview is not available for this file type. Open the link in a new tab.
-    </p>
+    <PdfDocumentActions
+      fileUrl={fileUrl}
+      downloadFileName={downloadFileName}
+      onDone={onDone}
+    />
+  )
+}
+
+/** 3D walkthrough — open in new tab only. */
+export function ExternalLinkPreview({
+  href,
+  title = '3D Walkthrough',
+  onDone,
+}) {
+  if (!href) {
+    return (
+      <p className='m-auto px-6 py-10 text-center text-sm text-gray-600'>
+        No link available.
+      </p>
+    )
+  }
+
+  const handleOpen = () => {
+    const tab = window.open(href, '_blank', 'noopener,noreferrer')
+    if (tab) onDone?.()
+    else {
+      window.alert(
+        'Could not open a new tab. Please allow pop-ups for this site, then try again.'
+      )
+    }
+  }
+
+  return (
+    <div className='flex flex-col items-center justify-center gap-8 px-6 py-12 text-center'>
+      <p className='text-base font-semibold text-[#002d4f]'>{title}</p>
+      <p className='max-w-sm text-sm text-gray-600'>
+        3D walkthrough opens in a new browser tab for the best experience.
+      </p>
+      <button
+        type='button'
+        onClick={handleOpen}
+        className='btn-gradient flex items-center justify-center gap-2 rounded-lg px-8 py-3 text-sm font-semibold text-white'
+      >
+        <ExternalLink className='h-4 w-4' />
+        Open
+      </button>
+    </div>
   )
 }

@@ -6,19 +6,10 @@ export function isEvaluationCertificateStreamUrl(url) {
   return /\/evaluation-certificate\/[^/]+\/pdf(?:\?|$)/i.test(url.trim())
 }
 
-function resolveApiRequestUrl(url) {
+/** Absolute URL for open in new tab or download proxy. */
+export function getPdfOriginalSrc(url) {
+  if (!url || typeof url !== 'string') return ''
   const trimmed = url.trim()
-  const base = (process.env.NEXT_PUBLIC_BASE_URL || '').trim().replace(/\/$/, '')
-  if (base && trimmed.startsWith(base)) {
-    const path = trimmed.slice(base.length)
-    return path.startsWith('/') ? path : `/${path}`
-  }
-  return trimmed
-}
-
-function absoluteApiUrl(url) {
-  const trimmed = (url || '').trim()
-  if (!trimmed) return ''
   if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
     return trimmed
   }
@@ -28,107 +19,49 @@ function absoluteApiUrl(url) {
   return `${base}${path}`
 }
 
-function isPdfBlob(blob, contentType = '') {
-  const type = String(contentType).toLowerCase()
-  if (type.includes('pdf') || type.includes('octet-stream')) return true
-  if (blob?.type?.includes('pdf') || blob?.type?.includes('octet-stream')) return true
-  return !type || type === 'application/x-unknown'
+/** Same-origin proxy URL (download only; allowlist enforced server-side). */
+export function getPdfProxyFetchUrl(url) {
+  const original = getPdfOriginalSrc(url)
+  if (!original) return ''
+  if (typeof window === 'undefined') return ''
+  return `${window.location.origin}/api/pdf-preview?url=${encodeURIComponent(original)}`
 }
 
-async function loadStreamPdfBlob(url) {
-  const fullUrl = absoluteApiUrl(resolveApiRequestUrl(url))
-
-  const res = await fetch(fullUrl, {
-    method: 'GET',
-    credentials: 'include',
-    cache: 'no-store',
-  })
-
-  const contentType = String(res.headers.get('content-type') || '').toLowerCase()
-
-  if (!res.ok || contentType.includes('json')) {
-    let message = 'Failed to load PDF document.'
-    try {
-      const parsed = await res.json()
-      message = parsed.message || message
-    } catch {
-      try {
-        const text = await res.text()
-        const parsed = JSON.parse(text)
-        message = parsed.message || message
-      } catch {
-        /* ignore */
-      }
-    }
-    return { blobUrl: null, error: message, directUrl: fullUrl }
-  }
-
-  const data = await res.blob()
-
-  if (!isPdfBlob(data, contentType)) {
-    return {
-      blobUrl: null,
-      error: 'The server did not return a valid PDF.',
-      directUrl: fullUrl,
-    }
-  }
-
-  return {
-    blobUrl: URL.createObjectURL(
-      data instanceof Blob ? data : new Blob([data], { type: 'application/pdf' }),
-    ),
-    error: null,
-    directUrl: null,
-  }
+export function openPdfInNewTab(url) {
+  const src = getPdfOriginalSrc(url)
+  if (!src) return false
+  const tab = window.open(src, '_blank', 'noopener,noreferrer')
+  return Boolean(tab)
 }
 
-async function loadRemotePdfBlob(url) {
+export async function downloadPdfFile(url, filename = 'document.pdf') {
+  const original = getPdfOriginalSrc(url)
+  if (!original) return false
+
+  const proxyUrl = getPdfProxyFetchUrl(url)
+  const safeName =
+    typeof filename === 'string' && filename.trim() ? filename.trim() : 'document.pdf'
+
   try {
-    const res = await fetch(url, { mode: 'cors', credentials: 'omit' })
-    if (!res.ok) {
-      return { blobUrl: null, error: null, directUrl: url }
-    }
+    const res = await fetch(proxyUrl || original, { cache: 'no-store' })
+    if (!res.ok) throw new Error(`HTTP ${res.status}`)
+
     const blob = await res.blob()
-    if (blob.type && blob.type.includes('json')) {
-      return { blobUrl: null, error: null, directUrl: url }
+    if (!blob?.size || blob.type?.includes('json')) {
+      throw new Error('Not a PDF response')
     }
-    return {
-      blobUrl: URL.createObjectURL(blob),
-      error: null,
-      directUrl: null,
-    }
+
+    const href = URL.createObjectURL(blob)
+    const anchor = document.createElement('a')
+    anchor.href = href
+    anchor.download = safeName.endsWith('.pdf') ? safeName : `${safeName}.pdf`
+    anchor.rel = 'noopener noreferrer'
+    document.body.appendChild(anchor)
+    anchor.click()
+    anchor.remove()
+    URL.revokeObjectURL(href)
+    return true
   } catch {
-    return { blobUrl: null, error: null, directUrl: url }
-  }
-}
-
-/**
- * Load a PDF for in-app preview.
- * - API stream URLs → public decrypt stream + blob
- * - Signed S3 / CloudFront → fetch blob, or direct iframe URL as fallback
- */
-export async function loadPdfBlobUrlForViewer(url) {
-  if (!url || typeof url !== 'string') {
-    return {
-      blobUrl: null,
-      error: 'No document link is available.',
-      directUrl: null,
-    }
-  }
-
-  try {
-    if (isEvaluationCertificateStreamUrl(url)) {
-      return await loadStreamPdfBlob(url)
-    }
-    return await loadRemotePdfBlob(url)
-  } catch (err) {
-    if (isEvaluationCertificateStreamUrl(url)) {
-      return {
-        blobUrl: null,
-        error: err?.message || 'Failed to load PDF document.',
-        directUrl: null,
-      }
-    }
-    return { blobUrl: null, error: null, directUrl: url }
+    return openPdfInNewTab(url)
   }
 }

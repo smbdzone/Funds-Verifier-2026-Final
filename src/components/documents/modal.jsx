@@ -4,10 +4,15 @@ import { DocumentPreviewBody } from "@/components/product-modal/DocumentPdfPrevi
 const Modal = ({ isOpen, onClose, fileUrl, fileName }) => {
   if (!isOpen) return null;
 
+  const downloadName =
+    fileName?.trim() ||
+    fileUrl?.split("/")?.pop()?.split("?")[0] ||
+    "document.pdf";
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-3">
-      <div className="flex h-[85vh] max-h-[900px] w-full max-w-4xl flex-col overflow-hidden rounded-md bg-white shadow-md">
-        <div className="flex shrink-0 justify-end border-b border-gray-100 px-4 py-3">
+      <div className="w-full max-w-lg overflow-hidden rounded-md bg-white shadow-md">
+        <div className="flex justify-end border-b border-gray-100 px-4 py-3">
           <button
             type="button"
             onClick={onClose}
@@ -17,12 +22,12 @@ const Modal = ({ isOpen, onClose, fileUrl, fileName }) => {
             X
           </button>
         </div>
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-3 pb-4">
-          <DocumentPreviewBody
-            fileUrl={fileUrl}
-            alt={fileName || "Document"}
-          />
-        </div>
+        <DocumentPreviewBody
+          fileUrl={fileUrl}
+          alt={fileName || "Document"}
+          downloadFileName={downloadName}
+          onDone={onClose}
+        />
       </div>
     </div>
   );
