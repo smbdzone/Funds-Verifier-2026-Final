@@ -189,14 +189,12 @@ const ListingCard = ({
     }
   }
 
-  // Define openModal function to set the modalCardId
   const openModal = (cardId) => {
-    setModalCardId(cardId) // This sets the modal to open for a specific card
+    setModalCardId(cardId)
   }
 
-  // Define closeModal function to reset the modalCardId
   const closeModal = () => {
-    setModalCardId(null) // This will close the modal
+    setModalCardId(null)
   }
 
   const swiperRefs = useRef({})
@@ -508,7 +506,8 @@ const ListingCard = ({
                       <div className='bg-[#E0E0E0] p-1 rounded relative group'>
                         <img
                           src='/icons/card1.png'
-                          className='w-[23px] h-[23px]  cursor-pointer'
+                          className='w-[23px] h-[23px] cursor-pointer'
+                          alt='Technical report'
                           onClick={() => openModal(technicalModalKey)}
                         />
                         <div className='absolute w-[200px] right-0 -top-12 transform -translate-y-1/2 bg-white text-black text-sm p-5 rounded-lg shadow-lg opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-300 z-50'>
@@ -546,6 +545,7 @@ const ListingCard = ({
                         <img
                           src='/icons/card2.png'
                           className='w-[23px] h-[23px] cursor-pointer'
+                          alt='Evaluation certificate'
                           onClick={() => openModal(evalModalKey)}
                         />
                         <div className='absolute w-[200px] right-0 -top-12 transform -translate-y-1/2 bg-white text-black text-sm p-5 rounded-lg shadow-lg opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-300 z-50'>

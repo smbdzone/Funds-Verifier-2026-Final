@@ -224,13 +224,13 @@ const ProductCard = ({
                   <img
                     src='/icons/card2.png'
                     className='w-[23px] h-[23px] cursor-pointer'
+                    alt='Evaluation certificate'
                     onClick={() => openModal(evaluationCertificate?.uuid)}
                   />
                   <div className='absolute w-fit text-nowrap right-0 -top-12 transform -translate-y-1/2 bg-white text-black text-sm p-2 text-center rounded-lg shadow-lg opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-300'>
                     Evaluation Certificate
                   </div>
                 </div>
-
                 <Modal2
                   isOpen={modalCardId === evaluationCertificate?.uuid}
                   onClose={closeModal}
@@ -247,7 +247,8 @@ const ProductCard = ({
                 <div className='bg-[#E0E0E0] p-1 rounded relative group'>
                   <img
                     src='/icons/card1.png'
-                    className='w-[23px] h-[23px]  cursor-pointer'
+                    className='w-[23px] h-[23px] cursor-pointer'
+                    alt='Technical report'
                     onClick={() =>
                       openModal(`tr-${item?.uuid || technicalReport?.uuid}`)
                     }

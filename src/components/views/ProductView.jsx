@@ -94,40 +94,17 @@ export default function ProductView({ data }) {
     setShowCalendarPopup(false)
   }
 
-  const [isModalOpen, setIsModalOpen] = useState(false)
-  const [isModal2Open, setIsModal2Open] = useState(false)
-
-  const closeModal = () => {
-    setIsModalOpen(false)
-  }
-
-  const closeModal2 = () => {
-    setIsModal2Open(false)
-  }
-
   const technicalReportSrc = getTechnicalReportSrc(data?.technicalReport)
   const evaluationCertificateSrc = getListingDocumentSrc(
     data?.evaluationCertificate,
   )
-  const [technicalRep, setTechnicalRep] = useState(() => technicalReportSrc)
-  const [certificateRep, setcertificateRep] = useState(
-    () => evaluationCertificateSrc,
-  )
 
-  const openTechnicalReport = () => {
-    if (technicalRep) {
-      setIsModalOpen(true)
-    } else {
-      console.error('No valid report URL available.')
-    }
-  }
-  const openEvaluationCertificate = () => {
-    if (certificateRep) {
-      setIsModal2Open(true)
-    } else {
-      console.error('No valid certificate URL available.')
-    }
-  }
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isModal2Open, setIsModal2Open] = useState(false)
+
+  const closeModal = () => setIsModalOpen(false)
+  const closeModal2 = () => setIsModal2Open(false)
+
   return (
     <div className='theme-container'>
       <div className='sm:flex xl:flex-nowrap flex-wrap gap-6 lg:gap-12 pt-4 sm:pt-10 lg:pt-24 pb-5'>
@@ -283,8 +260,9 @@ export default function ProductView({ data }) {
                   <div className='bg-[#E0E0E0] p-1 rounded relative group'>
                     <img
                       src='/icons/card1.png'
-                      className='w-[23px] h-[23px]  cursor-pointer'
-                      onClick={() => openTechnicalReport(technicalReportSrc)}
+                      className='w-[23px] h-[23px] cursor-pointer'
+                      alt='Technical report'
+                      onClick={() => setIsModalOpen(true)}
                     />
                     <div className='absolute w-[200px] right-0 -top-12 transform -translate-y-1/2 bg-white text-black text-sm p-5 rounded-lg shadow-lg opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-300 z-50'>
                       Technical Report
@@ -304,9 +282,8 @@ export default function ProductView({ data }) {
                     <img
                       src='/icons/card2.png'
                       className='w-[23px] h-[23px] cursor-pointer'
-                      onClick={() =>
-                        openEvaluationCertificate(evaluationCertificateSrc)
-                      }
+                      alt='Evaluation certificate'
+                      onClick={() => setIsModal2Open(true)}
                     />
                     <div className='absolute w-[200px] right-0 -top-12 transform -translate-y-1/2 bg-white text-black text-sm p-5 rounded-lg shadow-lg opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-300 z-50'>
                       Evaluation Certificate
@@ -317,6 +294,7 @@ export default function ProductView({ data }) {
                     onClose={closeModal2}
                     file2Url={evaluationCertificateSrc}
                     downloadFileName={data?.evaluationCertificate?.Certificate?.name}
+                    modalTitle='Evaluation Certificate'
                   />
                 </>
               ) : (

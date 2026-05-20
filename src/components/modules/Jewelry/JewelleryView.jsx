@@ -332,11 +332,10 @@ export default function JewelleryView({ data }) {
       <div className='bg-light-gray p-5 rounded-md'>
         <div className='flex gap-4 pb-4 justify-center'>
           <button
-            className={`flex-grow md:text-base text-xs flex justify-center py-1 ${
-              openDiscription
+            className={`flex-grow md:text-base text-xs flex justify-center py-1 ${openDiscription
                 ? 'text-lightBlue border-b-2 border-gold-800'
                 : 'text-black'
-            }`}
+              }`}
             onClick={() => {
               handleOpenValues('Description')
             }}
@@ -344,11 +343,10 @@ export default function JewelleryView({ data }) {
             DESCRIPTION
           </button>
           <button
-            className={`flex-grow md:text-base text-xs flex justify-center py-1 ${
-              openAdditional_info
+            className={`flex-grow md:text-base text-xs flex justify-center py-1 ${openAdditional_info
                 ? 'text-lightBlue border-b-2 border-gold-800'
                 : 'text-black'
-            }`}
+              }`}
             onClick={() => {
               handleOpenValues('Additional')
             }}
@@ -356,11 +354,10 @@ export default function JewelleryView({ data }) {
             ADDITIONAL INFORMATION
           </button>
           <button
-            className={`flex-grow md:text-base text-xs flex justify-center py-1 ${
-              openReview
+            className={`flex-grow md:text-base text-xs flex justify-center py-1 ${openReview
                 ? 'text-lightBlue border-b-2 border-gold-800'
                 : 'text-black'
-            }`}
+              }`}
             onClick={() => {
               handleOpenValues('Reviews')
             }}

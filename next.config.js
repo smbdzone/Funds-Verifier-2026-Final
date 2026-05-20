@@ -55,7 +55,7 @@ const securityHeaders = [
       "img-src 'self' data: https: blob:",
       "font-src 'self' data:",
       `connect-src ${connectSrc}`,
-      "frame-src 'self' https://www.google.com https://maps.google.com https:",
+      "frame-src 'self' blob: https://www.google.com https://maps.google.com https:",
       "frame-ancestors 'none'",
       "object-src 'none'",
       "worker-src 'self' blob:",

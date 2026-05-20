@@ -223,6 +223,7 @@ const ProductCard = ({
                   src='/icons/card1.png'
                   className={`w-[23px] h-[23px] cursor-pointer ${hasAdditionalContent ? 'filter brightness-0 invert' : ''
                     }`}
+                  alt='Technical report'
                   onClick={() =>
                     openTechnicalReport(convertToRelativeURL(technicalReport))
                   }
@@ -246,6 +247,7 @@ const ProductCard = ({
                   src='/icons/card2.png'
                   className={`w-[23px] h-[23px] cursor-pointer ${hasAdditionalContent ? 'filter brightness-0 invert' : ''
                     }`}
+                  alt='Evaluation certificate'
                   onClick={() =>
                     openEvaluationCertificate(convertToRelativeURL(evaluationC))
                   }

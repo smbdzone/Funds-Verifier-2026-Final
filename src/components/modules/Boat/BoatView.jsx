@@ -336,8 +336,8 @@ export default function BoatView({ data: boatData }) {
         <div className='flex gap-4 pb-4 justify-center'>
           <button
             className={`flex-grow md:text-base text-xs flex justify-center py-1 ${openDiscription
-                ? 'text-lightBlue border-b-2 border-gold-800'
-                : 'text-black'
+              ? 'text-lightBlue border-b-2 border-gold-800'
+              : 'text-black'
               }`}
             onClick={() => {
               handleOpenValues('Description')
@@ -347,8 +347,8 @@ export default function BoatView({ data: boatData }) {
           </button>
           <button
             className={`flex-grow md:text-base text-xs flex justify-center py-1 ${openAdditional_info
-                ? 'text-lightBlue border-b-2 border-gold-800'
-                : 'text-black'
+              ? 'text-lightBlue border-b-2 border-gold-800'
+              : 'text-black'
               }`}
             onClick={() => {
               handleOpenValues('Additional')
@@ -358,8 +358,8 @@ export default function BoatView({ data: boatData }) {
           </button>
           <button
             className={`flex-grow md:text-base text-xs flex justify-center py-1 ${openReview
-                ? 'text-lightBlue border-b-2 border-gold-800'
-                : 'text-black'
+              ? 'text-lightBlue border-b-2 border-gold-800'
+              : 'text-black'
               }`}
             onClick={() => {
               handleOpenValues('Reviews')

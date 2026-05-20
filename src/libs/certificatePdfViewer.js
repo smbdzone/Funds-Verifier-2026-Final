@@ -1,5 +1,3 @@
-'use client'
-
 /** Backend decrypt stream: GET /evaluation-certificate/:uuid/pdf */
 export function isEvaluationCertificateStreamUrl(url) {
   if (typeof url !== 'string' || !url.trim()) return false
@@ -27,11 +25,45 @@ export function getPdfProxyFetchUrl(url) {
   return `${window.location.origin}/api/pdf-preview?url=${encodeURIComponent(original)}`
 }
 
+/**
+ * Open any URL in a new tab. Do not rely on window.open's return value with
+ * noopener — browsers return null even when the tab opened successfully.
+ */
+export function openUrlInNewTab(href) {
+  if (!href || typeof href !== 'string') return false
+
+  let url
+  try {
+    url = new URL(href.trim()).href
+  } catch {
+    return false
+  }
+
+  const newWin = window.open(url, '_blank')
+  if (newWin) {
+    newWin.opener = null
+    return true
+  }
+
+  try {
+    const anchor = document.createElement('a')
+    anchor.href = url
+    anchor.target = '_blank'
+    anchor.rel = 'noopener noreferrer'
+    document.body.appendChild(anchor)
+    anchor.click()
+    anchor.remove()
+    return true
+  } catch {
+    return false
+  }
+}
+
 export function openPdfInNewTab(url) {
   const src = getPdfOriginalSrc(url)
   if (!src) return false
-  const tab = window.open(src, '_blank', 'noopener,noreferrer')
-  return Boolean(tab)
+  const openUrl = getPdfProxyFetchUrl(url) || src
+  return openUrlInNewTab(openUrl)
 }
 
 export async function downloadPdfFile(url, filename = 'document.pdf') {

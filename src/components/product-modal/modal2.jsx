@@ -46,11 +46,11 @@ const Modal2 = ({
         </div>
 
         <DocumentPreviewBody
-          fileUrl={file2Url}
-          alt='Evaluation certificate'
-          downloadFileName={safeName}
-          onDone={onClose}
-        />
+            fileUrl={file2Url}
+            alt='Evaluation certificate'
+            downloadFileName={safeName}
+            onDone={onClose}
+          />
       </div>
     </div>
   )

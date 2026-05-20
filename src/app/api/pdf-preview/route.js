@@ -87,11 +87,10 @@ export async function GET(request) {
       status: 200,
       headers: {
         'Content-Type': 'application/pdf',
-        'Content-Disposition': 'attachment',
+        'Content-Disposition': 'inline',
         'Cache-Control': 'private, max-age=120',
         'X-Content-Type-Options': 'nosniff',
-        'X-Frame-Options': 'DENY',
-        'Content-Security-Policy': "frame-ancestors 'none'",
+        'X-Frame-Options': 'SAMEORIGIN',
       },
     })
   } catch (error) {

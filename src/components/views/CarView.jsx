@@ -340,8 +340,8 @@ export default function ProductView({ data }) {
           <button
             onClick={() => handleOpenValues('Description')}
             className={`flex-grow md:text-base text-xs flex justify-center py-1 ${openDiscription
-                ? 'text-lightBlue  bg-gradient-to-r text-white sm:text-black from-[#a2913e] via-[#d7c590] to-[#a2913e] md:bg-none md:border-b-2 md:border-gold-800'
-                : 'text-black'
+              ? 'text-lightBlue  bg-gradient-to-r text-white sm:text-black from-[#a2913e] via-[#d7c590] to-[#a2913e] md:bg-none md:border-b-2 md:border-gold-800'
+              : 'text-black'
               }`}
           >
             Description
@@ -349,8 +349,8 @@ export default function ProductView({ data }) {
           <button
             onClick={() => handleOpenValues('Reviews')}
             className={`flex-grow md:text-base text-xs flex justify-center py-1 ${openReview
-                ? 'text-lightBlue  bg-gradient-to-r text-white sm:text-black from-[#a2913e] via-[#d7c590] to-[#a2913e] md:bg-none md:border-b-2 md:border-gold-800'
-                : 'text-black'
+              ? 'text-lightBlue  bg-gradient-to-r text-white sm:text-black from-[#a2913e] via-[#d7c590] to-[#a2913e] md:bg-none md:border-b-2 md:border-gold-800'
+              : 'text-black'
               }`}
           >
             Reviews
@@ -358,8 +358,8 @@ export default function ProductView({ data }) {
           <button
             onClick={() => handleOpenValues('Additional')}
             className={`flex-grow md:text-base text-xs flex justify-center py-1 ${openAdditional_info
-                ? 'text-lightBlue  bg-gradient-to-r text-white sm:text-black from-[#a2913e] via-[#d7c590] to-[#a2913e] md:bg-none md:border-b-2 md:border-gold-800'
-                : 'text-black'
+              ? 'text-lightBlue  bg-gradient-to-r text-white sm:text-black from-[#a2913e] via-[#d7c590] to-[#a2913e] md:bg-none md:border-b-2 md:border-gold-800'
+              : 'text-black'
               }`}
           >
             Additional Information
