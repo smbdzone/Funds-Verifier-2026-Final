@@ -2,7 +2,6 @@
 import SurveyorHeader from "./SurveyorHeader";
 import SurveyorSidebar from "./SurveyorSidebar";
 import { montserrat } from "@/lib/fonts";
-import Script from "next/script";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import "swiper/css";
@@ -76,7 +75,6 @@ export default function RootLayout({ children }) {
             </div>
           </div>
         </UserProvider>
-        <Script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js" />
       </body>
     </html>
   );

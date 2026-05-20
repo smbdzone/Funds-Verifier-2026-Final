@@ -1,8 +1,65 @@
 const bundleAnalyzer = require("@next/bundle-analyzer");
 const path = require("path");
 
+const isDev = process.env.NODE_ENV !== "production";
+
+const apiConnectOrigins = [];
+let isLocalApi = false;
+try {
+  const apiBase =
+    process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:4000/api";
+  const { origin, hostname } = new URL(apiBase.trim());
+  apiConnectOrigins.push(origin);
+  isLocalApi = hostname === "localhost" || hostname === "127.0.0.1";
+  if (hostname === "localhost") {
+    apiConnectOrigins.push(origin.replace("localhost", "127.0.0.1"));
+  }
+} catch {
+  apiConnectOrigins.push("http://localhost:4000", "http://127.0.0.1:4000");
+  isLocalApi = true;
+}
+
+// Allow http/ws when running against a local API, even if .env sets NODE_ENV=production
+const allowInsecureLocal = isDev || isLocalApi;
+
+const connectSrc = [
+  "'self'",
+  "https:",
+  "wss:",
+  ...apiConnectOrigins,
+  ...(allowInsecureLocal ? ["http:", "ws:"] : []),
+].join(" ");
+
+const securityHeaders = [
+  { key: "X-Content-Type-Options", value: "nosniff" },
+  { key: "X-Frame-Options", value: "DENY" },
+  { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+  {
+    key: "Permissions-Policy",
+    value: "camera=(), microphone=(), geolocation=(), payment=()",
+  },
+  {
+    key: "Content-Security-Policy",
+    value: [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+      "style-src 'self' 'unsafe-inline'",
+      "img-src 'self' data: https: blob:",
+      "font-src 'self' data:",
+      `connect-src ${connectSrc}`,
+      "frame-ancestors 'none'",
+      "object-src 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
+    ].join("; "),
+  },
+];
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  async headers() {
+    return [{ source: "/:path*", headers: securityHeaders }];
+  },
   outputFileTracingRoot: path.join(__dirname),
   typescript: {
     ignoreBuildErrors: true,

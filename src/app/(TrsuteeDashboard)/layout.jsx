@@ -2,7 +2,6 @@ import { montserrat } from '@/lib/fonts'
 import './../globals.css'
 import 'swiper/css'
 import 'swiper/css/navigation'
-import Script from 'next/script'
 import { ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 import Loadingbar from '@/components/Loadingbar/Loadingbar'
@@ -21,7 +20,6 @@ export default function RootLayout({ children }) {
         <ToastContainer />
         {children}
       </body>
-      <Script src='https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js' />
     </html>
   )
 }

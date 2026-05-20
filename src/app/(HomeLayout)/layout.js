@@ -6,7 +6,6 @@ import Footer from '@/components/Layout/Footer'
 import ServerComponent from '@/components/home/ServerComponent'
 import ClientHeader from './ClientHeader'
 import Loadingbar from '@/components/Loadingbar/Loadingbar'
-import Script from 'next/script'
 import { ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 import { UserProvider } from '../../context/UserContext'
@@ -44,7 +43,6 @@ export default function RootLayout({ children }) {
           </UserProvider>
         </div>
       </body>
-      <Script src='https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js' />
     </html>
   )
 }
