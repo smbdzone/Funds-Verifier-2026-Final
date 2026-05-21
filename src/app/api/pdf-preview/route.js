@@ -1,2 +1,3 @@
-/** Re-export for admin subdomain and local dev; production /api/* on fundsverifier.com is served by Express. */
-export { GET, dynamic } from '../../pdf-preview/route.js'
+/** Local dev / admin: same handler as /pdf-preview. Live fundsverifier.com /api/* is served by Express. */
+export const dynamic = 'force-dynamic'
+export { GET } from '../../pdf-preview/route.js'
