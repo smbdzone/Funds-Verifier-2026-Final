@@ -97,15 +97,12 @@ const Footer = () => {
                 <ul>
                   <li className='text-[12px] sm:text-base mb-2'>
                     <Link href='/aboutus'>About Us</Link>
-                    About Us
                   </li>
                   <li className='text-[12px] sm:text-base mb-2'>
                     <Link href='/profile'>Deal Hunter</Link>
-                    Deal Hunter
                   </li>
                   <li className='text-[12px] sm:text-base mb-2'>
                     <Link href='/seller-profile'>Asset Holder</Link>
-                    Asset Holder
                   </li>
                   <li className='text-[12px] sm:text-base mb-2'>
                     <Link href='/blog'>News & Trends</Link>
