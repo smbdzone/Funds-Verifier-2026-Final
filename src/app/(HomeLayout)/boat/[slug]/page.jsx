@@ -4,15 +4,19 @@ import BoatView from "@/components/modules/Boat/BoatView";
 import axios from "axios";
 import Link from "next/link";
 import GlobalLoader from "@/utils/GlobalLoader";
+import { getPublicApiHeaders } from "@/libs/publicApiClient";
 
 const GetProductData = async ({ slug }) => {
   try {
+    const headers = await getPublicApiHeaders()
     const propertyResponse = await axios.get(
       `${process.env.NEXT_PUBLIC_BASE_URL}/boat/${slug}`,
+      { headers },
     )
     // Only evaluator-approved boats (status = 1) appear in Related Boats
     const propertyDataResponse = await axios.get(
       `${process.env.NEXT_PUBLIC_BASE_URL}/boat?statusFilter=1&limit=50`,
+      { headers },
     )
 
     const boatInfo = propertyResponse?.data

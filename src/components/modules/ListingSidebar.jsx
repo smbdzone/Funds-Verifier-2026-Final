@@ -5,7 +5,7 @@ import { formatPriceUS } from '@/utils'
 import { Disclosure } from '@headlessui/react'
 import Box from '@mui/material/Box'
 import Slider from '@mui/material/Slider'
-import axios from 'axios'
+import customAxios from '@/utils/apis/apis'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import {
@@ -483,20 +483,16 @@ export const ListingSidebar = ({ initialData, isSidebarVisible }) => {
       try {
         let response
         if (category === 'Boat') {
-          response = await axios.get(`${process.env.NEXT_PUBLIC_BASE_URL}/boat`)
+          response = await customAxios.get('/boat')
         } else if (
           category === 'Property For Sale' ||
           category === 'Property For Lease'
         ) {
-          response = await axios.get(
-            `${process.env.NEXT_PUBLIC_BASE_URL}/property`,
-          )
+          response = await customAxios.get('/property')
         } else if (category === 'Car') {
-          response = await axios.get(`${process.env.NEXT_PUBLIC_BASE_URL}/car`)
+          response = await customAxios.get('/car')
         } else if (category === 'Jewelry') {
-          response = await axios.get(
-            `${process.env.NEXT_PUBLIC_BASE_URL}/jewelry`,
-          )
+          response = await customAxios.get('/jewelry')
         }
 
         const products = response?.data?.products || []

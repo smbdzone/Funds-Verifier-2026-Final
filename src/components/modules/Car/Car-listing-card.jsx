@@ -14,6 +14,7 @@ import {
 import FooterAdd from '@/components/advertisementComponent/FooterAdd'
 import { getTokenFromCookie } from '../../../utils/helper'
 import GlobalLoader from '@/utils/GlobalLoader'
+import customAxios from '@/utils/apis/apis'
 
 export const CarListingCard = () => {
   const searchParams = useSearchParams()
@@ -67,16 +68,7 @@ export const CarListingCard = () => {
         }
 
         const queryString = buildQueryString(params)
-        const res = token
-          ? await fetch(
-              `${process.env.NEXT_PUBLIC_BASE_URL}/car?${queryString}`,
-              { headers: { Authorization: `Bearer ${token}` } }
-            )
-          : await fetch(
-              `${process.env.NEXT_PUBLIC_BASE_URL}/car?${queryString}`
-            )
-
-        const result = await res.json()
+        const { data: result } = await customAxios.get(`/car?${queryString}`)
 
         setData(result?.products || [])
         setTotalPages(result?.totalPages)
@@ -88,11 +80,7 @@ export const CarListingCard = () => {
       }
     }
 
-    if (token) {
-      fetchData(currentPage, token)
-    } else {
-      fetchData(currentPage)
-    }
+    fetchData(currentPage)
   }, [searchParams, currentPage, token])
 
   const handlePageChange = (pageNumber) => {

@@ -4,6 +4,7 @@ import { useFormik } from 'formik'
 import * as Yup from 'yup'
 import axios from 'axios'
 import { toast } from 'react-toastify'
+import { getCsrfHeaders } from '@/utils/csrf'
 
 export default function ForgotPassword() {
   const formik = useFormik({
@@ -13,9 +14,11 @@ export default function ForgotPassword() {
     }),
     onSubmit: async (values) => {
       try {
+        const csrfHeaders = await getCsrfHeaders()
         const res = await axios.post(
           `${process.env.NEXT_PUBLIC_BASE_URL}/user/forgot-password`,
-          values
+          values,
+          { headers: csrfHeaders, withCredentials: true },
         )
 
         toast.success(res.data?.message || 'Reset link sent')

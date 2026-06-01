@@ -17,6 +17,7 @@ import {
   isUaePassCallback,
   POST_LOGIN_BOOTSTRAP_KEY,
 } from '../utils/auth/uaePass'
+import { ensureCsrfToken } from '../utils/csrf'
 
 export let globalLogout = () => { }
 
@@ -115,6 +116,10 @@ export const UserProvider = ({ children }) => {
       setIsLoading(false)
     }
   }
+
+  useEffect(() => {
+    ensureCsrfToken().catch(() => {})
+  }, [])
 
   useEffect(() => {
     if (isUaePassCallback()) {

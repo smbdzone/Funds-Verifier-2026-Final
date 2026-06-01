@@ -3,6 +3,7 @@ import DocumentSection from './requestCompoenets/DocumentSection'
 import Modal from '../../documents/modal'
 import axios from 'axios'
 import { usePathname } from 'next/navigation'
+import customAxios from '@/utils/apis/apis'
 
 const AllInvoices = () => {
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -21,35 +22,16 @@ const AllInvoices = () => {
     try {
       const [boatResponse, propertyResponse, carResponse, jewelryResponse] =
         await Promise.all([
-          fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/boat`, {
-            cache: 'no-store',
-          }),
-          fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/property`, {
-            cache: 'no-store',
-          }),
-          fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/car`, {
-            cache: 'no-store',
-          }),
-          fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/jewelry`, {
-            cache: 'no-store',
-          }),
+          customAxios.get('/boat'),
+          customAxios.get('/property'),
+          customAxios.get('/car'),
+          customAxios.get('/jewelry'),
         ])
 
-      if (
-        !boatResponse.ok ||
-        !propertyResponse.ok ||
-        !carResponse.ok ||
-        !jewelryResponse.ok
-      ) {
-        throw new Error('Failed to fetch listings data')
-      }
-
-      const [boatData, propertyData, carData, jewelryData] = await Promise.all([
-        boatResponse.json(),
-        propertyResponse.json(),
-        carResponse.json(),
-        jewelryResponse.json(),
-      ])
+      const boatData = boatResponse.data
+      const propertyData = propertyResponse.data
+      const carData = carResponse.data
+      const jewelryData = jewelryResponse.data
 
       const filteredBoatListings = boatData.products.filter(
         (item) => item.status === 1

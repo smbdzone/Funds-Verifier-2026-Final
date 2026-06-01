@@ -2,6 +2,8 @@ import axios from 'axios'
 import { toast } from 'react-toastify'
 import { globalLogout } from '../../context/UserContext'
 import { getAccessToken, setAccessToken } from '../auth/accessTokenStore'
+import { getPublicApiHeaders } from '@/libs/publicApiClient'
+import { getCsrfHeaders } from '@/utils/csrf'
 let isRefreshing = false
 let failedQueue = []
 
@@ -34,10 +36,22 @@ const customAxios = axios.create({
 })
 
 /* ================= REQUEST ================= */
-customAxios.interceptors.request.use((config) => {
+customAxios.interceptors.request.use(async (config) => {
+  const csrfHeaders = await getCsrfHeaders()
+  Object.assign(config.headers, csrfHeaders)
+
   const token = getAccessToken()
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
+    delete config.headers['x-public-token']
+  } else {
+    delete config.headers.Authorization
+    try {
+      const publicHeaders = await getPublicApiHeaders()
+      config.headers['x-public-token'] = publicHeaders['x-public-token']
+    } catch {
+      delete config.headers['x-public-token']
+    }
   }
   return config
 })
@@ -117,6 +131,7 @@ customAxios.interceptors.response.use(
 
 export const login = async (values, router) => {
   try {
+    const csrfHeaders = await getCsrfHeaders()
     const res = await axios.post(
       `${process.env.NEXT_PUBLIC_BASE_URL}/user/login`,
       {
@@ -124,7 +139,8 @@ export const login = async (values, router) => {
         password: values.password,
       },
       {
-        withCredentials: true, // refreshToken in cookie
+        withCredentials: true,
+        headers: csrfHeaders,
       },
     )
 

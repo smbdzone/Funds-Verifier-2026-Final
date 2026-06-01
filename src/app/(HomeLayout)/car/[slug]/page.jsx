@@ -4,14 +4,18 @@ import CarView from "@/components/views/CarView";
 import axios from "axios";
 import Link from "next/link";
 import GlobalLoader from "@/utils/GlobalLoader";
+import { getPublicApiHeaders } from "@/libs/publicApiClient";
 
 const GetProductData = async ({ slug }) => {
   try {
+    const headers = await getPublicApiHeaders()
     const Response = await axios.get(
       `${process.env.NEXT_PUBLIC_BASE_URL}/car/${slug}`,
+      { headers },
     )
     const DataResponse = await axios.get(
       `${process.env.NEXT_PUBLIC_BASE_URL}/car?statusFilter=1&limit=50`,
+      { headers },
     )
 
     const carInfo = Response?.data
@@ -33,6 +37,7 @@ const GetProductData = async ({ slug }) => {
 }
 export default async function Page({ params }) {
   const { slug } = await params;
+
   const data = await GetProductData({ slug });
   if (!data || !data.carInfo) {
     return (
@@ -45,11 +50,11 @@ export default async function Page({ params }) {
   const { carInfo, carData } = data;
 
   return (
-    <div className="w-full pb-2 sm:pb-8">
+    <div className="w-full pb-8">
       <Suspense fallback={<GlobalLoader />}>
-        <div className="w-full valuesBg flex py-10 sm:py-24 md:px-20 flex-col">
+        <div className="w-full valuesBg flex py-24 md:px-20 flex-col">
           <div className="container mx-auto">
-            <h1 className="heading text-white fs-60 md:text-2xl text-lg lg:text-3xl font-semibold">
+            <h1 className="heading text-white fs-60 md:text-2xl text-xl font-semibold">
               {carInfo?.assetType}
             </h1>
             <p className="md:text-2xl text-base text-white mt-2">
@@ -60,10 +65,10 @@ export default async function Page({ params }) {
             </p>
           </div>
         </div>
-        <CarView data={carInfo || {}} />
+        <CarView data={carInfo} />
         {carData?.products?.length > 0 ? (
           <div className="theme-container">
-            <h1 className="md:text-2xl text-lg mb-2 sm:mb-6 font-semibold text-left text-blue">
+            <h1 className="md:text-2xl text-lg mb-6 font-semibold text-left text-blue">
               Related Cars
             </h1>
             <ButtomSlider data={carData} />

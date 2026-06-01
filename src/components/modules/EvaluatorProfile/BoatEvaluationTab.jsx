@@ -58,8 +58,8 @@ export const BoatEvaluationTab = () => {
 
   const fetchListingsData = async () => {
     try {
-      const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/boat?sort=${selected}&title=${debouncedQuery}`
+      const response = await customAxios.get(
+        `/boat?sort=${selected}&title=${debouncedQuery}`
       )
       setPropertyListings(response?.data.products.reverse())
     } catch (error) {

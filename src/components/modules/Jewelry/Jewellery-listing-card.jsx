@@ -14,6 +14,7 @@ import {
 } from '@/utils/global-functions/global'
 import FooterAdd from '../../advertisementComponent/FooterAdd'
 import { getTokenFromCookie } from '../../../utils/helper'
+import customAxios from '@/utils/apis/apis'
 
 export const JewelleryListingCard = () => {
   const searchParams = useSearchParams()
@@ -72,16 +73,7 @@ export const JewelleryListingCard = () => {
         }
 
         const queryString = buildQueryString(params)
-        const res = token
-          ? await fetch(
-              `${process.env.NEXT_PUBLIC_BASE_URL}/jewelry?${queryString}`,
-              { headers: { Authorization: `Bearer ${token}` } }
-            )
-          : await fetch(
-              `${process.env.NEXT_PUBLIC_BASE_URL}/jewelry?${queryString}`
-            )
-
-        const result = await res.json()
+        const { data: result } = await customAxios.get(`/jewelry?${queryString}`)
 
         setData(result?.products || [])
         setTotalPages(result?.totalPages)
@@ -94,11 +86,7 @@ export const JewelleryListingCard = () => {
         setLoading(false)
       }
     }
-    if (token) {
-      fetchData(currentPage, token)
-    } else {
-      fetchData(currentPage)
-    }
+    fetchData(currentPage)
   }, [searchParams, currentPage])
 
   const [isModalOpen, setIsModalOpen] = useState(false) // Technical Report Modal
