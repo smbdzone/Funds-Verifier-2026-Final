@@ -28,6 +28,7 @@ import { useProfile } from '../../../../context/UserContext'
 import StripeElement from '../../../../components/Stripe/StripeElement'
 import customAxios from '../../../../utils/apis/apis'
 import { useRefreshListingAfterServicePayment } from '@/hooks/useRefreshListingAfterServicePayment'
+import { useRestoreListingAfterClozerPayment } from '@/hooks/useRestoreListingAfterClozerPayment'
 
 function Page() {
   const [neighbourhood, setNeighbourhood] = useState('Select Neighbourhood')
@@ -211,6 +212,7 @@ function Page() {
   }, [searchParams])
 
   useRefreshListingAfterServicePayment(id, 'jewelry', fetchData)
+  useRestoreListingAfterClozerPayment(setFormData)
 
   const handleTechnicalModal = () => {
     setIsTechnicalModalOpen(!isTechnicalModalOpen)
@@ -488,7 +490,7 @@ function Page() {
       }
     } catch (error) {
       console.error('Error during form submission:', error)
-      toast.error('An error occurred. Please try again.')
+      toast.error(error?.message || 'An error occurred. Please try again.')
       setLoading(false)
     }
   }
@@ -630,7 +632,9 @@ function Page() {
       }
     } catch (error) {
       console.error('Error during submission:', error)
-      toast.error('An error occurred during submission. Please try again.')
+      toast.error(
+        error?.message || 'An error occurred during submission. Please try again.',
+      )
       setLoading(false)
     }
   }

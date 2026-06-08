@@ -94,6 +94,11 @@ const SellerProfileSidebar = () => {
       name: 'Sale Tracker',
       link: '/seller-profile/sale-tracker',
     },
+    {
+      icon: <PrimaryDocument />,
+      name: 'Installment Payments',
+      link: '/seller-profile/installment-payments',
+    },
     // { icon: <PrimaryLogout />, name: "Sign Out", link: "/" },
   ]
 

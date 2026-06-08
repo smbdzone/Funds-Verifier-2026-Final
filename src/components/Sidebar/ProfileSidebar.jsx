@@ -49,6 +49,11 @@ const ProfileSidebar = ({ children }) => {
       name: 'Purchase Tracker',
       link: '/profile/purchase-tracker',
     },
+    {
+      icon: <PurchaseIcon />,
+      name: 'Installment Payments',
+      link: '/profile/installment-payments',
+    },
   ]
 
   const path = usePathname()

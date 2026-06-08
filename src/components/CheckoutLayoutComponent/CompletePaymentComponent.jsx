@@ -1,9 +1,12 @@
-import React, { useEffect, useState } from "react";
-// import { PaymentWithMetaMask } from "./PaymentWithMetaMask";
+import React, { useState } from "react";
 import Image from "next/image";
 import PaymentMethodsModal from "./PaymentMethodsModal";
-import { convertUsdToAed, formatPrice } from "@/utils/global-functions/global";
 import { formatPriceUS } from "@/utils";
+import PaymentChoiceModal from "@/components/payments/PaymentChoiceModal";
+import { initiateClozerPayment, getClozerErrorMessage } from "@/libs/initiateClozerPayment";
+import { applyFullPayDiscount } from "@/libs/paymentDiscount";
+import { useProfile } from "@/context/UserContext";
+import { toast } from "react-toastify";
 
 const CompletePaymentComponent = ({
   title,
@@ -15,24 +18,27 @@ const CompletePaymentComponent = ({
   setPaymentComplete,
 }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [showPaymentChoice, setShowPaymentChoice] = useState(false);
+  const [paymentLoading, setPaymentLoading] = useState(false);
+  const { user } = useProfile();
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState("crypto");
   const [feeAed, setFeeAed] = useState(
     data.assetType === "Car For Sale"
       ? 5510
       : data.assetType === "Boats For Sale"
-      ? 7346
-      : data.assetType === "Jewellery For Sale"
-      ? 3670
-      : 11020
+        ? 7346
+        : data.assetType === "Jewellery For Sale"
+          ? 3670
+          : 11020
   );
   const [feeUsd, setFeeUsd] = useState(
     data.assetType === "Car For Sale"
       ? 1500.14
       : data.assetType === "Boats For Sale"
-      ? 2000
-      : data.assetType === "Jewellery For Sale"
-      ? 999.18
-      : 3000.27
+        ? 2000
+        : data.assetType === "Jewellery For Sale"
+          ? 999.18
+          : 3000.27
   );
   const handleClickOutside = () => {
     setIsModalOpen(!isModalOpen);
@@ -50,6 +56,7 @@ const CompletePaymentComponent = ({
     const currentUrl = encodeURIComponent(window.location.href);
 
     try {
+      setPaymentLoading(true);
       const response = await fetch("/api/stripe-checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -65,6 +72,7 @@ const CompletePaymentComponent = ({
               : "property",
           pathName: currentUrl,
           previewMedia,
+          applyFullPayDiscount: true,
         }),
       });
 
@@ -75,7 +83,58 @@ const CompletePaymentComponent = ({
       }
     } catch (error) {
       console.error("Error initiating checkout:", error);
+      toast.error("Could not start card payment.");
+    } finally {
+      setPaymentLoading(false);
     }
+  };
+
+  const handleClozerCheckout = async () => {
+    if (!user?.uuid) {
+      toast.error("Please log in to pay by installments.");
+      return;
+    }
+
+    try {
+      setPaymentLoading(true);
+      const totalAed = Number(priceInAed) + Number(feeAed);
+      const origin = window.location.origin;
+      localStorage.setItem("clozerReturnUrl", window.location.href);
+
+      const result = await initiateClozerPayment({
+        userUUID: user.uuid,
+        service: "purchase",
+        price: totalAed,
+        productTitle: title,
+        productId: data.uuid,
+        assetType: data.assetType,
+        success_url: `${origin}/clozer-return`,
+        purchaseMeta: {
+          assetType: data.assetType,
+          productId: data.uuid,
+          totalAed,
+        },
+      });
+
+      if (result?.redirectUrl) {
+        localStorage.setItem("clozerTransactionId", result.transaction_id);
+        window.location.href = result.redirectUrl;
+      } else {
+        toast.error(result?.message || "Installment payment could not be started.");
+      }
+    } catch (error) {
+      toast.error(getClozerErrorMessage(error));
+    } finally {
+      setPaymentLoading(false);
+    }
+  };
+
+  const handleConfirmPurchase = () => {
+    if (selectedPaymentMethod === "crypto") {
+      setIsModalOpen(true);
+      return;
+    }
+    setShowPaymentChoice(true);
   };
 
   const handleMethod = (method) => {
@@ -242,18 +301,24 @@ const CompletePaymentComponent = ({
           </button>
           <button
             className="w-[40px]  mt-4 h-[56px] p-2 flex justify-center items-center text-white btn-gradient border-0 flex-grow focus:outline-none text-[20px] font-semibold rounded "
-            onClick={() => {
-              if (selectedPaymentMethod === "crypto") {
-                setIsModalOpen(true);
-              } else {
-                handleStripeCheckout();
-              }
-            }}
+            onClick={handleConfirmPurchase}
           >
             {"Confirm Purchase"}
           </button>
         </div>
       </div>
+
+      <PaymentChoiceModal
+        show={showPaymentChoice}
+        onClose={() => setShowPaymentChoice(false)}
+        amount={Number(priceInAed) + Number(feeAed)}
+        loading={paymentLoading}
+        onPayFull={() => {
+          setShowPaymentChoice(false);
+          handleStripeCheckout();
+        }}
+        onPayInstallments={handleClozerCheckout}
+      />
     </div>
   );
 };

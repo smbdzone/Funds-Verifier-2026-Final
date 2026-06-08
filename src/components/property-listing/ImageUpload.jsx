@@ -225,7 +225,7 @@ export const ImageUploadComponent = React.memo(
           </ListingImageUploadLayout>
           <ListingImageUploadLayout
             errors={errors.pictures && images.length === 0}
-            formats='JPG, PNG, GIF. Maximum file size: 2MB'
+            formats={LISTING_IMAGE_FORMATS_LABEL}
           >
             <ListingMultipleImageComponent
               images={images}

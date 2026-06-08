@@ -1,6 +1,18 @@
-import axios from 'axios'
 import customAxios from '../utils/apis/apis'
 import { getTokenFromCookie } from '../utils/helper'
+import {
+  getUploadErrorMessage,
+  LISTING_IMAGE_MAX_MB,
+  LISTING_VIDEO_MAX_MB,
+} from '../constants/listingUploadLimits'
+
+const wrapUploadError = (error, fileType, maxMB) => {
+  const message = getUploadErrorMessage(error, fileType, maxMB)
+  console.error(`Error uploading ${fileType.toLowerCase()}:`, message, error?.response?.data)
+  const wrapped = new Error(message)
+  wrapped.cause = error
+  throw wrapped
+}
 
 const handleImageUpload = async (images) => {
   const formData = new FormData()
@@ -9,15 +21,13 @@ const handleImageUpload = async (images) => {
   })
 
   try {
-    // Do not set Content-Type manually — FormData needs the multipart boundary.
     const response = await customAxios.post(
       `${process.env.NEXT_PUBLIC_BASE_URL}/upload-imgs`,
       formData,
     )
     return response.data
   } catch (error) {
-    console.error('Error uploading images:', error)
-    throw error
+    wrapUploadError(error, 'Image', LISTING_IMAGE_MAX_MB)
   }
 }
 
@@ -34,8 +44,7 @@ const handleVideoUpload = async (video) => {
     )
     return response.data
   } catch (error) {
-    console.error('Error uploading video:', error)
-    throw error
+    wrapUploadError(error, 'Video', LISTING_VIDEO_MAX_MB)
   }
 }
 
@@ -54,15 +63,7 @@ const handleFileUpload = async (file) => {
     )
     return response.data
   } catch (error) {
-    const msg =
-      error?.response?.data?.error ||
-      error?.response?.data?.message ||
-      error?.message ||
-      'Upload failed'
-    console.error('Error uploading file', msg, error?.response?.data)
-    const wrapped = new Error(msg)
-    wrapped.cause = error
-    throw wrapped
+    wrapUploadError(error, 'Certificate PDF', 10)
   }
 }
 
@@ -79,8 +80,7 @@ const handleVerificationUpload = async (file) => {
     )
     return response.data
   } catch (error) {
-    console.error('Error uploading verification certificate:', error)
-    throw error
+    wrapUploadError(error, 'Verification certificate', 10)
   }
 }
 
@@ -96,8 +96,7 @@ const handleThumbnailUpload = async (image) => {
 
     return response.data
   } catch (error) {
-    console.error('Error uploading image:', error)
-    throw error
+    wrapUploadError(error, 'Thumbnail image', LISTING_IMAGE_MAX_MB)
   }
 }
 
@@ -109,8 +108,7 @@ const handleDeleteImg = async (id) => {
 
     return response.data
   } catch (error) {
-    console.error('Error uploading image:', error)
-    // Handle error (e.g., show error message)
+    console.error('Error deleting image:', error)
   }
 }
 

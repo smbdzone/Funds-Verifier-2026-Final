@@ -32,6 +32,7 @@ import PayModal from '../../../../components/Modals/PayModal'
 import { useProfile } from '../../../../context/UserContext'
 import StripeElement from '../../../../components/Stripe/StripeElement'
 import { useRefreshListingAfterServicePayment } from '@/hooks/useRefreshListingAfterServicePayment'
+import { useRestoreListingAfterClozerPayment } from '@/hooks/useRestoreListingAfterClozerPayment'
 import customAxios from '../../../../utils/apis/apis'
 import {
   applyPremiumServiceRefs,
@@ -196,6 +197,7 @@ const Page = () => {
   }, [searchParams])
 
   useRefreshListingAfterServicePayment(id, 'property', fetchData)
+  useRestoreListingAfterClozerPayment(setFormData)
 
   const router = useRouter()
   useEffect(() => {
@@ -301,7 +303,7 @@ const Page = () => {
       }
     } catch (error) {
       console.error('Error during form submission:', error?.message)
-      toast.error('An error occurred. Please try again.')
+      toast.error(error?.message || 'An error occurred. Please try again.')
       setLoading(false)
     }
   }
@@ -463,7 +465,9 @@ const Page = () => {
       }
     } catch (error) {
       console.error('Error during submission:', error)
-      toast.error('An error occurred. Please try again.')
+      toast.error(
+        error?.message || 'An error occurred during submission. Please try again.',
+      )
       setLoading(false)
     }
   }

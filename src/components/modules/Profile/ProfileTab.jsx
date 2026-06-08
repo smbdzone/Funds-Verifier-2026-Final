@@ -7,6 +7,7 @@ import { OpenDisclosure, CloseDisclosure } from '@/components/Icons'
 import ProfileInformation from '../SellerProfile/Profile/ProfileInformation'
 import PersonalDetails from '../SellerProfile/Profile/PersonalDetails'
 import BankForm from '../SellerProfile/Profile/BankForm'
+import EmiratesIdSection from '../SellerProfile/Profile/EmiratesIdSection'
 import { useProfile } from '../../../context/UserContext'
 import { FaSpinner } from 'react-icons/fa'
 import {
@@ -143,6 +144,33 @@ export const ProfileTab = () => {
                   fetchData={fetchProfile}
                   user={user}
                 />
+              </Disclosure.Panel>
+            </>
+          )}
+        </Disclosure>
+
+        {/* Emirates ID for Clozer */}
+        <Disclosure as='div' className='disclosure'>
+          {({ open }) => (
+            <>
+              <Disclosure.Button
+                className={`w-full btn-gradient rounded py-3 px-7 gap-4 justify-between items-center flex ${
+                  open && 'mb-3'
+                }`}
+              >
+                <span className='whitespace-nowrap sm:text-xl font-medium text-white'>
+                  Emirates ID (Clozer)
+                </span>
+                <span className='flex-shrink-0'>
+                  {open ? (
+                    <OpenDisclosure className='text-white' />
+                  ) : (
+                    <CloseDisclosure className='text-white' />
+                  )}
+                </span>
+              </Disclosure.Button>
+              <Disclosure.Panel>
+                <EmiratesIdSection user={user} fetchData={fetchProfile} />
               </Disclosure.Panel>
             </>
           )}

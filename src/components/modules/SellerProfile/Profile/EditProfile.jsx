@@ -9,6 +9,7 @@ import { toast } from 'react-toastify'
 import DropdownInput from '@/components/Inputs/DropdownInput'
 import DateOFBirthModal from '../../../Modals/DateOFBirthModal'
 import customAxios from '../../../../utils/apis/apis'
+import EmiratesIdSection from './EmiratesIdSection'
 
 function EditProfile({ countries }) {
   const [preview, setPreview] = useState(null)
@@ -333,6 +334,17 @@ function EditProfile({ countries }) {
             </Form>
           )}
         </Formik>
+
+        <div className='mt-10 border-t pt-8'>
+          <h3 className='text-lg font-medium text-prussianBlue mb-4'>
+            Emirates ID (required for Clozer installments)
+          </h3>
+          <EmiratesIdSection
+            user={user}
+            fetchData={fetchProfile}
+            variant='light'
+          />
+        </div>
       </>
     </div>
   )

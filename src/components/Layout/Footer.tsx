@@ -140,28 +140,26 @@ const Footer = () => {
               </h3>
               <ul>
                 <li className='text-[12px] sm:text-base mb-2'>
-                  <Link href='tel:+971559199661' className='flex gap-4'>
-                    <PhoneIcon className='text-reefGold' /> +971 55 91 99 661
+                  <Link href='tel:+971561290003' className='flex gap-4'>
+                    <PhoneIcon className='text-reefGold' /> +971 56 129 0003
                   </Link>
                 </li>
                 <li className='text-[12px] sm:text-base mb-2'>
                   <Link
-                    href='mailto:smbdigitalzone@gmail.com'
+                    href='mailto:outlook@fundsverifier.com'
                     className='flex gap-4'
                   >
                     <EmailIcon className='text-reefGold' height={10} />{' '}
-                    smbdigitalzone@gmail.com
+                    outlook@fundsverifier.com
                   </Link>
                 </li>
                 <li className='text-[12px] sm:text-base mb-2'>
                   <Link
-                    href='https://goo.gl/maps/BurjKhalifa'
+                    href='https://maps.google.com/?q=Dubai,United+Arab+Emirates'
                     className='flex gap-4'
                   >
                     <LocationIcon className='text-reefGold' />
-                    Burj Khalifa district, Dubai,{' '}
-                    <br className='md:hidden block' />
-                    United Arab Emirates
+                    Dubai, United Arab Emirates
                   </Link>
                 </li>
               </ul>
@@ -283,27 +281,27 @@ const Footer = () => {
                   <h3 className='text-2xl font-medium mb-3'>Get In Touch</h3>
                   <ul className='space-y-3'>
                     <li>
-                      <Link href='tel:+971559199661' className='flex gap-4'>
-                        <Phone className='h-5 w-5 text-[#b7a65f]' /> +971 55 91
-                        99 661
+                      <Link href='tel:+971561290003' className='flex gap-4'>
+                        <Phone className='h-5 w-5 text-[#b7a65f]' /> +971 56 129
+                        0003
                       </Link>
                     </li>
                     <li>
                       <Link
-                        href='mailto:smbdigitalzone@gmail.com'
+                        href='mailto:outlook@fundsverifier.com'
                         className='flex gap-4'
                       >
                         <Mail className='h-5 w-5 text-[#b7a65f]' />{' '}
-                        smbdigitalzone@gmail.com
+                        outlook@fundsverifier.com
                       </Link>
                     </li>
                     <li>
                       <Link
-                        href='https://goo.gl/maps/BurjKhalifa'
+                        href='https://maps.google.com/?q=Dubai,United+Arab+Emirates'
                         className='flex gap-4'
                       >
-                        <LocationIcon className='text-[#b7a65f]' /> Burj Khalifa
-                        district, Dubai, UAE
+                        <LocationIcon className='text-[#b7a65f]' /> Dubai, United
+                        Arab Emirates
                       </Link>
                     </li>
                   </ul>

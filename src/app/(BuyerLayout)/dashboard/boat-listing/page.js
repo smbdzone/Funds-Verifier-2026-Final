@@ -27,6 +27,7 @@ import { useProfile } from '../../../../context/UserContext'
 import PaymentModal from '@/components/payments/PaymentModal'
 import StripeElement from '../../../../components/Stripe/StripeElement'
 import { useRefreshListingAfterServicePayment } from '@/hooks/useRefreshListingAfterServicePayment'
+import { useRestoreListingAfterClozerPayment } from '@/hooks/useRestoreListingAfterClozerPayment'
 import customAxios from '../../../../utils/apis/apis'
 
 function Page() {
@@ -185,6 +186,7 @@ function Page() {
   }, [searchParams])
 
   useRefreshListingAfterServicePayment(id, 'boat', fetchData)
+  useRestoreListingAfterClozerPayment(setFormData)
 
   const handleTechnicalModal = () => {
     setIsTechnicalModalOpen(!isTechnicalModalOpen)
@@ -466,7 +468,7 @@ function Page() {
       }
     } catch (error) {
       console.error('Error during form submission:', error)
-      toast.error('An error occurred. Please try again.')
+      toast.error(error?.message || 'An error occurred. Please try again.')
       setLoading(false)
     }
   }
@@ -601,7 +603,9 @@ function Page() {
       router.push('/seller-profile/my-listing')
     } catch (error) {
       console.error('Error during form submission:', error)
-      toast.error('An error occurred. Please try again.')
+      toast.error(
+        error?.message || 'An error occurred during submission. Please try again.',
+      )
     } finally {
       setLoading(false)
     }

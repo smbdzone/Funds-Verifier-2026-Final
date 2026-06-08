@@ -27,6 +27,8 @@ import {
 import {
   LISTING_IMAGE_MAX_BYTES,
   LISTING_VIDEO_MAX_BYTES,
+  LISTING_IMAGE_MAX_MB,
+  LISTING_VIDEO_MAX_MB,
 } from '@/constants/listingUploadLimits'
 
 const getMaxLengthForCountry = (country) => {
@@ -383,7 +385,7 @@ const ListingsProvider = ({ children }) => {
     const validFiles = []
     const checkFile = (file) => {
       if (file.size > LISTING_IMAGE_MAX_BYTES) {
-        toast.error(`The file ${file.name} exceeds the 5MB size limit`)
+        toast.error(`The file ${file.name} exceeds the ${LISTING_IMAGE_MAX_MB}MB size limit`)
         return Promise.resolve(null)
       }
       return new Promise((resolve) => {
@@ -424,13 +426,19 @@ const ListingsProvider = ({ children }) => {
       // Update images state
       setImages((prevImages) => [...prevImages, ...validFiles])
 
-      // Update formData with the new images
-      const imageIDs = await handleImageUpload(validFiles) // Ensure this returns the correct IDs
+      try {
+        const imageIDs = await handleImageUpload(validFiles)
 
-      setFormData((prevFormData) => ({
-        ...prevFormData,
-        pictures: imageIDs, // Update the pictures field in formData
-      }))
+        setFormData((prevFormData) => ({
+          ...prevFormData,
+          pictures: imageIDs,
+        }))
+      } catch (error) {
+        toast.error(error?.message || 'Image upload failed. Please try again.')
+        setImages((prevImages) =>
+          prevImages.filter((img) => !validFiles.includes(img)),
+        )
+      }
     }
 
     processFiles()
@@ -470,7 +478,7 @@ const ListingsProvider = ({ children }) => {
   const handleVideoChange = (e) => {
     const file = e.target.files[0]
     if (file.size > LISTING_VIDEO_MAX_BYTES) {
-      toast.error('Maximum file size for videos is 10MB')
+      toast.error(`Maximum file size for videos is ${LISTING_VIDEO_MAX_MB}MB`)
       fileInputRef.current.value = null
       return
     }
@@ -491,7 +499,7 @@ const ListingsProvider = ({ children }) => {
     const selectedFile = event.target.files[0]
     if (selectedFile) {
       if (selectedFile.size > LISTING_IMAGE_MAX_BYTES) {
-        toast.error(`The file ${selectedFile.name} exceeds the 5MB size limit`)
+        toast.error(`The file ${selectedFile.name} exceeds the ${LISTING_IMAGE_MAX_MB}MB size limit`)
         event.target.value = null
         return
       }

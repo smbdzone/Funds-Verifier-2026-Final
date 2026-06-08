@@ -122,7 +122,7 @@ export default function Footer() {
                 src={phone.src}
                 className="me-3 inline"
               />
-              +971 55 91 99 661
+              +971 56 129 0003
             </p>
             <p className="text-lg flex flex-row my-2 items-center leading-8 tracking-widest">
               <Image
@@ -131,7 +131,7 @@ export default function Footer() {
                 src={mail.src}
                 className="me-3  inline"
               />
-              smbdigitalzone@gmail.com
+              outlook@fundsverifier.com
             </p>
             <div className="flex flex-row items-start gap-2 justify-start mt-2">
               <Image
@@ -141,7 +141,7 @@ export default function Footer() {
                 className="me-3 inline mt-1.5"
               />
               <p className="text-lg text-start tracking-widest title-font">
-                Burj khalifa district, Dubai, United Arb emirates
+                Dubai, United Arab Emirates
               </p>
             </div>
           </div>

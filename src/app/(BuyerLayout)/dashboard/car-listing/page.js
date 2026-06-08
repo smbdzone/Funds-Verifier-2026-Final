@@ -35,6 +35,7 @@ import PayModal from '../../../../components/Modals/PayModal'
 import { useProfile } from '../../../../context/UserContext'
 import StripeElement from '../../../../components/Stripe/StripeElement'
 import { useRefreshListingAfterServicePayment } from '@/hooks/useRefreshListingAfterServicePayment'
+import { useRestoreListingAfterClozerPayment } from '@/hooks/useRestoreListingAfterClozerPayment'
 import customAxios from '../../../../utils/apis/apis'
 
 const initialFormData = {
@@ -210,6 +211,7 @@ function Page() {
   }, [searchParams])
 
   useRefreshListingAfterServicePayment(id, 'car', fetchData)
+  useRestoreListingAfterClozerPayment(setFormData)
 
   const filteredCountries = countries.filter((country) =>
     country.country.toLowerCase().includes(searchQuery.toLowerCase())
@@ -304,7 +306,7 @@ function Page() {
       }
     } catch (error) {
       console.error('Error during form submission:', error?.message)
-      toast.error('An error occurred. Please try again.')
+      toast.error(error?.message || 'An error occurred. Please try again.')
       setLoading(false)
     }
   }
@@ -442,7 +444,9 @@ function Page() {
       // router.push("/");
     } catch (error) {
       console.error('Error during final form submission:', error)
-      toast.error('An error occurred. Please try again.')
+      toast.error(
+        error?.message || 'An error occurred during submission. Please try again.',
+      )
       setLoading(false)
     }
   }

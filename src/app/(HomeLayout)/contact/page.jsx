@@ -21,7 +21,7 @@ export default function Page() {
     } catch (error) {
       toast.error(
         error.response?.data?.message ||
-          'Failed to send your message. Try again.'
+        'Failed to send your message. Try again.'
       )
     }
   }
@@ -171,36 +171,49 @@ export default function Page() {
             </div>
 
             <div className='flex items-start gap-4'>
-              <div className='justify-center flex items-center rounded-l-sm font-medium text-darkslategray-100 [background:linear-gradient(90deg,_#a2913e,_#d7c590_35.28%,_#a2913e_68.99%,_#d7c58f)] w-[50px] h-11 cursor-pointer hover:opacity-90 transition-opacity'>
+              <div className='justify-center flex items-center rounded-l-sm font-medium text-darkslategray-100 [background:linear-gradient(90deg,_#a2913e,_#d7c590_35.28%,_#a2913e_68.99%,_#d7c58f)] w-[50px] h-11'>
                 <Phone color='#fff' />
               </div>
               <div>
-                <p className='text-gray-600 text-sm'>Have any question</p>
-                <p className='text-blue font-semibold'>+971 55 91 99 661</p>
+                <p className='text-gray-600 text-sm'>Have any question?</p>
+                <a
+                  href='tel:+971561290003'
+                  className='text-blue font-semibold hover:underline'
+                >
+                  +971 56 129 0003
+                </a>
               </div>
             </div>
 
             <div className='flex items-start gap-4'>
-              <div className='justify-center flex items-center rounded-l-sm font-medium text-darkslategray-100 [background:linear-gradient(90deg,_#a2913e,_#d7c590_35.28%,_#a2913e_68.99%,_#d7c58f)] w-[50px] h-11 cursor-pointer hover:opacity-90 transition-opacity'>
+              <div className='justify-center flex items-center rounded-l-sm font-medium text-darkslategray-100 [background:linear-gradient(90deg,_#a2913e,_#d7c590_35.28%,_#a2913e_68.99%,_#d7c58f)] w-[50px] h-11'>
                 <Mail color='#fff' />
               </div>
               <div>
                 <p className='text-gray-600 text-sm'>Write Email</p>
-                <p className='font-semibold text-blue'>
-                  smbdigitalzone@gmail.com
-                </p>
+                <a
+                  href='mailto:outlook@fundsverifier.com'
+                  className='font-semibold text-blue hover:underline'
+                >
+                  outlook@fundsverifier.com
+                </a>
               </div>
             </div>
 
             <div className='flex items-start gap-4'>
-              <div className='justify-center flex items-center rounded-l-sm font-medium text-darkslategray-100 [background:linear-gradient(90deg,_#a2913e,_#d7c590_35.28%,_#a2913e_68.99%,_#d7c58f)] w-[50px] h-11 cursor-pointer hover:opacity-90 transition-opacity'>
+              <div className='justify-center flex items-center rounded-l-sm font-medium text-darkslategray-100 [background:linear-gradient(90deg,_#a2913e,_#d7c590_35.28%,_#a2913e_68.99%,_#d7c58f)] w-[50px] h-11'>
                 <Pin color='#fff' />
               </div>
               <div>
                 <p className='text-gray-600 text-sm'>Visit Anytime</p>
-                <p className='font-semibold text-blue'>
-                  Burj khalifa district, Dubai, UAE
-                </p>
+                <a
+                  href='https://maps.google.com/?q=Dubai,United+Arab+Emirates'
+                  target='_blank'
+                  rel='noopener noreferrer'
+                  className='font-semibold text-blue hover:underline'
+                >
+                  Dubai, United Arab Emirates
+                </a>
               </div>
             </div>
           </div>
@@ -209,7 +222,7 @@ export default function Page() {
         {/* Bottom: Map */}
         <div className='px-10 pb-10'>
           <iframe
-            src='https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3609.7168784308795!2d55.2743765752419!3d25.19719767768852!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3e5f428da76c34e9%3A0x15ffdf0dbcb3ecf4!2sBurj%20Khalifa!5e0!3m2!1sen!2sae!4v1650460432439!5m2!1sen!2sae'
+            src='https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d144359.1629399847!2d55.17127965!3d25.2048493!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3e5f434d4c797be5%3A0xb4b1bfa1f81a9a94!2sDubai%20-%20United%20Arab%20Emirates!5e0!3m2!1sen!2sae!4v1650460432439!5m2!1sen!2sae'
             width='100%'
             height='350'
             style={{ border: 0 }}

@@ -10,7 +10,8 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
 
 export async function POST(req) {
   try {
-    const { productId, assetType, previewMedia, pathName } = await req.json()
+    const { productId, assetType, previewMedia, pathName, applyFullPayDiscount } =
+      await req.json()
     const { headers } = req
 
     // Dynamically determine base URL (works for both local and production)
@@ -31,7 +32,18 @@ export async function POST(req) {
         : data.assetType === 'Jewellery For Sale'
         ? 999.18
         : 3000.27
-    const totalprice = convertToCents(data.price + feeUsd)
+    let totalUsd = data.price + feeUsd
+    if (applyFullPayDiscount) {
+      const discountPercent = Math.min(
+        50,
+        Math.max(0, Number(process.env.FULL_PAY_DISCOUNT_PERCENT || 5)),
+      )
+      if (discountPercent > 0) {
+        totalUsd =
+          Math.round(totalUsd * (1 - discountPercent / 100) * 100) / 100
+      }
+    }
+    const totalprice = convertToCents(totalUsd)
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: [
