@@ -10,6 +10,9 @@ import { toast } from 'react-toastify'
 
 import customAxios from '../../utils/apis/apis'
 import { initiateServiceSubscription } from '@/libs/initiateServiceSubscription'
+import { initiateClozerPayment, getClozerErrorMessage } from '@/libs/initiateClozerPayment'
+import PaymentChoiceModal from '@/components/payments/PaymentChoiceModal'
+import { applyFullPayDiscount } from '@/libs/paymentDiscount'
 import { useProfile } from '../../context/UserContext'
 
 const Modal = ({
@@ -34,6 +37,8 @@ const Modal = ({
   const [price, setPrice] = useState()
   const [value, setValue] = useState()
   const { user } = useProfile()
+  const [showPaymentChoice, setShowPaymentChoice] = useState(false)
+  const [paymentLoading, setPaymentLoading] = useState(false)
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -56,51 +61,59 @@ const Modal = ({
     formData.assetType &&
     isChecked
 
-  const handleSave = async () => {
+  const buildPaymentPayload = () => {
+    const origin =
+      typeof window !== 'undefined'
+        ? window.location.origin
+        : process.env.NEXT_PUBLIC_UAE_PASS_REDIRECT_URI || ''
+    const returnPath =
+      typeof window !== 'undefined'
+        ? `${window.location.pathname}${window.location.search}`
+        : '/dashboard/property-listing'
+    localStorage.setItem('servicePaymentReturnUrl', returnPath)
+
+    return {
+      userUUID: user?.uuid,
+      service: '_3dwalkthrough',
+      price: formData?.price,
+      productTitle,
+      productId,
+      dateTime: formData?.dateTime,
+      phone: formData?.phone,
+      success_url: `${origin}/service-payment-success`,
+      cancel_url:
+        typeof window !== 'undefined'
+          ? window.location.href
+          : `${origin}/dashboard/property-listing`,
+      assetType: type,
+      category,
+      subCategory,
+      value,
+    }
+  }
+
+  const handleSave = () => {
     if (!isChecked) {
       setShowCheckboxError(true)
       return
     }
     setShowCheckboxError(false)
+    if (!user?.uuid) {
+      toast.error('User not found. Please login.')
+      return
+    }
+    setShowPaymentChoice(true)
+  }
+
+  const handleStripePay = async () => {
     try {
-      const origin =
-        typeof window !== 'undefined'
-          ? window.location.origin
-          : process.env.NEXT_PUBLIC_UAE_PASS_REDIRECT_URI || ''
-      const returnPath =
-        typeof window !== 'undefined'
-          ? `${window.location.pathname}${window.location.search}`
-          : '/dashboard/property-listing'
-      localStorage.setItem('servicePaymentReturnUrl', returnPath)
-
-      const currentUrl = `${origin}/service-payment-success`
-      const cancelUrl =
-        typeof window !== 'undefined'
-          ? window.location.href
-          : `${origin}/dashboard/property-listing`
-      const currentuserUUID = user?.uuid
-      if (!currentuserUUID) return toast.error('User not found. Please login.')
-
-      const APiRequestedData = {
-        userUUID: currentuserUUID,
-        service: '_3dwalkthrough',
-        price: formData?.price,
-        productTitle: productTitle,
-        productId: productId,
-        dateTime: formData?.dateTime,
-        phone: formData?.phone,
-        success_url: currentUrl,
-        cancel_url: cancelUrl,
-        assetType: type,
-        category: category,
-        subCategory: subCategory,
-        value: value,
-      }
-
-      const data = await initiateServiceSubscription(APiRequestedData)
-
+      setPaymentLoading(true)
+      const APiRequestedData = buildPaymentPayload()
+      const data = await initiateServiceSubscription({
+        ...APiRequestedData,
+        price: applyFullPayDiscount(formData?.price).discounted,
+      })
       onSave(APiRequestedData)
-
       if (data?.url) {
         if (data.sessionId) {
           localStorage.setItem('checkoutSessionId', data.sessionId)
@@ -111,6 +124,32 @@ const Modal = ({
       }
     } catch (error) {
       toast.error(error?.message || 'Something went wrong!')
+    } finally {
+      setPaymentLoading(false)
+    }
+  }
+
+  const handleClozerPay = async () => {
+    try {
+      setPaymentLoading(true)
+      const origin =
+        typeof window !== 'undefined' ? window.location.origin : ''
+      const APiRequestedData = {
+        ...buildPaymentPayload(),
+        success_url: `${origin}/clozer-return`,
+      }
+      const data = await initiateClozerPayment(APiRequestedData)
+      onSave(APiRequestedData)
+      if (data?.redirectUrl) {
+        localStorage.setItem('clozerTransactionId', data.transaction_id)
+        window.location.href = data.redirectUrl
+      } else {
+        toast.error(data?.message || 'Installment payment could not be started.')
+      }
+    } catch (error) {
+      toast.error(getClozerErrorMessage(error))
+    } finally {
+      setPaymentLoading(false)
     }
   }
 
@@ -360,6 +399,15 @@ const Modal = ({
               X
             </button>
           </div>
+
+          <PaymentChoiceModal
+            show={showPaymentChoice}
+            onClose={() => setShowPaymentChoice(false)}
+            amount={price}
+            loading={paymentLoading}
+            onPayFull={handleStripePay}
+            onPayInstallments={handleClozerPay}
+          />
         </div>
       </div>
     )
