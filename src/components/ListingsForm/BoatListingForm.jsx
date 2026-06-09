@@ -51,7 +51,7 @@ const BoatListingForm = ({
   handleThumbImageChange,
   handleThumbImageRemove,
   images,
-  video,
+  videos,
   handleImageRemove,
   handleImageChange,
   handleVideoRemove,
@@ -233,7 +233,7 @@ const BoatListingForm = ({
           </ListingImageUploadLayout>
           <ListingImageUploadLayout formats={LISTING_VIDEO_FORMATS_LABEL}>
             <ListingsVideoComponent
-              video={video}
+              videos={videos}
               handleVideoRemove={handleVideoRemove}
               fileInputRef={fileInputRef}
               handleVideoChange={handleVideoChange}

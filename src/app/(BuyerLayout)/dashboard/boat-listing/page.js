@@ -162,7 +162,7 @@ function Page() {
     isValidState,
     handleFormData,
     setErrors,
-    video,
+    videos,
     file,
     handleScroll,
     setTotalPrice,
@@ -417,8 +417,8 @@ function Page() {
         throw new Error('Thumbnail is required')
       }
 
-      if (!video) {
-        toast.error('Video is required.')
+      if (!videos.length) {
+        toast.error('At least one video is required.')
         setLoading(false)
         throw new Error('Video is required')
       }
@@ -541,7 +541,7 @@ function Page() {
         const [uploadedImages, uploadedVideo, uploadedThumbnail] =
           await Promise.all([
             images.length > 0 ? handleImageUpload(images) : imageID,
-            video ? handleVideoUpload(video) : videoID,
+            videos.length ? handleVideoUpload(videos) : videoID,
             // file ? handleFileUpload(file) : fileID,
             thumbnail ? handleThumbnailUpload(thumbnail) : thumbnailID,
           ])
@@ -783,7 +783,7 @@ function Page() {
                   handleThumbImageChange={handleThumbImageChange}
                   handleThumbImageRemove={handleThumbImageRemove}
                   images={images}
-                  video={video}
+                  videos={videos}
                   handleImageRemove={handleImageRemove}
                   handleImageChange={handleImageChange}
                   handleVideoRemove={handleVideoRemove}

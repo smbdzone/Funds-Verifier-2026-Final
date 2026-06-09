@@ -50,7 +50,7 @@ const JewelryListingForm = ({
   handleThumbImageChange,
   handleThumbImageRemove,
   images,
-  video,
+  videos,
   handleImageRemove,
   handleImageChange,
   handleVideoRemove,
@@ -231,7 +231,7 @@ const JewelryListingForm = ({
           </ListingImageUploadLayout>
           <ListingImageUploadLayout formats={LISTING_VIDEO_FORMATS_LABEL}>
             <ListingsVideoComponent
-              video={video}
+              videos={videos}
               handleVideoRemove={handleVideoRemove}
               fileInputRef={fileInputRef}
               handleVideoChange={handleVideoChange}

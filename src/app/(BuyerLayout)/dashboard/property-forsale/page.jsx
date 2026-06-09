@@ -34,6 +34,16 @@ import {
 import { toast, ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 import customAxios from '../../../../utils/apis/apis'
+import {
+  LISTING_IMAGE_MAX_BYTES,
+  LISTING_IMAGE_MAX_MB,
+  LISTING_IMAGE_MAX_COUNT,
+  LISTING_VIDEO_MAX_BYTES,
+  LISTING_VIDEO_MAX_MB,
+  LISTING_VIDEO_MAX_COUNT,
+  LISTING_IMAGE_FORMATS_LABEL,
+  LISTING_VIDEO_FORMATS_LABEL,
+} from '@/constants/listingUploadLimits'
 
 const initialFormData = {
   assetType: 'Property for lease',
@@ -71,7 +81,7 @@ const initialFormData = {
 }
 
 function Page() {
-  const [video, setVideo] = useState(null)
+  const [videos, setVideos] = useState([])
   const [errors, setErrors] = useState({})
 
   const [images, setImages] = useState([])
@@ -122,8 +132,8 @@ function Page() {
 
     const processFiles = async () => {
       for (const file of files) {
-        if (file.size > 2 * 1024 * 1024) {
-          toast.error(`The file ${file.name} exceeds the 2MB size limit`)
+        if (file.size > LISTING_IMAGE_MAX_BYTES) {
+          toast.error(`The file ${file.name} exceeds the ${LISTING_IMAGE_MAX_MB}MB size limit`)
         } else {
           const validFile = await checkFile(file)
           if (validFile) {
@@ -132,8 +142,10 @@ function Page() {
         }
       }
 
-      if (images.length + validFiles.length > 7) {
-        toast.error('You can only upload a maximum of 7 images')
+      if (images.length + validFiles.length > LISTING_IMAGE_MAX_COUNT) {
+        toast.error(
+          `You can only upload a maximum of ${LISTING_IMAGE_MAX_COUNT} images`,
+        )
         return
       }
 
@@ -158,31 +170,31 @@ function Page() {
   }
 
   const handleVideoChange = (e) => {
-    const file = e.target.files[0]
-    if (file.size > 50 * 1024 * 1024) {
-      toast.error('Maximum file size for videos is 50MB')
+    const files = Array.from(e.target.files || [])
+    const validFiles = []
+
+    for (const file of files) {
+      if (file.size > LISTING_VIDEO_MAX_BYTES) {
+        toast.error(`Maximum file size for videos is ${LISTING_VIDEO_MAX_MB}MB`)
+        continue
+      }
+      validFiles.push(file)
+    }
+
+    if (!validFiles.length) return
+
+    if (videos.length + validFiles.length > LISTING_VIDEO_MAX_COUNT) {
+      toast.error(
+        `You can only upload a maximum of ${LISTING_VIDEO_MAX_COUNT} videos`,
+      )
       return
     }
 
-    // Check aspect ratio
-    const video = document.createElement('video')
-    video.preload = 'metadata'
-
-    video.onloadedmetadata = () => {
-      window.URL.revokeObjectURL(video.src)
-      const aspectRatio = video.videoWidth / video.videoHeight
-      if (Math.abs(aspectRatio - 1) > 0.1) {
-        toast.error('Video aspect ratio should be close to 1:1')
-        return
-      }
-      setVideo(file)
-    }
-
-    video.src = URL.createObjectURL(file)
+    setVideos((prev) => [...prev, ...validFiles])
   }
 
-  const handleVideoRemove = () => {
-    setVideo(null)
+  const handleVideoRemove = (index) => {
+    setVideos((prev) => prev.filter((_, i) => i !== index))
   }
   const [thumbnail, setThumbnail] = useState(null)
   const aspectRatioTarget = 1.45
@@ -254,7 +266,7 @@ function Page() {
         technicalReportID = technicalReportResponse?.data?.report?.uuid
       }
       const imageID = await handleImageUpload(images)
-      const videoID = await handleVideoUpload(video)
+      const videoID = await handleVideoUpload(videos)
       const fileID = await handleFileUpload(file)
       const thumbnailID = await handleThumbnailUpload(thumbnail)
 
@@ -1203,7 +1215,7 @@ function Page() {
                       Accepted formats:
                     </h2>
                     <p className='text-dark-grey text-[10px] font-normal leading-[177%]'>
-                      JPG, PNG, GIF. Maximum file size: 2MB
+                      {LISTING_IMAGE_FORMATS_LABEL}
                     </p>
 
                     <div className='flex flex-wrap mt-2 w-[80%]'>
@@ -1260,7 +1272,7 @@ function Page() {
                       Accepted formats:
                     </h2>
                     <p className='text-dark-grey text-[10px] font-normal leading-[177%]'>
-                      JPG, PNG, GIF. Maximum file size: 2MB
+                      {LISTING_IMAGE_FORMATS_LABEL}
                     </p>
 
                     <div className='flex flex-wrap mt-4 w-[60%]'>
@@ -1324,41 +1336,52 @@ function Page() {
                       Accepted formats:
                     </h2>
                     <p className='text-dark-grey text-[10px] font-normal leading-[177%]'>
-                      MP4, MOV. Maximum file size: 50MB
+                      {LISTING_VIDEO_FORMATS_LABEL}
                     </p>
 
-                    {video && (
-                      <div className='relative mt-2 h-28 w-28'>
+                    {videos.map((file, index) => (
+                      <div className='relative mt-2 h-28 w-28' key={`${file.name}-${index}`}>
                         <video
                           width='100%'
                           controls
-                          src={URL.createObjectURL(video)}
+                          src={URL.createObjectURL(file)}
                           className='w-full h-auto'
                         />
                         <button
-                          onClick={handleVideoRemove}
+                          type='button'
+                          onClick={() => handleVideoRemove(index)}
                           className='absolute top-0 right-0 p-1 bg-red-500 text-white rounded-full'
                           title='Remove video'
                         >
                           &times;
                         </button>
                       </div>
-                    )}
+                    ))}
 
                     <input
                       type='file'
                       id='video-upload'
                       className='hidden'
                       accept='video/*'
+                      multiple
+                      disabled={videos.length >= LISTING_VIDEO_MAX_COUNT}
                       onChange={handleVideoChange}
                     />
 
                     <div className='absolute right-[20px] xl:top-0 xxs:top-[55px]'>
                       <label
-                        htmlFor='video-upload'
-                        className='flex flex-col items-center justify-center w-[176px] 
+                        htmlFor={
+                          videos.length < LISTING_VIDEO_MAX_COUNT
+                            ? 'video-upload'
+                            : undefined
+                        }
+                        className={`flex flex-col items-center justify-center w-[176px] 
             xl:h-[144px] xxs:h-[110px] 
-            shadow-neonsm cursor-pointer my-[19px]'
+            shadow-neonsm my-[19px] ${
+              videos.length < LISTING_VIDEO_MAX_COUNT
+                ? 'cursor-pointer'
+                : 'cursor-not-allowed opacity-60'
+            }`}
                       >
                         <Image
                           width={40}

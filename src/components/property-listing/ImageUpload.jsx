@@ -49,7 +49,7 @@ export const ImageUploadComponent = React.memo(
     handleImageChange,
     images,
     handleImageRemove,
-    video,
+    videos,
     handleVideoChange,
     handleVideoRemove,
     totalprice,
@@ -238,7 +238,7 @@ export const ImageUploadComponent = React.memo(
           </ListingImageUploadLayout>
           <ListingImageUploadLayout formats={LISTING_VIDEO_FORMATS_LABEL}>
             <ListingsVideoComponent
-              video={video}
+              videos={videos}
               handleVideoRemove={handleVideoRemove}
               fileInputRef={fileInputRef}
               handleVideoChange={handleVideoChange}

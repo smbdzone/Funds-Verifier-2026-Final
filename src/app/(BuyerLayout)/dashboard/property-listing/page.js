@@ -135,7 +135,7 @@ const Page = () => {
     setIsCityDropdownOpen,
     setErrors,
     // setThumbnail,
-    video,
+    videos,
     file,
     handleScroll,
     setTotalSize,
@@ -262,8 +262,8 @@ const Page = () => {
         throw new Error('Thumbnail is required')
       }
 
-      if (!video) {
-        toast.error('Video is required.')
+      if (!videos.length) {
+        toast.error('At least one video is required.')
         setLoading(false)
         throw new Error('Video is required')
       }
@@ -374,7 +374,7 @@ const Page = () => {
         const [uploadedImages, uploadedVideo, uploadedFile, uploadedThumbnail] =
           await Promise.all([
             images.length > 0 ? handleImageUpload(images) : imageID,
-            video ? handleVideoUpload(video) : videoID,
+            videos.length ? handleVideoUpload(videos) : videoID,
             file ? handleFileUpload(file) : fileID,
             thumbnail ? handleThumbnailUpload(thumbnail) : thumbnailID,
           ])
@@ -385,7 +385,7 @@ const Page = () => {
         thumbnailID = uploadedThumbnail
       } else {
         // ✅ For updates: only re-upload video or file if changed
-        if (video) videoID = await handleVideoUpload(video)
+        if (videos.length) videoID = await handleVideoUpload(videos)
         if (file) fileID = await handleFileUpload(file)
         // thumbnail and images will remain unchanged
       }
@@ -782,7 +782,7 @@ const Page = () => {
                 bedroomsOptions={bedroomsOptions}
                 bathroomsOptions={bathroomsOptions}
                 handleVideoChange={handleVideoChange}
-                video={video}
+                videos={videos}
                 handlePhoneNumberChange={handlePhoneNumberChange}
                 leaseNumberofChequesOptions={leaseNumberofChequesOptions}
                 isFurnishedOptions={isFurnishedOptions}

@@ -19,6 +19,7 @@ import {
   getFullPayDiscountPercent,
 } from '@/libs/paymentDiscount'
 import { CloseIcon } from '@/components/Icons'
+import { getCsrfHeaders } from '@/utils/csrf'
 
 const EVALUATION_CLOZER_AMOUNT = 2500
 
@@ -108,9 +109,13 @@ const PaymentModal = ({
         return
       }
 
+      const csrfHeaders = await getCsrfHeaders({
+        'Content-Type': 'application/json',
+      })
       const res = await fetch('/api/create-payment-intent', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: csrfHeaders,
+        credentials: 'include',
         body: JSON.stringify({
           amount: 200,
           customerId: user?.uuid,

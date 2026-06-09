@@ -29,6 +29,8 @@ import {
   LISTING_VIDEO_MAX_BYTES,
   LISTING_IMAGE_MAX_MB,
   LISTING_VIDEO_MAX_MB,
+  LISTING_IMAGE_MAX_COUNT,
+  LISTING_VIDEO_MAX_COUNT,
 } from '@/constants/listingUploadLimits'
 
 const getMaxLengthForCountry = (country) => {
@@ -43,7 +45,7 @@ export const ListingContext = createContext()
 const ListingsProvider = ({ children }) => {
   const [loading, setLoading] = useState(false)
   const [cityLoading, setCityLoading] = useState(false)
-  const [video, setVideo] = useState(null)
+  const [videos, setVideos] = useState([])
   const [errors, setErrors] = useState({})
   const [isOpen, setIsOpen] = useState(false)
   const [countries, setCountries] = useState([])
@@ -418,8 +420,10 @@ const ListingsProvider = ({ children }) => {
       }
 
       // Check if the number of images exceeds the limit
-      if (images.length + validFiles.length > 7) {
-        toast.error('You can only upload a maximum of 7 images')
+      if (images.length + validFiles.length > LISTING_IMAGE_MAX_COUNT) {
+        toast.error(
+          `You can only upload a maximum of ${LISTING_IMAGE_MAX_COUNT} images`,
+        )
         return
       }
 
@@ -476,23 +480,39 @@ const ListingsProvider = ({ children }) => {
   }
 
   const handleVideoChange = (e) => {
-    const file = e.target.files[0]
-    if (file.size > LISTING_VIDEO_MAX_BYTES) {
-      toast.error(`Maximum file size for videos is ${LISTING_VIDEO_MAX_MB}MB`)
-      fileInputRef.current.value = null
+    const files = Array.from(e.target.files || [])
+    if (!files.length) return
+
+    const validFiles = []
+    for (const file of files) {
+      if (file.size > LISTING_VIDEO_MAX_BYTES) {
+        toast.error(
+          `${file.name} exceeds the ${LISTING_VIDEO_MAX_MB}MB video size limit`,
+        )
+        continue
+      }
+      validFiles.push(file)
+    }
+
+    if (!validFiles.length) {
+      if (fileInputRef.current) fileInputRef.current.value = null
       return
     }
 
-    const video = document.createElement('video')
-    video.preload = 'metadata'
-
-    video.onloadedmetadata = () => {
-      window.URL.revokeObjectURL(video.src)
-      setVideo(file)
-      fileInputRef.current.value = null
+    if (videos.length + validFiles.length > LISTING_VIDEO_MAX_COUNT) {
+      toast.error(
+        `You can only upload a maximum of ${LISTING_VIDEO_MAX_COUNT} videos`,
+      )
+      if (fileInputRef.current) fileInputRef.current.value = null
+      return
     }
 
-    video.src = URL.createObjectURL(file)
+    setVideos((prev) => [...prev, ...validFiles])
+    if (fileInputRef.current) fileInputRef.current.value = null
+  }
+
+  const handleVideoRemove = (index) => {
+    setVideos((prev) => prev.filter((_, i) => i !== index))
   }
 
   const handleThumbImageChange = (event) => {
@@ -521,10 +541,6 @@ const ListingsProvider = ({ children }) => {
       }
       reader.readAsDataURL(selectedFile)
     }
-  }
-
-  const handleVideoRemove = () => {
-    setVideo(null)
   }
 
   const handleThumbImageRemove = (id) => {
@@ -623,7 +639,7 @@ const ListingsProvider = ({ children }) => {
   const resetForm = () => {
     setThumbnail(null)
     setErrors({})
-    setVideo(null)
+    setVideos([])
     setImages([])
     setPhoneNumber('')
     setTotalSize('Size in')
@@ -666,7 +682,7 @@ const ListingsProvider = ({ children }) => {
       value={{
         loading,
         cityLoading,
-        video,
+        videos,
         errors,
         isOpen,
         countries,
@@ -757,7 +773,7 @@ const ListingsProvider = ({ children }) => {
         setSelectedModel,
         setFile,
         handleVideoRemove,
-        setVideo,
+        setVideos,
         setTechnicalModalData,
         resetForm,
         setTotalPrice,

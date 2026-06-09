@@ -34,8 +34,13 @@ const handleImageUpload = async (images) => {
 const handleVideoUpload = async (video) => {
   if (!video) return
 
+  const files = Array.isArray(video) ? video : [video]
+  if (!files.length) return
+
   const formData = new FormData()
-  formData.append('video', video)
+  files.forEach((file) => {
+    formData.append('video', file)
+  })
 
   try {
     const response = await customAxios.post(
