@@ -16,6 +16,7 @@ const BankForm = ({
   cities,
   fetchCities,
   fetchData,
+  setUser,
   searchQueryCity,
   setSearchQueryCity,
   setCountryCode,
@@ -25,10 +26,6 @@ const BankForm = ({
   const [isLoading, setIsLoading] = useState(false)
   const [toggleCountry, setToggleCountry] = useState(false)
   const [searchQueryCountry, setSearchQueryCountry] = useState('')
-
-  useEffect(() => {
-    fetchCities(user?.financialInfo?.country)
-  }, [])
 
   const validationSchema = Yup.object({
     verificationCertificate: Yup.string().required('Pdf is required'),
@@ -64,20 +61,20 @@ const BankForm = ({
     try {
       setIsLoading(true)
       const fileUpload = await handleVerificationUpload(file)
+      const certificateId = fileUpload?.certificate?._id
 
-      if (fileUpload.uuid) {
-        // Update the form field with the uploaded file's ID
-        setFieldValue('verificationCertificate', fileUpload.uuid)
+      if (certificateId) {
+        setFieldValue('verificationCertificate', certificateId)
         toast.success('File uploaded successfully!')
-        setIsLoading(false)
         setFileName(file.name)
       } else {
         toast.error('Failed to upload document.')
-        setIsLoading(false)
       }
     } catch (error) {
       console.error('Error uploading document:', error)
-      toast.error('Failed to upload document.')
+      toast.error(error?.message || 'Failed to upload document.')
+    } finally {
+      setIsLoading(false)
     }
   }
   // Set the initial file name for display
@@ -87,6 +84,18 @@ const BankForm = ({
     }
   }, [user])
 
+  useEffect(() => {
+    if (user?.financialInfo?.country) {
+      setSearchQueryCountry(user.financialInfo.country)
+    }
+  }, [user?.financialInfo?.country])
+
+  useEffect(() => {
+    if (user?.financialInfo?.city) {
+      setSearchQueryCity(user.financialInfo.city)
+    }
+  }, [user?.financialInfo?.city, setSearchQueryCity])
+
   return (
     <div className='sm:px-8 px-4 pb-3 sm:py-6'>
       <h2 className='sm:text-lg text-base lg:text-xl font-medium text-white mb-4'>
@@ -95,7 +104,9 @@ const BankForm = ({
       <Formik
         initialValues={{
           verificationCertificate:
-            user?.financialInfo?.verificationCertificate?.uuid || '',
+            user?.financialInfo?.verificationCertificate?._id?.toString() ||
+            user?.financialInfo?.verificationCertificate?.toString?.() ||
+            '',
           fundsVerification: user?.financialInfo?.fundsVerification || null,
           bankName: user?.financialInfo?.bankName || '',
           bankBranch: user?.financialInfo?.bankBranch || '',
@@ -111,7 +122,10 @@ const BankForm = ({
               { financialInfo: values }
             )
             if (res?.status === 200) {
-              toast.success('Personal Information Updated Successfully')
+              toast.success('Financial information saved successfully')
+              if (setUser && res.data) {
+                setUser((prev) => ({ ...prev, ...res.data }))
+              }
               fetchData()
             }
           } catch (error) {
@@ -157,8 +171,9 @@ const BankForm = ({
               selectedValue={values.country || user?.financialInfo?.country}
               dropdownOptions={countries} // Pass full country objects
               onChange={(selectedCountry) => {
-                setFieldValue('country', selectedCountry.country) // Save country name to backend
-
+                setFieldValue('country', selectedCountry.country)
+                setFieldValue('city', '')
+                setSearchQueryCity('')
                 setCountryCode(selectedCountry.code)
                 setToggleCountry(false)
               }}
@@ -173,7 +188,8 @@ const BankForm = ({
               selectedValue={values.city || user?.financialInfo?.city}
               dropdownOptions={cities?.map((city) => city.description)} // Pass city names only
               onChange={(selectedCity) => {
-                setFieldValue('city', selectedCity) // Save city name to backend
+                setFieldValue('city', selectedCity)
+                setSearchQueryCity(selectedCity)
                 setToggleCity(false)
               }}
               toggle={toggleCity}
@@ -240,11 +256,10 @@ const BankForm = ({
               <button
                 type='submit'
                 disabled={isSubmitting || isLoading} // Disable if the form is submitting or loading
-                className={`btn-gradient px-5 rounded py-2 mt-4 ${
-                  isSubmitting || isLoading
-                    ? 'opacity-50 cursor-not-allowed'
-                    : ''
-                }`}
+                className={`btn-gradient px-5 rounded py-2 mt-4 ${isSubmitting || isLoading
+                  ? 'opacity-50 cursor-not-allowed'
+                  : ''
+                  }`}
               >
                 Save
               </button>

@@ -14,6 +14,11 @@ import {
   normalizeCountriesResponse,
   normalizeCitiesResponse,
 } from '@/libs/normalizeCountriesResponse'
+import {
+  DUMMY_UAE_CITY_PREDICTIONS,
+  filterDummyCitiesByQuery,
+  isDummyUaeLocationsEnabled,
+} from '@/libs/dummyLocationData'
 
 const Loader = () => (
   <div className='w-full flex justify-center py-10'>
@@ -49,6 +54,20 @@ export const ProfileTab = () => {
   }, [])
 
   const fetchCities = async () => {
+    if (!countryCode) {
+      setCities([])
+      return
+    }
+
+    const applyDummyAeCities = () => {
+      setCities(filterDummyCitiesByQuery(DUMMY_UAE_CITY_PREDICTIONS, searchQueryCity))
+    }
+
+    if (isDummyUaeLocationsEnabled && countryCode === 'AE') {
+      applyDummyAeCities()
+      return
+    }
+
     try {
       const response = await fetch(
         `/api/country?name=${countryCode}&query=${searchQueryCity}`,
@@ -58,9 +77,23 @@ export const ProfileTab = () => {
       if (!response.ok) throw new Error('Failed to fetch cities')
 
       const data = await response.json()
-      setCities(normalizeCitiesResponse(data))
+      let normalized = normalizeCitiesResponse(data)
+
+      if (countryCode === 'AE' && normalized.length === 0) {
+        normalized = filterDummyCitiesByQuery(
+          DUMMY_UAE_CITY_PREDICTIONS,
+          searchQueryCity,
+        )
+      }
+
+      setCities(normalized)
     } catch (error) {
       console.error('Error fetching cities:', error)
+      if (countryCode === 'AE') {
+        applyDummyAeCities()
+      } else {
+        setCities([])
+      }
     }
   }
 
@@ -71,8 +104,23 @@ export const ProfileTab = () => {
   }, [])
 
   useEffect(() => {
+    const savedCountry = user?.financialInfo?.country
+    if (!savedCountry || countryCode || countries.length === 0) return
+
+    const match = countries.find(
+      (c) =>
+        c.country === savedCountry ||
+        c.country?.toLowerCase() === savedCountry?.toLowerCase(),
+    )
+
+    if (match?.code) {
+      setCountryCode(match.code)
+    }
+  }, [user, countries, countryCode])
+
+  useEffect(() => {
     fetchCities()
-  }, [searchQueryCity])
+  }, [searchQueryCity, countryCode])
 
   // ⏳ Loader Condition — wait for user & countries
   if (!user || countries.length === 0) {
@@ -90,9 +138,8 @@ export const ProfileTab = () => {
           {({ open }) => (
             <>
               <Disclosure.Button
-                className={`w-full btn-gradient rounded py-3 px-7 gap-4 justify-between items-center flex ${
-                  open && 'mb-3'
-                }`}
+                className={`w-full btn-gradient rounded py-3 px-7 gap-4 justify-between items-center flex ${open && 'mb-3'
+                  }`}
               >
                 <span className='whitespace-nowrap sm:text-xl font-medium text-white'>
                   Personal Informations
@@ -122,9 +169,8 @@ export const ProfileTab = () => {
           {({ open }) => (
             <>
               <Disclosure.Button
-                className={`w-full btn-gradient rounded py-3 px-7 gap-4 justify-between items-center flex ${
-                  open && 'mb-3'
-                }`}
+                className={`w-full btn-gradient rounded py-3 px-7 gap-4 justify-between items-center flex ${open && 'mb-3'
+                  }`}
               >
                 <span className='whitespace-nowrap sm:text-xl font-medium text-white'>
                   Personal Details
@@ -154,9 +200,8 @@ export const ProfileTab = () => {
           {({ open }) => (
             <>
               <Disclosure.Button
-                className={`w-full btn-gradient rounded py-3 px-7 gap-4 justify-between items-center flex ${
-                  open && 'mb-3'
-                }`}
+                className={`w-full btn-gradient rounded py-3 px-7 gap-4 justify-between items-center flex ${open && 'mb-3'
+                  }`}
               >
                 <span className='whitespace-nowrap sm:text-xl font-medium text-white'>
                   Emirates ID (Clozer)
@@ -181,9 +226,8 @@ export const ProfileTab = () => {
           {({ open }) => (
             <>
               <Disclosure.Button
-                className={`w-full btn-gradient rounded py-3 px-7 gap-4 justify-between items-center flex ${
-                  open && 'mb-3'
-                }`}
+                className={`w-full btn-gradient rounded py-3 px-7 gap-4 justify-between items-center flex ${open && 'mb-3'
+                  }`}
               >
                 <span className='whitespace-nowrap sm:text-xl font-medium text-white'>
                   Financial Information
@@ -205,6 +249,7 @@ export const ProfileTab = () => {
                   cities={cities}
                   fetchCities={fetchCities}
                   fetchData={fetchProfile}
+                  setUser={setUser}
                   setSearchQueryCity={setSearchQueryCity}
                   searchQueryCity={searchQueryCity}
                   setCountryCode={setCountryCode}
