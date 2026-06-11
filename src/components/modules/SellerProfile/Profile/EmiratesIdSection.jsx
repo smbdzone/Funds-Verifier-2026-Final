@@ -69,8 +69,8 @@ const EmiratesIdSection = ({ user, fetchData, variant = 'dark' }) => {
           } catch (error) {
             toast.error(
               error?.response?.data?.message ||
-                error?.message ||
-                'Could not save Emirates ID',
+              error?.message ||
+              'Could not save Emirates ID',
             )
           }
         }}
@@ -142,9 +142,9 @@ const EmiratesIdSection = ({ user, fetchData, variant = 'dark' }) => {
               <button
                 type='submit'
                 disabled={isSubmitting}
-                className={`btn-gradient px-6 py-2 rounded ${
-                  isSubmitting ? 'opacity-50 cursor-not-allowed' : ''
-                }`}
+                className={`${variant === 'light' ? 'primary-gradient' : 'btn-gradient'
+                  } text-white px-6 py-2 rounded ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
               >
                 Save Emirates ID
               </button>

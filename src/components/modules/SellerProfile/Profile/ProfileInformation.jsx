@@ -6,6 +6,13 @@ import Select from 'react-select'
 import { toast } from 'react-toastify'
 import customAxios from '../../../../utils/apis/apis'
 
+const formatDateForInput = (date) => {
+  if (!date) return ''
+  const parsed = new Date(date)
+  if (isNaN(parsed.getTime())) return ''
+  return parsed.toISOString().split('T')[0]
+}
+
 const PersonalInfoForm = ({ user, setUser, fetchData }) => {
   const [showModal, setShowModal] = useState(false)
   const [selectedImage, setSelectedImage] = useState('')
@@ -67,7 +74,7 @@ const PersonalInfoForm = ({ user, setUser, fetchData }) => {
           phone: user?.phone || '',
           email: user?.email || '',
           maritalStatus: user?.maritalStatus || 'le',
-          dateOfBirth: user?.dateOfBirth || '',
+          dateOfBirth: formatDateForInput(user?.dateOfBirth),
           profileImage: user?.profileImage || '',
         }}
         enableReinitialize
@@ -182,9 +189,8 @@ const PersonalInfoForm = ({ user, setUser, fetchData }) => {
               <button
                 type='submit'
                 disabled={isSubmitting}
-                className={`btn-gradient px-5 rounded py-2 mt-4 ${
-                  isSubmitting ? 'opacity-50 cursor-not-allowed' : ''
-                }`}
+                className={`btn-gradient px-5 rounded py-2 mt-4 ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
               >
                 Save
               </button>

@@ -1,12 +1,12 @@
 "use client"
 
 import { Formik, Form } from 'formik'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { toast } from 'react-toastify'
 import DropdownInput from '@/components/Inputs/DropdownInput'
 import customAxios from '../../../../utils/apis/apis'
 
-const PersonalDetails = ({ user, fetchData, countries }) => {
+const PersonalDetails = ({ user, fetchData, setUser, countries }) => {
   // Dropdown toggles
   const [toggleCountry, setToggleCountry] = useState(false)
   const [searchQueryCountry, setSearchQueryCountry] = useState('')
@@ -19,6 +19,30 @@ const PersonalDetails = ({ user, fetchData, countries }) => {
 
   const [toggleIndustry, setToggleIndustry] = useState(false)
   const [searchQueryIndustry, setSearchQueryIndustry] = useState('')
+
+  useEffect(() => {
+    if (user?.personalDetails?.citizenship) {
+      setSearchQueryCountry(user.personalDetails.citizenship)
+    }
+  }, [user?.personalDetails?.citizenship])
+
+  useEffect(() => {
+    if (user?.personalDetails?.residenceStatus) {
+      setSearchQueryResidence(user.personalDetails.residenceStatus)
+    }
+  }, [user?.personalDetails?.residenceStatus])
+
+  useEffect(() => {
+    if (user?.personalDetails?.employerName) {
+      setSearchQueryEmployer(user.personalDetails.employerName)
+    }
+  }, [user?.personalDetails?.employerName])
+
+  useEffect(() => {
+    if (user?.personalDetails?.industry) {
+      setSearchQueryIndustry(user.personalDetails.industry)
+    }
+  }, [user?.personalDetails?.industry])
 
   return (
     <div className='sm:px-8 px-4 pb-3 sm:py-6'>
@@ -41,6 +65,9 @@ const PersonalDetails = ({ user, fetchData, countries }) => {
             )
             if (res?.status === 200) {
               toast.success('Personal Information Updated Successfully')
+              if (setUser && res.data) {
+                setUser((prev) => ({ ...prev, ...res.data }))
+              }
               fetchData()
             }
           } catch (error) {
@@ -133,9 +160,8 @@ const PersonalDetails = ({ user, fetchData, countries }) => {
               <button
                 type='submit'
                 disabled={isSubmitting}
-                className={`btn-gradient px-5 rounded py-2 mt-4 ${
-                  isSubmitting ? 'opacity-50 cursor-not-allowed' : ''
-                }`}
+                className={`btn-gradient px-5 rounded py-2 mt-4 ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
               >
                 Save
               </button>

@@ -188,6 +188,7 @@ export const ProfileTab = () => {
                 <PersonalDetails
                   countries={countries}
                   fetchData={fetchProfile}
+                  setUser={setUser}
                   user={user}
                 />
               </Disclosure.Panel>
