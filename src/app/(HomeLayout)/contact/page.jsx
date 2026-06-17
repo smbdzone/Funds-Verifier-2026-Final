@@ -6,13 +6,16 @@ import * as Yup from 'yup' // ✅ Correct import
 import axios from 'axios'
 import { toast } from 'react-toastify'
 import { Mail, Phone, Pin } from 'lucide-react'
+import { getCsrfHeaders } from '@/utils/csrf'
 
 export default function Page() {
   const handleSubmit = async (values, { resetForm }) => {
     try {
+      const csrfHeaders = await getCsrfHeaders()
       const res = await axios.post(
         `${process.env.NEXT_PUBLIC_BASE_URL}/contact-us`,
-        values
+        values,
+        { headers: csrfHeaders, withCredentials: true },
       )
 
       toast.success(res.data.message || 'Message sent successfully!')

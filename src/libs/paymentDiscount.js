@@ -1,11 +1,40 @@
-const DEFAULT_DISCOUNT_PERCENT = Number(
-  process.env.NEXT_PUBLIC_FULL_PAY_DISCOUNT_PERCENT || 5,
-)
+const ENV_FALLBACK = Number(process.env.NEXT_PUBLIC_FULL_PAY_DISCOUNT_PERCENT || 5)
+
+let cachedDiscountPercent = Number.isFinite(ENV_FALLBACK) ? ENV_FALLBACK : 5
+
+function clampDiscountPercent(value) {
+  const num = Number(value)
+  if (!Number.isFinite(num) || num <= 0) return 0
+  return Math.min(50, Math.max(0, num))
+}
+
+export function setFullPayDiscountPercent(value) {
+  cachedDiscountPercent = clampDiscountPercent(value)
+}
 
 export function getFullPayDiscountPercent() {
-  const value = Number(DEFAULT_DISCOUNT_PERCENT)
-  if (!Number.isFinite(value) || value <= 0) return 0
-  return Math.min(50, value)
+  return cachedDiscountPercent
+}
+
+export async function loadFullPayDiscountPercent() {
+  const base = (process.env.NEXT_PUBLIC_BASE_URL || '').replace(/\/$/, '')
+  if (!base) return cachedDiscountPercent
+
+  try {
+    const res = await fetch(`${base}/success-fee/full-pay-discount`, {
+      cache: 'no-store',
+    })
+    if (!res.ok) return cachedDiscountPercent
+
+    const data = await res.json()
+    if (data?.fullPayDiscountPercent != null) {
+      setFullPayDiscountPercent(data.fullPayDiscountPercent)
+    }
+  } catch {
+    // Keep cached/env fallback on network errors.
+  }
+
+  return cachedDiscountPercent
 }
 
 export function applyFullPayDiscount(amount) {

@@ -28,16 +28,27 @@ export async function POST(req) {
       data.assetType === 'Car For Sale'
         ? 1500.14
         : data.assetType === 'Boats For Sale'
-        ? 2000
-        : data.assetType === 'Jewellery For Sale'
-        ? 999.18
-        : 3000.27
+          ? 2000
+          : data.assetType === 'Jewellery For Sale'
+            ? 999.18
+            : 3000.27
     let totalUsd = data.price + feeUsd
     if (applyFullPayDiscount) {
-      const discountPercent = Math.min(
-        50,
-        Math.max(0, Number(process.env.FULL_PAY_DISCOUNT_PERCENT || 5)),
-      )
+      let discountPercent = 5
+      try {
+        const discountRes = await fetch(
+          `${process.env.NEXT_PUBLIC_BASE_URL}/success-fee/full-pay-discount`,
+          { cache: 'no-store' },
+        )
+        if (discountRes.ok) {
+          const discountData = await discountRes.json()
+          discountPercent = Number(discountData.fullPayDiscountPercent ?? 5)
+        }
+      } catch {
+        discountPercent = Number(process.env.FULL_PAY_DISCOUNT_PERCENT || 5)
+      }
+
+      discountPercent = Math.min(50, Math.max(0, discountPercent))
       if (discountPercent > 0) {
         totalUsd =
           Math.round(totalUsd * (1 - discountPercent / 100) * 100) / 100

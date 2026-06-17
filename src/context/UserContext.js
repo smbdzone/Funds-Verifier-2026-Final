@@ -18,6 +18,7 @@ import {
   POST_LOGIN_BOOTSTRAP_KEY,
 } from '../utils/auth/uaePass'
 import { ensureCsrfToken } from '../utils/csrf'
+import { loadFullPayDiscountPercent } from '../libs/paymentDiscount'
 
 export let globalLogout = () => { }
 
@@ -118,7 +119,8 @@ export const UserProvider = ({ children }) => {
   }
 
   useEffect(() => {
-    ensureCsrfToken().catch(() => {})
+    ensureCsrfToken().catch(() => { })
+    loadFullPayDiscountPercent().catch(() => { })
   }, [])
 
   useEffect(() => {
