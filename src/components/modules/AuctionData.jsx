@@ -16,7 +16,11 @@ import {
 } from '@/utils/global-functions/global'
 import FooterAdd from '@/components/advertisementComponent/FooterAdd'
 import { getTokenFromCookie } from '@/utils/helper'
-import GlobalLoader from '@/utils/GlobalLoader'
+import { ListingCardSkeleton } from '@/components/global/ListingCardSkeleton'
+import {
+  hasListingSearchFilters,
+  ListingEmptyState,
+} from '@/components/global/ListingEmptyState'
 import customAxios from '@/utils/apis/apis'
 
 const DeleteModal = ({ onClose, onDelete }) => (
@@ -52,7 +56,7 @@ export const AuctionData = () => {
   const [data, setData] = useState([])
   const [listingToDelete, setListingToDelete] = useState(null)
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
-  const [loading, setLoading] = useState(false) // Loading state
+  const [loading, setLoading] = useState(true)
   const [match, setMatch] = useState()
   const [modalCardId, setModalCardId] = useState(null)
   const token = getTokenFromCookie()
@@ -183,10 +187,15 @@ export const AuctionData = () => {
     return title.length > limit ? `${title.slice(0, limit)}...` : title
   }
 
+  const listings = Array.isArray(data) ? data : []
+  const hasFilters = hasListingSearchFilters(searchParams)
+
   return (
     <div className='flex flex-col w-full xl:me-20 gap-6'>
       {loading ? (
-        <GlobalLoader />
+        <ListingCardSkeleton count={3} />
+      ) : listings.length === 0 ? (
+        <ListingEmptyState hasFilters={hasFilters} />
       ) : (
         modifiedData.map((item, index) => {
           if (item?.isAd) {
@@ -223,11 +232,13 @@ export const AuctionData = () => {
           )
         })
       )}
-      <PaginationComponent
-        currentPage={currentPage}
-        totalPages={totalPages}
-        onPageChange={handlePageChange}
-      />
+      {!loading && listings.length > 0 && totalPages > 1 && (
+        <PaginationComponent
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={handlePageChange}
+        />
+      )}
       {isDeleteModalOpen && (
         <DeleteModal
           onClose={() => setIsDeleteModalOpen(false)}

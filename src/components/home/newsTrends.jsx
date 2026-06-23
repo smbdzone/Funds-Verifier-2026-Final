@@ -13,6 +13,7 @@ import jewellry from '@/assets/images/rectangle-83@2x.png'
 import arrow_right from '@/assets/vector1.svg'
 import Link from 'next/link'
 import { swiperCanLoop } from '@/utils/swiperLoop'
+import { HomeNewsTrendsSkeleton } from '@/components/home/HomeSectionSkeletons'
 
 function stripHtml(html) {
   if (!html || typeof html !== 'string') return ''
@@ -87,10 +88,13 @@ function NewsTrendCard({ item, className = '' }) {
 export default function NewsTrends() {
   const swiperRef = useRef(null)
   const [newsItems, setNewsItems] = useState([])
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
   useEffect(() => {
+    const MIN_SKELETON_MS = 400
+
     const fetchNews = async () => {
       setLoading(true)
+      const started = Date.now()
       try {
         const res = await fetch(
           `${process.env.NEXT_PUBLIC_BASE_URL}/blog/getAll?limit=5&page=1`
@@ -111,7 +115,9 @@ export default function NewsTrends() {
       } catch (error) {
         console.error('Failed to fetch news:', error)
       } finally {
-        setLoading(false)
+        const elapsed = Date.now() - started
+        const wait = Math.max(0, MIN_SKELETON_MS - elapsed)
+        window.setTimeout(() => setLoading(false), wait)
       }
     }
 
@@ -130,6 +136,10 @@ export default function NewsTrends() {
     }
   }
 
+  if (loading) {
+    return <HomeNewsTrendsSkeleton />
+  }
+
   if (newsItems.length === 0) {
     return (
       <p className='text-center text-gray-500 py-10'>
@@ -140,106 +150,99 @@ export default function NewsTrends() {
 
   return (
     <div className='container mx-auto py-2 sm:pt-10'>
-      {
-        loading ? <p className='text-center text-gray-500 py-10'>
-          loading News & Trends...
-        </p> : (<>
-          {/* Header for all views */}
-          <div className='text-center mb-6 md:hidden'>
-            <div className='tracking-wide text-2xl lg:text-4xl font-semibold text-[#002D4F]'>
+      {/* Header for all views */}
+      <div className='text-center mb-6 md:hidden'>
+        <div className='tracking-wide text-2xl lg:text-4xl font-semibold text-[#002D4F]'>
+          News & Trends
+        </div>
+        <div className='flex justify-center my-3 gap-2'>
+          <div className='bg-[#002D4F] w-5 h-[5.6px] rounded-2xl' />
+          <div className='bg-[#8D7C3B] w-12 h-[5.6px] rounded-lg' />
+        </div>
+        <p className='xl:w-[35%] lg:w-[50%] md:hidden md:px-5 pb-2 text-xs text-center'>
+          Stay updated with the latest industry trends and updates.
+        </p>
+        <div className='flex justify-center md:hidden space-x-2'>
+          <div onClick={handlePrev} className='cursor-pointer'>
+            <div className='btn-gradient px-1 py-1 rounded'>
+              <Image
+                src={arrow_right}
+                alt='previous'
+                height={15}
+                width={15}
+                className='transform rotate-180 w-[10px] h-[10px]'
+              />
+            </div>
+          </div>
+          <div onClick={handleNext} className='cursor-pointer'>
+            <div className='btn-gradient px-1 py-1 rounded'>
+              <Image
+                src={arrow_right}
+                alt='next'
+                height={15}
+                width={15}
+                className='transform w-[10px] h-[10px]'
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile Swiper */}
+      <div className='block md:hidden'>
+        <Swiper
+          ref={swiperRef}
+          modules={[]}
+          spaceBetween={20}
+          loop={swiperCanLoop(newsItems.length, 2)}
+          breakpoints={{
+            0: { slidesPerView: 1 },
+            480: { slidesPerView: 2 },
+          }}
+          className='px-3'
+        >
+          {newsItems.map((item, index) => (
+            <SwiperSlide key={index} className='!h-auto'>
+              <NewsTrendCard item={item} className='shadow-lg shadow-black/10' />
+            </SwiperSlide>
+          ))}
+        </Swiper>
+      </div>
+
+      {/* Desktop Grid */}
+      <div className='hidden md:block'>
+        <div className='flex justify-between gap-3 mb-3'>
+          {/* Left Card */}
+          <NewsTrendCard item={newsItems[0]} className='w-1/3' />
+
+          {/* Center Text */}
+          <div className='w-1/3 flex flex-col items-center justify-center text-center'>
+            <div className='text-[#002D4F] text-2xl lg:text-4xl font-semibold'>
               News & Trends
             </div>
-            <div className='flex justify-center my-3 gap-2'>
-              <div className='bg-[#002D4F] w-5 h-[5.6px] rounded-2xl' />
-              <div className='bg-[#8D7C3B] w-12 h-[5.6px] rounded-lg' />
+            <div className='flex justify-center gap-2 my-5'>
+              <div className='bg-[#002D4F] w-[31.8px] h-[5.6px] rounded-2xl' />
+              <div className='bg-[#8D7C3B] w-[84.9px] h-[5.6px] rounded-lg' />
             </div>
-            <p className='xl:w-[35%] lg:w-[50%] md:hidden md:px-5 pb-2 text-xs text-center'>
-              Stay updated with the latest industry trends and updates.
+            <p className='text-base lg:text-lg leading-[30px] px-5'>
+              Stay updated with the latest industry trends and updates from Fund
+              Verify.
             </p>
-            <div className='flex justify-center md:hidden space-x-2'>
-              <div onClick={handlePrev} className='cursor-pointer'>
-                <div className='btn-gradient px-1 py-1 rounded'>
-                  <Image
-                    src={arrow_right}
-                    alt='previous'
-                    height={15}
-                    width={15}
-                    className='transform rotate-180 w-[10px] h-[10px]'
-                  />
-                </div>
-              </div>
-              <div onClick={handleNext} className='cursor-pointer'>
-                <div className='btn-gradient px-1 py-1 rounded'>
-                  <Image
-                    src={arrow_right}
-                    alt='next'
-                    height={15}
-                    width={15}
-                    className='transform w-[10px] h-[10px]'
-                  />
-                </div>
-              </div>
-            </div>
           </div>
 
-          {/* Mobile Swiper */}
-          <div className='block md:hidden'>
-            <Swiper
-              ref={swiperRef}
-              modules={[]}
-              spaceBetween={20}
-              loop={swiperCanLoop(newsItems.length, 2)}
-              breakpoints={{
-                0: { slidesPerView: 1 },
-                480: { slidesPerView: 2 },
-              }}
-              className='px-3'
-            >
-              {newsItems.map((item, index) => (
-                <SwiperSlide key={index} className='!h-auto'>
-                  <NewsTrendCard item={item} className='shadow-lg shadow-black/10' />
-                </SwiperSlide>
-              ))}
-            </Swiper>
-          </div>
+          {/* Right Card */}
+          {newsItems[1]?.image && (
+            <NewsTrendCard item={newsItems[1]} className='w-1/3' />
+          )}
+        </div>
 
-          {/* Desktop Grid */}
-          <div className='hidden md:block'>
-            <div className='flex justify-between gap-3 mb-3'>
-              {/* Left Card */}
-              <NewsTrendCard item={newsItems[0]} className='w-1/3' />
-
-              {/* Center Text */}
-              <div className='w-1/3 flex flex-col items-center justify-center text-center'>
-                <div className='text-[#002D4F] text-2xl lg:text-4xl font-semibold'>
-                  News & Trends
-                </div>
-                <div className='flex justify-center gap-2 my-5'>
-                  <div className='bg-[#002D4F] w-[31.8px] h-[5.6px] rounded-2xl' />
-                  <div className='bg-[#8D7C3B] w-[84.9px] h-[5.6px] rounded-lg' />
-                </div>
-                <p className='text-base lg:text-lg leading-[30px] px-5'>
-                  Stay updated with the latest industry trends and updates from Fund
-                  Verify.
-                </p>
-              </div>
-
-              {/* Right Card */}
-              {newsItems[1]?.image && (
-                <NewsTrendCard item={newsItems[1]} className='w-1/3' />
-              )}
-            </div>
-
-            {/* Second Row */}
-            <div className='flex justify-between gap-3'>
-              {newsItems.slice(2).map((item, idx) => (
-                <NewsTrendCard key={idx} item={item} className='w-1/3' />
-              ))}
-            </div>
-          </div>
-        </>)
-      }
-
+        {/* Second Row */}
+        <div className='flex justify-between gap-3'>
+          {newsItems.slice(2).map((item, idx) => (
+            <NewsTrendCard key={idx} item={item} className='w-1/3' />
+          ))}
+        </div>
+      </div>
     </div>
   )
 }

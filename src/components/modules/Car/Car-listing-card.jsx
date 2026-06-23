@@ -13,14 +13,18 @@ import {
 } from '@/utils/global-functions/global'
 import FooterAdd from '@/components/advertisementComponent/FooterAdd'
 import { getTokenFromCookie } from '../../../utils/helper'
-import GlobalLoader from '@/utils/GlobalLoader'
+import { ListingCardSkeleton } from '@/components/global/ListingCardSkeleton'
+import {
+  hasListingSearchFilters,
+  ListingEmptyState,
+} from '@/components/global/ListingEmptyState'
 import customAxios from '@/utils/apis/apis'
 
 export const CarListingCard = () => {
   const searchParams = useSearchParams()
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
-  const [loading, setLoading] = useState(false) // Loading state
+  const [loading, setLoading] = useState(true)
   const [data, setData] = useState({})
   const [modalCardId, setModalCardId] = useState(null)
   const token = getTokenFromCookie()
@@ -126,57 +130,62 @@ export const CarListingCard = () => {
     return title.length > limit ? `${title.slice(0, limit)}...` : title
   }
 
+  const listings = Array.isArray(data) ? data : []
+  const hasFilters = hasListingSearchFilters(searchParams)
+
   return (
     <div className='flex flex-col w-full xl:me-20 gap-6'>
-      <>
-        {loading ? (
-          <GlobalLoader />
-        ) : (
-          <>
-            {modifiedData.map((item, index) => {
-              if (item?.isAd) {
-                return (
-                  <figure key={`ad-${index}`} className='w-full'>
-                    {token && <FooterAdd />}
-                  </figure>
-                )
-              }
+      {loading ? (
+        <ListingCardSkeleton count={3} />
+      ) : listings.length === 0 ? (
+        <ListingEmptyState hasFilters={hasFilters} />
+      ) : (
+        <>
+          {modifiedData.map((item, index) => {
+            if (item?.isAd) {
               return (
-                <ProductCard
-                  key={index}
-                  type='car'
-                  item={item}
-                  attributes={[
-                    item.year + ' year',
-                    formatNumberWithCommas(item.kilometers) + ' kms',
-                    item.steeringSide + ' side',
-                  ]}
-                  handlePrevSlide={handlePrevSlide}
-                  handleNextSlide={handleNextSlide}
-                  openTechnicalReport={openTechnicalReport}
-                  openEvaluationCertificate={openEvaluationCertificate}
-                  convertToRelativeURL={convertToRelativeURL}
-                  getShortTitle={getShortTitle}
-                  swiperRefs={swiperRefs}
-                  isModalOpen={isModalOpen}
-                  modalCardId={modalCardId}
-                  openModal={openModal}
-                  closeModal={closeModal}
-                  pdfUrl={pdfUrl}
-                  isModal2Open={isModal2Open}
-                  closeModal2={closeModal2}
-                  pdf2Url={pdf2Url}
-                />
+                <figure key={`ad-${index}`} className='w-full'>
+                  {token && <FooterAdd />}
+                </figure>
               )
-            })}
+            }
+            return (
+              <ProductCard
+                key={index}
+                type='car'
+                item={item}
+                attributes={[
+                  item.year + ' year',
+                  formatNumberWithCommas(item.kilometers) + ' kms',
+                  item.steeringSide + ' side',
+                ]}
+                handlePrevSlide={handlePrevSlide}
+                handleNextSlide={handleNextSlide}
+                openTechnicalReport={openTechnicalReport}
+                openEvaluationCertificate={openEvaluationCertificate}
+                convertToRelativeURL={convertToRelativeURL}
+                getShortTitle={getShortTitle}
+                swiperRefs={swiperRefs}
+                isModalOpen={isModalOpen}
+                modalCardId={modalCardId}
+                openModal={openModal}
+                closeModal={closeModal}
+                pdfUrl={pdfUrl}
+                isModal2Open={isModal2Open}
+                closeModal2={closeModal2}
+                pdf2Url={pdf2Url}
+              />
+            )
+          })}
+          {totalPages > 1 && (
             <PaginationComponent
               currentPage={currentPage}
               totalPages={totalPages}
               onPageChange={handlePageChange}
             />
-          </>
-        )}
-      </>
+          )}
+        </>
+      )}
     </div>
   )
 }

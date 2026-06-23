@@ -20,6 +20,7 @@ import avator2 from '@/assets/avators/Avatars 2.png'
 import avator3 from '@/assets/avators/Avatars 3.png'
 import arrow_right from '@/assets/vector1.svg'
 import { usePublicTokenContext } from '@/utils/PublicTokenProvider.'
+import { HomeListingSliderSkeleton } from '@/components/home/HomeSectionSkeletons'
 
 const avatars = [avator1, avator2, avator3]
 
@@ -164,11 +165,7 @@ export default function CarSaleSliderStatic() {
         ) : null}
       </div>
 
-      {isLoading ? (
-        <p className='text-center text-sm text-[#002D4F]/70 py-12'>
-          Loading verified cars…
-        </p>
-      ) : null}
+      {isLoading ? <HomeListingSliderSkeleton count={3} /> : null}
 
       {!isLoading && !hasListings ? (
         <p className='text-center text-sm text-[#002D4F]/70 py-12'>

@@ -11,14 +11,18 @@ import ProductCard from '@/components/global/ProductCard'
 import { buildQueryString } from '@/utils/global-functions/global'
 import FooterAdd from '@/components/advertisementComponent/FooterAdd'
 import { getTokenFromCookie } from '../../../utils/helper'
-import GlobalLoader from '@/utils/GlobalLoader'
+import { ListingCardSkeleton } from '@/components/global/ListingCardSkeleton'
+import {
+  hasListingSearchFilters,
+  ListingEmptyState,
+} from '@/components/global/ListingEmptyState'
 import customAxios from '@/utils/apis/apis'
 
 export const BoatListingCard = () => {
   const searchParams = useSearchParams()
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
-  const [loading, setLoading] = useState(false) // Loading state
+  const [loading, setLoading] = useState(true)
   const [data, setData] = useState({})
   const [modalCardId, setModalCardId] = useState(null)
   const token = getTokenFromCookie()
@@ -125,14 +129,18 @@ export const BoatListingCard = () => {
     return title.length > limit ? `${title.slice(0, limit)}...` : title
   }
 
+  const listings = Array.isArray(data) ? data : []
+  const hasFilters = hasListingSearchFilters(searchParams)
+
   return (
     <div className='flex flex-col w-full xl:me-20 gap-6'>
-      <>
-        {loading ? (
-          <GlobalLoader />
-        ) : (
-          <>
-            {modifiedData.map((item, index) => {
+      {loading ? (
+        <ListingCardSkeleton count={3} />
+      ) : listings.length === 0 ? (
+        <ListingEmptyState hasFilters={hasFilters} />
+      ) : (
+        <>
+          {modifiedData.map((item, index) => {
               if (item?.isAd) {
                 return (
                   <figure key={`ad-${index}`} className='w-full'>
@@ -164,14 +172,15 @@ export const BoatListingCard = () => {
                 />
               )
             })}
+          {totalPages > 1 && (
             <PaginationComponent
               currentPage={currentPage}
               totalPages={totalPages}
               onPageChange={handlePageChange}
             />
-          </>
-        )}
-      </>
+          )}
+        </>
+      )}
     </div>
   )
 }

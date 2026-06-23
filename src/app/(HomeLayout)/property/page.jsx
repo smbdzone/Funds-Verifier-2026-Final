@@ -8,6 +8,7 @@ import { useSecureAxios } from '../../../utils/useSecureAxios'
 import { usePublicTokenContext } from '../../../utils/PublicTokenProvider.'
 import axios from 'axios'
 import { useSearchParams } from 'next/navigation'
+import { ListingCardSkeleton } from '@/components/global/ListingCardSkeleton'
 
 export default function Page({ params }) {
   const api = useSecureAxios()
@@ -44,7 +45,7 @@ export default function Page({ params }) {
   const propertyTypeValue = searchParams.get('propertyType')
   const propertyTypeText = getPropertyTypeText(propertyTypeValue, propertyType)
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense fallback={<div className='py-6 px-4'><ListingCardSkeleton count={3} /></div>}>
       <div className='w-full bg-[#f0f8ff78]'>
         <Banner
           title={assetType || 'Properties For Sale'}

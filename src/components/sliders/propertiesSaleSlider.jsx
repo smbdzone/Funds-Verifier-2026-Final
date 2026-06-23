@@ -20,6 +20,7 @@ import avatar3 from '@/assets/avators/Avatars 3.png'
 import location from '@/assets/vector2.svg'
 import arrow_right from '@/assets/vector1.svg'
 import { usePublicTokenContext } from '@/utils/PublicTokenProvider.'
+import { HomeListingSliderSkeleton } from '@/components/home/HomeSectionSkeletons'
 
 const avatars = [avatar1, avatar2, avatar3]
 
@@ -184,11 +185,7 @@ export default function PropertySaleSlider() {
         ) : null}
       </div>
 
-      {isLoading ? (
-        <p className='text-center text-sm text-[#002D4F]/70 py-12'>
-          Loading verified properties…
-        </p>
-      ) : null}
+      {isLoading ? <HomeListingSliderSkeleton count={3} /> : null}
 
       {!isLoading && !hasListings ? (
         <p className='text-center text-sm text-[#002D4F]/70 py-12'>

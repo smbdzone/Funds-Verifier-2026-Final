@@ -6,6 +6,7 @@ import 'react-calendar/dist/Calendar.css'
 import './calender.css'
 import { toast } from 'react-toastify'
 import customAxios from '../../utils/apis/apis'
+import { NoSlotsAvailable } from '@/components/global/NoSlotsAvailable'
 
 const getToday = () => {
   const today = new Date()
@@ -179,11 +180,7 @@ const Modal2 = ({ isOpen, onClose, formData, setFormData, userUUID }) => {
                   ))}
                 </div>
               ) : (
-                <div className='flex items-center justify-center h-32 text-gray-500'>
-                  <p className='text-center'>
-                    No slots are available for this date
-                  </p>
-                </div>
+                <NoSlotsAvailable variant='viewing' />
               )}
             </div>
           </div>

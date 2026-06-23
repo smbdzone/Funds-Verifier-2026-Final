@@ -6,6 +6,7 @@ import ConfirmationPopup from './ConfirmationPopup'
 import './styles.css'
 import { useProfile } from '../../context/UserContext'
 import customAxios from '../../utils/apis/apis'
+import { NoSlotsAvailable } from '@/components/global/NoSlotsAvailable'
 
 const CalendarPopup = ({ onClose, productData }) => {
   const getTodayStart = () => {
@@ -256,13 +257,7 @@ const CalendarPopup = ({ onClose, productData }) => {
                     </button>
                   </>
                 ) : (
-                  <div className='max-w-[220px] text-center text-white'>
-                    <p className='text-sm font-medium'>No times for this date</p>
-                    <p className='mt-1 text-xs text-white/85'>
-                      This day has no open slots. Try another date on the
-                      calendar.
-                    </p>
-                  </div>
+                  <NoSlotsAvailable variant='viewing' theme='dark' />
                 )}
               </div>
             </div>

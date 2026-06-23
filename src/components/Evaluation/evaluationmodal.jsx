@@ -7,6 +7,7 @@ import '../3dModal/calender.css'
 import FocusLock from 'react-focus-lock'
 import { toast } from 'react-toastify'
 import customAxios from '../../utils/apis/apis'
+import { NoSlotsAvailable } from '@/components/global/NoSlotsAvailable'
 
 const getToday = () => {
   const today = new Date()
@@ -222,11 +223,7 @@ const EvaluationModal = ({ isOpen, onClose, setFormData }) => {
                     ))}
                   </div>
                 ) : (
-                  <div className='flex items-center justify-center h-32 text-gray-500'>
-                    <p className='text-center'>
-                      No slots are available for this date
-                    </p>
-                  </div>
+                  <NoSlotsAvailable variant='evaluation' />
                 )}
               </div>
             </div>

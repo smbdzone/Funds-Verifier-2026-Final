@@ -8,7 +8,8 @@ import "swiper/css/pagination";
 import { HashNavigation, Navigation, Pagination } from "swiper/modules";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { motion } from "framer-motion";
-import { swiperCanLoop } from "@/utils/swiperLoop";
+import { swiperCanLoop } from '@/utils/swiperLoop'
+import { HomeTestimonialsSkeleton } from '@/components/home/HomeSectionSkeletons'
 
 // Fallback images and icons
 import man from "@/assets/images/ellipse-113@2x.png";
@@ -131,7 +132,7 @@ export default function Testimonials() {
   };
 
   if (loading) {
-    return <div className="text-center text-white py-20">Loading testimonials...</div>;
+    return <HomeTestimonialsSkeleton />;
   }
 
   const thumbLoop = swiperCanLoop(testimonials.length, 3);

@@ -1,11 +1,11 @@
 "use client";
 import { Suspense } from "react";
 import Login from "../../components/home/Login";
-import GlobalLoader from "@/utils/GlobalLoader";
+import { HomePageSkeleton } from "@/components/home/HomeSectionSkeletons";
 
 const page = () => {
   return (
-    <Suspense fallback={<GlobalLoader />}>
+    <Suspense fallback={<HomePageSkeleton />}>
       <Login />
     </Suspense>
   );
