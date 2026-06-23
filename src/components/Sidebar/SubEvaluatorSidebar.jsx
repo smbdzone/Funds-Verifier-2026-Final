@@ -88,7 +88,7 @@ const { user, fetchProfile, logout } = useProfile();
         <div className="px-4 xl:px-0">
           <div className="custom-shadow flex justify-center items-center flex-col py-6 lg:rounded">
             <h1 className="text-prussianBlue capitalize font-semibold md:text-xl text-lg lg:text-3xl">
-              {user?.name || "Loading..."}
+              {user?.displayName || user?.name || "Loading..."}
             </h1>
             <h2 className="lg:text-2xl md:text-lg text-base text-prussianBlue mb-3">
               {user && (user.role === "SubEvaluator" || (user.role === "Evaluator" && (user.parentEvaluator || user.parentID))) ? "Sub Evaluator" : user?.role}

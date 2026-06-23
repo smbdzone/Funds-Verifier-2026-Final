@@ -6,6 +6,9 @@ import {
 /**
  * Asset-holder edit lock: after evaluator approval (status 1) and an
  * evaluation certificate exists, only price + optional service requests stay editable.
+ *
+ * While status is pending (no certificate yet), the full listing stays editable
+ * on the dashboard edit form — evaluation payment alone does not lock fields.
  */
 export function isListingEvaluatorApprovedLocked(formData) {
   return isListingEvaluatorApproved(formData)

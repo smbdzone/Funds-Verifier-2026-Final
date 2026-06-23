@@ -13,7 +13,7 @@ import {
   normalizeCountriesResponse,
   normalizeCitiesResponse,
 } from '@/libs/normalizeCountriesResponse'
-import { normalizeListingPremiumRefs } from '@/libs/listingPremiumStatus'
+import { normalizeListingPremiumRefs, isPremiumServicePaid } from '@/libs/listingPremiumStatus'
 import {
   DUMMY_DUBAI_NEIGHBOURHOODS,
   DUMMY_FALLBACK_COUNTRIES,
@@ -130,6 +130,27 @@ const ListingsProvider = ({ children }) => {
     setDropdowns(dropdownData)
   }
 
+  const pendingPremiumStorageKey = (suffix) =>
+    `fv.pending.${id || 'new'}.${suffix}`
+
+  const restorePendingPremiumModals = (listing) => {
+    if (typeof window === 'undefined') return
+    try {
+      if (!isPremiumServicePaid(listing?.video3DWalkthrough)) {
+        const raw3d = sessionStorage.getItem(pendingPremiumStorageKey('3d'))
+        if (raw3d) setModalData(JSON.parse(raw3d))
+      }
+      if (!isPremiumServicePaid(listing?.technicalReport)) {
+        const rawTech = sessionStorage.getItem(
+          pendingPremiumStorageKey('technical'),
+        )
+        if (rawTech) setTechnicalModalData(JSON.parse(rawTech))
+      }
+    } catch {
+      /* ignore corrupt storage */
+    }
+  }
+
   const fetchData = async (routeName) => {
     try {
       const response = await customAxios.get(`/${routeName}/${id}`)
@@ -139,23 +160,35 @@ const ListingsProvider = ({ children }) => {
           toUnitedArabEmiratesListingCountryName(d.country) ||
           d.country ||
           ''
-        setFormData({
+        const normalized = {
           ...normalizeListingPremiumRefs(d),
           description: d.description || '',
           additionalDescription: d.additionalDescription || '',
           country: countryNorm,
-        })
+        }
+        setFormData(normalized)
+        restorePendingPremiumModals(normalized)
         if (countryNorm) {
           setSelectedCountry(countryNorm)
           if (countryNorm === LISTING_COUNTRY_UAE_LABEL) {
             setCountryCode('AE')
           }
         }
-        setTotalPrice(response?.data?.price)
-        setPhoneNumber(`${response?.data?.phoneNumber}`)
-        setThumbnail(response?.data?.thumbnailImg?.images[0])
-        setImages(response?.data?.pictures?.images)
-        // setModalData(response.data);
+        if (d.city) setSelectedCity(d.city)
+        if (d.neighbourhood) setSelectedNeighbourhood(d.neighbourhood)
+        if (d.model) setSelectedModel(d.model)
+        if (d.propertyType) setSelectType(d.propertyType)
+        setTotalPrice(d.price != null ? String(d.price) : null)
+        setPhoneNumber(d.phoneNumber ? `${d.phoneNumber}` : '')
+        setThumbnail(d?.thumbnailImg?.images?.[0] ?? null)
+        setImages(Array.isArray(d?.pictures?.images) ? d.pictures.images : [])
+        if (d?.video?.url) {
+          setVideos([d.video.url])
+        } else if (Array.isArray(d?.video)) {
+          setVideos(d.video)
+        } else {
+          setVideos([])
+        }
       }
     } catch (error) {
       console.error('Error fetching property data:', error)
@@ -165,20 +198,31 @@ const ListingsProvider = ({ children }) => {
   }
 
   useEffect(() => {
-    // Retrieve the data from localStorage
+    // Retrieve legacy localStorage keys (older flows)
     const item = localStorage.getItem('3Dwalkthrough')
     if (item) {
-      setModalData(JSON.parse(item)) // Parse the JSON string into an object
+      setModalData(JSON.parse(item))
     }
-  }, []) // Empty dependency array ensures this runs once on mount
+  }, [])
 
   useEffect(() => {
-    // Retrieve the data from localStorage
     const item = localStorage.getItem('technicalReport')
     if (item) {
-      setTechnicalModalData(JSON.parse(item)) // Parse the JSON string into an object
+      setTechnicalModalData(JSON.parse(item))
     }
-  }, []) // Empty dependency array ensures this runs once on mount
+  }, [])
+
+  useEffect(() => {
+    if (id) return
+    try {
+      const raw3d = sessionStorage.getItem(pendingPremiumStorageKey('3d'))
+      if (raw3d) setModalData(JSON.parse(raw3d))
+      const rawTech = sessionStorage.getItem(pendingPremiumStorageKey('technical'))
+      if (rawTech) setTechnicalModalData(JSON.parse(rawTech))
+    } catch {
+      /* ignore */
+    }
+  }, [id])
 
   useEffect(() => {
     const fetchCountries = async () => {
@@ -610,13 +654,27 @@ const ListingsProvider = ({ children }) => {
 
   const handleRequestModalData = (data) => {
     setModalData(data)
-    if (data !== '' && modalData.dateTime === '') {
+    try {
+      sessionStorage.setItem(
+        pendingPremiumStorageKey('3d'),
+        JSON.stringify(data),
+      )
+    } catch {
+      /* ignore quota errors */
     }
     setModalOpen(false)
   }
 
   const handleRequestTechnicalModalData = (data) => {
     setTechnicalModalData(data)
+    try {
+      sessionStorage.setItem(
+        pendingPremiumStorageKey('technical'),
+        JSON.stringify(data),
+      )
+    } catch {
+      /* ignore quota errors */
+    }
     if (data !== '') {
       toast.success('Successfully Request sent for technical report')
     }

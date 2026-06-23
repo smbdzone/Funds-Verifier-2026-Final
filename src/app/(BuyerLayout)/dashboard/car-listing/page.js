@@ -11,6 +11,11 @@ import {
   listingMediaRef,
   premiumServiceRequestId,
 } from '@/libs/listingMediaRef'
+import {
+  hasConfirmedEvaluationPayment,
+  bookEvaluationTimeslotFromFormData,
+  stripEvaluationBookingMeta,
+} from '@/libs/evaluationBooking'
 import { carBrands } from '@/utils'
 import axios from 'axios'
 import { Suspense, useContext, useEffect, useState } from 'react'
@@ -36,6 +41,10 @@ import { useProfile } from '../../../../context/UserContext'
 import StripeElement from '../../../../components/Stripe/StripeElement'
 import { useRefreshListingAfterServicePayment } from '@/hooks/useRefreshListingAfterServicePayment'
 import { useRestoreListingAfterClozerPayment } from '@/hooks/useRestoreListingAfterClozerPayment'
+import {
+  useRestorePendingListingDraft,
+  useRefetchListingOnReturn,
+} from '@/hooks/useRestorePendingListingDraft'
 import customAxios from '../../../../utils/apis/apis'
 
 const initialFormData = {
@@ -190,10 +199,27 @@ function Page() {
   } = useContext(ListingContext)
 
   useEffect(() => {
-    resetForm()
-    setFormData(initialFormData)
-    handleFormData(initialFormData, dropdownData)
-  }, [])
+    if (id) {
+      fetchData('car')
+    } else {
+      resetForm()
+      setFormData(initialFormData)
+      handleFormData(initialFormData, dropdownData)
+      setLoading(false)
+    }
+  }, [searchParams])
+
+  useEffect(() => {
+    if (id && formData?.make) {
+      setSelectedMake(formData.make)
+    }
+  }, [id, formData?.make])
+
+  useRefreshListingAfterServicePayment(id, 'car', fetchData)
+  useRestoreListingAfterClozerPayment(setFormData)
+  useRestorePendingListingDraft(id, setFormData)
+  useRefetchListingOnReturn(id, 'car', fetchData)
+
   const handleTechnicalModal = () => {
     setIsTechnicalModalOpen(!isTechnicalModalOpen)
   }
@@ -201,17 +227,6 @@ function Page() {
   const handleCloseTechnicalModal = () => {
     setIsTechnicalModalOpen(false)
   }
-
-  useEffect(() => {
-    if (id) {
-      fetchData('car')
-    } else {
-      setLoading(false)
-    }
-  }, [searchParams])
-
-  useRefreshListingAfterServicePayment(id, 'car', fetchData)
-  useRestoreListingAfterClozerPayment(setFormData)
 
   const filteredCountries = countries.filter((country) =>
     country.country.toLowerCase().includes(searchQuery.toLowerCase())
@@ -352,10 +367,10 @@ function Page() {
 
       if (!id) {
         const checkoutSession = JSON.parse(
-          localStorage.getItem('checkoutSession') || {}
+          localStorage.getItem('checkoutSession') || 'null'
         )
-        if (!checkoutSession) {
-          return toast.error('Payment of 2 dirham is required!')
+        if (!hasConfirmedEvaluationPayment(checkoutSession)) {
+          return toast.error('Evaluation payment is required before submitting.')
         }
       }
       setConfirmationModal(false)
@@ -417,17 +432,20 @@ function Page() {
       }
 
       // Submit data
+      const listingPayload = stripEvaluationBookingMeta(updatedFormData)
+
       if (id) {
         await customAxios.put(
           `${process.env.NEXT_PUBLIC_BASE_URL}/car/${id}`,
-          updatedFormData
+          listingPayload
         )
         toast.success('Updated successfully.')
       } else {
+        await bookEvaluationTimeslotFromFormData(formData)
         await Promise.all([
           customAxios.post(
             `${process.env.NEXT_PUBLIC_BASE_URL}/car`,
-            updatedFormData
+            listingPayload
           ),
         ])
         toast.success('Submitted successfully. Evaluator will evaluate it.')
@@ -435,6 +453,8 @@ function Page() {
         setFormData(initialFormData)
         localStorage.removeItem('FormPayment')
         localStorage.removeItem('checkoutSessionId')
+        localStorage.removeItem('checkoutSession')
+        localStorage.removeItem('pendingListingDraft')
       }
 
       setLoading(false)

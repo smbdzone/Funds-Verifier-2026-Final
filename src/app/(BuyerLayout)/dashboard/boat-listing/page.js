@@ -11,6 +11,11 @@ import {
   listingMediaRef,
   premiumServiceRequestId,
 } from '@/libs/listingMediaRef'
+import {
+  hasConfirmedEvaluationPayment,
+  bookEvaluationTimeslotFromFormData,
+  stripEvaluationBookingMeta,
+} from '@/libs/evaluationBooking'
 import axios from 'axios'
 import { Suspense, useContext, useEffect, useState } from 'react'
 import flags from 'react-phone-number-input/flags'
@@ -28,6 +33,10 @@ import PaymentModal from '@/components/payments/PaymentModal'
 import StripeElement from '../../../../components/Stripe/StripeElement'
 import { useRefreshListingAfterServicePayment } from '@/hooks/useRefreshListingAfterServicePayment'
 import { useRestoreListingAfterClozerPayment } from '@/hooks/useRestoreListingAfterClozerPayment'
+import {
+  useRestorePendingListingDraft,
+  useRefetchListingOnReturn,
+} from '@/hooks/useRestorePendingListingDraft'
 import customAxios from '../../../../utils/apis/apis'
 
 function Page() {
@@ -173,20 +182,19 @@ function Page() {
   } = useContext(ListingContext)
 
   useEffect(() => {
-    resetForm()
-    handleFormData(initialFormData, dropdownData)
-  }, [])
-
-  useEffect(() => {
     if (id) {
       fetchData('boat')
     } else {
+      resetForm()
+      handleFormData(initialFormData, dropdownData)
       setLoading(false)
     }
   }, [searchParams])
 
   useRefreshListingAfterServicePayment(id, 'boat', fetchData)
   useRestoreListingAfterClozerPayment(setFormData)
+  useRestorePendingListingDraft(id, setFormData)
+  useRefetchListingOnReturn(id, 'boat', fetchData)
 
   const handleTechnicalModal = () => {
     setIsTechnicalModalOpen(!isTechnicalModalOpen)
@@ -521,10 +529,10 @@ function Page() {
 
       if (!id) {
         const checkoutSession = JSON.parse(
-          localStorage.getItem('checkoutSession') || {}
+          localStorage.getItem('checkoutSession') || 'null'
         )
-        if (!checkoutSession) {
-          return toast.error('Payment of 2 dirham is required!')
+        if (!hasConfirmedEvaluationPayment(checkoutSession)) {
+          return toast.error('Evaluation payment is required before submitting.')
         }
       }
 
@@ -568,18 +576,24 @@ function Page() {
         technicalReportID,
       })
 
+      const listingPayload = stripEvaluationBookingMeta(updatedFormData)
+
+      if (!id) {
+        await bookEvaluationTimeslotFromFormData(formData)
+      }
+
       if (id) {
         requests.push(
           customAxios.put(
             `${process.env.NEXT_PUBLIC_BASE_URL}/boat/${id}`,
-            updatedFormData
+            listingPayload
           )
         )
       } else {
         requests.push(
           customAxios.post(
             `${process.env.NEXT_PUBLIC_BASE_URL}/boat`,
-            updatedFormData
+            listingPayload
           )
         )
       }
@@ -596,6 +610,8 @@ function Page() {
           setFormData(initialFormData)
           localStorage.removeItem('FormPayment')
           localStorage.removeItem('checkoutSessionId')
+          localStorage.removeItem('checkoutSession')
+          localStorage.removeItem('pendingListingDraft')
         }
       }
       router.push('/seller-profile/my-listing')

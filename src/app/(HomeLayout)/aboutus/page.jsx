@@ -2,9 +2,18 @@
 "use client";
 
 import Image from "next/image";
+import { useEffect, useState } from "react";
 import InTouch from "../../../components/home/inTouch";
+import AboutPageSkeleton from "@/components/about/AboutPageSkeleton";
 
 function page() {
+  const [isPageReady, setIsPageReady] = useState(false);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setIsPageReady(true), 650);
+    return () => window.clearTimeout(timer);
+  }, []);
+
   const features = [
     {
       title: "Comprehensive Asset Listings",
@@ -32,6 +41,10 @@ function page() {
         "We prioritize your privacy. During the initial stages of a transaction, both parties' identities remain anonymous, identified only by reference numbers and avatars. All communications on our platform are encrypted, ensuring your information stays secure.",
     },
   ];
+
+  if (!isPageReady) {
+    return <AboutPageSkeleton />;
+  }
 
   return (
     <div>

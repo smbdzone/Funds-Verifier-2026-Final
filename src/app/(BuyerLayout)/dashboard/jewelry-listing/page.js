@@ -13,6 +13,11 @@ import {
   listingMediaRef,
   premiumServiceRequestId,
 } from '@/libs/listingMediaRef'
+import {
+  hasConfirmedEvaluationPayment,
+  bookEvaluationTimeslotFromFormData,
+  stripEvaluationBookingMeta,
+} from '@/libs/evaluationBooking'
 import 'react-phone-number-input/style.css'
 import PaymentModal from '@/components/payments/PaymentModal'
 import flags from 'react-phone-number-input/flags'
@@ -29,6 +34,10 @@ import StripeElement from '../../../../components/Stripe/StripeElement'
 import customAxios from '../../../../utils/apis/apis'
 import { useRefreshListingAfterServicePayment } from '@/hooks/useRefreshListingAfterServicePayment'
 import { useRestoreListingAfterClozerPayment } from '@/hooks/useRestoreListingAfterClozerPayment'
+import {
+  useRestorePendingListingDraft,
+  useRefetchListingOnReturn,
+} from '@/hooks/useRestorePendingListingDraft'
 
 function Page() {
   const [neighbourhood, setNeighbourhood] = useState('Select Neighbourhood')
@@ -199,20 +208,19 @@ function Page() {
   } = useContext(ListingContext)
 
   useEffect(() => {
-    resetForm()
-    handleFormData(initialFormData, dropdownData)
-  }, [])
-
-  useEffect(() => {
     if (id) {
       fetchData('jewelry')
     } else {
+      resetForm()
+      handleFormData(initialFormData, dropdownData)
       setLoading(false)
     }
   }, [searchParams])
 
   useRefreshListingAfterServicePayment(id, 'jewelry', fetchData)
   useRestoreListingAfterClozerPayment(setFormData)
+  useRestorePendingListingDraft(id, setFormData)
+  useRefetchListingOnReturn(id, 'jewelry', fetchData)
 
   const handleTechnicalModal = () => {
     setIsTechnicalModalOpen(!isTechnicalModalOpen)
@@ -535,10 +543,10 @@ function Page() {
 
       if (!id) {
         const checkoutSession = JSON.parse(
-          localStorage.getItem('checkoutSession') || {}
+          localStorage.getItem('checkoutSession') || 'null'
         )
-        if (!checkoutSession) {
-          return toast.error('Payment of 2 dirham is required!')
+        if (!hasConfirmedEvaluationPayment(checkoutSession)) {
+          return toast.error('Evaluation payment is required before submitting.')
         }
       }
 
@@ -587,18 +595,24 @@ function Page() {
       if (Object.keys(validationErrors).length === 0) {
         setFormData(updatedFormData)
 
+        const listingPayload = stripEvaluationBookingMeta(updatedFormData)
+
+        if (!id) {
+          await bookEvaluationTimeslotFromFormData(formData)
+        }
+
         if (id) {
           requests.push(
             customAxios.put(
               `${process.env.NEXT_PUBLIC_BASE_URL}/jewelry/${id}`,
-              updatedFormData
+              listingPayload
             )
           )
         } else {
           requests.push(
             customAxios.post(
               `${process.env.NEXT_PUBLIC_BASE_URL}/jewelry`,
-              updatedFormData
+              listingPayload
             )
           )
         }
@@ -619,6 +633,8 @@ function Page() {
             setFormData(initialFormData)
             localStorage.removeItem('FormPayment')
             localStorage.removeItem('checkoutSessionId')
+            localStorage.removeItem('checkoutSession')
+            localStorage.removeItem('pendingListingDraft')
           }
         }
         setLoading(false)

@@ -37,8 +37,9 @@ import {
   canRequestPremiumServices,
   isListingEvaluatorApprovedLocked,
 } from '@/libs/listingEditLock'
+import ListingApprovedEditNotice from '@/components/ListingsForm/ListingApprovedEditNotice'
 import {
-  hasLinkedPremiumService,
+  blocksPremiumServiceRequest,
   premiumServiceFieldLabel,
 } from '@/libs/listingPremiumStatus'
 
@@ -132,8 +133,8 @@ const CarListingForm = ({
   const [RequestService, setRequestService] = useState('')
   const isEvaluatorApprovedLocked = isListingEvaluatorApprovedLocked(formData)
   const canRequestPremium = canRequestPremiumServices(formData)
-  const hasTechnicalReport = hasLinkedPremiumService(formData?.technicalReport)
-  const has3DWalkthrough = hasLinkedPremiumService(formData?.video3DWalkthrough)
+  const blocksTechnicalReport = blocksPremiumServiceRequest(formData?.technicalReport)
+  const blocks3DWalkthrough = blocksPremiumServiceRequest(formData?.video3DWalkthrough)
 
   const openPremiumGate = () => {
     setModalOpen(true)
@@ -183,6 +184,7 @@ const CarListingForm = ({
   return (
     <div>
       <ConfirmationModal />
+      <ListingApprovedEditNotice formData={formData} />
       <form className='pt-[50px]'>
         <div className='grid gap-6 md:grid-cols-2 xxs:grid-cols-1'>
           <div className='relative flex flex-col justify-start'>
@@ -314,7 +316,7 @@ const CarListingForm = ({
             <div className='relative-placeholder mt-[20px] w-full'>
               <ListingModalInputComponent
                 disabled={
-                  !canRequestPremium || !formData?.uuid || hasTechnicalReport
+                  !canRequestPremium || !formData?.uuid || blocksTechnicalReport
                 }
                 maxLength={50}
                 name='technicalReport'
@@ -376,7 +378,7 @@ const CarListingForm = ({
               <ListingModalInputComponent
                 maxLength={50}
                 disabled={
-                  !canRequestPremium || !formData?.uuid || has3DWalkthrough
+                  !canRequestPremium || !formData?.uuid || blocks3DWalkthrough
                 }
                 name='video3DWalkthrough'
                 value={

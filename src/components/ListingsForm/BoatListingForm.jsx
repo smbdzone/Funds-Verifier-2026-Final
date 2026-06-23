@@ -31,8 +31,9 @@ import {
   canRequestPremiumServices,
   isListingEvaluatorApprovedLocked,
 } from '@/libs/listingEditLock'
+import ListingApprovedEditNotice from '@/components/ListingsForm/ListingApprovedEditNotice'
 import {
-  hasLinkedPremiumService,
+  blocksPremiumServiceRequest,
   premiumServiceFieldLabel,
 } from '@/libs/listingPremiumStatus'
 
@@ -123,8 +124,8 @@ const BoatListingForm = ({
   const [RequestService, setRequestService] = useState('')
   const isEvaluatorApprovedLocked = isListingEvaluatorApprovedLocked(formData)
   const canRequestPremium = canRequestPremiumServices(formData)
-  const hasTechnicalReport = hasLinkedPremiumService(formData?.technicalReport)
-  const has3DWalkthrough = hasLinkedPremiumService(formData?.video3DWalkthrough)
+  const blocksTechnicalReport = blocksPremiumServiceRequest(formData?.technicalReport)
+  const blocks3DWalkthrough = blocksPremiumServiceRequest(formData?.video3DWalkthrough)
 
   const openPremiumGate = () => {
     setModalOpen(true)
@@ -174,6 +175,7 @@ const BoatListingForm = ({
   return (
     <>
       <ConfirmationModal />
+      <ListingApprovedEditNotice formData={formData} />
       <form className='pt-[50px]'>
         <div className='md:grid gap-6 md:space-y-0 space-y-5 md:grid-cols-2'>
           <div className='relative flex flex-col justify-start'>
@@ -237,7 +239,7 @@ const BoatListingForm = ({
               handleVideoRemove={handleVideoRemove}
               fileInputRef={fileInputRef}
               handleVideoChange={handleVideoChange}
-              disabled={formData?.video?.uuid}
+              disabled={isEvaluatorApprovedLocked || Boolean(formData?.video?.uuid)}
             />
           </ListingImageUploadLayout>
           <div className='relative dropdown-container'>
@@ -277,7 +279,7 @@ const BoatListingForm = ({
               <ListingModalInputComponent
                 maxLength={50}
                 disabled={
-                  !canRequestPremium || !formData?.uuid || hasTechnicalReport
+                  !canRequestPremium || !formData?.uuid || blocksTechnicalReport
                 }
                 name='technicalReport'
                 value={
@@ -345,7 +347,7 @@ const BoatListingForm = ({
                 modalData.dateTime
               }
               disabled={
-                !canRequestPremium || !formData?.uuid || has3DWalkthrough
+                !canRequestPremium || !formData?.uuid || blocks3DWalkthrough
               }
               handleChange={handleChange}
               required={true}

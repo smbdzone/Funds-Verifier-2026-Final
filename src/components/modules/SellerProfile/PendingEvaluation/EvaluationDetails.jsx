@@ -14,6 +14,8 @@ import {
   getListingImageSrc,
   getListingVideoSrc,
 } from '@/libs/listingCardMedia'
+import Link from 'next/link'
+import { getListingEditPath } from '@/libs/listingEditPaths'
 
 const EvaluationDetails = () => {
   const [selectedProperty, setSelectedProperty] = useState(null) // State to store selected property details
@@ -262,7 +264,21 @@ const EvaluationDetails = () => {
           <span className='lg:text-4xl sm:text-2xl text-xl font-bold text-prussianBlue/80 mb-4 block'>
             Pending Evaluations
           </span>
-          <span>{}</span>
+          {selectedProperty?.uuid && assetType && (
+            <div className='mb-4'>
+              <Link
+                href={getListingEditPath(assetType, selectedProperty.uuid)}
+                className='inline-block rounded-md primary-gradient px-6 py-2 text-sm font-medium text-white'
+              >
+                Edit Listing
+              </Link>
+              <p className='mt-2 text-sm text-gray-600'>
+                You can update your listing while waiting for the evaluator.
+                The evaluation certificate is added by the evaluator after the
+                visit — you do not need to upload it yourself.
+              </p>
+            </div>
+          )}
           <div className='gap-2 md:px-8 px-4 py-4 w-full'>
             <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
               {fieldsMap[selectedProperty?.type]?.map((field, index) =>

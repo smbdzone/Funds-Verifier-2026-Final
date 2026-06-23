@@ -55,22 +55,21 @@ const Header = () => {
         </figure>
       </Link>
       <nav>
-        <ul className='hidden xl:flex gap-6 items-start'>
+        <ul className='hidden xl:flex gap-6 items-end pb-0.5'>
           <Link href='/'>
             <li className={navLinkClass('/')}>Home</li>
           </Link>
           <Link href='/aboutus'>
             <li className={navLinkClass('/aboutus')}>About</li>
           </Link>
-          <Link href='/aboutus'>
-            <li className={navLinkClass('/aboutus')}>How it works</li>
+          <Link href='/auctions'>
+            <li className={`${navLinkClass('/auctions')} flex flex-col items-center`}>
+              <span className='mb-0.5 block text-[8px] font-medium uppercase leading-none tracking-[0.12em] text-reefGold'>
+                Coming soon
+              </span>
+              <span className='block leading-none'>Auctions</span>
+            </li>
           </Link>
-          <li className='xl:text-lg text-prussianBlue cursor-pointer'>
-            Auctions
-            <span className='block text-reefGold text-sm font-medium'>
-              [Coming Soon]
-            </span>
-          </li>
           <Link href='/blog'>
             <li className={navLinkClass('/blog')}>News & trends</li>
           </Link>
@@ -147,14 +146,6 @@ const Header = () => {
                         >
                           Home
                         </li>
-                        <Link href='/aboutus'>
-                          <li
-                            onClick={() => setIsOpen(false)}
-                            className='text-lg cursor-pointer text-white'
-                          >
-                            How it works
-                          </li>
-                        </Link>
                         <li
                           onClick={() => setIsOpen(false)}
                           className='text-lg cursor-pointer text-white'
@@ -162,15 +153,17 @@ const Header = () => {
                           Categories
                         </li>
 
-                        <li
-                          onClick={() => setIsOpen(false)}
-                          className='text-lg cursor-pointer text-white'
-                        >
-                          Auctions
-                          <span className='block text-reefGold text-sm font-medium'>
-                            [Coming Soon]
-                          </span>
-                        </li>
+                        <Link href='/auctions'>
+                          <li
+                            onClick={() => setIsOpen(false)}
+                            className='flex cursor-pointer flex-col items-center text-center text-white'
+                          >
+                            <span className='mb-0.5 block text-[8px] font-medium uppercase leading-none tracking-[0.12em] text-reefGold'>
+                              Coming soon
+                            </span>
+                            <span className='text-lg leading-none'>Auctions</span>
+                          </li>
+                        </Link>
                         <Link href='/blog'>
                           <li
                             onClick={() => setIsOpen(false)}

@@ -32,9 +32,21 @@ export function hasLinkedPremiumService(ref) {
   return false
 }
 
+/** Premium service payment confirmed — unpaid/abandoned checkout attempts do not count. */
+export function isPremiumServicePaid(ref) {
+  if (!hasLinkedPremiumService(ref)) return false
+  if (typeof ref === 'string') return false
+  return hasSuccessfulPremiumPayment(ref)
+}
+
+/** Block re-requesting only after payment succeeded (not on abandoned Clozer/Stripe attempts). */
+export function blocksPremiumServiceRequest(ref) {
+  return isPremiumServicePaid(ref)
+}
+
 /** UI label for linked 3D / technical report fields. */
 export function premiumServiceFieldLabel(ref) {
-  if (!hasLinkedPremiumService(ref)) return ''
+  if (!isPremiumServicePaid(ref)) return ''
   const status = String(ref?.status || ref?.payment_method_status || '').toLowerCase()
   if (status === 'successful' || status === 'paid' || status === 'succeeded') {
     return 'Completed'
@@ -55,7 +67,7 @@ export function normalizeListingPremiumRefs(listing) {
   return next
 }
 
-/** Premium styling only after Stripe payment — not on unpaid request records. */
+/** Premium styling only after payment — not on unpaid request records. */
 function hasSuccessfulPremiumPayment(service) {
   if (!service) return false
   if (typeof service === 'string') return true

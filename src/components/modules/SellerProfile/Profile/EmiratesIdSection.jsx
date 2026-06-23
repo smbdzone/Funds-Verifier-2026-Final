@@ -47,7 +47,7 @@ const EmiratesIdSection = ({ user, fetchData, variant = 'dark' }) => {
 
       <Formik
         initialValues={{
-          fullName: user?.emiratesId?.fullName || user?.name || '',
+          fullName: user?.emiratesId?.fullName || user?.displayName || user?.name || '',
           number: user?.emiratesId?.number || '',
           expiryDate: expiryValue,
         }}

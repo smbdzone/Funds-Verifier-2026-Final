@@ -18,7 +18,7 @@ import {
   formatAed,
   getFullPayDiscountPercent,
 } from '@/libs/paymentDiscount'
-import { CloseIcon } from '@/components/Icons'
+import { clearAbandonedEvaluationPaymentDraft } from '@/libs/evaluationBooking'
 import { getCsrfHeaders } from '@/utils/csrf'
 
 const EVALUATION_CLOZER_AMOUNT = 2500
@@ -167,6 +167,7 @@ const PaymentModal = ({
   }
 
   const handleClose = () => {
+    clearAbandonedEvaluationPaymentDraft()
     setPaymentStep('choice')
     onClose()
   }

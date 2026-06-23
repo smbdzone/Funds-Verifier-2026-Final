@@ -73,10 +73,9 @@ const ProfileSidebar = ({ children }) => {
               />
             </figure>
             <h1
-              className='text-prussianBlue capitalize font-semibold md:text-xl text-lg lg:text-3xl truncate max-w-[300px]'
-              title={user?.name} // shows full name on hover
+              className='text-prussianBlue capitalize font-semibold md:text-xl text-lg lg:text-3xl break-words text-center max-w-full px-2'
             >
-              {user?.name || 'Loading...'}
+              {user?.displayName || user?.name || 'Loading...'}
             </h1>
             <h2 className='text-prussianBlue mb-3 lg:text-2xl md:text-lg text-base'>
               {user?.role}

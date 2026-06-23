@@ -98,7 +98,7 @@ export default function Sidebar() {
               />
             </figure>
             <h1 className="text-prussianBlue font-semibold md:text-xl text-lg lg:text-3xl">
-              {user?.name}
+              {user?.displayName || user?.name}
             </h1>
             <h2 className="lg:text-2xl md:text-lg text-base text-prussianBlue mb-3">
               Trustee

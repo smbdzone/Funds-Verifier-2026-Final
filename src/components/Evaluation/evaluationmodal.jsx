@@ -118,34 +118,29 @@ const EvaluationModal = ({ isOpen, onClose, setFormData }) => {
         `${selectedDate.toDateString()} ${selectedTime}`
       )
 
+      const newUpdatedSlot = slots.map((slot) => {
+        if (slot.time === selectedTime) {
+          return { ...slot, isBooked: true }
+        }
+        return slot
+      })
+
       try {
         setFormData((prevData) => ({
           ...prevData,
           evaluationDateTime: dateTime.toISOString(),
           evaluatorUUID: data.uuid,
+          evaluationTimeslotId: id,
+          evaluationSlotDate: formatLocalDate(selectedDate),
+          evaluationSlotTime: selectedTime,
+          evaluationSlotTimeslots: newUpdatedSlot,
         }))
-        const newUpdatedSlot = slots.map((slot) => {
-          if (slot.time === selectedTime) {
-            return { ...slot, isBooked: true } // Update `isBooked` to true for the matching time
-          }
-          return slot // Return other slots as is
-        })
-
-        customAxios
-          .put(`/arrange-view/timeslot/update/${id}`, {
-            timeSlots: newUpdatedSlot,
-            date: formatLocalDate(selectedDate),
-          })
-          .then(() => {
-            toast.success('Time updated successfully!')
-            fetchSlots()
-          })
-          .catch((error) => {
-            console.error('Error updating times:', error)
-          })
+        toast.success(
+          'Evaluation slot selected. Complete payment to confirm your booking.',
+        )
         onClose()
       } catch (error) {
-        console.error('Error updating slot:', error)
+        console.error('Error saving evaluation slot:', error)
       }
     } else {
       alert('Please select both date and time.')

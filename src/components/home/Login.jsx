@@ -13,7 +13,7 @@ import NewsTrends from '@/components/home/newsTrends'
 import InTouch from '@/components/home/inTouch'
 import { useSearchParams } from 'next/navigation'
 import { toast } from 'react-toastify'
-import Loader from '../../components/modules/EvaluatorProfile/requestCompoenets/Loader'
+import { HomePageSkeleton } from '@/components/home/HomeSectionSkeletons'
 import customAxios from '../../utils/apis/apis'
 import { useProfile } from '@/context/UserContext'
 import { setAccessToken } from '../../utils/auth/accessTokenStore'
@@ -61,13 +61,13 @@ export default function Login() {
   }
 
   const completeUaePassLogin = async (uaeUser) => {
-    const { firstName, lastName } = parseUaePassName(
+    const { firstName, lastName, fullName } = parseUaePassName(
       uaeUser?.fullnameEN,
       uaeUser?.lastnameEN,
     )
 
     const payload = {
-      name: firstName || uaeUser?.fullnameEN,
+      name: fullName || firstName || uaeUser?.fullnameEN,
       lastname: lastName || uaeUser?.lastnameEN,
       email: uaeUser?.email,
       role: 'DealHunter',
@@ -104,22 +104,23 @@ export default function Login() {
     window.location.replace(getRoleHomeRoute(role))
   }
 
-  if (isLoading) return <Loader isOpen={true} />
+  if (isLoading) return <HomePageSkeleton />
 
   return (
     <main>
-      <div className='flex gap-8 flex-col md:pt-32 sm:pt-10 pb-20 xl:px-20 homeDiv md:top-[100px] w-full text-[60px] text-white'>
-        <div className='container mx-auto'>
-          <div className='my-5 mt-20'>
-            <p className='m-0 xl:text-[60px] lg:text-5xl text-3xl leading-[50px] font-semibold'>
-              Unlocking <br className='md:hidden block' /> Secure Asset
-            </p>
-            <p className='m-0 xl:text-[60px] lg:text-5xl leading-[50px] text-3xl font-semibold'>
-              Transactions <br className='md:hidden block' /> with Funds
-              <br className='md:hidden block' /> Verifier
-            </p>
+      <div className='homeDiv flex w-full flex-col gap-8 pb-16 pt-24 text-white sm:pb-20 sm:pt-28 md:top-[100px] md:pt-32 xl:px-20'>
+        <div className='container mx-auto px-4 sm:px-6'>
+          <div className='mt-6 sm:mt-10 md:mt-20'>
+            <h1 className='font-semibold tracking-tight'>
+              <span className='block text-[26px] leading-[31px] sm:text-3xl sm:leading-9 lg:text-5xl lg:leading-[1.15] xl:text-[60px] xl:leading-[68px]'>
+                Unlocking Secure Asset
+              </span>
+              <span className='mt-1 block text-[26px] leading-[31px] sm:mt-1.5 sm:text-3xl sm:leading-9 lg:mt-2 lg:text-5xl lg:leading-[1.15] xl:text-[60px] xl:leading-[68px]'>
+                Transactions with Funds Verifier
+              </span>
+            </h1>
           </div>
-          <p className='md:text-2xl text-sm tracking-wide'>
+          <p className='mt-3 max-w-sm text-sm leading-snug tracking-wide text-white/95 sm:mt-4 sm:max-w-md md:mt-5 md:max-w-none md:text-2xl md:leading-normal'>
             Simplify asset transactions with confidence on our trusted platform
           </p>
           <div className='lg:block hidden mt-5'>

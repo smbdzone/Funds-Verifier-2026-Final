@@ -85,7 +85,7 @@ export const ElectronicTab = () => {
             user?.userState === 'active' ? (
               <p className='text-center md:text-base text-sm'>
                 Hi
-                <span className='font-semibold ml-1'>{user?.name}</span>, you’ve
+                <span className='font-semibold ml-1 break-words'>{user?.displayName || user?.name}</span>, you’ve
                 already accepted our terms and conditions. Thank you!
               </p>
             ) : (

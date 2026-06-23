@@ -17,6 +17,8 @@ const AUTH_LOCAL_STORAGE_KEYS = [
   'servicePaymentReturnUrl',
   '3Dwalkthrough',
   'technicalReport',
+  'fv.session.idleDeadline',
+  'fv.session.expired',
 ]
 
 const AUTH_COOKIE_NAMES = ['accessToken', 'refreshToken', 'role', 'userUUID']

@@ -29,6 +29,10 @@ import {
   getListingWalkthroughUrl,
   LISTING_PREMIUM_BLUE_GRADIENT,
 } from '@/libs/listingPremiumStatus'
+import {
+  getListingEditPath,
+  getPendingEvaluationViewPath,
+} from '@/libs/listingEditPaths'
 
 const renderListingDetails = (listing, hasFeaturedStyling) => {
   switch (listing.assetType) {
@@ -164,7 +168,7 @@ const ListingCard = ({
 
   const getDynamicLink = (assetType, slug) => {
     if (usePendingEvaluation) {
-      return `/seller-profile/pending-evaluation/${slug}?assetType=${assetType}`
+      return getPendingEvaluationViewPath(assetType, slug)
     } else {
       let assetTypeText
       switch (assetType) {
@@ -200,24 +204,7 @@ const ListingCard = ({
   const swiperRefs = useRef({})
 
   const getEditLink = (assetType, listingId) => {
-    if (usePendingEvaluation) {
-      return getDynamicLink(assetType, listingId)
-    } else {
-      switch (assetType) {
-        case 'Property For Lease':
-        // case 'Property Off Plan For Sale':
-        case 'Property For Sale':
-          return `/dashboard/property-listing?id=${listingId}`
-        case 'Car For Sale':
-          return `/dashboard/car-listing?id=${listingId}`
-        case 'Jewellery For Sale':
-          return `/dashboard/jewelry-listing?id=${listingId}`
-        case 'Boats For Sale':
-          return `/dashboard/boat-listing?id=${listingId}`
-        default:
-          return '#'
-      }
-    }
+    return getListingEditPath(assetType, listingId)
   }
 
   const handlePrevSlide = (id) => {

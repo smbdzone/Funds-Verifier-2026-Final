@@ -117,10 +117,9 @@ const SellerProfileSidebar = () => {
               />
             </figure>
             <h1
-              className='text-prussianBlue capitalize font-semibold md:text-xl text-lg lg:text-3xl truncate max-w-[300px]'
-              title={user?.name} // shows full name on hover
+              className='text-prussianBlue capitalize font-semibold md:text-xl text-lg lg:text-3xl break-words text-center max-w-full px-2'
             >
-              {user?.name || 'Loading...'}
+              {user?.displayName || user?.name || 'Loading...'}
             </h1>
 
             <h2 className='lg:text-2xl md:text-lg text-base text-prussianBlue mb-3'>

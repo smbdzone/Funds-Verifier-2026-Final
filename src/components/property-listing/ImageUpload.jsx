@@ -26,8 +26,9 @@ import {
   canRequestPremiumServices,
   isListingEvaluatorApprovedLocked,
 } from '@/libs/listingEditLock'
+import ListingApprovedEditNotice from '@/components/ListingsForm/ListingApprovedEditNotice'
 import {
-  hasLinkedPremiumService,
+  blocksPremiumServiceRequest,
   premiumServiceFieldLabel,
 } from '@/libs/listingPremiumStatus'
 export const ImageUploadComponent = React.memo(
@@ -123,8 +124,8 @@ export const ImageUploadComponent = React.memo(
     const [RequestService, setRequestService] = useState('')
     const isEvaluatorApprovedLocked = isListingEvaluatorApprovedLocked(formData)
     const canRequestPremium = canRequestPremiumServices(formData)
-    const hasTechnicalReport = hasLinkedPremiumService(formData?.technicalReport)
-    const has3DWalkthrough = hasLinkedPremiumService(formData?.video3DWalkthrough)
+    const blocksTechnicalReport = blocksPremiumServiceRequest(formData?.technicalReport)
+    const blocks3DWalkthrough = blocksPremiumServiceRequest(formData?.video3DWalkthrough)
 
     const openPremiumGate = () => {
       setModalOpen(true)
@@ -174,13 +175,7 @@ export const ImageUploadComponent = React.memo(
     return (
       <form className='pt-[50px]'>
         <ConfirmationModal />
-        {isEvaluatorApprovedLocked && (
-          <p className='mb-6 rounded-md border border-[#8d7c3b]/40 bg-[#8d7c3b]/10 px-4 py-3 text-sm text-dark-grey'>
-            This listing is approved with an evaluation certificate. You can
-            update the price, request a 3D walkthrough, or request a technical
-            report. Other fields are locked.
-          </p>
-        )}
+        <ListingApprovedEditNotice formData={formData} />
         <div className='md:grid gap-6 md:space-y-0 space-y-5 md:grid-cols-2'>
           <div className='relative w-full '>
             <ListingFormInput
@@ -300,7 +295,7 @@ export const ImageUploadComponent = React.memo(
             <ListingModalInputComponent
               maxLength={50}
               disabled={
-                !canRequestPremium || !formData?.uuid || has3DWalkthrough
+                !canRequestPremium || !formData?.uuid || blocks3DWalkthrough
               }
               name='video3DWalkthrough'
               value={
@@ -413,7 +408,7 @@ export const ImageUploadComponent = React.memo(
             <ListingModalInputComponent
               maxLength={50}
               disabled={
-                !canRequestPremium || !formData?.uuid || hasTechnicalReport
+                !canRequestPremium || !formData?.uuid || blocksTechnicalReport
               }
               name='technicalReport'
               value={

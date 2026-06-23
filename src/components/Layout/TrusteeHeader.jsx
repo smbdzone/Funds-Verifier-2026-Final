@@ -48,8 +48,8 @@ const EvaluatorHeader = () => {
                 />
               </figure>
               <div className="xl:block hidden">
-                <h2 className="text-prussianBlue capitalize text-xs font-semibold">
-                  {user?.name || "Loading..."}
+                <h2 className="text-prussianBlue capitalize text-xs font-semibold break-words text-left max-w-[220px]">
+                  {user?.displayName || user?.name || "Loading..."}
                 </h2>
                 <span className="text-prussianBlue text-[10px] block text-start">
                   {user?.role}

@@ -114,7 +114,7 @@ const TermsAndConditionsModal = ({ show, onClose }) => {
                         <p className='text-center md:text-base text-sm'>
                           Hi
                           <span className='font-semibold ml-1'>
-                            {user?.name}
+                            {user?.displayName || user?.name}
                           </span>
                           , you’ve already accepted our terms and conditions.
                           Thank you!

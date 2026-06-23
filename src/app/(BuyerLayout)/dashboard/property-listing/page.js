@@ -33,12 +33,21 @@ import { useProfile } from '../../../../context/UserContext'
 import StripeElement from '../../../../components/Stripe/StripeElement'
 import { useRefreshListingAfterServicePayment } from '@/hooks/useRefreshListingAfterServicePayment'
 import { useRestoreListingAfterClozerPayment } from '@/hooks/useRestoreListingAfterClozerPayment'
+import {
+  useRestorePendingListingDraft,
+  useRefetchListingOnReturn,
+} from '@/hooks/useRestorePendingListingDraft'
 import customAxios from '../../../../utils/apis/apis'
 import {
   applyPremiumServiceRefs,
   listingMediaRef,
   premiumServiceRequestId,
 } from '@/libs/listingMediaRef'
+import {
+  hasConfirmedEvaluationPayment,
+  bookEvaluationTimeslotFromFormData,
+  stripEvaluationBookingMeta,
+} from '@/libs/evaluationBooking'
 
 const dropdownData = {
   leaseNumberofCheques: false,
@@ -192,18 +201,18 @@ const Page = () => {
     if (id) {
       fetchData('property')
     } else {
+      resetForm()
+      handleFormData(initialFormData, dropdownData)
       setLoading(false)
     }
   }, [searchParams])
 
   useRefreshListingAfterServicePayment(id, 'property', fetchData)
   useRestoreListingAfterClozerPayment(setFormData)
+  useRestorePendingListingDraft(id, setFormData)
+  useRefetchListingOnReturn(id, 'property', fetchData)
 
   const router = useRouter()
-  useEffect(() => {
-    resetForm()
-    handleFormData(initialFormData, dropdownData)
-  }, [searchParams])
 
   const handlePropertyTypeSelect = (type) => {
     setSelectType(type)
@@ -356,8 +365,8 @@ const Page = () => {
           ? JSON.parse(checkoutSessionRaw)
           : null
 
-        if (!checkoutSession || Object.keys(checkoutSession).length === 0) {
-          return toast.error('Payment of 2 dirham is required!')
+        if (!hasConfirmedEvaluationPayment(checkoutSession)) {
+          return toast.error('Evaluation payment is required before submitting.')
         }
       }
 
@@ -423,18 +432,24 @@ const Page = () => {
       const validationErrors = validateForm(updatedFormData)
 
       if (Object.keys(validationErrors).length === 0) {
+        if (!id) {
+          await bookEvaluationTimeslotFromFormData(formData)
+        }
+
+        const listingPayload = stripEvaluationBookingMeta(updatedFormData)
+
         if (id) {
           requests.push(
             customAxios.put(
               `${process.env.NEXT_PUBLIC_BASE_URL}/property/${id}`,
-              updatedFormData
+              listingPayload
             )
           )
         } else {
           requests.push(
             customAxios.post(
               `${process.env.NEXT_PUBLIC_BASE_URL}/property`,
-              updatedFormData
+              listingPayload
             )
           )
         }
@@ -455,6 +470,8 @@ const Page = () => {
           setFormData(initialFormData)
           localStorage.removeItem('FormPayment')
           localStorage.removeItem('checkoutSessionId')
+          localStorage.removeItem('checkoutSession')
+          localStorage.removeItem('pendingListingDraft')
         }
         resetForm()
         router.push('/seller-profile/my-listing')

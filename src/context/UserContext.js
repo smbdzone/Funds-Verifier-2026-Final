@@ -13,12 +13,14 @@ import {
   isLoginPath,
 } from '../utils/auth/clearClientSession'
 import { getRoleHomeRoute } from '../utils/auth/roleHome'
+import { getUserDisplayName } from '../utils/auth/userDisplayName'
 import {
   isUaePassCallback,
   POST_LOGIN_BOOTSTRAP_KEY,
 } from '../utils/auth/uaePass'
 import { ensureCsrfToken } from '../utils/csrf'
 import { loadFullPayDiscountPercent } from '../libs/paymentDiscount'
+import { SessionIdleProvider } from './SessionIdleContext'
 
 export let globalLogout = () => { }
 
@@ -57,7 +59,11 @@ export const UserProvider = ({ children }) => {
       finalRole = 'SubEvaluator'
     }
 
-    setUser({ ...userData, role: finalRole })
+    setUser({
+      ...userData,
+      role: finalRole,
+      displayName: getUserDisplayName(userData),
+    })
     setIsAuthenticated(true)
   }
 
@@ -296,7 +302,7 @@ export const UserProvider = ({ children }) => {
         setIsLoading,
       }}
     >
-      {children}
+      <SessionIdleProvider>{children}</SessionIdleProvider>
     </UserContext.Provider>
   )
 }

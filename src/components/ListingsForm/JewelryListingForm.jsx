@@ -30,8 +30,9 @@ import {
   canRequestPremiumServices,
   isListingEvaluatorApprovedLocked,
 } from '@/libs/listingEditLock'
+import ListingApprovedEditNotice from '@/components/ListingsForm/ListingApprovedEditNotice'
 import {
-  hasLinkedPremiumService,
+  blocksPremiumServiceRequest,
   premiumServiceFieldLabel,
 } from '@/libs/listingPremiumStatus'
 
@@ -122,8 +123,8 @@ const JewelryListingForm = ({
   const [RequestService, setRequestService] = useState('')
   const isEvaluatorApprovedLocked = isListingEvaluatorApprovedLocked(formData)
   const canRequestPremium = canRequestPremiumServices(formData)
-  const hasTechnicalReport = hasLinkedPremiumService(formData?.technicalReport)
-  const has3DWalkthrough = hasLinkedPremiumService(formData?.video3DWalkthrough)
+  const blocksTechnicalReport = blocksPremiumServiceRequest(formData?.technicalReport)
+  const blocks3DWalkthrough = blocksPremiumServiceRequest(formData?.video3DWalkthrough)
 
   const openPremiumGate = () => {
     setModalOpen(true)
@@ -173,6 +174,7 @@ const JewelryListingForm = ({
   return (
     <>
       <ConfirmationModal />
+      <ListingApprovedEditNotice formData={formData} />
       <form className='pt-[50px]'>
         <div className='md:grid gap-6 md:space-y-0 space-y-5 md:grid-cols-2'>
           <div className='relative flex flex-col justify-start'>
@@ -297,7 +299,7 @@ const JewelryListingForm = ({
           <div className='relative-placeholder w-full'>
             <ListingModalInputComponent
               disabled={
-                !canRequestPremium || !formData?.uuid || hasTechnicalReport
+                !canRequestPremium || !formData?.uuid || blocksTechnicalReport
               }
               maxLength={50}
               name='technicalReport'
@@ -345,7 +347,7 @@ const JewelryListingForm = ({
                 modalData?.dateTime
               }
               disabled={
-                !canRequestPremium || !formData?.uuid || has3DWalkthrough
+                !canRequestPremium || !formData?.uuid || blocks3DWalkthrough
               }
               handleChange={handleChange}
               required={true}
