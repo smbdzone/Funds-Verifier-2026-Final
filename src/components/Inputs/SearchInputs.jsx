@@ -1,8 +1,7 @@
 'use client'
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import Image from 'next/image'
 import vectorArrow from '@/assets/images/vector5.svg'
-import axios from 'axios'
 import SearchButton from '@/components/Buttons/SearchButton'
 import { useRouter } from 'next/navigation'
 import {
@@ -10,12 +9,32 @@ import {
   defaultPricesForFilter,
   propertyPricesForFilter,
 } from '@/constants/otherConstants'
-import { ClipLoader } from 'react-spinners'
 import customAxios from '@/utils/apis/apis'
+import {
+  LISTING_COUNTRY_UAE_LABEL,
+  toUnitedArabEmiratesListingCountryName,
+} from '@/libs/dummyLocationData'
+
+const CATEGORY_ENDPOINTS = {
+  Boat: '/boat',
+  'Property For Sale': '/property',
+  Car: '/car',
+  Jewelry: '/jewelry',
+}
+
+const normalizeCountryKey = (country) => {
+  if (
+    !country ||
+    country === 'Select Country' ||
+    country === 'required_country'
+  ) {
+    return null
+  }
+  return toUnitedArabEmiratesListingCountryName(country) || country
+}
 
 const SearchInputs = ({ setIsOpen }) => {
   const [countries, setCountries] = useState([])
-  const [totalCities, setTotalCities] = useState([])
   const [cities, setCities] = useState([])
   const [selectedCountry, setSelectedCountry] = useState('')
   const [selectedCity, setSelectedCity] = useState('')
@@ -27,17 +46,17 @@ const SearchInputs = ({ setIsOpen }) => {
   const router = useRouter()
   const [priceOptions, setPriceOptions] = useState([])
   const [countryLoading, setCountryLoading] = useState(false)
-  const [cityLoading, setCityLoading] = useState(false)
   const [countryCityMap, setCountryCityMap] = useState({})
+  const locationCacheRef = useRef({})
+  const prevCountryRef = useRef('')
   const handleSearch = () => {
     setIsLoading(true)
-    const query = new URLSearchParams({
-      minPrice,
-      maxPrice,
-      country: selectedCountry,
-      city: selectedCity,
-      roi: ROI,
-    })
+    const query = new URLSearchParams()
+    if (minPrice) query.set('minPrice', minPrice)
+    if (maxPrice) query.set('maxPrice', maxPrice)
+    if (selectedCountry) query.set('country', selectedCountry)
+    if (selectedCity) query.set('city', selectedCity)
+    if (ROI) query.set('roi', ROI)
 
     let pathCategory = category.toLowerCase()
     if (category === 'Property For Sale') {
@@ -48,103 +67,132 @@ const SearchInputs = ({ setIsOpen }) => {
     if (router) {
       const fullPath = `/${pathCategory}?${query.toString()}`
       router.push(fullPath)
-      setIsOpen(false)
+      setIsOpen?.(false)
     } else {
       console.error('Router is undefined')
     }
+    setIsLoading(false)
   }
 
-  // Fetch the countries on component mount
+  // Fetch countries/cities when category changes (not when country is picked).
   useEffect(() => {
-    const fetchCountries = async () => {
+    if (!category) return
+
+    if (category === 'Property For Sale') {
+      setPriceOptions(propertyPricesForFilter)
+    } else if (category === 'Boat') {
+      setPriceOptions(boatPricesForFilter)
+    } else if (['Property For Lease', 'Car', 'Jewelry'].includes(category)) {
+      setPriceOptions(defaultPricesForFilter)
+    } else {
+      setPriceOptions([])
+    }
+
+    const cached = locationCacheRef.current[category]
+    if (cached) {
+      setCountries(cached.countries)
+      setCountryCityMap(cached.map)
+      return
+    }
+
+    // Show UAE immediately so the country field is usable while cities load.
+    setCountries([LISTING_COUNTRY_UAE_LABEL])
+
+    const endpoint = CATEGORY_ENDPOINTS[category]
+    if (!endpoint) return
+
+    let cancelled = false
+
+    const fetchLocations = async () => {
       setCountryLoading(true)
       try {
-        let response
-        if (category === 'Boat') {
-          response = await customAxios.get(
-            `${process.env.NEXT_PUBLIC_BASE_URL}/boat`
-          )
-        } else if (category === 'Property For Sale') {
-          response = await customAxios.get(
-            `${process.env.NEXT_PUBLIC_BASE_URL}/property`
-          )
-        } else if (category === 'Car') {
-          response = await customAxios.get(
-            `${process.env.NEXT_PUBLIC_BASE_URL}/car`
-          )
-        } else if (category === 'Jewelry') {
-          response = await customAxios.get(
-            `${process.env.NEXT_PUBLIC_BASE_URL}/jewelry`
-          )
-        }
+        const response = await customAxios.get(
+          `${process.env.NEXT_PUBLIC_BASE_URL}${endpoint}`,
+          { params: { limit: 500, statusFilter: 1 } },
+        )
+
+        if (cancelled) return
 
         const products = response?.data?.products || []
-
-        // Build a mapping of { country: [cities] }
-        const countryCityMap = {}
+        const nextMap = {}
 
         products.forEach((item) => {
-          const country = item.country
+          const countryKey = normalizeCountryKey(item.country)
           const city = item.city
 
-          if (
-            country &&
-            country !== 'Select Country' &&
-            country !== 'required_country'
-          ) {
-            if (!countryCityMap[country]) {
-              countryCityMap[country] = new Set()
-            }
+          if (!countryKey) return
 
-            if (city) {
-              countryCityMap[country].add(city)
-            }
+          if (!nextMap[countryKey]) {
+            nextMap[countryKey] = new Set()
+          }
+
+          if (city) {
+            nextMap[countryKey].add(city)
           }
         })
 
-        // Get unique country list
-        const uniqueCountries = Object.keys(countryCityMap)
-
-        // Convert each city set to an array
         const formattedMap = Object.fromEntries(
-          Object.entries(countryCityMap).map(([country, cities]) => [
+          Object.entries(nextMap).map(([country, citySet]) => [
             country,
-            Array.from(cities),
-          ])
+            Array.from(citySet).sort((a, b) => a.localeCompare(b)),
+          ]),
         )
 
-        setCountries(uniqueCountries)
-        setCountryCityMap(formattedMap) // store it in state
+        const uniqueCountries = Object.keys(formattedMap)
+        const countryList =
+          uniqueCountries.length > 0
+            ? uniqueCountries
+            : [LISTING_COUNTRY_UAE_LABEL]
+
+        locationCacheRef.current[category] = {
+          countries: countryList,
+          map: formattedMap,
+        }
+
+        setCountries(countryList)
+        setCountryCityMap(formattedMap)
       } catch (error) {
         console.error('Error fetching countries data:', error)
+        if (!cancelled) {
+          setCountries([LISTING_COUNTRY_UAE_LABEL])
+          setCountryCityMap({})
+        }
       } finally {
-        setCountryLoading(false)
+        if (!cancelled) setCountryLoading(false)
       }
     }
 
-    if (category) {
-      fetchCountries()
-      if (category === 'Property For Sale') {
-        setPriceOptions(propertyPricesForFilter)
-      } else if (category === 'Boat') {
-        setPriceOptions(boatPricesForFilter)
-      } else if (['Property For Lease', 'Car', 'Jewelry'].includes(category)) {
-        setPriceOptions(defaultPricesForFilter)
-      } else {
-        setPriceOptions([])
-      }
-    }
-  }, [category, selectedCountry])
+    fetchLocations()
 
-  const handleCountryChange = (event) => {
-    const selectedCountry = event.target.value
-    setSelectedCountry(selectedCountry)
+    return () => {
+      cancelled = true
+    }
+  }, [category])
+
+  // Update cities instantly when country changes — no API refetch.
+  useEffect(() => {
+    if (!selectedCountry) {
+      setCities([])
+      prevCountryRef.current = ''
+      return
+    }
+
+    if (prevCountryRef.current !== selectedCountry) {
+      setSelectedCity('')
+      prevCountryRef.current = selectedCountry
+    }
+
     setCities(countryCityMap[selectedCountry] || [])
-  }
+  }, [selectedCountry, countryCityMap])
+
+  const handleCountryChange = useCallback((event) => {
+    setSelectedCountry(event.target.value)
+  }, [])
 
   const handleCategoryChange = (event) => {
     setSelectedCountry('')
     setSelectedCity('')
+    prevCountryRef.current = ''
     setROI('')
     setMinPrice('')
     setMaxPrice('')
@@ -167,15 +215,14 @@ const SearchInputs = ({ setIsOpen }) => {
   }
 
   return (
-    <div className='xl:mt-14 flex xl:gap-x-5 lg:gap-x-3 gap-y-3 items-center lg:flex-row flex-col w-full h-16 text-xl text-darkslategray-200'>
-      {/* Dropdown for Categories */}
-      <h1 className='lg:hidden block md:text-lg text-base font-semibold'>
+    <div className='hero-search-bar xl:mt-10 mt-6'>
+      <h1 className='lg:hidden block w-full md:text-lg text-base font-semibold text-white mb-1'>
         Filter
       </h1>
 
       <div className='select-wrapper relative'>
         <select
-          className='select-custom outline-none border-none xl:text-base text-sm'
+          className='select-custom outline-none'
           value={category}
           onChange={handleCategoryChange}
         >
@@ -189,83 +236,76 @@ const SearchInputs = ({ setIsOpen }) => {
           <option value='Boat'>Boats</option>
         </select>
         <div className='select-arrow'>
-          <Image src={vectorArrow} alt='Arrow' width={15} height={15} />
+          <Image src={vectorArrow} alt='' width={12} height={12} />
         </div>
       </div>
 
       {/* Dropdown for Country */}
 
-      <div className='select-wrapper relative'>
+      <div className='select-wrapper select-wrapper-country relative'>
         <select
-          className='select-custom outline-none border-none xl:text-base text-sm'
+          className='select-custom outline-none'
           value={selectedCountry}
           onChange={handleCountryChange}
           disabled={!category}
+          title={selectedCountry || 'Country'}
         >
           <option value='' disabled hidden>
-            Country
+            {countryLoading && !countries.length ? 'Loading…' : 'Country'}
           </option>
-          {countryLoading ? (
-            <option className='flex items-center justify-center'>
-              <ClipLoader color='#36d7b7' size={20} />
+          {countries.map((country) => (
+            <option key={country} value={country}>
+              {country}
             </option>
-          ) : (
-            <>
-              {countries.map((country, index) => (
-                <option key={index} value={country}>
-                  {country}
-                </option>
-              ))}
-            </>
-          )}
+          ))}
         </select>
 
+        {countryLoading && (
+          <span
+            className='absolute right-9 top-1/2 -translate-y-1/2 w-3 h-3 border-2 border-reefGold/30 border-t-reefGold rounded-full animate-spin pointer-events-none'
+            aria-hidden
+          />
+        )}
+
         <div className='select-arrow'>
-          <Image src={vectorArrow} alt='Arrow' width={15} height={15} />
+          <Image src={vectorArrow} alt='' width={12} height={12} />
         </div>
       </div>
 
       {/* Dropdown for City */}
       <div className='select-wrapper relative'>
         <select
-          className='select-custom outline-none border-none xl:text-base text-sm'
+          className='select-custom outline-none'
           value={selectedCity}
           onChange={(e) => setSelectedCity(e.target.value)}
-          disabled={!selectedCountry || cityLoading}
+          disabled={!selectedCountry}
+          title={selectedCity || 'City'}
         >
           <option value='' disabled hidden>
             City
           </option>
-          {cityLoading ? (
-            <option className='flex items-center justify-center'>
-              <ClipLoader color='#36d7b7' size={20} />
-            </option>
+          {cities.length > 0 ? (
+            cities.map((city) => (
+              <option key={city} value={city}>
+                {city}
+              </option>
+            ))
           ) : (
-            <>
-              {cities.length > 0 ? (
-                cities?.map((city, index) => (
-                  <option key={index} value={city || city.formatted_address}>
-                    {city || city.formatted_address}
-                  </option>
-                ))
-              ) : (
-                <option value='' disabled>
-                  No cities available
-                </option>
-              )}
-            </>
+            <option value='' disabled>
+              {countryLoading ? 'Loading cities…' : 'No cities available'}
+            </option>
           )}
         </select>
 
         <div className='select-arrow'>
-          <Image src={vectorArrow} alt='Arrow' width={15} height={15} />
+          <Image src={vectorArrow} alt='' width={12} height={12} />
         </div>
       </div>
 
       {/* Dropdown for Min Price */}
       <div className='select-wrapper relative'>
         <select
-          className='select-custom outline-none border-none xl:text-base text-sm'
+          className='select-custom outline-none'
           value={minPrice}
           onChange={handleMinPriceChange}
         >
@@ -279,14 +319,14 @@ const SearchInputs = ({ setIsOpen }) => {
           ))}
         </select>
         <div className='select-arrow'>
-          <Image src={vectorArrow} alt='Arrow' width={15} height={15} />
+          <Image src={vectorArrow} alt='' width={12} height={12} />
         </div>
       </div>
 
       {/* Dropdown for Max Price */}
       <div className='select-wrapper relative'>
         <select
-          className='select-custom outline-none border-none xl:text-base text-sm'
+          className='select-custom outline-none'
           value={maxPrice}
           onChange={handleMaxPriceChange}
         >
@@ -300,15 +340,15 @@ const SearchInputs = ({ setIsOpen }) => {
           ))}
         </select>
         <div className='select-arrow'>
-          <Image src={vectorArrow} alt='Arrow' width={15} height={15} />
+          <Image src={vectorArrow} alt='' width={12} height={12} />
         </div>
       </div>
 
       {/* Conditionally Render ROI */}
       {category === 'Property For Sale' && (
-        <div className='select-wrapper outline-none border-none relative'>
+        <div className='select-wrapper outline-none relative'>
           <select
-            className='select-custom outline-none border-none xl:text-base text-sm'
+            className='select-custom outline-none'
             value={ROI}
             onChange={handleROIChange}
           >
@@ -320,12 +360,11 @@ const SearchInputs = ({ setIsOpen }) => {
             <option value='20'>20%</option>
           </select>
           <div className='select-arrow'>
-            <Image src={vectorArrow} alt='Arrow' width={15} height={15} />
+            <Image src={vectorArrow} alt='' width={12} height={12} />
           </div>
         </div>
       )}
-      {/* Search   button */}
-      <div onClick={handleSearch}>
+      <div className='shrink-0' onClick={handleSearch}>
         <SearchButton isLoading={isLoading} />
       </div>
     </div>

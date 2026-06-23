@@ -14,6 +14,7 @@ import {
   LISTING_COUNTRY_UAE_LABEL,
   isUnitedArabEmiratesListingCountry,
   toUnitedArabEmiratesListingCountryName,
+  filterCountriesToUaeOnly,
 } from '@/libs/dummyLocationData'
 import {
   normalizeCountriesResponse,
@@ -326,10 +327,16 @@ function Page() {
         const data = await response.json()
         const list = normalizeCountriesResponse(data)
         if (!cancelled) {
-          setCountryOptions(list.length > 0 ? list : [...DUMMY_FALLBACK_COUNTRIES])
+          setCountryOptions(
+            filterCountriesToUaeOnly(
+              list.length > 0 ? list : [...DUMMY_FALLBACK_COUNTRIES],
+            ),
+          )
         }
       } catch {
-        if (!cancelled) setCountryOptions([...DUMMY_FALLBACK_COUNTRIES])
+        if (!cancelled) {
+          setCountryOptions(filterCountriesToUaeOnly([...DUMMY_FALLBACK_COUNTRIES]))
+        }
       }
     }
     load()
@@ -732,7 +739,7 @@ function Page() {
             className='text-dark-grey text-center xl:text-[40px] lg:text-4xl md:text-3xl sm:text-2xl
       xxs:text-xl font-medium leading-normal pt-[60px]'
           >
-            Final Steps to / Listing Your Asset
+            Final Steps to Listing Your Asset
           </h2>
           {/* assest type  */}
           <div className='px-5'>
@@ -1377,11 +1384,10 @@ function Page() {
                         }
                         className={`flex flex-col items-center justify-center w-[176px] 
             xl:h-[144px] xxs:h-[110px] 
-            shadow-neonsm my-[19px] ${
-              videos.length < LISTING_VIDEO_MAX_COUNT
-                ? 'cursor-pointer'
-                : 'cursor-not-allowed opacity-60'
-            }`}
+            shadow-neonsm my-[19px] ${videos.length < LISTING_VIDEO_MAX_COUNT
+                            ? 'cursor-pointer'
+                            : 'cursor-not-allowed opacity-60'
+                          }`}
                       >
                         <Image
                           width={40}
@@ -1423,8 +1429,8 @@ function Page() {
                         <input
                           type='text'
                           className={`w-full shadow-neons h-[50px] pl-5 placeholder:text-dark-grey outline-with-opacity placeholder:text-[15px] placeholder:font-normal ${errors.price && !formData.price
-                              ? 'input-field-error'
-                              : ''
+                            ? 'input-field-error'
+                            : ''
                             }`}
                           placeholder='Price'
                           // pattern="^4[0-9]{12}(?:[0-9]{3})?$"
@@ -1506,9 +1512,9 @@ function Page() {
                         <input
                           type='text'
                           className={`w-full shadow-neons h-[50px] pl-5 placeholder:text-dark-grey outline-with-opacity placeholder:text-[15px] placeholder:font-normal ${errors.evaluationCompanies &&
-                              !formData.evaluationCompanies
-                              ? '    '
-                              : ''
+                            !formData.evaluationCompanies
+                            ? '    '
+                            : ''
                             }`}
                           placeholder='Evaluation Companies'
                           name='evaluationCompanies'
@@ -1632,9 +1638,9 @@ function Page() {
                       <input
                         type='text'
                         className={`w-full shadow-neons h-[50px] pl-5 placeholder:text-dark-grey outline-with-opacity placeholder:text-[15px] placeholder:font-normal ${errors.leaseNumberofCheques &&
-                            !formData.leaseNumberofCheques
-                            ? '    '
-                            : ''
+                          !formData.leaseNumberofCheques
+                          ? '    '
+                          : ''
                           }`}
                         placeholder='Lease Number of Cheques'
                         required
@@ -1813,8 +1819,8 @@ function Page() {
                         type='text'
                         maxLength={50}
                         className={`w-full shadow-neons h-[50px] pl-5 placeholder:text-dark-grey outline-with-opacity placeholder:text-[15px] placeholder:font-normal ${errors.occupancyStatus && !formData.occupancyStatus
-                            ? '    '
-                            : ''
+                          ? '    '
+                          : ''
                           }`}
                         required
                         placeholder='Occupancy Status'

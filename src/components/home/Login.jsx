@@ -19,6 +19,7 @@ import { useProfile } from '@/context/UserContext'
 import { setAccessToken } from '../../utils/auth/accessTokenStore'
 import { getRoleHomeRoute } from '@/utils/auth/roleHome'
 import { POST_LOGIN_BOOTSTRAP_KEY } from '@/utils/auth/uaePass'
+import { parseUaePassName } from '@/utils/auth/parseUaePassName'
 
 export default function Login() {
   const { applyUserFromLogin, setIsLoading: setGlobalLoading } = useProfile()
@@ -49,9 +50,9 @@ export default function Login() {
     } catch (error) {
       toast.error(
         error.response?.data?.message ||
-          error.response?.data?.error ||
-          error.message ||
-          'UAE Pass login failed',
+        error.response?.data?.error ||
+        error.message ||
+        'UAE Pass login failed',
       )
     } finally {
       setIsLoading(false)
@@ -60,9 +61,14 @@ export default function Login() {
   }
 
   const completeUaePassLogin = async (uaeUser) => {
+    const { firstName, lastName } = parseUaePassName(
+      uaeUser?.fullnameEN,
+      uaeUser?.lastnameEN,
+    )
+
     const payload = {
-      name: uaeUser?.fullnameEN,
-      lastname: uaeUser?.lastnameEN,
+      name: firstName || uaeUser?.fullnameEN,
+      lastname: lastName || uaeUser?.lastnameEN,
       email: uaeUser?.email,
       role: 'DealHunter',
       uuid: uaeUser?.uuid,

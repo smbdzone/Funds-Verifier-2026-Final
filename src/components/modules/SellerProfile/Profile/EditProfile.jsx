@@ -54,11 +54,11 @@ function EditProfile({ countries }) {
       .email('Invalid email format')
       .required('Email is required'),
     phone: Yup.string().required('Phone number is required'),
-    gender: Yup.string().required('Gender is required'),
+    gender: Yup.string().oneOf(
+      ['Male', 'Female', 'Other', ''],
+      'Invalid gender selection',
+    ),
     dateOfBirth: Yup.date().required('Date of Birth is required'),
-    gender: Yup.string()
-      .required('Gender is required')
-      .oneOf(['Male', 'Female', 'Other'], 'Invalid gender selection'),
   })
 
   return (
@@ -270,7 +270,7 @@ function EditProfile({ countries }) {
                   >
                     <p>
                       {user?.dateOfBirth || selectedDate
-                        ? !isNaN(new Date(user?.dateOfBirth || selectedDate)) 
+                        ? !isNaN(new Date(user?.dateOfBirth || selectedDate))
                           ? new Date(user?.dateOfBirth || selectedDate).toLocaleDateString('en-US')
                           : 'Invalid Date'
                         : 'Select Date of Birth'}

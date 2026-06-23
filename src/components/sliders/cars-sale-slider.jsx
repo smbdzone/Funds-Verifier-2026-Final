@@ -20,7 +20,7 @@ import avatar3 from '@/assets/avators/Avatars 3.png'
 import arrow_right from '@/assets/vector1.svg'
 import Image from 'next/image'
 import Link from 'next/link'
-import { FaStar } from 'react-icons/fa' // Use React Icons for stars
+import { swiperCanLoop } from '@/utils/swiperLoop'
 
 const avatars = [avatar1, avatar2, avatar3]
 
@@ -127,7 +127,7 @@ export default function CarForSale() {
           hashNavigation={{
             watchState: true,
           }}
-          loop={true}
+          loop={swiperCanLoop(shuffledCars.length, 3)}
           modules={[Pagination, Autoplay]} // Add the Autoplay module here
           autoplay={{
             delay: 10000, // Slide transition delay set to 10 seconds

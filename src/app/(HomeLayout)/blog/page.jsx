@@ -10,6 +10,7 @@ import { Swiper, SwiperSlide } from 'swiper/react'
 import StyledContent from '../../../components/global/StyledContent'
 import { useSecureAxios } from '../../../utils/useSecureAxios'
 import { usePublicTokenContext } from '../../../utils/PublicTokenProvider.'
+import { swiperCanLoop } from '@/utils/swiperLoop'
 
 export default function Insight() {
   const [selectedCategories, setSelectedCategories] = useState([])
@@ -49,7 +50,7 @@ export default function Insight() {
     left: [
       { label: 'Properties', value: 'properties' },
       { label: 'Cars', value: 'cars' },
-      { label: 'Jewelry', value: 'jewelry' },
+      { label: 'Jewellery', value: 'jewelry' },
       { label: 'Boat', value: 'boats' },
     ],
     right: [{ label: 'General News', value: 'general-news' }],
@@ -187,9 +188,9 @@ export default function Insight() {
   return (
     <>
       <Banner
-        title='NEWS & TREND'
+        title='News & trends'
         catagory='Home'
-        subcatagory='News And Trends'
+        subcatagory='News & trends'
       />
 
       <div
@@ -420,7 +421,7 @@ export default function Insight() {
             speed={1200}
             autoplay={{ delay: 1000, disableOnInteraction: false }}
             spaceBetween={40}
-            loop={true}
+            loop={swiperCanLoop(data.length, 1)}
             pagination={{ clickable: true }}
             // modules={[ Autoplay]}
             className='h-auto'

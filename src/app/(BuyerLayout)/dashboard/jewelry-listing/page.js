@@ -389,23 +389,21 @@ function Page() {
   const submitConfirmation = async (e) => {
     const validationErrors = validateForm(formData, thumbnail, images)
 
-    // Skip evaluation date validation for edit flow (when id exists)
-    if (!id && !formData?.evaluationDateTime) {
+    if (id) {
+      finalizeSubmission()
+      return
+    }
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors)
+      setLoading(false)
+      handleScroll()
+      return
+    }
+    if (!formData?.evaluationDateTime) {
       toast.error('Evaluation Date and time is required!')
       return
     }
-
-    if (id) {
-      finalizeSubmission()
-    } else {
-      if (Object.keys(validationErrors).length === 0) {
-        setConfirmationModal(true)
-      } else {
-        setErrors(validationErrors)
-        setLoading(false)
-        handleScroll()
-      }
-    }
+    setConfirmationModal(true)
   }
 
   const handleSubmit = async (e) => {

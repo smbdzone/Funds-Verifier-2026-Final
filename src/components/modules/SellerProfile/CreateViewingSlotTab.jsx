@@ -17,7 +17,10 @@ import SlotTabDeleteModal from '@/components/Modals/SlotTabDeleteModal'
 import { useProfile } from '../../../context/UserContext'
 import customAxios from '../../../utils/apis/apis'
 
-export const CreateViewingSlotTab = () => {
+export const CreateViewingSlotTab = ({
+  panelTitle = 'Create Viewing Slots',
+  slotTypeLabel = 'viewing',
+}) => {
   const [message, setMessage] = useState({
     Full_name: '',
     Phone_Number: '',
@@ -227,7 +230,7 @@ export const CreateViewingSlotTab = () => {
         <div className='w-full'>
           <div className='primary-gradient flex items-center justify-between border border-black rounded py-3 px-4 overflow-x-auto'>
             <h2 className='text-white font-semibold sm:text-base text-sm lg:text-lg'>
-              Create Viewing Slots
+              {panelTitle}
             </h2>
           </div>
           <div className='w-full py-5 flex flex-col md:flex-row gap-5'>
@@ -322,8 +325,8 @@ export const CreateViewingSlotTab = () => {
                       value={time}
                       onClick={() => handleClickButton(time)}
                       className={`border py-2 flex items-center justify-center whitespace-nowrap md:px-6 px-3 text-xs sm:text-sm lg:text-base rounded-md w-full ${message.time.includes(time)
-                          ? 'primary-gradient text-prussianBlue/40 border-primaryBtn'
-                          : 'border-dune/10'
+                        ? 'primary-gradient text-prussianBlue/40 border-primaryBtn'
+                        : 'border-dune/10'
                         }`}
                     >
                       {time}
@@ -333,15 +336,15 @@ export const CreateViewingSlotTab = () => {
                 {message.time.length === 0 && (
                   <div className='text-amber-600 text-sm mt-2 p-2 bg-amber-50 border border-amber-200 rounded'>
                     <strong>Note:</strong> Please select at least one time slot
-                    to create viewing slots.
+                    to create {slotTypeLabel} slots.
                   </div>
                 )}
                 <div className='w-full mt-5 md:mt-10'>
                   <button
                     type='button'
                     className={`sm:text-base text-sm text-white rounded-lg py-2 px-3 md:px-5 ${isSaveDisabled()
-                        ? 'bg-gray-400 cursor-not-allowed'
-                        : 'primary-gradient hover:opacity-90'
+                      ? 'bg-gray-400 cursor-not-allowed'
+                      : 'primary-gradient hover:opacity-90'
                       }`}
                     onClick={handleSaveSlots}
                     disabled={isSaveDisabled()}
@@ -403,8 +406,8 @@ export const CreateViewingSlotTab = () => {
                         <span
                           key={timeSlot.uuid}
                           className={`${timeSlot.isBooked
-                              ? 'bg-black/50 cursor-not-allowed'
-                              : 'primary-gradient'
+                            ? 'bg-black/50 cursor-not-allowed'
+                            : 'primary-gradient'
                             } text-white py-2 sm:text-base text-sm lg:text-lg flex items-center justify-center px-2 rounded-lg`}
                         >
                           {timeSlot.time}

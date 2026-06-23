@@ -6,8 +6,9 @@ import AssetDetails from './purchaseComponents/AssetDetails'
 import TimelineActivity from './purchaseComponents/TimelineActivity'
 import ProgressTracking from './purchaseComponents/ProgressTracking'
 import EscrowAccount from './purchaseComponents/EscrowAccount'
+import customAxios from '@/utils/apis/apis'
 
-export const PurchaseTab = ({ userUUID, authToken }) => {
+export const PurchaseTab = ({ userUUID }) => {
   const [selectedTabIdx, setSelectedTabIdx] = useState(0)
   const [purchaseData, setPurchaseData] = useState([])
   const [loading, setLoading] = useState(true)
@@ -25,27 +26,22 @@ export const PurchaseTab = ({ userUUID, authToken }) => {
     const fetchData = async () => {
       setLoading(true)
       try {
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_BASE_URL}/purchases/tracker?userUUID=${userUUID}`,
-          {
-            headers: {
-              Authorization: `Bearer ${authToken}`,
-              'Content-Type': 'application/json',
-            },
-          }
-        )
+        const response = await customAxios.get('/purchases/tracker', {
+          params: { userUUID },
+        })
 
-        const data = await response.json()
-        setPurchaseData(data.payload || [])
+        setPurchaseData(response.data.payload || [])
       } catch (err) {
-        setError('Failed to fetch purchase data.')
+        setError(
+          err?.response?.data?.message || 'Failed to fetch purchase data.',
+        )
       } finally {
         setLoading(false)
       }
     }
 
-    if (userUUID && authToken) fetchData()
-  }, [userUUID, authToken])
+    if (userUUID) fetchData()
+  }, [userUUID])
 
   const renderComponent = () => {
     const props = { data: purchaseData }
@@ -74,9 +70,8 @@ export const PurchaseTab = ({ userUUID, authToken }) => {
           {({ open }) => (
             <>
               <Disclosure.Button
-                className={`w-full btn-gradient rounded py-3 px-7 gap-4 justify-between items-center flex ${
-                  open && 'mb-3'
-                }`}
+                className={`w-full btn-gradient rounded py-3 px-7 gap-4 justify-between items-center flex ${open && 'mb-3'
+                  }`}
               >
                 <span className='whitespace-nowrap sm:text-xl font-medium text-white'>
                   Purchase Tracker
@@ -98,18 +93,16 @@ export const PurchaseTab = ({ userUUID, authToken }) => {
                         key={tab.name}
                         onClick={() => setSelectedTabIdx(i)}
                         className={`text-sm flex flex-col items-center cursor-pointer custom-shadow xl:shadow-none px-4 py-2 rounded-full font-medium text-center
-                          ${
-                            i === selectedTabIdx
-                              ? 'bg-reefGold text-white xl:bg-transparent xl:text-black'
-                              : ''
+                          ${i === selectedTabIdx
+                            ? 'bg-reefGold text-white xl:bg-transparent xl:text-black'
+                            : ''
                           }
                         `}
                       >
                         <button
                           onClick={() => setSelectedTabIdx(i)}
-                          className={`h-[26px] border-gray w-[26px] rounded-full border-[6px] cursor-pointer xl:flex justify-center items-center hidden ${
-                            i === selectedTabIdx ? '!border-reefGold' : ''
-                          }`}
+                          className={`h-[26px] border-gray w-[26px] rounded-full border-[6px] cursor-pointer xl:flex justify-center items-center hidden ${i === selectedTabIdx ? '!border-reefGold' : ''
+                            }`}
                         >
                           <span className='bg-white h-[14px] w-[14px] rounded-full'></span>
                         </button>
@@ -123,7 +116,12 @@ export const PurchaseTab = ({ userUUID, authToken }) => {
                 <div className='mt-10'>
                   {loading && <p>Loading purchase data...</p>}
                   {error && <p className='text-red-600'>{error}</p>}
-                  {!loading && !error && renderComponent()}
+                  {!loading && !error && purchaseData.length === 0 && (
+                    <p className='text-center text-black/50 py-8'>
+                      No purchase records found.
+                    </p>
+                  )}
+                  {!loading && !error && purchaseData.length > 0 && renderComponent()}
                 </div>
               </Disclosure.Panel>
             </>

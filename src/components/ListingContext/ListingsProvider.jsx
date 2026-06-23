@@ -23,6 +23,7 @@ import {
   isDubaiCitySelection,
   LISTING_COUNTRY_UAE_LABEL,
   toUnitedArabEmiratesListingCountryName,
+  filterCountriesToUaeOnly,
 } from '@/libs/dummyLocationData'
 import {
   LISTING_IMAGE_MAX_BYTES,
@@ -191,15 +192,17 @@ const ListingsProvider = ({ children }) => {
         if (!list.length) {
           list = [...DUMMY_FALLBACK_COUNTRIES]
         }
-        list = list.map((c) =>
-          String(c.code || '').toUpperCase() === 'AE'
-            ? { ...c, country: LISTING_COUNTRY_UAE_LABEL }
-            : c,
-        )
+        list = filterCountriesToUaeOnly(list)
         setCountries(list)
+        if (list.length === 1) {
+          setSelectedCountry(list[0].country)
+          setCountryCode('AE')
+        }
       } catch (error) {
         console.error('Error fetching countries data:', error)
         setCountries([...DUMMY_FALLBACK_COUNTRIES])
+        setSelectedCountry(LISTING_COUNTRY_UAE_LABEL)
+        setCountryCode('AE')
       }
     }
 

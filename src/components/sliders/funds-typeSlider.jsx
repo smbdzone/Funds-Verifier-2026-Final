@@ -11,6 +11,7 @@ import "swiper/css/navigation";
 
 // import required modules
 import { Navigation } from "swiper/modules";
+import { swiperCanLoop } from "@/utils/swiperLoop";
 
 // Import your slide component
 import FundTypeSlide from "./slides/fund-type-slide";
@@ -82,7 +83,7 @@ export default function FundsTypeSlider() {
 
   return (
     <div className="container mx-auto my-5">
-      <Swiper modules={[Navigation]} loop={true} className="mySwiper">
+      <Swiper modules={[Navigation]} loop={swiperCanLoop(slides.length, 1)} className="mySwiper">
         {slides.map((slide, index) => (
           <SwiperSlide key={index}>
             <FundTypeSlide data={slide} />

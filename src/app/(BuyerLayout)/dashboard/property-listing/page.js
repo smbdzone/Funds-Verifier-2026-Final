@@ -224,21 +224,21 @@ const Page = () => {
 
   const submitConfirmation = async (e) => {
     const validationErrors = validateForm(formData)
+    if (id) {
+      finalizeSubmission()
+      return
+    }
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors)
+      setLoading(false)
+      handleScroll()
+      return
+    }
     if (!formData?.evaluationDateTime) {
       toast.error('Evaluation Date and time is required!')
       return
     }
-    if (id) {
-      finalizeSubmission()
-    } else {
-      if (Object.keys(validationErrors).length === 0) {
-        setConfirmationModal(true)
-      } else {
-        setErrors(validationErrors)
-        setLoading(false)
-        handleScroll()
-      }
-    }
+    setConfirmationModal(true)
   }
 
   const handleSubmit = async (e) => {
@@ -691,7 +691,7 @@ const Page = () => {
           )}
           <ToastContainer />
           <h2 className='text-dark-grey text-center xl:text-[40px] lg:text-4xl md:text-3xl sm:text-2xl xxs:text-xl font-medium leading-normal pt-[60px]'>
-            Final Steps to / Listing Your Asset
+            Final Steps to Listing Your Asset
           </h2>
           {/* assest type  */}
           <Listing

@@ -290,9 +290,6 @@ const NotificationDropdown = ({ className }) => {
                 Connecting...
               </span>
             )}
-            {!isConnected && !isConnecting && (
-              <span className='text-xs text-gray-400'>Offline</span>
-            )}
             {isConnected && (
               <span className='text-xs text-green-500'>●</span>
             )}

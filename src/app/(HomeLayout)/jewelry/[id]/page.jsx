@@ -52,7 +52,7 @@ export default async function page({ params }) {
                 <Link href='/'>Home</Link> /
                 <Link href='/jewelry'>Jewellery</Link> /
               </span>{' '}
-              {propertyInfo?.title}
+              Listing details
             </p>
           </div>
         </div>

@@ -439,7 +439,7 @@ const Page = () => {
       <section className='w-full flex flex-col items-center justify-center gap-10'>
         <ToastContainer />
         <h2 className='w-full text-dark-grey text-center xl:text-[40px] lg:text-4xl md:text-3xl sm:text-2xl xxs:text-xl font-medium leading-normal '>
-          Final Steps to / Listing Your Asset
+          Final Steps to Listing Your Asset
         </h2>
         <div className='w-full min-w-full shadow-neons bg-white rounded-[5px]'>
           <NewListing formData={formData} setFormData={setFormData} />
@@ -451,41 +451,41 @@ const Page = () => {
               propertyLeaseFields.map((field) => renderField(field))}
             {(formData.assetType === 'Property For Sale' ||
               formData.assetType === 'Property For Lease') && (
-              <>
-                {propertyFormFields.map((field) => renderField(field))}
-                {propertyCheckBoxFields.map((field) => (
-                  <div
-                    className='w-full  p-4 col-span-2 space-y-4'
-                    key={field.id}
-                  >
-                    <h2 className='text-dark-black text-xl font-medium'>
-                      {field.heading}
-                    </h2>
-                    <div className='grid grid-cols-6 gap-3 w-full'>
-                      {field?.checkboxes?.map((opt, index) => (
-                        <CheckboxInput
-                          key={index}
-                          label={opt}
-                          value={opt}
-                          checked={formData[field.name]?.includes(opt) || false}
-                          onChange={(e) => handleCheckboxChange(e, field.name)}
-                        />
-                      ))}
+                <>
+                  {propertyFormFields.map((field) => renderField(field))}
+                  {propertyCheckBoxFields.map((field) => (
+                    <div
+                      className='w-full  p-4 col-span-2 space-y-4'
+                      key={field.id}
+                    >
+                      <h2 className='text-dark-black text-xl font-medium'>
+                        {field.heading}
+                      </h2>
+                      <div className='grid grid-cols-6 gap-3 w-full'>
+                        {field?.checkboxes?.map((opt, index) => (
+                          <CheckboxInput
+                            key={index}
+                            label={opt}
+                            value={opt}
+                            checked={formData[field.name]?.includes(opt) || false}
+                            onChange={(e) => handleCheckboxChange(e, field.name)}
+                          />
+                        ))}
+                      </div>
                     </div>
+                  ))}
+                  <div className='grid col-span-2 place-items-center mt-[49px]'>
+                    <Image
+                      width={1500}
+                      quality={90}
+                      className='w-[98%]'
+                      height={700}
+                      src={propertyAd}
+                      alt='property'
+                    />
                   </div>
-                ))}
-                <div className='grid col-span-2 place-items-center mt-[49px]'>
-                  <Image
-                    width={1500}
-                    quality={90}
-                    className='w-[98%]'
-                    height={700}
-                    src={propertyAd}
-                    alt='property'
-                  />
-                </div>
-              </>
-            )}
+                </>
+              )}
             {formData.assetType === 'Car For Sale' && (
               <>
                 {carFormFields.map((field) => renderField(field))}

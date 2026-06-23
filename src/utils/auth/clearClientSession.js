@@ -1,5 +1,6 @@
 import axios from 'axios'
 import { deleteCookie } from 'cookies-next'
+import { getCsrfHeaders } from '@/utils/csrf'
 import { clearAccessToken } from './accessTokenStore'
 
 /** Client-side keys tied to auth or checkout — not user prefs like filterData. */
@@ -52,7 +53,11 @@ export async function clearServerAuthSession() {
   if (!baseURL) return
 
   try {
-    await axios.get(`${baseURL}/user/logout`, { withCredentials: true })
+    const csrfHeaders = await getCsrfHeaders()
+    await axios.get(`${baseURL}/user/logout`, {
+      withCredentials: true,
+      headers: csrfHeaders,
+    })
   } catch {
     /* expired or offline — client cleanup still runs */
   }

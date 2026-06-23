@@ -2,14 +2,12 @@
 
 import { PurchaseTab } from '../../../../components/modules/Profile/PurchaseTab'
 import { useProfile } from '@/context/UserContext'
-import { getTokenFromCookie } from '../../../../utils/helper'
 
 export default function ConfidentialityPurchaseWrapper() {
-  const { user } = useProfile()
-  const token =
-    typeof window !== 'undefined' ? getTokenFromCookie() : null
+  const { user, loading } = useProfile()
 
-  if (!user || !token) return <p>Loading tracker...</p>
+  if (loading) return <p>Loading tracker...</p>
+  if (!user) return <p>No purchase data found.</p>
 
-  return <PurchaseTab userUUID={user.uuid} authToken={token} />
+  return <PurchaseTab userUUID={user.uuid} />
 }

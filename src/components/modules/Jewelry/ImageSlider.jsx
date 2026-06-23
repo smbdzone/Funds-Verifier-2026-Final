@@ -7,6 +7,7 @@ import { IoIosArrowUp, IoIosArrowDown, IoIosPlay } from 'react-icons/io'
 // Import Swiper styles
 import 'swiper/css'
 import 'swiper/css/pagination'
+import { swiperCanLoop } from '@/utils/swiperLoop'
 
 const ImageSlider = ({ media = [] }) => {
   const swiperRef = useRef(null)
@@ -30,7 +31,7 @@ const ImageSlider = ({ media = [] }) => {
         <Swiper
           slidesPerView={1}
           spaceBetween={20}
-          loop={true}
+          loop={swiperCanLoop(media?.length || 0, 1)}
           modules={[Pagination, Autoplay]}
           autoplay={{
             delay: 10000,

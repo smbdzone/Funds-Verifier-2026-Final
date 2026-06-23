@@ -142,7 +142,7 @@ export const ProfileTab = () => {
                   }`}
               >
                 <span className='whitespace-nowrap sm:text-xl font-medium text-white'>
-                  Personal Informations
+                  Personal Information
                 </span>
                 <span className='flex-shrink-0'>
                   {open ? (

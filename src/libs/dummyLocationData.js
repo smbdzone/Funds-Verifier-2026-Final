@@ -32,12 +32,30 @@ export function toUnitedArabEmiratesListingCountryName(value) {
   return s
 }
 
-/** Used when GET /api/countries fails or returns an empty list. */
+/** Used when GET /api/countries fails or returns an empty list (listing country picker). */
 export const DUMMY_FALLBACK_COUNTRIES = [
   { country: LISTING_COUNTRY_UAE_LABEL, code: 'AE' },
-  { country: 'United States of America', code: 'US' },
-  { country: 'United Kingdom', code: 'GB' },
 ]
+
+/** Listing forms: only United Arab Emirates. */
+export function filterCountriesToUaeOnly(countries) {
+  if (!Array.isArray(countries) || !countries.length) {
+    return [...DUMMY_FALLBACK_COUNTRIES]
+  }
+  const uae = countries.filter(
+    (c) =>
+      String(c.code || '').toUpperCase() === 'AE' ||
+      isUnitedArabEmiratesListingCountry(c.country),
+  )
+  if (!uae.length) {
+    return [...DUMMY_FALLBACK_COUNTRIES]
+  }
+  return uae.map((c) => ({
+    ...c,
+    country: LISTING_COUNTRY_UAE_LABEL,
+    code: 'AE',
+  }))
+}
 
 /** Google Places-style predictions; `description` matches `Listing.jsx` city options. */
 export const DUMMY_UAE_CITY_PREDICTIONS = [

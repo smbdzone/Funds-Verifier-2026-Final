@@ -12,6 +12,7 @@ import planes from '@/assets/images/rectangle-82@2x.png'
 import jewellry from '@/assets/images/rectangle-83@2x.png'
 import arrow_right from '@/assets/vector1.svg'
 import Link from 'next/link'
+import { swiperCanLoop } from '@/utils/swiperLoop'
 
 function stripHtml(html) {
   if (!html || typeof html !== 'string') return ''
@@ -187,7 +188,7 @@ export default function NewsTrends() {
               ref={swiperRef}
               modules={[]}
               spaceBetween={20}
-              loop={true}
+              loop={swiperCanLoop(newsItems.length, 2)}
               breakpoints={{
                 0: { slidesPerView: 1 },
                 480: { slidesPerView: 2 },

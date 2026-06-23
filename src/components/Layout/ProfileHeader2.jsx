@@ -1,5 +1,6 @@
 'use client'
 import Image from 'next/image'
+import ProfileImage from '../Avator/ProfileImage'
 import React, { Fragment, useEffect, useState } from 'react'
 import { Transition, Menu } from '@headlessui/react'
 import { NotificationIcon, ProfileDropDownIcon } from '../Icons'
@@ -45,11 +46,11 @@ const ProfileHeader2 = () => {
           <Menu as='div' className='relative text-left z-100'>
             <Menu.Button className='btn !min-w-max flex items-center gap-2'>
               <figure className='cursor-pointer h-[40px] w-[40px] sm:h-[50px] sm:w-[50px] md:h-[57px] md:w-[57px]'>
-                <Image
-                  src={user?.profileImage || '/assets/images/dummy-profile.png'}
+                <ProfileImage
+                  src={user?.profileImage}
                   alt='Profile'
-                  height={30}
-                  width={30}
+                  height={57}
+                  width={57}
                   className='rounded-full h-full w-full object-contain'
                 />
               </figure>
@@ -90,16 +91,15 @@ const ProfileHeader2 = () => {
 
                           switchUserRole(newRole)
                         }}
-                        className={`px-3 py-2 cursor-pointer transition-all duration-200 ${
-                          isSwitchingRole ? 'opacity-50 cursor-not-allowed' : ''
-                        }
+                        className={`px-3 py-2 cursor-pointer transition-all duration-200 ${isSwitchingRole ? 'opacity-50 cursor-not-allowed' : ''
+                          }
     `}
                       >
                         {isSwitchingRole
                           ? 'Switching...'
                           : user.role === 'AssetHolder'
-                          ? 'Switch to Deal Hunter'
-                          : 'Switch to Asset Holder'}
+                            ? 'Switch to Deal Hunter'
+                            : 'Switch to Asset Holder'}
                       </li>
                     )}
 

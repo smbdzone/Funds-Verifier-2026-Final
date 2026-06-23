@@ -64,7 +64,7 @@ export const ElectronicTab = () => {
                 <button
                   className={`whitespace-nowrap py-4 cursor-pointersm:text-base text-sm lg:text-lg`}
                 >
-                  My Profile
+                  Electronic Consent
                 </button>
               </nav>
             </div>
@@ -81,8 +81,8 @@ export const ElectronicTab = () => {
               serving you!
             </p>
             {user?.electronicConsent?.consentTerms &&
-            user?.electronicConsent?.consentTaxTerms &&
-            user?.userState === "active" ? (
+              user?.electronicConsent?.consentTaxTerms &&
+              user?.userState === "active" ? (
               <p className="text-center md:text-base text-sm">
                 Hi
                 <span className="font-semibold ml-1">{user?.name}</span>, you’ve
@@ -129,7 +129,7 @@ export const ElectronicTab = () => {
                   </p>
                 </div>
                 <div className="flex justify-end gap-3 md:me-10 my-3">
-               
+
                   <button
                     onClick={handleSave}
                     className="flex text-white justify-center btn-gradient border-0 py-2 md:px-10 px-4 focus:outline-none text-lg font-medium rounded"

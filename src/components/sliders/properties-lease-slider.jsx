@@ -1,6 +1,6 @@
 'use client'
 import React, { useRef } from 'react'
-import { FaStar } from 'react-icons/fa'
+import { swiperCanLoop } from '@/utils/swiperLoop'
 import { useAppContext } from '@/context/AppContext'
 import { formatPriceUS, ucFirst } from '@/utils'
 import {
@@ -126,7 +126,7 @@ export default function PropertyLeaseSlider() {
           hashNavigation={{
             watchState: true,
           }}
-          loop={true}
+          loop={swiperCanLoop(propertiesForLease?.products?.length || 0, 3)}
           modules={[Pagination, Autoplay]}
           autoplay={{
             delay: 10000,

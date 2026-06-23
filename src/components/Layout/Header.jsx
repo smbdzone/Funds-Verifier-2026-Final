@@ -12,7 +12,7 @@ import { usePathname } from 'next/navigation'
 const Header = () => {
   const [isOpen, setIsOpen] = useState(false)
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const { user, logout } = useProfile()
+  const { user, logout, loading } = useProfile()
   const [isPending, startTransition] = useTransition()
   const path = usePathname()
 
@@ -32,6 +32,15 @@ const Header = () => {
     setIsOpen(false)
   }
 
+  const navLinkClass = (href) => {
+    const active =
+      href === '/'
+        ? path === '/'
+        : path === href || path?.startsWith(`${href}/`)
+    return `xl:text-lg cursor-pointer text-prussianBlue${active ? ' border-b border-prussianBlue font-medium' : ''
+      }`
+  }
+
   return (
     <header className='bg-white !p-2 sm:!p-3 theme-container flex justify-between items-center sm:gap-4'>
       <Link href='/'>
@@ -48,18 +57,14 @@ const Header = () => {
       <nav>
         <ul className='hidden xl:flex gap-6 items-start'>
           <Link href='/'>
-            <li className='xl:text-lg border-b border-prussianBlue text-prussianBlue cursor-pointer font-medium'>
-              Home
-            </li>
+            <li className={navLinkClass('/')}>Home</li>
           </Link>
           <Link href='/aboutus'>
-            <li className='xl:text-lg cursor-pointer text-prussianBlue'>
-              About
-            </li>
+            <li className={navLinkClass('/aboutus')}>About</li>
           </Link>
-          <li className='xl:text-lg text-prussianBlue cursor-pointer'>
-            How it works
-          </li>
+          <Link href='/aboutus'>
+            <li className={navLinkClass('/aboutus')}>How it works</li>
+          </Link>
           <li className='xl:text-lg text-prussianBlue cursor-pointer'>
             Auctions
             <span className='block text-reefGold text-sm font-medium'>
@@ -67,14 +72,10 @@ const Header = () => {
             </span>
           </li>
           <Link href='/blog'>
-            <li className='xl:text-lg cursor-pointer text-prussianBlue'>
-              News & trends
-            </li>
+            <li className={navLinkClass('/blog')}>News & trends</li>
           </Link>
           <Link href='/contact'>
-            <li className='xl:text-lg cursor-pointer text-prussianBlue'>
-              Contact
-            </li>
+            <li className={navLinkClass('/contact')}>Contact</li>
           </Link>
         </ul>
       </nav>
@@ -83,7 +84,7 @@ const Header = () => {
         {path === '/login' ? null : (
           <div className='xl:block hidden'>
             <ProfileDropDown
-              isloading={isPending}
+              isloading={isPending || loading}
               user={user}
               logout={logout}
             />
@@ -128,7 +129,7 @@ const Header = () => {
                       <ul className='gap-3 flex flex-col justify-center items-center mt-10'>
                         <li className='px-10'>
                           <ProfileDropDown
-                            isloading={isPending}
+                            isloading={isPending || loading}
                             user={user}
                             logout={logout}
                             color='text-white'
@@ -146,12 +147,14 @@ const Header = () => {
                         >
                           Home
                         </li>
-                        <li
-                          onClick={() => setIsOpen(false)}
-                          className='text-lg cursor-pointer text-white'
-                        >
-                          How it works
-                        </li>
+                        <Link href='/aboutus'>
+                          <li
+                            onClick={() => setIsOpen(false)}
+                            className='text-lg cursor-pointer text-white'
+                          >
+                            How it works
+                          </li>
+                        </Link>
                         <li
                           onClick={() => setIsOpen(false)}
                           className='text-lg cursor-pointer text-white'

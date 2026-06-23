@@ -17,7 +17,7 @@ import 'swiper/css'
 import 'swiper/css/navigation'
 import 'swiper/css/pagination'
 import '@/components/modules/style.css'
-import { formatPriceUS } from '@/utils'
+import { swiperCanLoop } from '@/utils/swiperLoop'
 import {
   getListingCarouselItems,
   getListingDocumentSrc,
@@ -59,6 +59,7 @@ const ProductCard = ({
   useState(() => {
     if (type === 'property') setShowROI(true)
   })
+  const carouselSlides = getListingCarouselItems(item)
   const hasAdditionalContent =
     getListingDocumentSrc(technicalReport) &&
     getListingDocumentSrc(evaluationCertificate) &&
@@ -85,7 +86,7 @@ const ProductCard = ({
           spaceBetween={0}
           slidesPerView={1}
           hashNavigation={{ watchState: true }}
-          loop={true}
+          loop={swiperCanLoop(carouselSlides.length, 1)}
           pagination={{ clickable: true }}
           scrollbar={{ draggable: true }}
           style={{ maxWidth: '312px', width: '100%', height: '220px' }}
@@ -94,7 +95,7 @@ const ProductCard = ({
             swiperRefs.current[item.uuid] = swiper
           }}
         >
-          {getListingCarouselItems(item).map((slide, index) => (
+          {carouselSlides.map((slide, index) => (
             <SwiperSlide key={`slide-${index}-${slide.type}`}>
               {slide.type === 'video' ? (
                 <video

@@ -61,7 +61,7 @@ export default async function Page({ params }) {
               <span className="text-[#9b9b9b7c]">
                 <Link href="/"> Home </Link> / <Link href="/car">Cars</Link> /
               </span>
-              {carInfo?.title}
+              Listing details
             </p>
           </div>
         </div>

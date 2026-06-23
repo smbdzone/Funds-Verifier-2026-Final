@@ -1,8 +1,9 @@
 import { CloseDisclosure, EyeIcon, OpenDisclosure } from '@/components/Icons'
 import { Disclosure } from '@headlessui/react'
 import React, { useState, useEffect } from 'react'
+import customAxios from '@/utils/apis/apis'
 
-export const SaleTab = ({ userUUID, authToken }) => {
+export const SaleTab = ({ userUUID }) => {
   const [selectedTabIdx, setSelectedTabIdx] = useState(0)
   const [salesData, setSalesData] = useState([])
   const [loading, setLoading] = useState(true)
@@ -13,7 +14,7 @@ export const SaleTab = ({ userUUID, authToken }) => {
     { name: 'All Items', type: 'all' },
     { name: 'Properties', type: 'property' },
     { name: 'Cars', type: 'car' },
-    { name: 'Jewelry', type: 'jewelry' },
+    { name: 'Jewellery', type: 'jewelry' },
     { name: 'Boats', type: 'boat' },
   ]
 
@@ -24,35 +25,27 @@ export const SaleTab = ({ userUUID, authToken }) => {
         setLoading(true)
         setError(null)
 
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_BASE_URL}/sales/tracker?userUUID=${userUUID}`,
-          {
-            method: 'GET',
-            headers: {
-              Authorization: `Bearer ${authToken}`,
-              'Content-Type': 'application/json',
-            },
-          }
-        )
+        const response = await customAxios.get('/sales/tracker', {
+          params: { userUUID },
+        })
 
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`)
-        }
-
-        const data = await response.json()
-        setSalesData(data.payload || [])
+        setSalesData(response.data.payload || [])
       } catch (err) {
         console.error('Error fetching sales data:', err)
-        setError(err.message || 'Failed to fetch sales data')
+        setError(
+          err?.response?.data?.message ||
+          err.message ||
+          'Failed to fetch sales data',
+        )
       } finally {
         setLoading(false)
       }
     }
 
-    if (userUUID && authToken) {
+    if (userUUID) {
       fetchSalesData()
     }
-  }, [userUUID, authToken])
+  }, [userUUID])
 
   // Filter data based on selected tab
   const getFilteredData = () => {
@@ -185,9 +178,8 @@ export const SaleTab = ({ userUUID, authToken }) => {
           {({ open }) => (
             <>
               <Disclosure.Button
-                className={`w-full primary-gradient rounded py-3 px-7 gap-4 justify-between items-center flex ${
-                  open && 'mb-3'
-                }`}
+                className={`w-full primary-gradient rounded py-3 px-7 gap-4 justify-between items-center flex ${open && 'mb-3'
+                  }`}
               >
                 <span className='whitespace-nowrap sm:text-xl font-medium text-white'>
                   Sale Tracker
@@ -211,19 +203,17 @@ export const SaleTab = ({ userUUID, authToken }) => {
                         onClick={() => setSelectedTabIdx(i)}
                         key={tab.name}
                         className={`
-                        ${
-                          i === selectedTabIdx
+                        ${i === selectedTabIdx
                             ? 'bg-prussianBlue text-white xl:bg-transparent xl:text-black'
                             : ''
-                        }
+                          }
                         text-sm flex flex-col items-center cursor-pointer custom-shadow xl:shadow-none px-4 py-2 rounded-full font-medium text-center`}
                       >
                         <button
                           onClick={() => setSelectedTabIdx(i)}
                           className={`
-                          ${
-                            i === selectedTabIdx ? '!border-prussianBlue' : ''
-                          } h-[26px] w-[26px] rounded-full border-gray border-[6px] cursor-pointer xl:flex justify-center items-center hidden `}
+                          ${i === selectedTabIdx ? '!border-prussianBlue' : ''
+                            } h-[26px] w-[26px] rounded-full border-gray border-[6px] cursor-pointer xl:flex justify-center items-center hidden `}
                         >
                           <span className='bg-white h-[14px] w-[14px] rounded-full'></span>
                         </button>
@@ -233,8 +223,8 @@ export const SaleTab = ({ userUUID, authToken }) => {
                           {tab.type === 'all'
                             ? salesData.length
                             : salesData.filter(
-                                (item) => item.itemType === tab.type
-                              ).length}
+                              (item) => item.itemType === tab.type
+                            ).length}
                           )
                         </span>
                       </div>

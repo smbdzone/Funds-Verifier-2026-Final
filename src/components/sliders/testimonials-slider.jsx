@@ -8,6 +8,7 @@ import "swiper/css/pagination";
 import { HashNavigation, Navigation, Pagination } from "swiper/modules";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { motion } from "framer-motion";
+import { swiperCanLoop } from "@/utils/swiperLoop";
 
 // Fallback images and icons
 import man from "@/assets/images/ellipse-113@2x.png";
@@ -114,14 +115,27 @@ export default function Testimonials() {
     if (isAnimating) return;
     setIsAnimating(true);
     setSelectedIndex(index);
-    testimonialSwiperRef.current?.swiper?.slideToLoop(index);
-    valuesSwiperRef.current?.swiper?.slideToLoop(index);
+    const thumbSwiper = testimonialSwiperRef.current?.swiper;
+    const valuesSwiper = valuesSwiperRef.current?.swiper;
+    if (thumbSwiper?.params?.loop) {
+      thumbSwiper.slideToLoop(index);
+    } else {
+      thumbSwiper?.slideTo(index);
+    }
+    if (valuesSwiper?.params?.loop) {
+      valuesSwiper.slideToLoop(index);
+    } else {
+      valuesSwiper?.slideTo(index);
+    }
     setTimeout(() => setIsAnimating(false), 500);
   };
 
   if (loading) {
     return <div className="text-center text-white py-20">Loading testimonials...</div>;
   }
+
+  const thumbLoop = swiperCanLoop(testimonials.length, 3);
+  const contentLoop = swiperCanLoop(testimonials.length, 1);
 
   return (
     <div className="w-full valuesBg xl:px-20 py-3 sm:pt-20">
@@ -150,7 +164,7 @@ export default function Testimonials() {
               className="mySwiper testmonialSlider testimonials-thumb-swiper w-full h-full"
               direction={direction}
               slidesPerView={3}
-              loop={true}
+              loop={thumbLoop}
               breakpoints={{
                 375: { slidesPerView: 1, spaceBetween: 10 },
                 768: { slidesPerView: 3, spaceBetween: 12 },
@@ -214,7 +228,7 @@ export default function Testimonials() {
             className="mySwiper testmonialSlider w-full h-full"
             direction="vertical"
             slidesPerView={1}
-            loop={true}
+            loop={contentLoop}
             initialSlide={selectedIndex}
             breakpoints={{
               1024: { direction: "horizontal" },

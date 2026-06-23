@@ -10,7 +10,7 @@ import {
   PrimarySale,
 } from '@/components/Icons'
 import { FaStreetView } from 'react-icons/fa6'
-import Image from 'next/image'
+import ProfileImage from '@/components/Avator/ProfileImage'
 import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -108,8 +108,8 @@ const SellerProfileSidebar = () => {
         <div className='px-4 xl:px-0'>
           <div className='custom-shadow flex justify-center items-center flex-col py-6 lg:rounded'>
             <figure>
-              <Image
-                src={user?.profileImage || '/assets/images/dummy-profile.png'}
+              <ProfileImage
+                src={user?.profileImage}
                 alt='Profile'
                 height={184}
                 width={184}
@@ -135,11 +135,10 @@ const SellerProfileSidebar = () => {
                 tab.dropdown ? (
                   <div key={tab.name + i} className='relative'>
                     <div
-                      className={`${
-                        tab.link === path
+                      className={`${tab.link === path
                           ? 'bg-whiteSmoke font-medium focus:outline-none'
                           : 'border-transparent'
-                      } whitespace-nowrap flex gap-3 hover:bg-whiteSmoke hover:text-prussianBlue items-center py-2 px-8 cursor-pointer sm:text-base text-sm lg:text-xl`}
+                        } whitespace-nowrap flex gap-3 hover:bg-whiteSmoke hover:text-prussianBlue items-center py-2 px-8 cursor-pointer sm:text-base text-sm lg:text-xl`}
                       onClick={() => handleDropdownToggle(i - 1)} // Adjust index for dropdown tracking
                     >
                       {tab.icon}
@@ -178,11 +177,10 @@ const SellerProfileSidebar = () => {
                       <button
                         type='button'
                         key={tab.name}
-                        className={`${
-                          tab.link === path
+                        className={`${tab.link === path
                             ? 'bg-whiteSmoke text-prussianBlue w-full font-medium focus:outline-none'
                             : 'border-transparent'
-                        } whitespace-nowrap w-full flex gap-3 hover:bg-whiteSmoke hover:text-prussianBlue items-center py-2 px-8 cursor-pointer sm:text-xl`}
+                          } whitespace-nowrap w-full flex gap-3 hover:bg-whiteSmoke hover:text-prussianBlue items-center py-2 px-8 cursor-pointer sm:text-xl`}
                       >
                         {tab.icon}
                         {tab.name}
@@ -199,9 +197,8 @@ const SellerProfileSidebar = () => {
                         if (isSwitchingRole) return
                         await switchUserRole('DealHunter')
                       }}
-                      className={`pl-10 text-lg py-2 flex items-center gap-2 cursor-pointer ${
-                        isSwitchingRole ? 'opacity-50 cursor-not-allowed' : ''
-                      }`}
+                      className={`pl-10 text-lg py-2 flex items-center gap-2 cursor-pointer ${isSwitchingRole ? 'opacity-50 cursor-not-allowed' : ''
+                        }`}
                     >
                       <PrimaryProfile />
                       {isSwitchingRole
@@ -216,9 +213,8 @@ const SellerProfileSidebar = () => {
                           if (isSwitchingRole) return
                           await switchUserRole('AssetHolder')
                         }}
-                        className={`pl-10 text-lg py-2 flex items-center gap-2 cursor-pointer ${
-                          isSwitchingRole ? 'opacity-50 cursor-not-allowed' : ''
-                        }`}
+                        className={`pl-10 text-lg py-2 flex items-center gap-2 cursor-pointer ${isSwitchingRole ? 'opacity-50 cursor-not-allowed' : ''
+                          }`}
                       >
                         <PrimaryProfile />
                         {isSwitchingRole

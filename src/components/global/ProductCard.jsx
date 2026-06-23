@@ -17,6 +17,7 @@ import 'swiper/css/navigation'
 import 'swiper/css/pagination'
 import '@/components/modules/style.css'
 import { formatPriceUS } from '@/utils'
+import { swiperCanLoop } from '@/utils/swiperLoop'
 import Open3dModal from '../3dModal/Open3dModal'
 import { formatNumberWithCommas } from '@/utils/global-functions/global'
 import {
@@ -67,6 +68,8 @@ const ProductCard = ({
 
   const { badge: premiumBadge } = getListingPremiumDisplay(item)
 
+  const carouselSlides = getListingCarouselItems(item)
+
   return (
     <div
       key={item.uuid}
@@ -94,7 +97,7 @@ const ProductCard = ({
           spaceBetween={0}
           slidesPerView={1}
           hashNavigation={{ watchState: true }}
-          loop={true}
+          loop={swiperCanLoop(carouselSlides.length, 1)}
           pagination={{ clickable: true }}
           scrollbar={{ draggable: true }}
           style={{ maxWidth: '312px', width: '100%', height: '220px' }}
@@ -103,7 +106,7 @@ const ProductCard = ({
             swiperRefs.current[item.uuid] = swiper
           }}
         >
-          {getListingCarouselItems(item).map((slide, index) => (
+          {carouselSlides.map((slide, index) => (
             <SwiperSlide key={`slide-${index}-${slide.type}`}>
               {slide.type === 'video' ? (
                 <video

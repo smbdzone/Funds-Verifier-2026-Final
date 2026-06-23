@@ -17,6 +17,7 @@ import {
 } from '../Icons'
 import { IoCheckmarkSharp } from 'react-icons/io5'
 import { formatPriceUS } from '@/utils'
+import { formatColorList } from '@/utils/global-functions/global'
 import Modal2 from '../product-modal/modal2'
 import Modal from '../product-modal/modal'
 import Open3dModal from '../3dModal/Open3dModal'
@@ -201,14 +202,7 @@ export default function ProductView({ data }) {
 
               <div className='flex flex-wrap items-center text-[9px] sm:text-xs md:text-sm'>
                 <GoDotFill className='flex mr-2 text-gold-800' />
-                Interior Color:{' '}
-                {data?.interiorColor
-                  ?.filter((col) => col)
-                  ?.map((col, i) => (
-                    <span key={col + i} className='mx-1'>
-                      {col},
-                    </span>
-                  ))}
+                Interior Color: {formatColorList(data?.interiorColor)}
               </div>
             </div>
             <div className='w-full flex flex-wrap gap-x-4 my-2'>
@@ -328,10 +322,12 @@ export default function ProductView({ data }) {
                 </div>
               </div>
             </div>
-            <div>
-              <p className='font-medium md:text-lg text-base'>VIN Number</p>
-              <p>{data?.VIN}</p>
-            </div>
+            {data?.VIN ? (
+              <div>
+                <p className='font-medium md:text-lg text-base'>VIN Number</p>
+                <p>{data.VIN}</p>
+              </div>
+            ) : null}
           </div>
         </div>
       </div>

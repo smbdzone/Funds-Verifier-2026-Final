@@ -10,6 +10,10 @@ import {
   jeweleryCategories,
 } from "@/constants/listing-data";
 import { normalizeCountriesResponse } from "@/libs/normalizeCountriesResponse";
+import {
+  filterCountriesToUaeOnly,
+  LISTING_COUNTRY_UAE_LABEL,
+} from "@/libs/dummyLocationData";
 
 const NewListing = ({ formData, setFormData }) => {
   //Static Data
@@ -60,7 +64,7 @@ const NewListing = ({ formData, setFormData }) => {
           next: { revalidate: 10 },
         });
         const data = await response.json();
-        setCountries(normalizeCountriesResponse(data));
+        setCountries(filterCountriesToUaeOnly(normalizeCountriesResponse(data)));
       } catch (error) {
         console.error("Error fetching countries data:", error);
       }

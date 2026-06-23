@@ -1,5 +1,6 @@
 'use client'
 import Image from 'next/image'
+import ProfileImage from '../Avator/ProfileImage'
 import React, { Fragment, useEffect, useState } from 'react'
 import { Transition, Menu } from '@headlessui/react'
 import { NotificationIcon, ProfileDropDownIcon } from '../Icons'
@@ -53,8 +54,8 @@ const ProfileHeader = () => {
           <Menu as='div' className='relative text-left z-100'>
             <Menu.Button className='btn !min-w-max flex items-center gap-2'>
               <figure>
-                <Image
-                  src={user?.profileImage || '/assets/images/dummy-profile.png'}
+                <ProfileImage
+                  src={user?.profileImage}
                   alt='Profile'
                   height={57}
                   width={57}
@@ -104,8 +105,8 @@ const ProfileHeader = () => {
                         {isSwitchingRole
                           ? 'Switching...'
                           : user.role === 'AssetHolder'
-                          ? 'Switch to Deal Hunter'
-                          : 'Switch to Asset Holder'}
+                            ? 'Switch to Deal Hunter'
+                            : 'Switch to Asset Holder'}
                       </li>
                     )}
 
