@@ -12,6 +12,11 @@ import {
   endSession,
   isLoginPath,
 } from '../utils/auth/clearClientSession'
+import {
+  clearSessionIdle,
+  isSessionIdleExpired,
+  touchSessionIdle,
+} from '../utils/auth/sessionIdle'
 import { getRoleHomeRoute } from '../utils/auth/roleHome'
 import { getUserDisplayName } from '../utils/auth/userDisplayName'
 import {
@@ -71,6 +76,7 @@ export const UserProvider = ({ children }) => {
   const applyUserFromLogin = (userData) => {
     if (!userData) return
     applyUser(userData)
+    touchSessionIdle(userData.uuid)
     if (userData.accessToken) {
       setAccessToken(userData.accessToken)
       setAccessTokenState(userData.accessToken)
@@ -78,11 +84,12 @@ export const UserProvider = ({ children }) => {
   }
 
   // Load user on app start: /me via HttpOnly accessToken cookie first, refresh only if needed.
-  const loadUserFromToken = async () => {
+  const loadUserFromToken = async ({ freshLogin = false } = {}) => {
     const bootstrapToken =
       typeof window !== 'undefined'
         ? sessionStorage.getItem(POST_LOGIN_BOOTSTRAP_KEY)
         : null
+    const hadBootstrap = Boolean(bootstrapToken)
     if (bootstrapToken) {
       sessionStorage.removeItem(POST_LOGIN_BOOTSTRAP_KEY)
       setAccessToken(bootstrapToken)
@@ -105,7 +112,32 @@ export const UserProvider = ({ children }) => {
         })
       }
 
-      applyUser(response.data)
+      const userData = response.data
+
+      if (isSessionIdleExpired(userData.uuid)) {
+        await endSession({ callBackend: true })
+        setUser(null)
+        setIsAuthenticated(false)
+        setAccessTokenState(null)
+        clearAccessToken()
+        clearSessionIdle()
+        toast.info(
+          'Your session ended after 10 minutes of inactivity. Please sign in again.',
+          { autoClose: 5000 },
+        )
+        if (
+          typeof window !== 'undefined' &&
+          !isLoginPath(window.location.pathname)
+        ) {
+          window.location.replace('/login')
+        }
+        return
+      }
+
+      applyUser(userData)
+      if (freshLogin || hadBootstrap) {
+        touchSessionIdle(userData.uuid)
+      }
       if (response.data?.accessToken) {
         setAccessToken(response.data.accessToken)
         setAccessTokenState(response.data.accessToken)
@@ -152,7 +184,7 @@ export const UserProvider = ({ children }) => {
         setAccessToken(token)
         setAccessTokenState(token)
       }
-      await loadUserFromToken() // Refresh user info after login
+      await loadUserFromToken({ freshLogin: true })
     } catch (error) {
       console.error('Login failed:', error)
     }
@@ -160,6 +192,7 @@ export const UserProvider = ({ children }) => {
 
   const logout = async () => {
     try {
+      clearSessionIdle()
       await endSession({ callBackend: true })
 
       setUser(null)
@@ -174,6 +207,7 @@ export const UserProvider = ({ children }) => {
       }
     } catch (err) {
       console.error('Logout failed:', err)
+      clearSessionIdle()
       clearClientAuthStorage()
       setUser(null)
       setIsAuthenticated(false)

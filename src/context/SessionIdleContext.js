@@ -9,12 +9,13 @@ import React, {
   useState,
 } from 'react'
 import { toast } from 'react-toastify'
+import {
+  getSessionIdleRemainingMs,
+  isSessionIdleExpired,
+  SESSION_IDLE_TIMEOUT_MS,
+  touchSessionIdle,
+} from '@/utils/auth/sessionIdle'
 import { UserContext } from './UserContext'
-
-const IDLE_TIMEOUT_MS = 10 * 60 * 1000
-const RESET_DELAY_MS = 2500
-const DEADLINE_KEY = 'fv.session.idleDeadline'
-const EXPIRED_KEY = 'fv.session.expired'
 
 export function formatSessionIdleTime(ms) {
   const totalSec = Math.max(0, Math.ceil(ms / 1000))
@@ -23,181 +24,126 @@ export function formatSessionIdleTime(ms) {
   return `${m}:${String(s).padStart(2, '0')}`
 }
 
+const ACTIVITY_THROTTLE_MS = 30 * 1000
+
 const SessionIdleContext = createContext(null)
 
 export function SessionIdleProvider({ children }) {
-  const { isAuthenticated, logout, loading } = useContext(UserContext)
-  const [remainingMs, setRemainingMs] = useState(IDLE_TIMEOUT_MS)
-  const [isReturning, setIsReturning] = useState(false)
-  const returningRef = useRef(false)
-  const resetTimerRef = useRef(null)
+  const { isAuthenticated, logout, loading, user } = useContext(UserContext)
+  const [remainingMs, setRemainingMs] = useState(SESSION_IDLE_TIMEOUT_MS)
   const expiredRef = useRef(false)
-
-  const clearIdleStorage = useCallback(() => {
-    if (typeof window === 'undefined') return
-    localStorage.removeItem(DEADLINE_KEY)
-    localStorage.removeItem(EXPIRED_KEY)
-  }, [])
-
-  const getDeadline = useCallback(() => {
-    if (typeof window === 'undefined') return 0
-    return Number(localStorage.getItem(DEADLINE_KEY) || 0)
-  }, [])
-
-  const ensureDeadline = useCallback(() => {
-    if (typeof window === 'undefined') return
-    if (!localStorage.getItem(DEADLINE_KEY)) {
-      localStorage.setItem(
-        DEADLINE_KEY,
-        String(Date.now() + IDLE_TIMEOUT_MS),
-      )
-    }
-  }, [])
-
-  const getRemainingFromStorage = useCallback(() => {
-    const deadline = getDeadline()
-    if (!deadline) return IDLE_TIMEOUT_MS
-    return Math.max(0, deadline - Date.now())
-  }, [getDeadline])
+  const lastActivityRef = useRef(0)
+  const userUuid = user?.uuid
 
   const handleSessionExpired = useCallback(async () => {
     if (expiredRef.current || !isAuthenticated) return
     expiredRef.current = true
-    clearIdleStorage()
     toast.info(
-      'Your session ended after 10 minutes away. Please sign in again.',
+      'Your session ended after 10 minutes of inactivity. Please sign in again.',
       { autoClose: 5000 },
     )
     await logout()
-  }, [clearIdleStorage, isAuthenticated, logout])
+  }, [isAuthenticated, logout])
 
-  const scheduleResetAfterReturn = useCallback(() => {
-    returningRef.current = true
-    setIsReturning(true)
-    if (resetTimerRef.current) clearTimeout(resetTimerRef.current)
-    resetTimerRef.current = setTimeout(() => {
-      clearIdleStorage()
-      setRemainingMs(IDLE_TIMEOUT_MS)
-      setIsReturning(false)
-      returningRef.current = false
-    }, RESET_DELAY_MS)
-  }, [clearIdleStorage])
-
-  const handleVisible = useCallback(() => {
-    if (typeof window === 'undefined') return
-
-    if (localStorage.getItem(EXPIRED_KEY) === '1') {
-      handleSessionExpired()
-      return
-    }
-
-    const deadline = getDeadline()
-    if (!deadline) {
-      setRemainingMs(IDLE_TIMEOUT_MS)
-      return
-    }
-
-    const remaining = deadline - Date.now()
-    if (remaining <= 0) {
-      localStorage.setItem(EXPIRED_KEY, '1')
-      handleSessionExpired()
-      return
-    }
-
+  const syncRemaining = useCallback(() => {
+    const remaining = getSessionIdleRemainingMs(userUuid)
     setRemainingMs(remaining)
-    scheduleResetAfterReturn()
-  }, [getDeadline, handleSessionExpired, scheduleResetAfterReturn])
+    return remaining
+  }, [userUuid])
 
-  const handleHidden = useCallback(() => {
-    ensureDeadline()
-    setRemainingMs(getRemainingFromStorage())
-  }, [ensureDeadline, getRemainingFromStorage])
+  const checkExpiry = useCallback(() => {
+    if (!userUuid) return false
+    const remaining = syncRemaining()
+    if (isSessionIdleExpired(userUuid) || remaining <= 0) {
+      handleSessionExpired()
+      return true
+    }
+    return false
+  }, [handleSessionExpired, syncRemaining, userUuid])
+
+  const recordActivity = useCallback(() => {
+    if (!isAuthenticated || loading || expiredRef.current || !userUuid) return
+    const now = Date.now()
+    if (now - lastActivityRef.current < ACTIVITY_THROTTLE_MS) return
+    lastActivityRef.current = now
+    touchSessionIdle(userUuid)
+    setRemainingMs(SESSION_IDLE_TIMEOUT_MS)
+  }, [isAuthenticated, loading, userUuid])
 
   useEffect(() => {
-    if (!isAuthenticated || loading) {
-      clearIdleStorage()
-      setRemainingMs(IDLE_TIMEOUT_MS)
-      setIsReturning(false)
-      returningRef.current = false
-      expiredRef.current = false
+    if (!isAuthenticated || loading || !userUuid) {
+      if (!isAuthenticated) {
+        expiredRef.current = false
+        lastActivityRef.current = 0
+      }
       return
     }
 
     expiredRef.current = false
+    lastActivityRef.current = Date.now()
 
-    const onVisibilityChange = () => {
-      if (document.visibilityState === 'hidden') {
-        handleHidden()
-      } else {
-        handleVisible()
-      }
+    if (checkExpiry()) return
+
+    const activityEvents = [
+      'mousedown',
+      'keydown',
+      'scroll',
+      'touchstart',
+      'click',
+    ]
+
+    const onActivity = () => recordActivity()
+
+    const onWake = () => {
+      checkExpiry()
     }
 
-    const onStorage = (event) => {
-      if (event.key === EXPIRED_KEY && event.newValue === '1') {
-        handleSessionExpired()
-      }
+    const onPageHide = () => {
+      touchSessionIdle(userUuid)
     }
 
-    const tick = () => {
-      if (localStorage.getItem(EXPIRED_KEY) === '1') {
-        handleSessionExpired()
-        return
-      }
+    activityEvents.forEach((event) =>
+      window.addEventListener(event, onActivity, { passive: true }),
+    )
+    document.addEventListener('visibilitychange', onWake)
+    window.addEventListener('pageshow', onWake)
+    window.addEventListener('focus', onWake)
+    window.addEventListener('pagehide', onPageHide)
+    window.addEventListener('beforeunload', onPageHide)
 
-      if (document.visibilityState === 'visible') {
-        if (returningRef.current) {
-          setRemainingMs(getRemainingFromStorage())
-          return
-        }
-        clearIdleStorage()
-        setRemainingMs(IDLE_TIMEOUT_MS)
-        return
-      }
+    syncRemaining()
 
-      ensureDeadline()
-      const remaining = getRemainingFromStorage()
-      setRemainingMs(remaining)
-      if (remaining <= 0) {
-        localStorage.setItem(EXPIRED_KEY, '1')
-        handleSessionExpired()
-      }
-    }
-
-    if (document.visibilityState === 'visible') {
-      setRemainingMs(IDLE_TIMEOUT_MS)
-    } else {
-      handleHidden()
-    }
-
-    document.addEventListener('visibilitychange', onVisibilityChange)
-    window.addEventListener('storage', onStorage)
-    const intervalId = window.setInterval(tick, 1000)
+    const intervalId = window.setInterval(() => {
+      checkExpiry()
+    }, 1000)
 
     return () => {
-      document.removeEventListener('visibilitychange', onVisibilityChange)
-      window.removeEventListener('storage', onStorage)
+      activityEvents.forEach((event) =>
+        window.removeEventListener(event, onActivity),
+      )
+      document.removeEventListener('visibilitychange', onWake)
+      window.removeEventListener('pageshow', onWake)
+      window.removeEventListener('focus', onWake)
+      window.removeEventListener('pagehide', onPageHide)
+      window.removeEventListener('beforeunload', onPageHide)
       window.clearInterval(intervalId)
-      if (resetTimerRef.current) clearTimeout(resetTimerRef.current)
     }
   }, [
-    clearIdleStorage,
-    ensureDeadline,
-    getRemainingFromStorage,
-    handleHidden,
-    handleSessionExpired,
-    handleVisible,
+    checkExpiry,
     isAuthenticated,
     loading,
+    recordActivity,
+    syncRemaining,
+    userUuid,
   ])
 
   return (
     <SessionIdleContext.Provider
       value={{
         remainingMs,
-        isReturning,
+        isReturning: false,
         isActive: isAuthenticated && !loading,
-        idleTimeoutMs: IDLE_TIMEOUT_MS,
+        idleTimeoutMs: SESSION_IDLE_TIMEOUT_MS,
       }}
     >
       {children}

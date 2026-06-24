@@ -5,7 +5,11 @@ function page() {
   return (
     <div>
       <Suspense fallback={<p className="text-center">Loading...</p>}>
-        <CreateViewingSlotTab />
+        <CreateViewingSlotTab
+          panelTitle="Create Service Slots"
+          slotTypeLabel="service"
+          slotCategory="service"
+        />
       </Suspense>
     </div>
   );

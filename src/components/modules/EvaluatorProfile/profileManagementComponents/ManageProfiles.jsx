@@ -1,15 +1,32 @@
 import { CloseDisclosure, OpenDisclosure } from '@/components/Icons'
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { Disclosure } from '@headlessui/react'
 import Link from 'next/link'
-import axios from 'axios'
 import { toast } from 'react-toastify'
 import customAxios from '../../../../utils/apis/apis'
-import { getCookie } from 'cookies-next'
+import EvaluationActionDropdown, {
+  evaluationMenuItemClass,
+} from '../requestCompoenets/EvaluationActionDropdown'
 
 const ManageEvaluators = () => {
   const [data, setData] = useState()
-  const [show, setShow] = useState(-1)
+  const [openMenuId, setOpenMenuId] = useState(null)
+  const menuAnchorRef = useRef(null)
+
+  const closeActionMenu = () => {
+    setOpenMenuId(null)
+    menuAnchorRef.current = null
+  }
+
+  const toggleActionMenu = (event, id) => {
+    event.stopPropagation()
+    if (openMenuId === id) {
+      closeActionMenu()
+      return
+    }
+    menuAnchorRef.current = event.currentTarget
+    setOpenMenuId(id)
+  }
 
   const getEvaluators = async () => {
     try {
@@ -51,7 +68,7 @@ const ManageEvaluators = () => {
       toast.error('Failed to fetch evaluators')
     }
   }
-  
+
 
   useEffect(() => {
     getEvaluators()
@@ -59,50 +76,35 @@ const ManageEvaluators = () => {
 
   const deleteEvaluator = async (id) => {
     try {
-      const res = await customAxios.delete(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/user/${id}`
-      )
+      const res = await customAxios.delete(`/user/${id}`)
       if (res?.status === 200) {
         toast.success(`${res?.data?.message}`)
         getEvaluators()
       }
     } catch (error) {
       console.log(error)
-      toast.error(`Error deleting user`)
+      toast.error(
+        error?.response?.data?.message || 'Error deleting sub-evaluator',
+      )
     }
   }
 
   const updateStatus = async (item) => {
-    if (item?.userState === 'active') {
-      try {
-        const res = await customAxios.put(
-          `${process.env.NEXT_PUBLIC_BASE_URL}/user/${item.uuid}`,
-          { userState: 'inactive' }
-        )
+    const nextState = item?.userState === 'active' ? 'inactive' : 'active'
+    try {
+      const res = await customAxios.put(`/user/${item.uuid}`, {
+        userState: nextState,
+      })
 
-        if (res?.status === 200) {
-          getEvaluators()
-          toast.success(`${res?.data?.message}`)
-        }
-      } catch (error) {
-        toast.error(`Error Changing Status`)
-        console.log(error)
+      if (res?.status === 200) {
+        getEvaluators()
+        toast.success(`${res?.data?.message}`)
       }
-    } else {
-      try {
-        const res = await customAxios.put(
-          `${process.env.NEXT_PUBLIC_BASE_URL}/user/${item.uuid}`,
-          { userState: 'active' }
-        )
-
-        if (res?.status === 200) {
-          toast.success(`${res?.data?.message}`)
-          getEvaluators()
-        }
-      } catch (error) {
-        console.log(error)
-        toast.error(`Error Changing Status`)
-      }
+    } catch (error) {
+      toast.error(
+        error?.response?.data?.message || 'Error changing status',
+      )
+      console.log(error)
     }
   }
   return (
@@ -120,9 +122,8 @@ const ManageEvaluators = () => {
             {({ open }) => (
               <>
                 <Disclosure.Button
-                  className={`w-full primary-gradient rounded px-7 py-4 justify-between items-center flex ${
-                    open && 'mb-3'
-                  }`}
+                  className={`w-full primary-gradient rounded px-7 py-4 justify-between items-center flex ${open && 'mb-3'
+                    }`}
                 >
                   <span className='whitespace-nowrap sm:text-xl font-medium text-white'>
                     Evaluator List
@@ -172,9 +173,12 @@ const ManageEvaluators = () => {
                                 <td className='py-4 px-4 capitalize text-sm sm:text-base'>
                                   {item.userState}
                                 </td>
-                                <td className='py-4 px-4 relative text-sm sm:text-base'>
+                                <td className='py-4 px-4 text-sm sm:text-base'>
                                   <button
-                                    onClick={() => setShow(i)}
+                                    type='button'
+                                    aria-haspopup='menu'
+                                    aria-expanded={openMenuId === item.uuid}
+                                    onClick={(e) => toggleActionMenu(e, item.uuid)}
                                     className='bg-gray-200 px-4 py-2 rounded hover:bg-gray-300'
                                   >
                                     <svg
@@ -187,27 +191,33 @@ const ManageEvaluators = () => {
                                       <path d='M12 7a2 2 0 110-4 2 2 0 010 4zm0 7a2 2 0 110-4 2 2 0 010 4zm0 7a2 2 0 110-4 2 2 0 010 4z' />
                                     </svg>
                                   </button>
-                                  {show === i && (
-                                    <ul
-                                      onMouseLeave={() => setShow(-1)}
-                                      className='absolute bg-white border z-20 rounded shadow w-32 mt-2'
+                                  <EvaluationActionDropdown
+                                    open={openMenuId === item.uuid}
+                                    onClose={closeActionMenu}
+                                    anchorRef={menuAnchorRef}
+                                    className='w-36'
+                                  >
+                                    <button
+                                      type='button'
+                                      onClick={() => {
+                                        updateStatus(item)
+                                        closeActionMenu()
+                                      }}
+                                      className={`${evaluationMenuItemClass} text-blue-600`}
                                     >
-                                      <li
-                                        className='px-4 py-2 text-sm hover:bg-gray-100 cursor-pointer text-blue-600'
-                                        onClick={() => updateStatus(item)}
-                                      >
-                                        Change Status
-                                      </li>
-                                      <li
-                                        className='px-4 py-2 hover:bg-gray-100 cursor-pointer text-red-600'
-                                        onClick={() =>
-                                          deleteEvaluator(item.uuid)
-                                        }
-                                      >
-                                        Delete
-                                      </li>
-                                    </ul>
-                                  )}
+                                      Change Status
+                                    </button>
+                                    <button
+                                      type='button'
+                                      onClick={() => {
+                                        deleteEvaluator(item.uuid)
+                                        closeActionMenu()
+                                      }}
+                                      className={`${evaluationMenuItemClass} text-red-600`}
+                                    >
+                                      Delete
+                                    </button>
+                                  </EvaluationActionDropdown>
                                 </td>
                               </tr>
                             ))}
@@ -247,30 +257,41 @@ const ManageEvaluators = () => {
                             </div>
                             <div className='mt-3'>
                               <button
-                                onClick={() => setShow(i)}
+                                type='button'
+                                aria-haspopup='menu'
+                                aria-expanded={openMenuId === item.uuid}
+                                onClick={(e) => toggleActionMenu(e, item.uuid)}
                                 className='bg-gray-200 px-4 border sm:border-none hover:border-prussianBlue py-2 rounded hover:bg-gray-300 w-full'
                               >
                                 Actions
                               </button>
-                              {show === i && (
-                                <ul
-                                  onMouseLeave={() => setShow(-1)}
-                                  className='bg-white border rounded shadow mt-2 z-10'
+                              <EvaluationActionDropdown
+                                open={openMenuId === item.uuid}
+                                onClose={closeActionMenu}
+                                anchorRef={menuAnchorRef}
+                                className='w-36'
+                              >
+                                <button
+                                  type='button'
+                                  onClick={() => {
+                                    updateStatus(item)
+                                    closeActionMenu()
+                                  }}
+                                  className={`${evaluationMenuItemClass} text-blue-600`}
                                 >
-                                  <li
-                                    className='px-4 py-2 text-sm hover:bg-gray-100 cursor-pointer text-blue-600'
-                                    onClick={() => updateStatus(item)}
-                                  >
-                                    Change Status
-                                  </li>
-                                  <li
-                                    className='px-4 py-2 hover:bg-gray-100 cursor-pointer text-red-600'
-                                    onClick={() => deleteEvaluator(item.uuid)}
-                                  >
-                                    Delete
-                                  </li>
-                                </ul>
-                              )}
+                                  Change Status
+                                </button>
+                                <button
+                                  type='button'
+                                  onClick={() => {
+                                    deleteEvaluator(item.uuid)
+                                    closeActionMenu()
+                                  }}
+                                  className={`${evaluationMenuItemClass} text-red-600`}
+                                >
+                                  Delete
+                                </button>
+                              </EvaluationActionDropdown>
                             </div>
                           </div>
                         ))}

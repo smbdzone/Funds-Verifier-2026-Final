@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useCallback } from 'react'
 import Calendar from 'react-calendar'
 import 'react-calendar/dist/Calendar.css'
 import { toast } from 'react-toastify'
@@ -7,6 +7,17 @@ import './styles.css'
 import { useProfile } from '../../context/UserContext'
 import customAxios from '../../utils/apis/apis'
 import { NoSlotsAvailable } from '@/components/global/NoSlotsAvailable'
+
+const resolveTrusteeFromListing = (product) => {
+  if (!product) return null
+  return (
+    product.trusteeUUID ||
+    product.trusteeId?.uuid ||
+    product.trustee?.uuid ||
+    product.dealer?.uuid ||
+    (typeof product.dealer === 'string' ? product.dealer : null)
+  )
+}
 
 const CalendarPopup = ({ onClose, productData }) => {
   const getTodayStart = () => {
@@ -21,45 +32,65 @@ const CalendarPopup = ({ onClose, productData }) => {
   const [selectedTimeSlotId, setSelectedTimeSlotId] = useState('')
   const [showConfirmation, setShowConfirmation] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [trusteeUUID, setTrusteeUUID] = useState(null)
+  const [trusteeLoading, setTrusteeLoading] = useState(true)
   /** While we ask the API for slots for the selected calendar day */
-  const [fetchingSlots, setFetchingSlots] = useState(true)
+  const [fetchingSlots, setFetchingSlots] = useState(false)
   const [slotsFetchError, setSlotsFetchError] = useState(null)
   const { user } = useProfile()
-  const slotOwnerUUID =
-    productData?.trusteeUUID ||
-    productData?.trusteeId?.uuid ||
-    productData?.trustee?.uuid ||
-    productData?.userUUID
+
+  const loadTrustee = useCallback(async () => {
+    setTrusteeLoading(true)
+    setSlotsFetchError(null)
+
+    const fromListing = resolveTrusteeFromListing(productData)
+    if (fromListing) {
+      setTrusteeUUID(fromListing)
+      setTrusteeLoading(false)
+      return
+    }
+
+    try {
+      const response = await customAxios.get('/user/service-providers/Trustee')
+      const providers = Array.isArray(response?.data) ? response.data : []
+      if (providers.length > 0) {
+        setTrusteeUUID(providers[0].uuid)
+      } else {
+        setTrusteeUUID(null)
+        setSlotsFetchError('no_trustee')
+      }
+    } catch (error) {
+      console.error('Error loading trustee:', error)
+      setTrusteeUUID(null)
+      setSlotsFetchError('no_trustee')
+      toast.error('Could not load trustee availability')
+    } finally {
+      setTrusteeLoading(false)
+    }
+  }, [productData])
+
   useEffect(() => {
-    const today = getTodayStart()
-    setSelectedDate(today)
-    fetchAppointments(today)
-  }, [])
-  const fetchAppointments = async (date) => {
+    loadTrustee()
+  }, [loadTrustee])
+
+  const fetchAppointments = useCallback(async (date, ownerUUID) => {
+    if (!ownerUUID) return
+
     setFetchingSlots(true)
     setSlotsFetchError(null)
     setTimeSlots([])
     setSelectedTime('')
     setTimeSlotId('')
     setSelectedTimeSlotId('')
-    try {
-      if (!slotOwnerUUID) {
-        setTimeSlots([])
-        setSelectedTime('')
-        setTimeSlotId('')
-        setSelectedTimeSlotId('')
-        setSlotsFetchError('no_trustee')
-        toast.error('Trustee is not assigned for this asset yet.')
-        return
-      }
 
+    try {
       const correctedDate = new Date(
         date.getTime() - date.getTimezoneOffset() * 60000
       )
       const formattedDate = correctedDate.toISOString().split('T')[0]
 
       const response = await customAxios.get(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/arrange-view/slots/available?date=${formattedDate}&userUUID=${slotOwnerUUID}`
+        `${process.env.NEXT_PUBLIC_BASE_URL}/arrange-view/slots/available?date=${formattedDate}&userUUID=${ownerUUID}&slotCategory=viewing`
       )
 
       if (response.status === 200 && response.data.length > 0) {
@@ -72,32 +103,26 @@ const CalendarPopup = ({ onClose, productData }) => {
           setSelectedTime(openSlots[0].time)
           setTimeSlotId(openSlots[0].uuid)
           setSelectedTimeSlotId(daySlotGroupId)
-        } else {
-          setSelectedTime('')
-          setTimeSlotId('')
-          setSelectedTimeSlotId('')
         }
-      } else {
-        setTimeSlots([])
-        setSelectedTime('')
-        setTimeSlotId('')
-        setSelectedTimeSlotId('')
       }
     } catch (error) {
       console.error('Error fetching appointments:', error)
-      setTimeSlots([])
-      setSelectedTime('')
-      setTimeSlotId('')
-      setSelectedTimeSlotId('')
       setSlotsFetchError('network')
       toast.error(
         error?.response?.data?.message ||
-        'Could not check this date. Try again.'
+          'Could not check this date. Try again.',
       )
     } finally {
       setFetchingSlots(false)
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    if (!trusteeUUID || trusteeLoading) return
+    const today = getTodayStart()
+    setSelectedDate(today)
+    fetchAppointments(today, trusteeUUID)
+  }, [trusteeUUID, trusteeLoading, fetchAppointments])
 
   const formatDay = (date) => {
     const options = { weekday: 'long' }
@@ -199,14 +224,16 @@ const CalendarPopup = ({ onClose, productData }) => {
                 </div>
               </div>
               <div className='flex min-h-[120px] flex-col items-center justify-center gap-2 px-2'>
-                {fetchingSlots ? (
+                {trusteeLoading || fetchingSlots ? (
                   <div className='flex flex-col items-center gap-2 text-center text-white'>
                     <span
                       className='inline-block h-8 w-8 animate-spin rounded-full border-2 border-white border-t-transparent'
                       aria-hidden
                     />
                     <p className='text-sm font-medium leading-snug'>
-                      Checking this date…
+                      {trusteeLoading
+                        ? 'Loading trustee schedule…'
+                        : 'Checking this date…'}
                     </p>
                     <p className='text-xs text-white/80'>
                       Finding available viewing times
@@ -214,8 +241,8 @@ const CalendarPopup = ({ onClose, productData }) => {
                   </div>
                 ) : slotsFetchError === 'no_trustee' ? (
                   <p className='max-w-[220px] text-center text-sm leading-relaxed text-white'>
-                    No schedule yet — a trustee must be assigned before you can
-                    book a viewing.
+                    No trustee is available on the platform yet. A trustee must
+                    create viewing slots before bookings can be made.
                   </p>
                 ) : slotsFetchError === 'network' ? (
                   <p className='max-w-[220px] text-center text-sm text-white'>
@@ -265,7 +292,7 @@ const CalendarPopup = ({ onClose, productData }) => {
               <Calendar
                 onChange={(date) => {
                   setSelectedDate(date)
-                  fetchAppointments(date)
+                  if (trusteeUUID) fetchAppointments(date, trusteeUUID)
                 }}
                 value={selectedDate}
                 minDate={getTodayStart()}

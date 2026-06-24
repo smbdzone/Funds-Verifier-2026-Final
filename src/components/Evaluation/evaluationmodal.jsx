@@ -83,7 +83,7 @@ const EvaluationModal = ({ isOpen, onClose, setFormData }) => {
 
     try {
       const response = await customAxios.get(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/arrange-view/slot-by-date?userUUID=${data.uuid}&date=${date}`
+        `${process.env.NEXT_PUBLIC_BASE_URL}/arrange-view/slot-by-date?userUUID=${data.uuid}&date=${date}&slotCategory=service`
       )
 
       setSlots(response?.data[0]?.times || [])

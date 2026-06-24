@@ -20,6 +20,7 @@ import customAxios from '../../../utils/apis/apis'
 export const CreateViewingSlotTab = ({
   panelTitle = 'Create Viewing Slots',
   slotTypeLabel = 'viewing',
+  slotCategory = 'viewing',
 }) => {
   const [message, setMessage] = useState({
     Full_name: '',
@@ -125,6 +126,7 @@ export const CreateViewingSlotTab = ({
           userUUID: user?.uuid,
           date: message.date,
           timeSlots: message.time,
+          slotCategory,
         }
       )
       toast.success('Slots saved successfully.')

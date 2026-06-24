@@ -40,7 +40,7 @@ const Modal2 = ({ isOpen, onClose, formData, setFormData, userUUID }) => {
 
     try {
       const response = await customAxios.get(
-        `/arrange-view/slot-by-date?userUUID=${userUUID}&date=${formatLocalDate(date)}`
+        `/arrange-view/slot-by-date?userUUID=${userUUID}&date=${formatLocalDate(date)}&slotCategory=service`
       )
 
       setSlots(response?.data[0]?.times || [])

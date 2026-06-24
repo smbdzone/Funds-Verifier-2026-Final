@@ -35,6 +35,8 @@ export const TrusteeViewingRequest = () => {
   const [viewingRequests, setViewingRequests] = useState([])
   const [openDetails, setOpenDetails] = useState(false)
   const [selectedBookingId, setSelectedBookingId] = useState(null)
+  const [bookingToDelete, setBookingToDelete] = useState(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   const fetchBookings = async () => {
     try {
@@ -61,26 +63,40 @@ export const TrusteeViewingRequest = () => {
     setSelectedBookingId(null)
   }
 
-  const handleDeleteBooking = async (bookingId) => {
-    const confirmDelete = window.confirm(
-      'Delete this viewing request? This cannot be undone.',
-    )
-    if (!confirmDelete) return
+  const openDeleteDialog = (bookingId) => {
+    setBookingToDelete(bookingId)
+  }
 
+  const closeDeleteDialog = () => {
+    if (isDeleting) return
+    setBookingToDelete(null)
+  }
+
+  const handleConfirmDelete = async () => {
+    if (!bookingToDelete) return
+
+    setIsDeleting(true)
     try {
       await customAxios.delete(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/arrange-view/bookings/${bookingId}`,
+        `${process.env.NEXT_PUBLIC_BASE_URL}/arrange-view/bookings/${bookingToDelete}`,
       )
       setViewingRequests((prev) =>
-        prev.filter((request) => request?.uuid !== bookingId),
+        prev.filter((request) => request?.uuid !== bookingToDelete),
       )
       toast.success('Viewing request removed.')
+      setBookingToDelete(null)
     } catch (error) {
       toast.error(
         error?.response?.data?.message || 'Failed to delete this request.',
       )
+    } finally {
+      setIsDeleting(false)
     }
   }
+
+  const pendingDeleteRequest = viewingRequests.find(
+    (request) => request?.uuid === bookingToDelete,
+  )
 
   return (
     <div className='w-full max-w-7xl mx-auto pb-10'>
@@ -207,7 +223,7 @@ export const TrusteeViewingRequest = () => {
                           </button>
                           <button
                             type='button'
-                            onClick={() => handleDeleteBooking(viewer?.uuid)}
+                            onClick={() => openDeleteDialog(viewer?.uuid)}
                             className='inline-flex h-9 w-9 items-center justify-center rounded-lg border border-transparent text-[#a2913e] transition hover:bg-rose-50 hover:text-rose-700'
                             title='Delete request'
                             aria-label='Delete viewing request'
@@ -285,7 +301,7 @@ export const TrusteeViewingRequest = () => {
                   </button>
                   <button
                     type='button'
-                    onClick={() => handleDeleteBooking(viewer?.uuid)}
+                    onClick={() => openDeleteDialog(viewer?.uuid)}
                     className='rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-rose-700 transition hover:bg-rose-50'
                     aria-label='Delete'
                   >
@@ -317,6 +333,72 @@ export const TrusteeViewingRequest = () => {
               bookingId={selectedBookingId}
               handleClose={handleClose}
             />
+          </div>
+        </div>
+      ) : null}
+
+      {bookingToDelete ? (
+        <div
+          className='fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/45 p-4 backdrop-blur-md'
+          role='presentation'
+          onClick={(e) => {
+            if (e.target === e.currentTarget) closeDeleteDialog()
+          }}
+        >
+          <div
+            role='alertdialog'
+            aria-modal='true'
+            aria-labelledby='delete-viewing-title'
+            aria-describedby='delete-viewing-description'
+            className='w-full max-w-md overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-2xl ring-1 ring-slate-900/10'
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className='border-b border-slate-100 px-6 py-5'>
+              <h2
+                id='delete-viewing-title'
+                className='text-lg font-semibold text-[#002d4f]'
+              >
+                Delete viewing request?
+              </h2>
+              <p
+                id='delete-viewing-description'
+                className='mt-2 text-sm leading-relaxed text-slate-600'
+              >
+                This cannot be undone. The booking will be removed and the time
+                slot will be available again.
+              </p>
+              {pendingDeleteRequest ? (
+                <div className='mt-4 rounded-xl bg-slate-50 px-4 py-3 text-sm'>
+                  <p className='font-medium text-slate-900'>
+                    {pendingDeleteRequest?.brokerId?.name || 'Broker'}
+                  </p>
+                  <p className='mt-1 text-slate-600'>
+                    {formatDate(pendingDeleteRequest?.slotId?.date)}
+                    {pendingDeleteRequest?.timeSlot?.time
+                      ? ` · ${pendingDeleteRequest.timeSlot.time}`
+                      : ''}
+                  </p>
+                </div>
+              ) : null}
+            </div>
+            <div className='flex flex-col-reverse gap-2 px-6 py-4 sm:flex-row sm:justify-end'>
+              <button
+                type='button'
+                onClick={closeDeleteDialog}
+                disabled={isDeleting}
+                className='rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60'
+              >
+                Cancel
+              </button>
+              <button
+                type='button'
+                onClick={handleConfirmDelete}
+                disabled={isDeleting}
+                className='rounded-xl bg-rose-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-60'
+              >
+                {isDeleting ? 'Deleting…' : 'Delete request'}
+              </button>
+            </div>
           </div>
         </div>
       ) : null}

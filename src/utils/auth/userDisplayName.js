@@ -2,7 +2,7 @@
  * Full display name for UI — combines name + lastname without duplicating parts.
  */
 export function getUserDisplayName(user) {
-  if (!user) return ''
+  if (!user || typeof user !== 'object') return ''
 
   const name = String(user.name ?? '').trim()
   const lastname = String(user.lastname ?? '').trim()

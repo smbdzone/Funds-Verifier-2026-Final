@@ -20,6 +20,7 @@ import {
 } from '@/libs/paymentDiscount'
 import { clearAbandonedEvaluationPaymentDraft } from '@/libs/evaluationBooking'
 import { getCsrfHeaders } from '@/utils/csrf'
+import { CloseIcon } from '@/components/Icons'
 
 const EVALUATION_CLOZER_AMOUNT = 2500
 

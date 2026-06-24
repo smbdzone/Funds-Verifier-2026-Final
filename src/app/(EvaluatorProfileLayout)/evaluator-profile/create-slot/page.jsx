@@ -8,6 +8,7 @@ function page() {
         <CreateViewingSlotTab
           panelTitle="Create Evaluation Slots"
           slotTypeLabel="evaluation"
+          slotCategory="service"
         />
       </Suspense>
     </div>

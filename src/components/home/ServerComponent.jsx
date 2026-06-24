@@ -1,39 +1,51 @@
 import React from 'react'
-import { AppProvider } from '@/context/AppContext' // Adjust the import based on your project structure
-import { api } from "../../config/"
+import { AppProvider } from '@/context/AppContext'
+import { api } from '../../config/'
 
+const EMPTY_LIST = { products: [] }
+const EMPTY_PRICE = { lowestPrice: 0, highestPrice: 1000 }
+
+async function safeApi(url, fallback = null) {
+  try {
+    return await api(url)
+  } catch (error) {
+    console.error('ServerComponent API failed:', url, error)
+    return fallback
+  }
+}
 
 export default async function ServerComponent({ children }) {
-  const villaTypeProperty = await api('/property?propertyType=Villa&limit=10')
-  const apartmentTypeProperty = await api(
-    '/property?propertyType=Apartment&limit=10'
-  )
-  const buildingTypeProperty = await api(
-    '/property?propertyType=Building&limit=10'
-  )
-  const getPropertyPrice = await api('/property/price')
-  const getCarPrice = await api('/car/price')
-  const getBoatPrice = await api('/boat/price')
-  const getJewellryPrice = await api('/jewelry/price')
+  const villaTypeProperty =
+    (await safeApi('/property?propertyType=Villa&limit=10', [])) || []
+  const apartmentTypeProperty =
+    (await safeApi('/property?propertyType=Apartment&limit=10', [])) || []
+  const buildingTypeProperty =
+    (await safeApi('/property?propertyType=Building&limit=10', [])) || []
+  const getPropertyPrice = await safeApi('/property/price', EMPTY_PRICE)
+  const getCarPrice = await safeApi('/car/price', EMPTY_PRICE)
+  const getBoatPrice = await safeApi('/boat/price', EMPTY_PRICE)
+  const getJewellryPrice = await safeApi('/jewelry/price', EMPTY_PRICE)
 
   const propertyTypeData = [
     villaTypeProperty,
     apartmentTypeProperty,
     buildingTypeProperty,
   ].flat()
-  const propertiesForSale = await api(
-    '/property?limit=100&statusFilter=1',
-    {},
-    0,
-  )
-  const propertiesForLease = await api(
-    '/property?propertyForLease=Yes&limit=100&statusFilter=1',
-    {},
-    0,
-  )
+  const propertiesForSale =
+    (await safeApi('/property?limit=100&statusFilter=1', EMPTY_LIST, 0)) ||
+    EMPTY_LIST
+  const propertiesForLease =
+    (await safeApi(
+      '/property?propertyForLease=Yes&limit=100&statusFilter=1',
+      EMPTY_LIST,
+      0,
+    )) || EMPTY_LIST
 
-  const carsForSale = await api('/car?limit=10&statusFilter=1', {}, 0)
-  const boatsForSale = await api('/boat?limit=100&statusFilter=1', {}, 0)
+  const carsForSale =
+    (await safeApi('/car?limit=10&statusFilter=1', EMPTY_LIST, 0)) || EMPTY_LIST
+  const boatsForSale =
+    (await safeApi('/boat?limit=100&statusFilter=1', EMPTY_LIST, 0)) ||
+    EMPTY_LIST
 
   const contextValue = {
     propertyTypeData,

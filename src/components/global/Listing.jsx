@@ -75,17 +75,24 @@ const Listing = ({
   const [filterneighbours, setFilteredNeighbours] = useState([])
 
   useEffect(() => {
-    setFilteredCities(cities?.map((item) => item.description))
+    setFilteredCities(
+      (cities ?? [])
+        .map((item) =>
+          typeof item === 'string' ? item : item?.description,
+        )
+        .filter(Boolean),
+    )
   }, [searchQueryCity, cities])
 
   useEffect(() => {
-    // Filter cities based on the search query
-    const filtered = neighbourhoods?.filter((item) =>
-      item.name.toLowerCase().includes(searchQueryNeighbourhood.toLowerCase())
-    )
+    const query = (searchQueryNeighbourhood || '').toLowerCase()
+    const filtered = (neighbourhoods ?? []).filter((item) => {
+      const name = item?.name
+      if (!name) return false
+      return name.toLowerCase().includes(query)
+    })
 
-    // Filter neighbourhoods based on the search query
-    setFilteredNeighbours(filtered?.map((item) => item.name))
+    setFilteredNeighbours(filtered.map((item) => item.name))
   }, [searchQueryNeighbourhood, neighbourhoods])
 
   const toggleResidentialDropdown = () => {
@@ -122,12 +129,8 @@ const Listing = ({
     },
   ]
 
-  const togglePriceDropdown = () => {
-    setPrice(!price)
-  }
-  const toggleBedsDropdown = () => {
-    setBeds(!beds)
-  }
+  const togglePriceDropdown = () => {}
+  const toggleBedsDropdown = () => {}
   const handleMake = (make) => {
     handleMakeClick(make.brand)
     setModels(make.models)

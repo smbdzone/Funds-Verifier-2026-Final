@@ -94,12 +94,16 @@ export default function HeroFilterSelect({
       {open && !disabled && (
         <ul className='hero-filter-select__menu' role='listbox' style={{ zIndex: 70 }}>
           {options.length > 0 ? (
-            options.map((opt) => {
+            options.map((opt, index) => {
               const optValue = getOptionValue(opt)
               const isSelected = optValue === value
+              const optionKey =
+                optValue != null && optValue !== ''
+                  ? String(optValue)
+                  : `option-${index}`
               return (
                 <li
-                  key={optValue}
+                  key={optionKey}
                   role='option'
                   aria-selected={isSelected}
                   className={isSelected ? 'is-selected' : undefined}

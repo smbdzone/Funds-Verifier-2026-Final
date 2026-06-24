@@ -4,7 +4,11 @@ import { CreateViewingSlotTab } from "@/components/modules/SellerProfile/CreateV
 function page() {
   return (
     <div>
-      <CreateViewingSlotTab />
+      <CreateViewingSlotTab
+        panelTitle="Create Service Slots"
+        slotTypeLabel="service"
+        slotCategory="service"
+      />
     </div>
   );
 }

@@ -584,7 +584,12 @@ export const ListingSidebar = ({ initialData, isSidebarVisible }) => {
           '+',
         )}`,
       )
-      setNeighbourhood(response.data.neighbourhoods)
+      const places = Array.isArray(response?.data?.places)
+        ? response.data.places
+        : Array.isArray(response?.data?.neighbourhoods)
+          ? response.data.neighbourhoods
+          : []
+      setNeighbourhood(places)
     } catch (error) {
       console.error('Error fetching cities data:', error)
     }

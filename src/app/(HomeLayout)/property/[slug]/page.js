@@ -4,14 +4,18 @@ import { Suspense } from 'react'
 import ButtomSlider from '@/components/Product_page/Buttom_slider'
 import ProductView from '@/components/views/ProductView'
 import GlobalLoader from '@/utils/GlobalLoader'
-
-const apiBase = process.env.NEXT_PUBLIC_BASE_URL
+import { getPublicApiHeaders } from '@/libs/publicApiClient'
 
 const GetProductData = async ({ slug }) => {
   try {
-    const propertyResponse = await axios.get(`${apiBase}/property/${slug}`)
+    const headers = await getPublicApiHeaders()
+    const propertyResponse = await axios.get(
+      `${process.env.NEXT_PUBLIC_BASE_URL}/property/${slug}`,
+      { headers },
+    )
     const propertyDataResponse = await axios.get(
-      `${apiBase}/property?statusFilter=1&limit=50&sort=-createdAt`,
+      `${process.env.NEXT_PUBLIC_BASE_URL}/property?statusFilter=1&limit=50&sort=-createdAt`,
+      { headers },
     )
 
     const propertyInfo = propertyResponse?.data
@@ -28,6 +32,7 @@ const GetProductData = async ({ slug }) => {
       propertyData: { ...propertyData, products: relatedProducts },
     }
   } catch (error) {
+    console.error('Failed to load property:', slug, error?.message)
     return null
   }
 }
