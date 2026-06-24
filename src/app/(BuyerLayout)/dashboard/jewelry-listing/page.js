@@ -178,6 +178,7 @@ function Page() {
     handleRequestTechnicalModalData,
     handleClose1Modal,
     modalData,
+    resetPremiumPaymentDrafts,
     handleVideoChange,
     handlePhoneNumberChange,
     id,
@@ -705,6 +706,7 @@ function Page() {
               technicalModalData={technicalModalData}
               setIsOpenModal={setIsOpenModal}
               isValidState={isValidState}
+              onPaymentAbandoned={resetPremiumPaymentDrafts}
             />
           )}
           <ToastContainer />

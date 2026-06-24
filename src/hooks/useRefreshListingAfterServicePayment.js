@@ -3,9 +3,36 @@
 import { useEffect, useRef } from 'react'
 import { toast } from 'react-toastify'
 
+const PAID_SERVICE_PAYMENT_STATUSES = new Set([
+  'paid',
+  'succeeded',
+  'active',
+  'approved',
+  'completed',
+])
+
+function hasConfirmedServicePayment() {
+  const formPaymentRaw = localStorage.getItem('FormPayment')
+  if (!formPaymentRaw) return false
+
+  try {
+    const formPayment = JSON.parse(formPaymentRaw)
+    const status = String(formPayment?.payment_method_status || '').toLowerCase()
+    if (!PAID_SERVICE_PAYMENT_STATUSES.has(status)) return false
+
+    return (
+      Boolean(localStorage.getItem('checkoutSessionId')) ||
+      (formPayment.payment_provider === 'clozer' &&
+        Boolean(localStorage.getItem('clozerTransactionId')))
+    )
+  } catch {
+    return false
+  }
+}
+
 /**
- * After Stripe service checkout, reload the listing so 3D / technical report
- * refs from SubscribeServices appear on the edit form.
+ * After Stripe or Clozer service checkout, reload the listing so 3D / technical
+ * report refs from SubscribeServices appear on the edit form.
  */
 export function useRefreshListingAfterServicePayment(listingId, routeName, fetchData) {
   const ran = useRef(false)
@@ -13,21 +40,7 @@ export function useRefreshListingAfterServicePayment(listingId, routeName, fetch
   useEffect(() => {
     if (!listingId || !routeName || typeof fetchData !== 'function') return
     if (ran.current) return
-
-    const sessionId = localStorage.getItem('checkoutSessionId')
-    const formPaymentRaw = localStorage.getItem('FormPayment')
-    if (!sessionId || !formPaymentRaw) return
-
-    let paid = false
-    try {
-      const formPayment = JSON.parse(formPaymentRaw)
-      const status = String(formPayment?.payment_method_status || '').toLowerCase()
-      paid = status === 'paid' || status === 'succeeded'
-    } catch {
-      return
-    }
-
-    if (!paid) return
+    if (!hasConfirmedServicePayment()) return
 
     ran.current = true
     fetchData(routeName)

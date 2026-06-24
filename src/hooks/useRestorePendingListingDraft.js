@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
-import { hasConfirmedEvaluationPayment } from '@/libs/evaluationBooking'
+import { hasConfirmedEvaluationPayment, clearEvaluationSlotFields } from '@/libs/evaluationBooking'
 
 /** Restore in-progress new listing form after abandoning Clozer/Stripe (no id yet). */
 export function useRestorePendingListingDraft(listingId, setFormData) {
@@ -21,7 +21,7 @@ export function useRestorePendingListingDraft(listingId, setFormData) {
 
       setFormData((prev) => ({
         ...prev,
-        ...draft.formData,
+        ...clearEvaluationSlotFields(draft.formData),
       }))
     } catch {
       /* ignore corrupt storage */

@@ -72,6 +72,10 @@ const Modal2 = ({ isOpen, onClose, formData, setFormData, userUUID }) => {
       setFormData((prevData) => ({
         ...prevData,
         dateTime,
+        slotTimeslotId: id,
+        slotDate: formatLocalDate(selectedDate),
+        slotTime: selectedTime,
+        slotTimeslots: newUpdatedSlot,
       }))
 
       try {
@@ -171,8 +175,8 @@ const Modal2 = ({ isOpen, onClose, formData, setFormData, userUUID }) => {
                       type='button'
                       onClick={() => handleTimeSelect(time.time)}
                       className={`px-6 py-2 border border-[#B7A55E] text-[#B7A55E] rounded whitespace-nowrap ${selectedTime === time.time
-                          ? 'bg-blue-500 text-white btn-gradient'
-                          : 'bg-gray-200 text-black hover:bg-gray-300'
+                        ? 'bg-blue-500 text-white btn-gradient'
+                        : 'bg-gray-200 text-black hover:bg-gray-300'
                         }`}
                     >
                       {time.time}

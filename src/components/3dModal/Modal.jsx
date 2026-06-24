@@ -14,6 +14,7 @@ import { initiateClozerPayment, getClozerErrorMessage } from '@/libs/initiateClo
 import PaymentChoiceModal from '@/components/payments/PaymentChoiceModal'
 import { applyFullPayDiscount } from '@/libs/paymentDiscount'
 import { useProfile } from '../../context/UserContext'
+import { clearServiceAppointmentSelection } from '@/libs/slotBooking'
 
 const Modal = ({
   isOpen,
@@ -103,6 +104,11 @@ const Modal = ({
       return
     }
     setShowPaymentChoice(true)
+  }
+
+  const handlePaymentAbandoned = async () => {
+    await clearServiceAppointmentSelection(formData, setFormData)
+    setShowPaymentChoice(false)
   }
 
   const handleStripePay = async () => {
@@ -402,7 +408,7 @@ const Modal = ({
 
           <PaymentChoiceModal
             show={showPaymentChoice}
-            onClose={() => setShowPaymentChoice(false)}
+            onClose={handlePaymentAbandoned}
             amount={price}
             loading={paymentLoading}
             onPayFull={handleStripePay}

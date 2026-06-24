@@ -15,6 +15,7 @@ import { getListingDocumentSrc } from '@/libs/listingCardMedia'
 import EvaluationActionDropdown, {
   evaluationMenuItemClass,
 } from './requestCompoenets/EvaluationActionDropdown'
+import { fetchEvaluatorListings } from '@/libs/evaluatorListingsQuery'
 
 export const PropertyEvaluationTab = () => {
   const { user } = useProfile()
@@ -59,10 +60,11 @@ export const PropertyEvaluationTab = () => {
 
   const fetchListingsData = async () => {
     try {
-      const response = await customAxios.get(
-        `/property?sort=${selected}&title=${debouncedQuery}`
-      )
-      setPropertyListings(response?.data.products.reverse())
+      const products = await fetchEvaluatorListings('property', {
+        sort: selected,
+        title: debouncedQuery,
+      })
+      setPropertyListings(products.reverse())
     } catch (error) {
       console.error('Error fetching listing data:', error)
     }

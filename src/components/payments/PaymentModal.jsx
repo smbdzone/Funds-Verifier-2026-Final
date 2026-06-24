@@ -18,7 +18,7 @@ import {
   formatAed,
   getFullPayDiscountPercent,
 } from '@/libs/paymentDiscount'
-import { clearAbandonedEvaluationPaymentDraft } from '@/libs/evaluationBooking'
+import { clearAbandonedEvaluationPaymentDraft, clearEvaluationSlotSelection } from '@/libs/evaluationBooking'
 import { getCsrfHeaders } from '@/utils/csrf'
 import { CloseIcon } from '@/components/Icons'
 
@@ -169,8 +169,16 @@ const PaymentModal = ({
 
   const handleClose = () => {
     clearAbandonedEvaluationPaymentDraft()
+    if (!formData?.EvaluationPaymentStatus) {
+      clearEvaluationSlotSelection(setFormData)
+    }
     setPaymentStep('choice')
     onClose()
+  }
+
+  const handleBackToPaymentChoice = () => {
+    clearEvaluationSlotSelection(setFormData)
+    setPaymentStep('choice')
   }
 
   return (
@@ -250,7 +258,7 @@ const PaymentModal = ({
                 <div className='flex justify-end items-center gap-2 sm:col-span-2'>
                   <button
                     type='button'
-                    onClick={() => setPaymentStep('choice')}
+                    onClick={handleBackToPaymentChoice}
                     className='border-2 border-gray-300 text-[15px] px-6 py-3'
                   >
                     Back

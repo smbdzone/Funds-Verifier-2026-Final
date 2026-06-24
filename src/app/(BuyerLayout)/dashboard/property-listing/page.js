@@ -155,6 +155,7 @@ const Page = () => {
     fetchData,
     handleVideoRemove,
     setModalData,
+    resetPremiumPaymentDrafts,
     // setImages,
     // setVideo,
     resetForm,
@@ -703,7 +704,8 @@ const Page = () => {
               technicalModalData={technicalModalData}
               setIsOpenModal={setIsOpenModal}
               isValidState={isValidState}
-              userUUID={user?.uuid} // Pass userUUID from context
+              userUUID={user?.uuid}
+              onPaymentAbandoned={resetPremiumPaymentDrafts}
             />
           )}
           <ToastContainer />

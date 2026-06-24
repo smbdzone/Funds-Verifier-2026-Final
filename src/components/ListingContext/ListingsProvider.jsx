@@ -14,6 +14,7 @@ import {
   normalizeCitiesResponse,
 } from '@/libs/normalizeCountriesResponse'
 import { normalizeListingPremiumRefs, isPremiumServicePaid } from '@/libs/listingPremiumStatus'
+import { clearServiceSlotFields } from '@/libs/slotBooking'
 import {
   DUMMY_DUBAI_NEIGHBOURHOODS,
   DUMMY_FALLBACK_COUNTRIES,
@@ -681,6 +682,17 @@ const ListingsProvider = ({ children }) => {
     setIsTechnicalModalOpen(false)
   }
 
+  const resetPremiumPaymentDrafts = () => {
+    setModalData((prev) => clearServiceSlotFields(prev))
+    setTechnicalModalData((prev) => clearServiceSlotFields(prev))
+    try {
+      sessionStorage.removeItem(pendingPremiumStorageKey('3d'))
+      sessionStorage.removeItem(pendingPremiumStorageKey('technical'))
+    } catch {
+      /* ignore */
+    }
+  }
+
   const handleOpenModal = () => {
     setModalOpen(true)
   }
@@ -806,6 +818,7 @@ const ListingsProvider = ({ children }) => {
         technicalModalData,
         isTechnicalModalOpen,
         handleRequestTechnicalModalData,
+        resetPremiumPaymentDrafts,
         totalprice,
         handleClose1Modal,
         modalData,

@@ -1,9 +1,33 @@
 import customAxios from '@/utils/apis/apis'
 
+export const EVALUATION_SLOT_FIELDS = [
+  'evaluationDateTime',
+  'evaluatorUUID',
+  'evaluationTimeslotId',
+  'evaluationSlotDate',
+  'evaluationSlotTime',
+  'evaluationSlotTimeslots',
+]
+
 /** Evaluation fee confirmed (Stripe 2 AED hold or Clozer installment approved). */
 export function hasConfirmedEvaluationPayment(sessionOrForm) {
   if (!sessionOrForm || typeof sessionOrForm !== 'object') return false
   return sessionOrForm.EvaluationPaymentStatus === true
+}
+
+/** Clear evaluation date/time so the user can pick the same slot again. */
+export function clearEvaluationSlotFields(data) {
+  if (!data || typeof data !== 'object') return data
+  const next = { ...data }
+  for (const key of EVALUATION_SLOT_FIELDS) {
+    delete next[key]
+  }
+  return next
+}
+
+export function clearEvaluationSlotSelection(setFormData) {
+  if (typeof setFormData !== 'function') return
+  setFormData((prev) => clearEvaluationSlotFields(prev))
 }
 
 /** Book evaluator timeslot only after evaluation payment succeeded. */

@@ -11,6 +11,7 @@ const PayModal = ({
   technicalModalData,
   setIsOpenModal,
   userUUID,
+  onPaymentAbandoned,
 }) => {
   const { user } = useProfile()
   const [loading, setLoading] = useState(false)
@@ -175,7 +176,10 @@ const PayModal = ({
 
         <PaymentChoiceModal
           show
-          onClose={() => setIsOpenModal(false)}
+          onClose={() => {
+            onPaymentAbandoned?.()
+            setIsOpenModal(false)
+          }}
           amount={totalPrice}
           loading={loading}
           onPayFull={handleStripePay}

@@ -44,14 +44,32 @@ export function blocksPremiumServiceRequest(ref) {
   return isPremiumServicePaid(ref)
 }
 
+/** True when the 3D link or technical report file has been delivered. */
+function isPremiumServiceDelivered(ref) {
+  if (!ref || typeof ref !== 'object') return false
+  if (String(ref.status || '').toLowerCase() !== 'successful') return false
+
+  const link = typeof ref.link === 'string' ? ref.link.trim() : ''
+  if (
+    link &&
+    (link.startsWith('http://') || link.startsWith('https://'))
+  ) {
+    return true
+  }
+
+  const reportFile = ref.reportFile
+  if (typeof reportFile === 'string' && reportFile.trim()) return true
+  if (reportFile && typeof reportFile === 'object') {
+    return Boolean(reportFile._id || reportFile.uuid)
+  }
+
+  return false
+}
+
 /** UI label for linked 3D / technical report fields. */
 export function premiumServiceFieldLabel(ref) {
   if (!isPremiumServicePaid(ref)) return ''
-  const status = String(ref?.status || ref?.payment_method_status || '').toLowerCase()
-  if (status === 'successful' || status === 'paid' || status === 'succeeded') {
-    return 'Completed'
-  }
-  return 'Requested'
+  return isPremiumServiceDelivered(ref) ? 'Completed' : 'Requested'
 }
 
 /** Drop empty premium refs from API payloads / form state (avoids ObjectId cast errors). */
@@ -74,7 +92,14 @@ function hasSuccessfulPremiumPayment(service) {
   if (typeof service !== 'object') return false
 
   const paymentStatus = String(service.payment_method_status || '').toLowerCase()
-  if (paymentStatus === 'paid' || paymentStatus === 'succeeded') return true
+  if (
+    paymentStatus === 'paid' ||
+    paymentStatus === 'succeeded' ||
+    paymentStatus === 'active' ||
+    paymentStatus === 'approved'
+  ) {
+    return true
+  }
 
   if (String(service.status || '').toLowerCase() === 'successful') return true
 

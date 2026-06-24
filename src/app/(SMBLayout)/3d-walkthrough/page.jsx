@@ -69,7 +69,7 @@ export default function SMB() {
                 walkthroughs.map((walkthrough, index) => (
                   <tr key={index}>
                     <td className='px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900'>
-                      {walkthrough?.productTitle}
+                      {walkthrough?.productTitle || walkthrough?.assetType || '—'}
                     </td>
                     <td className='px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900'>
                       {walkthrough?.name}
