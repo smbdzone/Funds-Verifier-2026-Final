@@ -69,6 +69,13 @@ const Modal2 = ({ isOpen, onClose, formData, setFormData, userUUID }) => {
         `${selectedDate.toDateString()} ${selectedTime}`
       )
 
+      const newUpdatedSlot = slots.map((slot) => {
+        if (slot.time === selectedTime) {
+          return { ...slot, isBooked: true }
+        }
+        return slot
+      })
+
       setFormData((prevData) => ({
         ...prevData,
         dateTime,
@@ -79,13 +86,6 @@ const Modal2 = ({ isOpen, onClose, formData, setFormData, userUUID }) => {
       }))
 
       try {
-        const newUpdatedSlot = slots.map((slot) => {
-          if (slot.time === selectedTime) {
-            return { ...slot, isBooked: true }
-          }
-          return slot
-        })
-
         customAxios
           .put(`/arrange-view/timeslot/update/${id}`, { timeSlots: newUpdatedSlot })
           .then(() => {
