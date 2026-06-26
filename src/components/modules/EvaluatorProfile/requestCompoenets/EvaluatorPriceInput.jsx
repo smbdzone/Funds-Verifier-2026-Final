@@ -7,12 +7,13 @@ export function EvaluatorPriceInput({
   placeholder = '0',
   isPending = false,
   id,
+  className = '',
 }) {
   const borderClass = isPending ? 'border-[#969696]' : 'border-[#8d7c3b]'
 
   return (
     <div
-      className={`mt-1 flex w-full overflow-hidden rounded-md border bg-white ${borderClass}`}
+      className={`mt-1 flex w-full overflow-hidden rounded-md border bg-white ${borderClass} ${className}`}
     >
       <span className='flex shrink-0 items-center border-r border-gray-200 bg-gray-50 px-3 py-3 text-sm font-medium text-gray-600'>
         AED

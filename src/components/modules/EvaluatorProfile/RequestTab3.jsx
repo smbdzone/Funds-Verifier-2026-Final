@@ -28,6 +28,11 @@ import {
   getListingVideoSrc,
 } from '@/libs/listingCardMedia'
 import { useProfile } from '../../../context/UserContext'
+import {
+  getRequestDocumentName,
+  normalizeRequestDocuments,
+  serializeRequestDocuments,
+} from '@/utils/requestDocumentUtils'
 
 export const RequestTab3 = () => {
   const { user } = useProfile()
@@ -36,6 +41,7 @@ export const RequestTab3 = () => {
   const [property, setProperty] = useState({})
   const [roi, setRoi] = useState('')
   const [fileName, setFileName] = useState('')
+  const [uploadedFileId, setUploadedFileId] = useState(null)
   const [fileUrl, setFileUrl] = useState('') // For displaying file URL
   const [noMediaFound, setNoMediaFound] = useState(false)
   const [evaluationPrice, setEvaluationPrice] = useState('')
@@ -47,6 +53,7 @@ export const RequestTab3 = () => {
 
   const handleFileChange = async (e) => {
     const selectedFile = e.target.files[0]
+    e.target.value = ''
 
     if (!selectedFile) return
 
@@ -54,15 +61,39 @@ export const RequestTab3 = () => {
     const isPdf =
       selectedFile.type === 'application/pdf' ||
       /\.pdf$/i.test(selectedFile.name || '')
-    if (isPdf) {
-      if (selectedFile.size > 2 * 1024 * 1024) {
-        setError('File size exceeds 2MB.')
+    if (!isPdf) {
+      toast.error('Please upload a PDF file only (evaluation certificate).')
+      return
+    }
+
+    if (selectedFile.size > 2 * 1024 * 1024) {
+      toast.error('File size exceeds 2MB.')
+      return
+    }
+
+    setIsLoading(true)
+    try {
+      const fileUpload = await handleFileUpload(selectedFile)
+      if (!fileUpload?._id) {
+        setFileName('')
+        setUploadedFileId(null)
+        toast.error('Failed to upload document.')
         return
       }
 
       setFileName(selectedFile)
-    } else {
-      setError('Please upload a PDF file only (evaluation certificate).')
+      setUploadedFileId(fileUpload._id)
+      toast.success(
+        property?.status === 1
+          ? 'Invoice uploaded successfully.'
+          : 'Certificate uploaded successfully.',
+      )
+    } catch (error) {
+      setFileName('')
+      setUploadedFileId(null)
+      toast.error(error?.message || 'Failed to upload document.')
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -97,7 +128,9 @@ export const RequestTab3 = () => {
         setFileUrl(response.data.evaluationCertificate) // Update URL from API
       }
       if (response.data.requestDocument) {
-        setRequestDocument(response.data.requestDocument) // Update URL from API
+        setRequestDocument(
+          normalizeRequestDocuments(response.data.requestDocument),
+        )
       }
     } catch (error) {
       console.error('Error fetching jewelry data:', error)
@@ -112,20 +145,26 @@ export const RequestTab3 = () => {
   const [data, setData] = useState()
   const handleAddDocument = () => {
     if (newDocument.trim() !== '') {
-      setRequestDocument([...requestDocument, newDocument]) // Add the new document to the list
-      setNewDocument('') // Clear the input field
-      setShowTextArea(false) // Hide the textarea after adding
+      setRequestDocument([
+        ...requestDocument,
+        { name: newDocument.trim(), document: null },
+      ])
+      setNewDocument('')
+      setShowTextArea(false)
     }
   }
 
   const handleEdit = (index) => {
     setEditIndex(index)
-    setEditText(requestDocument[index])
+    setEditText(getRequestDocumentName(requestDocument[index]))
   }
 
   const handleSaveEdit = (index) => {
     const updatedDocuments = [...requestDocument]
-    updatedDocuments[index] = editText
+    updatedDocuments[index] = {
+      ...updatedDocuments[index],
+      name: editText.trim(),
+    }
     setRequestDocument(updatedDocuments)
     setEditIndex(null)
     setEditText('')
@@ -141,7 +180,7 @@ export const RequestTab3 = () => {
       const response = await customAxios.put(
         `${process.env.NEXT_PUBLIC_BASE_URL}/jewelry/${propertyId}`,
         {
-          requestDocument,
+          requestDocument: serializeRequestDocuments(requestDocument),
         }
       )
 
@@ -168,8 +207,14 @@ export const RequestTab3 = () => {
       let fileUpload = ''
       let invoiceUpload = ''
       if (property?.status === 1) {
-        invoiceUpload = await handleFileUpload(fileName)
-      } else {
+        if (uploadedFileId) {
+          invoiceUpload = { _id: uploadedFileId }
+        } else if (fileName) {
+          invoiceUpload = await handleFileUpload(fileName)
+        }
+      } else if (uploadedFileId) {
+        fileUpload = { _id: uploadedFileId }
+      } else if (fileName) {
         fileUpload = await handleFileUpload(fileName)
       }
       const certificateId =
@@ -576,55 +621,49 @@ export const RequestTab3 = () => {
         <Modal isOpen={isModalOpen} onClose={closeModal} fileUrl={pdfUrl} />
 
         {property?.status === 1 ? null : (
-          <div className='my-6 flex flex-col items-start justify-between gap-4'>
-            <div className='flex md:flex-row flex-col items-start justify-between gap-4'>
-              <div className='flex flex-col w-full'>
+          <>
+            <div className='my-6 grid grid-cols-1 gap-4 sm:grid-cols-2'>
+              <div className='min-w-0'>
                 <label
                   htmlFor='uploadDocument'
-                  className='mb-2 text-sm sm:text-base font-medium text-gray-700'
+                  className='mb-2 block text-sm sm:text-base font-medium text-gray-700'
                 >
                   Evaluation Certificate
                 </label>
-                <div className='w-full flex gap-4 items-center'>
-                  <div className='w-full relative flex items-center'>
-                    {/* Hide the file input */}
-
-                    <input
-                      type='file'
-                      id='uploadDocument'
-                      name='uploadDocument'
-                      accept='.pdf'
-                      className='hidden'
-                      onChange={handleFileChange}
-                    />
-                    {/* Custom button to trigger the file input */}
-                    <label
-                      htmlFor='uploadDocument'
-                      className='flex justify-between items-center text-sm sm:text-base w-full py-1 px-2 border rounded-md border-[#8d7c3b] bg-white text-gray-800 cursor-pointer'
-                    >
-                      <span>
-                        {fileName?.name ? fileName.name : 'Upload certificate'}
-                      </span>
-                      <UploadIcon className='h-8 w-6' />
-                    </label>
-                  </div>
-                </div>
-                <p className='text-xs m-2'>
-                  *Only pdfs are acceptable. Pdf should be less than 1mb.
-                </p>
+                <input
+                  type='file'
+                  id='uploadDocument'
+                  name='uploadDocument'
+                  accept='.pdf'
+                  className='hidden'
+                  onChange={handleFileChange}
+                />
+                <label
+                  htmlFor='uploadDocument'
+                  className='flex h-[48px] w-full cursor-pointer items-center justify-between rounded-md border border-[#8d7c3b] bg-white px-3 text-sm sm:text-base text-gray-800'
+                >
+                  <span className='truncate pr-2'>
+                    {fileName?.name ? fileName.name : 'Upload certificate'}
+                  </span>
+                  <UploadIcon className='h-6 w-5 shrink-0' />
+                </label>
               </div>
 
-              <div>
-                <label className='block text-sm sm:text-base font-medium'>
+              <div className='min-w-0'>
+                <label className='mb-2 block text-sm sm:text-base font-medium text-gray-700'>
                   Evaluation Price
                 </label>
                 <EvaluatorPriceInput
                   value={formattedPrice}
                   onChange={handleEvaluationPrice}
                   placeholder='0'
+                  className='mt-0'
                 />
               </div>
             </div>
+            <p className='-mt-2 mb-4 text-xs text-gray-500'>
+              *Only PDFs are acceptable. PDF should be less than 2MB.
+            </p>
             <div className='w-full flex justify-center'>
               <button
                 className='primary-gradient text-white py-2 px-6 text-sm rounded-md '
@@ -633,7 +672,7 @@ export const RequestTab3 = () => {
                 Upload
               </button>
             </div>
-          </div>
+          </>
         )}
         {property.status === 1 ? (
           <>

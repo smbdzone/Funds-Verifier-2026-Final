@@ -23,6 +23,11 @@ import { useProfile } from '../../../context/UserContext'
 import { getCookie } from 'cookies-next'
 import customAxios from '../../../utils/apis/apis'
 import { getListingImageSrc, getListingVideoSrc } from '@/libs/listingCardMedia'
+import {
+  getRequestDocumentName,
+  normalizeRequestDocuments,
+  serializeRequestDocuments,
+} from '@/utils/requestDocumentUtils'
 
 export const RequestTab = () => {
   const path = usePathname()
@@ -32,6 +37,7 @@ export const RequestTab = () => {
   const [roi, setRoi] = useState('')
   const [feedback, setFeedback] = useState('')
   const [fileName, setFileName] = useState('')
+  const [uploadedFileId, setUploadedFileId] = useState(null)
   const [fileUrl, setFileUrl] = useState('') // For displaying file URL
   const [isLoading, setIsLoading] = useState(false)
   const [noMediaFound, setNoMediaFound] = useState(false)
@@ -46,6 +52,7 @@ export const RequestTab = () => {
 
   const handleFilechange = async (e) => {
     const selectedFile = e.target.files[0]
+    e.target.value = ''
 
     if (!selectedFile) return
 
@@ -53,15 +60,39 @@ export const RequestTab = () => {
     const isPdf =
       selectedFile.type === 'application/pdf' ||
       /\.pdf$/i.test(selectedFile.name || '')
-    if (isPdf) {
-      if (selectedFile.size > 2 * 1024 * 1024) {
-        toast.error('File size exceeds 2MB.')
+    if (!isPdf) {
+      toast.error('Please upload a PDF file only (evaluation certificate).')
+      return
+    }
+
+    if (selectedFile.size > 2 * 1024 * 1024) {
+      toast.error('File size exceeds 2MB.')
+      return
+    }
+
+    setIsLoading(true)
+    try {
+      const fileUpload = await handleFileUpload(selectedFile)
+      if (!fileUpload?._id) {
+        setFileName('')
+        setUploadedFileId(null)
+        toast.error('Failed to upload document.')
         return
       }
 
       setFileName(selectedFile)
-    } else {
-      toast.error('Please upload a PDF file only (evaluation certificate).')
+      setUploadedFileId(fileUpload._id)
+      toast.success(
+        property?.status === 1
+          ? 'Invoice uploaded successfully.'
+          : 'Certificate uploaded successfully.',
+      )
+    } catch (error) {
+      setFileName('')
+      setUploadedFileId(null)
+      toast.error(error?.message || 'Failed to upload document.')
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -103,7 +134,9 @@ export const RequestTab = () => {
         setFileUrl(response.data.evaluationCertificate)
       }
       if (response.data.requestDocument) {
-        setRequestDocument(response.data.requestDocument)
+        setRequestDocument(
+          normalizeRequestDocuments(response.data.requestDocument),
+        )
       }
     } catch (error) {
       console.error('Error fetching property data:', error)
@@ -120,7 +153,10 @@ export const RequestTab = () => {
 
   const handleAddDocument = () => {
     if (newDocument.trim() !== '') {
-      setRequestDocument([...requestDocument, newDocument])
+      setRequestDocument([
+        ...requestDocument,
+        { name: newDocument.trim(), document: null },
+      ])
       setNewDocument('')
       setShowTextArea(false)
     }
@@ -128,12 +164,15 @@ export const RequestTab = () => {
 
   const handleEdit = (index) => {
     setEditIndex(index)
-    setEditText(requestDocument[index])
+    setEditText(getRequestDocumentName(requestDocument[index]))
   }
 
   const handleSaveEdit = (index) => {
     const updatedDocuments = [...requestDocument]
-    updatedDocuments[index] = editText
+    updatedDocuments[index] = {
+      ...updatedDocuments[index],
+      name: editText.trim(),
+    }
     setRequestDocument(updatedDocuments)
     setEditIndex(null)
     setEditText('')
@@ -150,7 +189,7 @@ export const RequestTab = () => {
       const response = await customAxios.put(
         `${process.env.NEXT_PUBLIC_BASE_URL}/property/${propertyId}`,
         {
-          requestDocument: requestDocument,
+          requestDocument: serializeRequestDocuments(requestDocument),
         },
       )
 
@@ -173,7 +212,7 @@ export const RequestTab = () => {
   }, [propertyId])
 
   const handleApprove = async () => {
-    if (!fileName && property?.status !== 1) {
+    if (!uploadedFileId && !fileName && property?.status !== 1) {
       toast.error('Please select a file to upload.')
       return
     }
@@ -188,8 +227,9 @@ export const RequestTab = () => {
       if (listingPrice !== '') updateData.price = Number(listingPrice)
       if (sizeSQFT !== '') updateData.sizeSQFT = Number(sizeSQFT)
 
-      // If there's a file to upload
-      if (fileName) {
+      if (uploadedFileId) {
+        uploadedFile = { _id: uploadedFileId }
+      } else if (fileName) {
         uploadedFile = await handleFileUpload(fileName)
 
         if (!uploadedFile || !uploadedFile._id) {
@@ -638,52 +678,47 @@ export const RequestTab = () => {
 
         {property.status === 1 ? null : (
           <>
-            <div className='my-6 flex flex-col items-stretch gap-4 sm:flex-row sm:items-end sm:justify-between'>
-              <div className='flex flex-col w-full'>
+            <div className='my-6 grid grid-cols-1 gap-4 sm:grid-cols-3'>
+              <div className='min-w-0'>
                 <label
                   htmlFor='uploadDocument'
-                  className='mb-2 text-sm sm:text-base font-medium text-gray-700'
+                  className='mb-2 block text-sm sm:text-base font-medium text-gray-700'
                 >
                   Evaluation Certificate
                 </label>
-                <div className='w-full flex gap-4 items-center'>
-                  <div className='w-full relative flex items-center'>
-                    <input
-                      type='file'
-                      id='uploadDocument'
-                      name='uploadDocument'
-                      accept='.pdf'
-                      className='hidden'
-                      onChange={handleFilechange}
-                    />
-                    <label
-                      htmlFor='uploadDocument'
-                      className='flex justify-between items-center text-sm sm:text-base w-full py-1 px-2 border rounded-md border-[#8d7c3b] bg-white text-gray-800 cursor-pointer'
-                    >
-                      <span>
-                        {fileName?.name ? fileName.name : 'Upload certificate'}
-                      </span>
-                      <UploadIcon className='h-8 w-6' />
-                    </label>
-                  </div>
-                </div>
-                <p className='text-xs m-2'>
-                  *Only pdfs are acceptable. Pdf should be less than 2MB.
-                </p>
+                <input
+                  type='file'
+                  id='uploadDocument'
+                  name='uploadDocument'
+                  accept='.pdf'
+                  className='hidden'
+                  onChange={handleFilechange}
+                />
+                <label
+                  htmlFor='uploadDocument'
+                  className='flex h-[48px] w-full cursor-pointer items-center justify-between rounded-md border border-[#8d7c3b] bg-white px-3 text-sm sm:text-base text-gray-800'
+                >
+                  <span className='truncate pr-2'>
+                    {fileName?.name ? fileName.name : 'Upload certificate'}
+                  </span>
+                  <UploadIcon className='h-6 w-5 shrink-0' />
+                </label>
               </div>
 
-              <div className='min-w-[10rem] flex-1'>
-                <label className='block text-sm sm:text-base font-medium'>
+              <div className='min-w-0'>
+                <label className='mb-2 block text-sm sm:text-base font-medium text-gray-700'>
                   Evaluation Price
                 </label>
                 <EvaluatorPriceInput
                   value={formattedPrice}
                   onChange={handleEvaluationPrice}
                   placeholder='0'
+                  className='mt-0'
                 />
               </div>
-              <div>
-                <label className='block text-sm sm:text-base font-medium'>
+
+              <div className='min-w-0'>
+                <label className='mb-2 block text-sm sm:text-base font-medium text-gray-700'>
                   ROI
                 </label>
                 <div className='relative'>
@@ -691,12 +726,17 @@ export const RequestTab = () => {
                     type='text'
                     value={roi}
                     onChange={(e) => setRoi(e.target.value.trim())}
-                    className='block w-full rounded-md border border-[#8d7c3b] bg-white py-3 pl-3 pr-10 text-sm sm:text-base text-gray-800 focus:outline-none'
+                    className='block h-[48px] w-full rounded-md border border-[#8d7c3b] bg-white pl-3 pr-10 text-sm sm:text-base text-gray-800 focus:outline-none'
                   />
-                  <span className='pointer-events-none absolute inset-y-0 right-3 flex items-center text-gray-600'>%</span>
+                  <span className='pointer-events-none absolute inset-y-0 right-3 flex items-center text-gray-600'>
+                    %
+                  </span>
                 </div>
               </div>
             </div>
+            <p className='-mt-2 mb-4 text-xs text-gray-500'>
+              *Only PDFs are acceptable. PDF should be less than 2MB.
+            </p>
             <div className='w-full flex justify-center'>
               <button
                 className='primary-gradient text-white py-2 px-6 text-sm sm:text-base rounded-md '
@@ -735,33 +775,33 @@ export const RequestTab = () => {
                 </p>
               </div>
             </div>
-            <div className='my-6 flex items-start justify-center gap-4'>
-              <div className='flex flex-col w-1/2'>
-                <div className='w-full flex gap-4 items-center'>
-                  <div className='w-full relative flex items-center'>
-                    <input
-                      type='file'
-                      id='uploadInvoice'
-                      name='uploadInvoice'
-                      accept='.pdf'
-                      className='hidden'
-                      onChange={handleFilechange}
-                    />
-                    <label
-                      htmlFor='uploadInvoice'
-                      className='flex justify-between items-center text-sm sm:text-base w-full py-1 px-2 border rounded-md border-[#8d7c3b] bg-white text-gray-800 cursor-pointer'
-                    >
-                      <span>
-                        {fileName?.name ? fileName.name : 'Upload Invoice'}
-                      </span>
-                      <UploadIcon className='h-8 w-6' />
-                    </label>
-                  </div>
-                </div>
-                <p className='text-xs m-2 text-center'>
-                  *Only pdfs are acceptable. Pdf should be less than 2MB.
-                </p>
-              </div>
+            <div className='my-6 mx-auto w-full max-w-xl'>
+              <label
+                htmlFor='uploadInvoice'
+                className='mb-2 block text-sm sm:text-base font-medium text-gray-700'
+              >
+                Invoice
+              </label>
+              <input
+                type='file'
+                id='uploadInvoice'
+                name='uploadInvoice'
+                accept='.pdf'
+                className='hidden'
+                onChange={handleFilechange}
+              />
+              <label
+                htmlFor='uploadInvoice'
+                className='flex h-[48px] w-full cursor-pointer items-center justify-between rounded-md border border-[#8d7c3b] bg-white px-3 text-sm sm:text-base text-gray-800'
+              >
+                <span className='truncate pr-2'>
+                  {fileName?.name ? fileName.name : 'Upload Invoice'}
+                </span>
+                <UploadIcon className='h-6 w-5 shrink-0' />
+              </label>
+              <p className='mt-2 text-xs text-center text-gray-500'>
+                *Only PDFs are acceptable. PDF should be less than 2MB.
+              </p>
             </div>
             <div className='w-full flex justify-center'>
               <button

@@ -24,6 +24,11 @@ import {
   getListingImageSrc,
   getListingVideoSrc,
 } from '@/libs/listingCardMedia'
+import {
+  getRequestDocumentName,
+  normalizeRequestDocuments,
+  serializeRequestDocuments,
+} from '@/utils/requestDocumentUtils'
 
 export const RequestTab = () => {
   const path = usePathname()
@@ -102,7 +107,9 @@ export const RequestTab = () => {
         setFileUrl(response.data.evaluationCertificate) // Update URL from API
       }
       if (response.data.requestDocument) {
-        setRequestDocument(response.data.requestDocument) // Update URL from API
+        setRequestDocument(
+          normalizeRequestDocuments(response.data.requestDocument),
+        )
       }
     } catch (error) {
       console.error('Error fetching property data:', error)
@@ -117,20 +124,26 @@ export const RequestTab = () => {
   const [editText, setEditText] = useState('')
   const handleAddDocument = () => {
     if (newDocument.trim() !== '') {
-      setRequestDocument([...requestDocument, newDocument]) // Add the new document to the list
-      setNewDocument('') // Clear the input field
-      setShowTextArea(false) // Hide the textarea after adding
+      setRequestDocument([
+        ...requestDocument,
+        { name: newDocument.trim(), document: null },
+      ])
+      setNewDocument('')
+      setShowTextArea(false)
     }
   }
 
   const handleEdit = (index) => {
     setEditIndex(index)
-    setEditText(requestDocument[index])
+    setEditText(getRequestDocumentName(requestDocument[index]))
   }
 
   const handleSaveEdit = (index) => {
     const updatedDocuments = [...requestDocument]
-    updatedDocuments[index] = editText
+    updatedDocuments[index] = {
+      ...updatedDocuments[index],
+      name: editText.trim(),
+    }
     setRequestDocument(updatedDocuments)
     setEditIndex(null)
     setEditText('')
@@ -146,7 +159,7 @@ export const RequestTab = () => {
       const response = await customAxios.put(
         `${process.env.NEXT_PUBLIC_BASE_URL}/property/${propertyId}`,
         {
-          requestDocument: requestDocument,
+          requestDocument: serializeRequestDocuments(requestDocument),
         }
       )
 
