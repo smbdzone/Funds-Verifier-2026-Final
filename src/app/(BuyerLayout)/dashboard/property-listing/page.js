@@ -183,6 +183,8 @@ const Page = () => {
     evaluationDateTime: '',
     price: formData?.price || '',
     sizeSQFT: '',
+    sizeSQM: '',
+    sizeUnit: 'SQFT',
     description: '',
     additionalDescription: '',
     bedrooms: '',
@@ -270,12 +272,6 @@ const Page = () => {
         toast.error('Thumbnail image is required.')
         setLoading(false)
         throw new Error('Thumbnail is required')
-      }
-
-      if (!videos.length) {
-        toast.error('At least one video is required.')
-        setLoading(false)
-        throw new Error('Video is required')
       }
 
       return setShowPayment(true)
@@ -407,6 +403,9 @@ const Page = () => {
 
       const updatedFormData = {
         ...formData,
+        sizeSQFT: formData.sizeSQFT ? Number(formData.sizeSQFT) : 0,
+        sizeSQM: formData.sizeSQM ? Number(formData.sizeSQM) : 0,
+        sizeUnit: formData.sizeUnit || 'SQFT',
         userUUID: user?.uuid,
         pictures:
           listingMediaRef(imageID) ?? listingMediaRef(formData?.pictures),
@@ -509,14 +508,20 @@ const Page = () => {
         const formattedValue = new Intl.NumberFormat('en-US').format(rawValue)
         setTotalPrice(formattedValue)
       }
-    } else if (name === 'sizeSQFT') {
-      const numericValue = value.replace(/\D/g, '')
-      const formattedValue = new Intl.NumberFormat('en-US').format(numericValue)
-      setTotalSize(formattedValue)
-      setFormData({ ...formData, [name]: numericValue })
+    } else if (name === 'sizeSQFT' || name === 'sizeSQM') {
+      // Handled by PropertySizeField via handleSizeChange
     } else {
       setFormData({ ...formData, [name]: value })
     }
+  }
+
+  const handleSizeChange = ({ sizeSQFT, sizeSQM, sizeUnit }) => {
+    setFormData((prev) => ({
+      ...prev,
+      ...(sizeSQFT !== undefined ? { sizeSQFT } : {}),
+      ...(sizeSQM !== undefined ? { sizeSQM } : {}),
+      sizeUnit: sizeUnit || prev.sizeUnit || 'SQFT',
+    }))
   }
 
   const validateForm = (data) => {
@@ -563,7 +568,11 @@ const Page = () => {
       errors.neighbourhood = 'Neighbourhood is required'
     }
 
-    if (!String(data.sizeSQFT || '').trim()) {
+    const sizeUnit = data.sizeUnit || 'SQFT'
+    const activeSize =
+      sizeUnit === 'SQM' ? data.sizeSQM : data.sizeSQFT
+
+    if (!String(activeSize || '').trim()) {
       errors.sizeSQFT = 'Size is required'
     }
 
@@ -583,7 +592,9 @@ const Page = () => {
       errors.price = 'Price is invalid'
     }
 
-    if (data.additionalDescription.length > 1000) {
+    if (!String(data.additionalDescription || '').trim()) {
+      errors.additionalDescription = 'Additional description is required'
+    } else if (data.additionalDescription.length > 1000) {
       errors.additionalDescription =
         'Additional Description must be less than 1000 characters'
     }
@@ -655,8 +666,9 @@ const Page = () => {
         }
         break
       case 'sizeSQFT':
-        if (!value.trim()) {
-          error = 'Size SQFT is required'
+      case 'sizeSQM':
+        if (!String(value || '').trim()) {
+          error = 'Property size is required'
         }
         break
       // case "evaluationDateTime":
@@ -803,6 +815,7 @@ const Page = () => {
                 handleVideoChange={handleVideoChange}
                 videos={videos}
                 handlePhoneNumberChange={handlePhoneNumberChange}
+                handleSizeChange={handleSizeChange}
                 leaseNumberofChequesOptions={leaseNumberofChequesOptions}
                 isFurnishedOptions={isFurnishedOptions}
               />

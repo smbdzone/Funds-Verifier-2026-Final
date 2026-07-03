@@ -1,12 +1,9 @@
 import { useEffect, useState } from 'react'
-import axios from 'axios'
-import { formatNumberWithCommas } from '@/utils/global-functions/global'
 import GlobalLoader from '@/utils/GlobalLoader'
 import { TriangleAlertIcon, UploadCloudIcon } from 'lucide-react'
-import { handleFileUpload } from '@/libs/uploadAsset'
+import { handleFileUpload, resolveCertificateUploadUrl } from '@/libs/uploadAsset'
 import { toast } from 'react-toastify'
 import { useProfile } from '../../../context/UserContext'
-import Link from 'next/link'
 import Modal from '../../product-modal/modal'
 import customAxios from '../../../utils/apis/apis'
 import { getListingImageSrc } from '@/libs/listingCardMedia'
@@ -14,13 +11,15 @@ import { getListingImageSrc } from '@/libs/listingCardMedia'
 const ViewerDetails = ({ bookingId, handleClose }) => {
   const [viewerData, setViewerData] = useState(null)
   const [selectedAdmin, setSelectedAdmin] = useState('myself')
-  const [selectedAction, setSelectedAction] = useState('')
   const [showWarning, setShowWarning] = useState(false)
+  const [assignSubmitting, setAssignSubmitting] = useState(false)
   const [timeLeft, setTimeLeft] = useState('')
   const [disableAdminSelect, setDisableAdminSelect] = useState(false)
   const [isTimeCritical, setIsTimeCritical] = useState(false)
   const [TransferFile, setTransferFile] = useState(null)
   const [TransferProofFile, setTransferProofFile] = useState(null)
+  const [transferDocUploading, setTransferDocUploading] = useState(false)
+  const [transferProofUploading, setTransferProofUploading] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
   const [TransferProof, setTransferProof] = useState({
     PaymentProof: '',
@@ -30,32 +29,79 @@ const ViewerDetails = ({ bookingId, handleClose }) => {
     fees: 0,
     assetTransferDocument: '',
   })
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
   const { user } = useProfile()
 
   const handleFileChange = async (e) => {
     const file = e.target.files?.[0]
+    if (!file) return
 
-    if (file) {
-      setTransferFile(file)
+    if (file.type !== 'application/pdf') {
+      toast.error('Please upload a PDF file.')
+      e.target.value = ''
+      return
+    }
+
+    setTransferFile(file)
+    setTransferDocUploading(true)
+    try {
       const data = await handleFileUpload(file)
+      const docUrl = resolveCertificateUploadUrl(data)
+      if (!docUrl) {
+        toast.error('Upload finished but no document URL was returned.')
+        setTransferFile(null)
+        e.target.value = ''
+        return
+      }
       setTransferDocs((prev) => ({
         ...prev,
-        assetTransferDocument: data?.Certificate?.url,
+        assetTransferDocument: docUrl,
       }))
+      toast.success('Transfer document uploaded.')
+    } catch (err) {
+      console.error('Transfer document upload failed:', err)
+      setTransferFile(null)
+      e.target.value = ''
+      toast.error(err?.message || 'Failed to upload transfer document.')
+    } finally {
+      setTransferDocUploading(false)
     }
   }
 
   const handleFileChange2 = async (e) => {
     const file = e.target.files?.[0]
-    if (file) {
-      setTransferProofFile(file)
+    if (!file) return
+
+    if (file.type !== 'application/pdf') {
+      toast.error('Please upload a PDF file.')
+      e.target.value = ''
+      return
+    }
+
+    setTransferProofFile(file)
+    setTransferProofUploading(true)
+    try {
       const data = await handleFileUpload(file)
-
-
+      const docUrl = resolveCertificateUploadUrl(data)
+      if (!docUrl) {
+        toast.error('Upload finished but no document URL was returned.')
+        setTransferProofFile(null)
+        e.target.value = ''
+        return
+      }
       setTransferProof((prev) => ({
         ...prev,
-        PaymentProof: data?.certificate?.url,
+        PaymentProof: docUrl,
       }))
+      toast.success('Payment proof uploaded.')
+    } catch (err) {
+      console.error('Payment proof upload failed:', err)
+      setTransferProofFile(null)
+      e.target.value = ''
+      toast.error(err?.message || 'Failed to upload payment proof.')
+    } finally {
+      setTransferProofUploading(false)
     }
   }
 
@@ -85,39 +131,58 @@ const ViewerDetails = ({ bookingId, handleClose }) => {
         dataToSend,
         { params: { id: bookingId } }
       )
-      toast.success(error?.message || 'Mail is sended to pay the fees.')
+      toast.success(
+        response?.data?.message || 'Payment link sent to the broker.',
+      )
     } catch (error) {
       console.error('Error sending mail:', error)
-      toast.error(error?.message || 'Not Submitted.')
+      toast.error(
+        error?.response?.data?.message || error?.message || 'Not submitted.',
+      )
     }
   }
-
-  const [loading, setLoading] = useState(false) // ✅ loading state
-  const [error, setError] = useState('') // ✅ error state
 
   const adminOptions = [
     { id: 1, name: 'Myself', value: 'myself' },
     { id: 2, name: 'FV Admin', value: 'fv_admin' },
   ]
 
-  const fetchBookingDetails = async () => {
-    setLoading(true)
-    setError('')
+  const fetchBookingDetails = async ({ silent = false } = {}) => {
+    if (!bookingId) return
+    const showBlockingLoader = !silent && !viewerData
+    if (showBlockingLoader) {
+      setLoading(true)
+      setError('')
+    }
     try {
       const response = await customAxios.get(
-        `/arrange-view/bookings/${bookingId}`
+        `/arrange-view/bookings/${bookingId}`,
       )
-      setViewerData(response?.data)
+      const data = response?.data
+      if (!data) {
+        throw new Error('Booking details were empty.')
+      }
+      setViewerData(data)
+      const savedAssignee = data?.viewAssignedTo
+      if (savedAssignee === 'myself' || savedAssignee === 'fv_admin') {
+        setSelectedAdmin(savedAssignee)
+      }
     } catch (err) {
       console.error('Error fetching booking details', err)
       const msg =
         err?.response?.data?.message ||
         err?.message ||
         'Failed to load booking details. Please try again later.'
-      setError(msg)
-      setViewerData(null)
+      if (!silent || !viewerData) {
+        setError(msg)
+      }
+      if (showBlockingLoader) {
+        setViewerData(null)
+      }
     } finally {
-      setLoading(false)
+      if (showBlockingLoader) {
+        setLoading(false)
+      }
     }
   }
 
@@ -140,6 +205,37 @@ const ViewerDetails = ({ bookingId, handleClose }) => {
     }
   }
 
+  const handleAssignSubmit = async () => {
+    if (disableAdminSelect) {
+      setShowWarning(true)
+      return
+    }
+    if (!bookingId) {
+      toast.error('Missing booking reference.')
+      return
+    }
+
+    setAssignSubmitting(true)
+    try {
+      await customAxios.put(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/arrange-view/trustee/update/${bookingId}`,
+        { viewAssignedTo: selectedAdmin },
+      )
+      toast.success('Viewing assignment saved.')
+      setShowWarning(false)
+      await fetchBookingDetails({ silent: true })
+    } catch (err) {
+      console.error('Error saving viewing assignment:', err)
+      toast.error(
+        err?.response?.data?.message ||
+        err?.message ||
+        'Could not save assignment.',
+      )
+    } finally {
+      setAssignSubmitting(false)
+    }
+  }
+
   const handleMarkAsTransfered = async () => {
     try {
       const response = await customAxios.put(
@@ -150,7 +246,7 @@ const ViewerDetails = ({ bookingId, handleClose }) => {
       toast.success('Asset marked as transfered.')
     } catch (err) {
       console.error('Error marking asset as transferred:', err)
-      toast.error(err?.message)
+      toast.error(err?.response?.data?.message || err?.message)
     }
   }
 
@@ -191,27 +287,25 @@ const ViewerDetails = ({ bookingId, handleClose }) => {
   }, [viewerData])
 
   const handleAdminSelection = (value) => {
-    if (!selectedAction) {
+    if (disableAdminSelect) {
       setShowWarning(true)
-    } else if (disableAdminSelect) {
-      setShowWarning(true)
-    } else {
-      setSelectedAdmin(value)
-      setShowWarning(false)
+      return
     }
+    setSelectedAdmin(value)
+    setShowWarning(false)
   }
 
-  if (loading) {
+  if (loading && !viewerData) {
     return (
-      <div className='relative z-20 flex min-h-[220px] flex-1 flex-col items-center justify-center px-6 py-12'>
+      <div className='flex min-h-[280px] w-full items-center justify-center px-6 py-12'>
         <GlobalLoader />
       </div>
     )
   }
 
-  if (error) {
+  if (error && !viewerData) {
     return (
-      <div className='relative z-20 flex flex-1 flex-col bg-white px-6 py-8'>
+      <div className='relative w-full bg-white px-6 py-8'>
         <button
           type='button'
           className='absolute right-4 top-4 rounded-lg border border-[#002d4f] px-3 py-1 text-sm font-medium text-[#002d4f] transition hover:bg-slate-50'
@@ -227,100 +321,41 @@ const ViewerDetails = ({ bookingId, handleClose }) => {
     )
   }
 
-  if (!viewerData) return null
+  if (!viewerData) {
+    return (
+      <div className='relative w-full bg-white px-6 py-8'>
+        <button
+          type='button'
+          className='absolute right-4 top-4 rounded-lg border border-[#002d4f] px-3 py-1 text-sm font-medium text-[#002d4f] transition hover:bg-slate-50'
+          onClick={handleClose}
+        >
+          Close
+        </button>
+        <p className='text-slate-600'>No booking details available.</p>
+      </div>
+    )
+  }
+
+  const formatFieldValue = (value) => {
+    if (value == null || value === '') return ''
+    if (typeof value === 'object') return ''
+    return String(value)
+  }
 
   const pictures = viewerData?.productData?.pictures
-  const galleryImages =
+  const rawGalleryImages =
     pictures?.images?.length > 0
       ? pictures.images
-      : viewerData?.productData?.thumbnailImg?.images || []
+      : viewerData?.productData?.thumbnailImg?.images
+  const galleryImages = Array.isArray(rawGalleryImages) ? rawGalleryImages : []
   const broker = viewerData?.brokerId || {}
   const name = broker.name ?? ''
   const email = broker.email ?? ''
   const phone = broker.phone ?? broker.phoneNumber ?? ''
 
-  const commonFields = [
-    { label: 'Title', value: viewerData?.productData?.title },
-    { label: 'Phone Number', value: viewerData?.productData?.phoneNumber },
-    {
-      label: 'Price',
-      value: formatNumberWithCommas(viewerData?.productData?.price),
-    },
-  ]
-
-  const assetSpecificFields = () => {
-    switch (viewerData?.productData?.assetType) {
-      case 'Property For Sale':
-        return [
-          {
-            label: 'Size in sq feet',
-            value: formatNumberWithCommas(viewerData?.productData?.sizeSQFT),
-          },
-          { label: 'Bedrooms', value: viewerData?.productData?.bedrooms },
-          { label: 'Bathrooms', value: viewerData?.productData?.bathrooms },
-          { label: 'Developer', value: viewerData?.productData?.developer },
-          {
-            label: 'Is it Furnished',
-            value: viewerData?.productData?.isFurnished ? 'Yes' : 'No',
-          },
-          {
-            label: 'Occupancy Status',
-            value: viewerData?.productData?.occupancyStatus,
-          },
-        ]
-      case 'Car For Sale':
-        return [
-          { label: 'Make', value: viewerData?.productData?.make },
-          { label: 'Model', value: viewerData?.productData?.model },
-          { label: 'Year', value: viewerData?.productData?.year },
-          {
-            label: 'Kilometers',
-            value: formatNumberWithCommas(viewerData?.productData?.kilometers),
-          },
-          { label: 'Seats', value: viewerData?.productData?.seats },
-          { label: 'Doors', value: viewerData?.productData?.doors },
-          {
-            label: 'Body Condition',
-            value: viewerData?.productData?.bodyCondition,
-          },
-          { label: 'Warranty', value: viewerData?.productData?.warranty },
-          { label: 'Fuel Type', value: viewerData?.productData?.fuelType },
-          {
-            label: 'No Of Cylinders',
-            value: viewerData?.productData?.noofCylinders,
-          },
-        ]
-      case 'Boats For Sale':
-        return [
-          { label: 'Length', value: viewerData?.productData?.length },
-          { label: 'Condition', value: viewerData?.productData?.condition },
-          { label: 'Age', value: viewerData?.productData?.age },
-          { label: 'Usage', value: viewerData?.productData?.usage },
-          { label: 'Seats', value: viewerData?.productData?.seats },
-        ]
-      case 'Jewellery For Sale':
-        return [
-          {
-            label: 'Metal Material',
-            value: viewerData?.productData?.jewelryMetal,
-          },
-          {
-            label: 'Grams',
-            value: formatNumberWithCommas(viewerData?.productData?.grams),
-          },
-          { label: 'Condition', value: viewerData?.productData?.condition },
-          { label: 'Age', value: viewerData?.productData?.age },
-        ]
-      default:
-        return []
-    }
-  }
-
-  const fields = [...commonFields, ...assetSpecificFields()]
-
   return (
-    <div className='flex min-h-0 flex-1 flex-col overflow-y-auto bg-white'>
-      <div className='sticky top-0 z-10 flex items-start justify-between gap-3 border-b border-slate-200 bg-white/95 px-4 py-3 backdrop-blur-sm sm:px-5'>
+    <div className='w-full bg-white'>
+      <div className='sticky top-0 z-10 flex items-start justify-between gap-3 border-b border-slate-200 bg-white px-4 py-3 sm:px-5'>
         <h2
           id='viewer-details-title'
           className='pr-8 text-base font-bold leading-snug text-[#002d4f] sm:text-lg'
@@ -336,25 +371,27 @@ const ViewerDetails = ({ bookingId, handleClose }) => {
         </button>
       </div>
 
-      <div className='flex-1 space-y-8 px-4 py-5 sm:px-5 sm:py-6'>
+      <div className='space-y-8 px-4 py-5 sm:px-5 sm:py-6'>
         <div>
           <h3 className='mb-3 text-sm font-bold uppercase tracking-wide text-[#a2913e]'>
             Asset details
           </h3>
           <div className='grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4'>
-            {viewerData?.productData?.fields?.map((field, index) => (
-              <div key={index} className='flex flex-col'>
-                <label className='mb-2 text-sm font-medium text-gray-700'>
-                  {field.label}
-                </label>
-                <input
-                  type='text'
-                  value={field.value || ''}
-                  className='rounded-md border-2 border-[#8d7c3b] px-2 py-2 focus:outline-none'
-                  readOnly
-                />
-              </div>
-            ))}
+            {Array.isArray(viewerData?.productData?.fields)
+              ? viewerData.productData.fields.map((field, index) => (
+                <div key={`${field?.label || 'field'}-${index}`} className='flex flex-col'>
+                  <label className='mb-2 text-sm font-medium text-gray-700'>
+                    {field?.label || ''}
+                  </label>
+                  <input
+                    type='text'
+                    value={formatFieldValue(field?.value)}
+                    className='rounded-md border-2 border-[#8d7c3b] px-2 py-2 focus:outline-none'
+                    readOnly
+                  />
+                </div>
+              ))
+              : null}
           </div>
         </div>
 
@@ -452,35 +489,45 @@ const ViewerDetails = ({ bookingId, handleClose }) => {
                 Ready to transfer asset?
               </h3>
 
-              <div className='flex flex-col flex-wrap gap-3 sm:flex-row sm:items-center'>
+              <div className='flex flex-col flex-wrap gap-3 sm:flex-row sm:items-center' onClick={(e) => e.stopPropagation()}>
                 {/* Upload file */}
                 <label
                   htmlFor='AssetTransferDocs'
-                  className='primary-gradient text-white p-2 px-4 rounded cursor-pointer'
+                  className={`primary-gradient text-white p-2 px-4 rounded ${transferDocUploading ? 'cursor-wait opacity-80' : 'cursor-pointer'}`}
+                  onClick={(e) => e.stopPropagation()}
                 >
                   <span className='flex items-center gap-2'>
                     <UploadCloudIcon />
                     <span>
-                      {TransferFile ? TransferFile?.name : 'Transfer document'}
+                      {transferDocUploading
+                        ? 'Uploading…'
+                        : TransferFile
+                          ? TransferFile.name
+                          : 'Transfer document'}
                     </span>
                   </span>
                 </label>
                 <input
-                  onChange={async (e) => {
-                    await handleFileChange(e)
-                  }}
+                  onChange={handleFileChange}
                   type='file'
                   className='sr-only'
-                  accept='.pdf'
+                  accept='.pdf,application/pdf'
                   id='AssetTransferDocs'
+                  disabled={transferDocUploading}
                 />
+                {TransferDocs.assetTransferDocument ? (
+                  <span className='text-sm font-medium text-green-700'>
+                    Ready to submit
+                  </span>
+                ) : null}
 
                 {/* Fee input */}
                 <input
                   type='number'
+                  min='0'
                   className='bg-white py-2 px-2 rounded-md border text-prussianBlue border-prussianBlue outline-none'
                   placeholder='asset success fee (AED)'
-                  value={TransferDocs.fees}
+                  value={TransferDocs.fees === 0 ? '' : TransferDocs.fees}
                   onChange={handleFeeChange}
                 />
 
@@ -546,24 +593,32 @@ const ViewerDetails = ({ bookingId, handleClose }) => {
             <div className='flex flex-col flex-wrap gap-3 sm:flex-row sm:items-center'>
               <label
                 htmlFor='AssetTransferProof'
-                className='primary-gradient text-white p-2 px-4 rounded cursor-pointer'
+                className={`primary-gradient text-white p-2 px-4 rounded ${transferProofUploading ? 'cursor-wait opacity-80' : 'cursor-pointer'}`}
               >
                 <span className='flex items-center gap-2'>
                   <UploadCloudIcon />
                   <span>
-                    {TransferFile ? TransferFile?.name : 'transfer documents'}
+                    {transferProofUploading
+                      ? 'Uploading…'
+                      : TransferProofFile
+                        ? TransferProofFile.name
+                        : 'Transfer documents'}
                   </span>
                 </span>
               </label>
               <input
-                onChange={async (e) => {
-                  await handleFileChange2(e)
-                }}
+                onChange={handleFileChange2}
                 type='file'
                 className='sr-only'
-                accept='.pdf'
+                accept='.pdf,application/pdf'
                 id='AssetTransferProof'
+                disabled={transferProofUploading}
               />
+              {TransferProof.PaymentProof ? (
+                <span className='text-sm font-medium text-green-700'>
+                  Ready to submit
+                </span>
+              ) : null}
               {/* Submit button */}
               <button
                 type='button'
@@ -576,48 +631,56 @@ const ViewerDetails = ({ bookingId, handleClose }) => {
           </div>
         )}
 
-        <div>
-          <h3 className='mb-3 text-sm font-bold uppercase tracking-wide text-[#a2913e]'>
-            Assign booking view
-          </h3>
-          <div className='flex flex-wrap items-start gap-4'>
-            {adminOptions.map((admin) => (
-              <div
-                className='flex text-prussianBlue items-center'
-                key={admin?.id}
-              >
-                <input
-                  id={admin.value}
-                  type='radio'
-                  value={admin.value}
-                  checked={selectedAdmin === admin.value}
-                  onChange={() => handleAdminSelection(admin.value)}
-                  className='mr-2'
-                />
-                <label
-                  htmlFor={admin.value}
-                  className='text-sm font-medium text-gray-700'
+        {user?.role === 'Trustee' ? (
+          <div>
+            <h3 className='mb-3 text-sm font-bold uppercase tracking-wide text-[#a2913e]'>
+              Assign booking view
+            </h3>
+            <p className='mb-3 text-sm text-slate-600'>
+              Choose who will handle this viewing: you (Myself) or FV Admin.
+            </p>
+            <div className='flex flex-wrap items-start gap-4'>
+              {adminOptions.map((admin) => (
+                <div
+                  className='flex text-prussianBlue items-center'
+                  key={admin?.id}
                 >
-                  {admin.name}
-                </label>
-              </div>
-            ))}
-          </div>
-          {showWarning && (
-            <div className='text-red-500 text-sm mt-2'>
-              {disableAdminSelect
-                ? 'Admin selection is disabled because the booking is less than 4 hours away.'
-                : 'Please select an action before choosing the admin.'}
+                  <input
+                    id={admin.value}
+                    type='radio'
+                    name='viewAssignedTo'
+                    value={admin.value}
+                    checked={selectedAdmin === admin.value}
+                    onChange={() => handleAdminSelection(admin.value)}
+                    disabled={disableAdminSelect}
+                    className='mr-2'
+                  />
+                  <label
+                    htmlFor={admin.value}
+                    className='text-sm font-medium text-gray-700'
+                  >
+                    {admin.name}
+                  </label>
+                </div>
+              ))}
             </div>
-          )}
-        </div>
+            {showWarning && (
+              <div className='text-red-500 text-sm mt-2'>
+                Admin selection is disabled because the booking is less than 4
+                hours away.
+              </div>
+            )}
+            <button
+              type='button'
+              onClick={handleAssignSubmit}
+              disabled={assignSubmitting || disableAdminSelect}
+              className='primary-gradient mt-4 rounded-lg px-6 py-2.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60'
+            >
+              {assignSubmitting ? 'Saving…' : 'Save assignment'}
+            </button>
+          </div>
+        ) : null}
 
-        <button
-          type='button'
-          className='primary-gradient mb-2 w-full rounded-lg py-2.5 text-sm font-semibold text-white sm:w-auto sm:px-6'
-        >
-          Submit
-        </button>
         <Modal
           isOpen={isOpen}
           onClose={() => setIsOpen(false)}

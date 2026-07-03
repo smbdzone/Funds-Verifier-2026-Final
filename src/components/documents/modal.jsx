@@ -16,7 +16,7 @@ const Modal = ({ isOpen, onClose, fileUrl, fileName }) => {
           <button
             type="button"
             onClick={onClose}
-            className="text-gray-600 hover:text-gray-800"
+            className="flex h-8 w-8 items-center justify-center rounded border-2 border-light-gold text-light-gold font-semibold hover:bg-light-gold/10"
             aria-label="Close"
           >
             X

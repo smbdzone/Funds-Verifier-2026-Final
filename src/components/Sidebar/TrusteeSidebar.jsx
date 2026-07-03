@@ -43,11 +43,6 @@ export default function Sidebar() {
     },
     {
       icon: <PrimaryDocument />,
-      name: "Viewing Management",
-      link: "/trustee/viewing",
-    },
-    {
-      icon: <PrimaryDocument />,
       name: "Create Slot",
       link: "/trustee/create-slot",
     },
@@ -73,7 +68,7 @@ export default function Sidebar() {
     },
     {
       icon: <PrimaryDocument />,
-      name: "Documents Storage",
+      name: "Document Management",
       link: "/trustee/document",
     },
     // {

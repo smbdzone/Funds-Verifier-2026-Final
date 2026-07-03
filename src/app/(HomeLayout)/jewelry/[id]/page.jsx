@@ -4,8 +4,10 @@ import ButtomSlider from '@/components/Product_page/Buttom_slider'
 import JewelleryView from '@/components/modules/Jewelry/JewelleryView'
 import { api } from '@/config'
 import GlobalLoader from '@/utils/GlobalLoader'
+import { buildListingPageMetadata } from '@/libs/listingMetadata'
+import { cache } from 'react'
 
-const GetProductData = async ({ id }) => {
+const GetProductData = cache(async ({ id }) => {
   try {
     const propertyInfo = await api(`/jewelry/${id}`)
     // Only evaluator-approved jewellery (status = 1) in Related Jewellery
@@ -24,6 +26,20 @@ const GetProductData = async ({ id }) => {
   } catch (error) {
     return null
   }
+})
+
+export async function generateMetadata({ params }) {
+  const { id } = await params
+  const data = await GetProductData({ id })
+
+  if (!data?.propertyInfo) {
+    return { title: 'Jewelry not found | Funds Verifier' }
+  }
+
+  return buildListingPageMetadata(data.propertyInfo, {
+    routeSegment: 'jewelry',
+    listingId: id,
+  })
 }
 
 export default async function page({ params }) {

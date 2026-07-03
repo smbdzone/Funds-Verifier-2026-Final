@@ -29,6 +29,7 @@ import { XIcon } from 'lucide-react'
 import {
   canRequestPremiumServices,
   isListingEvaluatorApprovedLocked,
+  isListingPriceLocked,
 } from '@/libs/listingEditLock'
 import ListingApprovedEditNotice from '@/components/ListingsForm/ListingApprovedEditNotice'
 import {
@@ -122,6 +123,7 @@ const JewelryListingForm = ({
   const [modalOpen, setModalOpen] = useState(false)
   const [RequestService, setRequestService] = useState('')
   const isEvaluatorApprovedLocked = isListingEvaluatorApprovedLocked(formData)
+  const isPriceLocked = isListingPriceLocked(formData)
   const canRequestPremium = canRequestPremiumServices(formData)
   const blocksTechnicalReport = blocksPremiumServiceRequest(formData?.technicalReport)
   const blocks3DWalkthrough = blocksPremiumServiceRequest(formData?.video3DWalkthrough)
@@ -208,6 +210,8 @@ const JewelryListingForm = ({
           <ListingImageUploadLayout
             errors={errors.pictures && images.length === 0}
             formats={LISTING_IMAGE_FORMATS_LABEL}
+            label='Additional pictures'
+            required
           >
             <ListingMultipleImageComponent
               images={images}
@@ -221,6 +225,8 @@ const JewelryListingForm = ({
           <ListingImageUploadLayout
             errors={errors.thumbnail && !thumbnail}
             formats={LISTING_IMAGE_FORMATS_LABEL}
+            label='Thumbnail'
+            required
           >
             <ListingsImageComponent
               errors={errors.thumbnail && !thumbnail}
@@ -231,7 +237,10 @@ const JewelryListingForm = ({
               disabled={isEvaluatorApprovedLocked}
             />
           </ListingImageUploadLayout>
-          <ListingImageUploadLayout formats={LISTING_VIDEO_FORMATS_LABEL}>
+          <ListingImageUploadLayout
+            formats={LISTING_VIDEO_FORMATS_LABEL}
+            label='Video (optional)'
+          >
             <ListingsVideoComponent
               videos={videos}
               handleVideoRemove={handleVideoRemove}
@@ -271,6 +280,7 @@ const JewelryListingForm = ({
                 errorsMessage={errors.price}
                 name='price'
                 type='text'
+                disabled={isPriceLocked}
               />
             </div>
             <div className='relative-placeholder mt-6 w-full'>
@@ -293,6 +303,9 @@ const JewelryListingForm = ({
                 onClose={handleClose1Modal}
                 formData={formData}
                 setFormData={setFormData}
+                assetType='Jewellery For Sale'
+                dropdown={groupedData}
+                title='Jewellery Brand'
               />
             </div>
           </div>

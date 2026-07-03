@@ -86,8 +86,13 @@ const SellerProfileSidebar = () => {
     },
     {
       icon: <PrimaryDocument />,
-      name: 'Documents Storage',
+      name: 'Document Management',
       link: '/seller-profile/documents-storage',
+    },
+    {
+      icon: <PrimaryDocument />,
+      name: 'Invoices',
+      link: '/seller-profile/invoices',
     },
     {
       icon: <PrimarySale />,
@@ -135,8 +140,8 @@ const SellerProfileSidebar = () => {
                   <div key={tab.name + i} className='relative'>
                     <div
                       className={`${tab.link === path
-                          ? 'bg-whiteSmoke font-medium focus:outline-none'
-                          : 'border-transparent'
+                        ? 'bg-whiteSmoke font-medium focus:outline-none'
+                        : 'border-transparent'
                         } whitespace-nowrap flex gap-3 hover:bg-whiteSmoke hover:text-prussianBlue items-center py-2 px-8 cursor-pointer sm:text-base text-sm lg:text-xl`}
                       onClick={() => handleDropdownToggle(i - 1)} // Adjust index for dropdown tracking
                     >
@@ -177,8 +182,8 @@ const SellerProfileSidebar = () => {
                         type='button'
                         key={tab.name}
                         className={`${tab.link === path
-                            ? 'bg-whiteSmoke text-prussianBlue w-full font-medium focus:outline-none'
-                            : 'border-transparent'
+                          ? 'bg-whiteSmoke text-prussianBlue w-full font-medium focus:outline-none'
+                          : 'border-transparent'
                           } whitespace-nowrap w-full flex gap-3 hover:bg-whiteSmoke hover:text-prussianBlue items-center py-2 px-8 cursor-pointer sm:text-xl`}
                       >
                         {tab.icon}

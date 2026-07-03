@@ -12,15 +12,13 @@ import Modal2 from '../product-modal/modal2'
 import axios from 'axios'
 import { FaStar } from 'react-icons/fa'
 import { formatPriceUS } from '@/utils'
-import {
-  FaceBookIcon,
-  InstaIcon,
-  TwitterIcon,
-  WhiteLinkdInIcon,
-  WhiteTickTokIcon,
-} from '../Icons'
 import Open3dModal from '../3dModal/Open3dModal'
+import ListingSocialShare from '@/components/shared/ListingSocialShare'
 import { formatNumberWithCommas } from '../../utils/global-functions/global'
+import {
+  formatPropertySizeNumber,
+  getPropertySizeValue,
+} from '@/libs/propertySizeUnits'
 import ImageSlider from '../modules/Jewelry/ImageSlider'
 import {
   getListingDetailMediaItems,
@@ -227,10 +225,9 @@ export default function ProductView({ data }) {
                 <></>
               )}
               <span className='flex flex-row items-center text-[7px] sm:text-xs md:text-sm'>
-                <GoDotFill className='flex mr-2 text-gold-800' /> SqFt :
-                {data?.sizeSQFT < 10
-                  ? '0' + data?.sizeSQFT
-                  : formatNumberWithCommas(data?.sizeSQFT)}
+                <GoDotFill className='flex mr-2 text-gold-800' />{' '}
+                {data?.sizeUnit || 'SQFT'} :
+                {formatPropertySizeNumber(getPropertySizeValue(data))}
               </span>
             </div>
 
@@ -333,26 +330,10 @@ export default function ProductView({ data }) {
             Ref: {data?.uuid ? data.uuid.slice(0, 8) : 'N/A'}
           </span>
           <div className='flex justify-between w-full items-end'>
-            <div className='flex gap-5 font-medium  items-center'>
-              <span className='md:text-lg text-base'>Share:</span>
-              <div className='flex gap-2'>
-                <Link href='#'>
-                  <FaceBookIcon className='h-[16px] w-[16px]' />
-                </Link>
-                <Link href='#'>
-                  <InstaIcon className='h-[16px] w-[16px]' />
-                </Link>
-                <Link href='#'>
-                  <WhiteLinkdInIcon className='h-[16px] w-[16px]' />
-                </Link>
-                <Link href='#'>
-                  <TwitterIcon className='h-[16px] w-[16px]' />
-                </Link>
-                <Link href='#'>
-                  <WhiteTickTokIcon className='h-[16px] w-[16px]' />
-                </Link>
-              </div>
-            </div>
+            <ListingSocialShare
+              listing={data}
+              linkedinIcon='white'
+            />
           </div>
         </div>
       </div>

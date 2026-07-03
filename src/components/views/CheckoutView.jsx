@@ -6,18 +6,12 @@ import { GoDotFill } from 'react-icons/go'
 import { IoCheckmarkSharp } from 'react-icons/io5'
 import CompletePaymentComponent from '@/components/CheckoutLayoutComponent/CompletePaymentComponent'
 import {
-  FaceBookIcon,
-  InstaIcon,
-  TwitterIcon,
-  WhiteLinkdInIcon,
-  WhiteTickTokIcon,
-} from '../Icons'
-import { formatPriceUS } from '@/utils'
-import { formatNumberWithCommas } from '../../utils/global-functions/global'
-import {
   getListingImageSrc,
   getListingVideoSrc,
 } from '@/libs/listingCardMedia'
+import ListingSocialShare from '@/components/shared/ListingSocialShare'
+import { formatPriceUS } from '@/utils'
+import { formatNumberWithCommas } from '../../utils/global-functions/global'
 
 export default function CheckoutView({
   data,
@@ -81,7 +75,7 @@ export default function CheckoutView({
           <div className='sm:flex xl:flex-nowrap items-center sm:gap-6 gap-3 lg:gap-10 flex-wrap pt-10 lg:pt-24 pb-5'>
             <div className='flex items-stretch shrink-0 sm:flex-row flex-col gap-4'>
               {typeof previewMedia === 'string' &&
-              previewMedia.endsWith('.mp4') ? (
+                previewMedia.endsWith('.mp4') ? (
                 <video
                   controls
                   height={580}
@@ -217,28 +211,12 @@ export default function CheckoutView({
                 </div>
               </div>
               <div className='flex justify-between w-full items-end'>
-                <div className='flex gap-5 font-medium text-lg items-center'>
-                  <span className='lg:text-base sm:text-sm text-xs'>
-                    Share:
-                  </span>
-                  <div className='flex gap-2'>
-                    <Link href='#'>
-                      <FaceBookIcon className='h-[16px] w-[16px]' />
-                    </Link>
-                    <Link href='#'>
-                      <InstaIcon className='h-[16px] w-[16px]' />
-                    </Link>
-                    <Link href='#'>
-                      <WhiteLinkdInIcon className='h-[16px] w-[16px]' />
-                    </Link>
-                    <Link href='#'>
-                      <TwitterIcon className='h-[16px] w-[16px]' />
-                    </Link>
-                    <Link href='#'>
-                      <WhiteTickTokIcon className='h-[16px] w-[16px]' />
-                    </Link>
-                  </div>
-                </div>
+                <ListingSocialShare
+                  listing={data}
+                  label='Share:'
+                  labelClassName='lg:text-base sm:text-sm text-xs'
+                  linkedinIcon='white'
+                />
               </div>
             </div>
           </div>

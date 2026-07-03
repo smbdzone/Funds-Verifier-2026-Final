@@ -25,8 +25,10 @@ import { XIcon } from 'lucide-react'
 import {
   canRequestPremiumServices,
   isListingEvaluatorApprovedLocked,
+  isListingPriceLocked,
 } from '@/libs/listingEditLock'
 import ListingApprovedEditNotice from '@/components/ListingsForm/ListingApprovedEditNotice'
+import PropertySizeField from '@/components/property-listing/PropertySizeField'
 import {
   blocksPremiumServiceRequest,
   premiumServiceFieldLabel,
@@ -80,6 +82,7 @@ export const ImageUploadComponent = React.memo(
     isFurnishedOptions,
     type,
     dropdown3D,
+    handleSizeChange,
   }) => {
     const [data, setData] = useState()
     const [data2, setData2] = useState()
@@ -123,6 +126,7 @@ export const ImageUploadComponent = React.memo(
     const [modalOpen, setModalOpen] = useState(false)
     const [RequestService, setRequestService] = useState('')
     const isEvaluatorApprovedLocked = isListingEvaluatorApprovedLocked(formData)
+    const isPriceLocked = isListingPriceLocked(formData)
     const canRequestPremium = canRequestPremiumServices(formData)
     const blocksTechnicalReport = blocksPremiumServiceRequest(formData?.technicalReport)
     const blocks3DWalkthrough = blocksPremiumServiceRequest(formData?.video3DWalkthrough)
@@ -208,6 +212,8 @@ export const ImageUploadComponent = React.memo(
           <ListingImageUploadLayout
             errors={errors.thumbnail && !thumbnail}
             formats={LISTING_IMAGE_FORMATS_LABEL}
+            label='Thumbnail'
+            required
           >
             <ListingsImageComponent
               errors={errors.thumbnail && !thumbnail}
@@ -221,6 +227,8 @@ export const ImageUploadComponent = React.memo(
           <ListingImageUploadLayout
             errors={errors.pictures && images.length === 0}
             formats={LISTING_IMAGE_FORMATS_LABEL}
+            label='Additional pictures'
+            required
           >
             <ListingMultipleImageComponent
               images={images}
@@ -231,7 +239,10 @@ export const ImageUploadComponent = React.memo(
               disabled={isEvaluatorApprovedLocked}
             />
           </ListingImageUploadLayout>
-          <ListingImageUploadLayout formats={LISTING_VIDEO_FORMATS_LABEL}>
+          <ListingImageUploadLayout
+            formats={LISTING_VIDEO_FORMATS_LABEL}
+            label='Video (optional)'
+          >
             <ListingsVideoComponent
               videos={videos}
               handleVideoRemove={handleVideoRemove}
@@ -253,7 +264,8 @@ export const ImageUploadComponent = React.memo(
               handleBlur={handleBlur}
               placeholder='Tell us about your Property (max. 300 characters)'
               errorsMessage={errors.description}
-              maxLength={300} // Pass max length to the child
+              maxLength={300}
+              required
               disabled={isEvaluatorApprovedLocked}
             />
             <div className='relative w-full dropdown-container'>
@@ -270,6 +282,7 @@ export const ImageUploadComponent = React.memo(
                 errorsMessage={errors.price}
                 name='price'
                 type='text'
+                disabled={isPriceLocked}
               />
             </div>
           </div>
@@ -287,6 +300,7 @@ export const ImageUploadComponent = React.memo(
                 placeholder='Additional Description'
                 errorsMessage={errors.additionalDescription}
                 maxLength={1000}
+                required
                 disabled={isEvaluatorApprovedLocked}
               />
             </div>
@@ -304,7 +318,7 @@ export const ImageUploadComponent = React.memo(
                 ''
               }
               handleChange={handleChange}
-              required={true}
+              required={false}
               errors={errors.video3DWalkthrough}
               errorMessage={errors.video3DWalkthrough}
               dateTime={modalData.dateTime !== ''}
@@ -337,23 +351,22 @@ export const ImageUploadComponent = React.memo(
             />
           </div>
           <div className='relative flex flex-col justify-start space-y-5'>
-            <ListingFormInput
+            <PropertySizeField
+              sizeSQFT={formData.sizeSQFT}
+              sizeSQM={formData.sizeSQM}
+              sizeUnit={formData.sizeUnit || 'SQFT'}
               errors={
-                (errors.sizeSQFT && totalSize === 'Size in') ||
-                (!totalSize && errors.sizeSQFT)
+                errors.sizeSQFT &&
+                !String(
+                  (formData.sizeUnit || 'SQFT') === 'SQM'
+                    ? formData.sizeSQM
+                    : formData.sizeSQFT || '',
+                ).trim()
               }
-              value={
-                id ? `${formData.sizeSQFT || ''} SQFT` : `${totalSize} SQFT`
-              }
-              disabled={isEvaluatorApprovedLocked}
-              handleChange={handleChange}
-              onBlur={handleBlur}
-              required={true}
-              placeholder='Size in SQFT'
               errorsMessage={errors.sizeSQFT}
-              maxLength={50}
-              name='sizeSQFT'
-              type='text'
+              disabled={isEvaluatorApprovedLocked}
+              onSizeChange={handleSizeChange}
+              onBlur={handleBlur}
             />
           </div>
           {formData.assetType === 'Property For Lease' && (
@@ -377,6 +390,7 @@ export const ImageUploadComponent = React.memo(
                 }
                 disabled={isEvaluatorApprovedLocked}
                 readOnly={isEvaluatorApprovedLocked}
+                required
               />
             </div>
           )}
@@ -402,6 +416,10 @@ export const ImageUploadComponent = React.memo(
               onClose={handleClose1Modal}
               formData={formData}
               setFormData={setFormData}
+              assetType='Property For Sale'
+              dropdown3D={dropdown3D}
+              bedroomsDropDown={bedroomsOptions}
+              title='Bedrooms'
             />
           </div>
           <div className='relative-placeholder w-full'>
@@ -416,7 +434,7 @@ export const ImageUploadComponent = React.memo(
                 technicalModalData.dateTime
               }
               handleChange={handleChange}
-              required={true}
+              required={false}
               errors={errors.technicalReport && !formData.technicalReport}
               errorMessage={errors.technicalReport}
               handleOpenModal={
@@ -463,6 +481,7 @@ export const ImageUploadComponent = React.memo(
               }
               readOnly={isEvaluatorApprovedLocked}
               disabled={isEvaluatorApprovedLocked}
+              required
             />
           </div>
           <div className='relative w-full dropdown-container'>
@@ -481,6 +500,7 @@ export const ImageUploadComponent = React.memo(
               }
               readOnly={isEvaluatorApprovedLocked}
               disabled={isEvaluatorApprovedLocked}
+              required
             />
           </div>
           <div className='relative-placeholder w-full'>
@@ -501,6 +521,7 @@ export const ImageUploadComponent = React.memo(
                 handleSelectOption('occupancyStatus', option)
               }
               readOnly={isEvaluatorApprovedLocked}
+              required
             />
           </div>
           <div className='relative w-full dropdown-container'>

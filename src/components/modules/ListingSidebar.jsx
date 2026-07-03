@@ -6,6 +6,11 @@ import { Disclosure } from '@headlessui/react'
 import Box from '@mui/material/Box'
 import Slider from '@mui/material/Slider'
 import customAxios from '@/utils/apis/apis'
+import {
+  buildCountryCityNeighbourhoodMap,
+  UAE_ONLY_COUNTRY_OPTIONS,
+} from '@/libs/listingLocationUtils'
+import { LISTING_COUNTRY_UAE_LABEL } from '@/libs/dummyLocationData'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import {
@@ -496,57 +501,12 @@ export const ListingSidebar = ({ initialData, isSidebarVisible }) => {
         }
 
         const products = response?.data?.products || []
+        const formattedMap = buildCountryCityNeighbourhoodMap(products)
 
-        // Build a mapping of { country: { city: [neighbourhoods] } }
-        const countryCityMap = {}
-
-        products.forEach((item) => {
-          const { country, city, neighbourhood } = item
-
-          if (
-            country &&
-            country !== 'Select Country' &&
-            country !== 'required_country'
-          ) {
-            // ✅ Ensure country exists
-            if (!countryCityMap[country]) {
-              countryCityMap[country] = {}
-            }
-
-            // ✅ If city exists, add it under the country
-            if (city) {
-              if (!countryCityMap[country][city]) {
-                countryCityMap[country][city] = new Set()
-              }
-
-              // ✅ Add neighbourhood if present
-              if (neighbourhood) {
-                countryCityMap[country][city].add(neighbourhood)
-              }
-            }
-          }
-        })
-
-        // ✅ Get unique countries
-        const uniqueCountries = Object.keys(countryCityMap)
-
-        // ✅ Convert neighbourhood Set to Array
-        const formattedMap = Object.fromEntries(
-          Object.entries(countryCityMap).map(([country, cities]) => [
-            country,
-            Object.fromEntries(
-              Object.entries(cities).map(([city, neighbourhoods]) => [
-                city,
-                Array.from(neighbourhoods),
-              ]),
-            ),
-          ]),
-        )
-
-        // console.log(uniqueCountries, formattedMap)
-
-        setCountries(uniqueCountries)
-        setCountryCityMap(formattedMap) // ✅ store it in state
+        setCountries(UAE_ONLY_COUNTRY_OPTIONS)
+        setCountryCityMap(formattedMap)
+        setSelectedCountry(LISTING_COUNTRY_UAE_LABEL)
+        setCities(Object.keys(formattedMap[LISTING_COUNTRY_UAE_LABEL] || {}))
       } catch (error) {
         console.error('Error fetching countries data:', error)
       }
@@ -721,17 +681,16 @@ export const ListingSidebar = ({ initialData, isSidebarVisible }) => {
   }
 
   const updateSortingForCountry = (sortOrder) => {
-    // fetchCities(sortOrder)
-    setSelectedCountry(sortOrder)
-    setCities(Object.keys(countryCityMap[sortOrder]))
+    const country = sortOrder || LISTING_COUNTRY_UAE_LABEL
+    setSelectedCountry(country)
+    setCities(Object.keys(countryCityMap[country] || {}))
     updateSearchParams('city', null)
-    updateSearchParams('country', sortOrder)
+    updateSearchParams('country', country)
   }
 
   const updateSortingForCity = (sortOrder) => {
-    // fetchNeighbourhoods(sortOrder)
-    // console.log(countryCityMap[selectedCountry][sortOrder])
-    setNeighbourhood(countryCityMap[selectedCountry][sortOrder])
+    const country = selectedCountry || LISTING_COUNTRY_UAE_LABEL
+    setNeighbourhood(countryCityMap[country]?.[sortOrder] || [])
 
     updateSearchParams('city', sortOrder)
   }

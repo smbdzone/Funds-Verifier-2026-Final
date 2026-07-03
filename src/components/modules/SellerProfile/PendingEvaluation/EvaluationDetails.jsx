@@ -3,6 +3,7 @@ import { useSearchParams, usePathname } from 'next/navigation'
 import ViewModal from '@/components/Modals/ViewModal'
 import { handleFileUpload } from '@/libs/uploadAsset'
 import { formatNumberWithCommas } from '@/utils/global-functions/global'
+import { formatPropertySizeDisplay } from '@/libs/propertySizeUnits'
 import { toast } from 'react-toastify'
 import Loader from '../../EvaluatorProfile/requestCompoenets/Loader'
 import Modal from '../../../documents/modal'
@@ -15,6 +16,7 @@ import {
 import Link from 'next/link'
 import { getListingEditPath } from '@/libs/listingEditPaths'
 import {
+  formatRequestDocumentDate,
   getRequestDocumentName,
   isRequestDocumentFulfilled,
   normalizeRequestDocuments,
@@ -113,8 +115,8 @@ const EvaluationDetails = () => {
     Property: [
       ...commonFields,
       {
-        label: 'Size in square feet',
-        value: formatNumberWithCommas(selectedProperty?.sizeSQFT),
+        label: 'Property size',
+        value: formatPropertySizeDisplay(selectedProperty),
       },
       { label: 'Bedrooms', value: selectedProperty?.bedrooms },
       { label: 'Bathrooms', value: selectedProperty?.bathrooms },
@@ -459,7 +461,7 @@ const EvaluationDetails = () => {
                     href='/seller-profile/documents-storage'
                     className='text-blue-600 underline'
                   >
-                    Documents Storage
+                    Document Management
                   </Link>
                   .
                 </p>
@@ -474,9 +476,16 @@ const EvaluationDetails = () => {
                         key={`${doc.name}-${index}`}
                         className='mb-3 flex flex-col gap-2 border-b border-gray-100 pb-3 sm:flex-row sm:items-center sm:justify-between'
                       >
-                        <p className='text-base capitalize'>
-                          {getRequestDocumentName(doc)}
-                        </p>
+                        <div>
+                          <p className='text-base capitalize'>
+                            {getRequestDocumentName(doc)}
+                          </p>
+                          {doc.date ? (
+                            <p className='text-xs text-gray-500'>
+                              {formatRequestDocumentDate(doc.date)}
+                            </p>
+                          ) : null}
+                        </div>
                         <div className='flex items-center gap-3'>
                           {isRequestDocumentFulfilled(doc) ? (
                             <button

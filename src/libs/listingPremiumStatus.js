@@ -116,6 +116,17 @@ export function getListingWalkthroughUrl(listing) {
   return ''
 }
 
+/** Surveyor marked this asset as recommended when uploading the technical report. */
+export function isSurveyorRecommendedAsset(listing) {
+  if (!listing) return false
+  if (listing.isRecommendedAsset === true) return true
+
+  const report = listing.technicalReport
+  if (!report || typeof report !== 'object') return false
+
+  return Boolean(report.IsRecommended) && isPremiumServiceDelivered(report)
+}
+
 export const LISTING_PREMIUM_BLUE_GRADIENT =
   'linear-gradient(135deg, #0B2D4E 0%, #839cb9 100%)'
 
@@ -134,9 +145,12 @@ export function getListingPremiumDisplay(listing) {
   const hasPaidTechnical = hasSuccessfulPremiumPayment(listing?.technicalReport)
   const hasPaid3D = hasSuccessfulPremiumPayment(listing?.video3DWalkthrough)
   const premiumCount = (hasPaidTechnical ? 1 : 0) + (hasPaid3D ? 1 : 0)
+  const surveyorRecommended = isSurveyorRecommendedAsset(listing)
 
-  const hasFeaturedStyling = approved && premiumCount >= 1
-  const isRecommended = approved && premiumCount >= 2
+  const hasFeaturedStyling =
+    approved && (premiumCount >= 1 || surveyorRecommended)
+  const isRecommended =
+    approved && (premiumCount >= 2 || surveyorRecommended)
 
   let badge = null
   if (Number(listing?.status) === 0) {
@@ -151,6 +165,7 @@ export function getListingPremiumDisplay(listing) {
     approved,
     hasFeaturedStyling,
     isRecommended,
+    surveyorRecommended,
     badge,
     hasPaidTechnical,
     hasPaid3D,

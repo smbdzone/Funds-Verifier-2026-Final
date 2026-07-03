@@ -431,7 +431,27 @@ const ListingsProvider = ({ children }) => {
   }
 
   const handleImageChange = (e) => {
-    const files = Array.from(e.target.files)
+    const files = Array.from(e.target.files || [])
+    if (!files.length) return
+
+    const remainingSlots = LISTING_IMAGE_MAX_COUNT - images.length
+    if (remainingSlots <= 0) {
+      toast.error(
+        `You can only upload a maximum of ${LISTING_IMAGE_MAX_COUNT} images`,
+      )
+      if (e?.target) e.target.value = ''
+      return
+    }
+
+    const filesToProcess =
+      files.length > remainingSlots ? files.slice(0, remainingSlots) : files
+
+    if (files.length > remainingSlots) {
+      toast.info(
+        `Only ${remainingSlots} more image(s) allowed (max ${LISTING_IMAGE_MAX_COUNT} total).`,
+      )
+    }
+
     const validFiles = []
     const checkFile = (file) => {
       if (file.size > LISTING_IMAGE_MAX_BYTES) {
@@ -460,7 +480,7 @@ const ListingsProvider = ({ children }) => {
     }
 
     const processFiles = async () => {
-      for (const file of files) {
+      for (const file of filesToProcess) {
         const validFile = await checkFile(file)
         if (validFile) {
           validFiles.push(validFile) // Add valid files to the array
@@ -490,6 +510,10 @@ const ListingsProvider = ({ children }) => {
         setImages((prevImages) =>
           prevImages.filter((img) => !validFiles.includes(img)),
         )
+      }
+
+      if (e?.target) {
+        e.target.value = ''
       }
     }
 

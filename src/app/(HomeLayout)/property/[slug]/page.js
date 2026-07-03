@@ -5,8 +5,10 @@ import ButtomSlider from '@/components/Product_page/Buttom_slider'
 import ProductView from '@/components/views/ProductView'
 import GlobalLoader from '@/utils/GlobalLoader'
 import { getPublicApiHeaders } from '@/libs/publicApiClient'
+import { buildListingPageMetadata } from '@/libs/listingMetadata'
+import { cache } from 'react'
 
-const GetProductData = async ({ slug }) => {
+const GetProductData = cache(async ({ slug }) => {
   try {
     const headers = await getPublicApiHeaders()
     const propertyResponse = await axios.get(
@@ -35,6 +37,20 @@ const GetProductData = async ({ slug }) => {
     console.error('Failed to load property:', slug, error?.message)
     return null
   }
+})
+
+export async function generateMetadata({ params }) {
+  const { slug } = await params
+  const data = await GetProductData({ slug })
+
+  if (!data?.propertyInfo) {
+    return { title: 'Property not found | Funds Verifier' }
+  }
+
+  return buildListingPageMetadata(data.propertyInfo, {
+    routeSegment: 'property',
+    listingId: slug,
+  })
 }
 
 export default async function Page({ params }) {

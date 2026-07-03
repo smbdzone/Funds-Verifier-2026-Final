@@ -20,13 +20,13 @@ import { handleFileUpload } from '@/libs/uploadAsset'
 import Loader from '../EvaluatorProfile/requestCompoenets/Loader'
 import { formatNumberWithCommas } from '../../../utils/global-functions/global'
 import customAxios from '../../../utils/apis/apis'
+import EvaluatorListingMedia from '../EvaluatorProfile/requestCompoenets/EvaluatorListingMedia'
+import EvaluatorDateField from '../EvaluatorProfile/requestCompoenets/EvaluatorDateField'
 import {
-  getListingImageSrc,
-  getListingVideoSrc,
-} from '@/libs/listingCardMedia'
-import {
+  formatDateForInput,
   getRequestDocumentName,
   normalizeRequestDocuments,
+  requestDocumentsMissingDate,
   serializeRequestDocuments,
 } from '@/utils/requestDocumentUtils'
 
@@ -39,9 +39,7 @@ export const RequestTab = () => {
   const [fileName, setFileName] = useState('')
   const [fileUrl, setFileUrl] = useState('') // For displaying file URL
   const [isLoading, setIsLoading] = useState(false)
-  const [noMediaFound, setNoMediaFound] = useState(false)
   const [data, setData] = useState()
-  const [selectedMedia, setSelectedMedia] = useState(null)
   const [listingPrice, setListingPrice] = useState('')
   const [formattedListingPrice, setFormattedListingPrice] = useState('')
   const [sizeSQFT, setSizeSQFT] = useState('')
@@ -75,15 +73,6 @@ export const RequestTab = () => {
         `${process.env.NEXT_PUBLIC_BASE_URL}/property/${propertyId}`
       )
       setProperty(response.data)
-      const hasGallery =
-        (response.data.pictures?.images?.length ?? 0) > 0 ||
-        (response.data.video?.videos?.length ?? 0) > 0
-      const hasThumb = Boolean(
-        response.data.thumbnailImg?.images?.[0]?.url ||
-        response.data.thumbnailImg?.images?.[0]?.signedUrl
-      )
-      const has3d = Boolean(response.data.video3DWalkthrough?.link)
-      setNoMediaFound(!hasGallery && !hasThumb && !has3d)
       fetchPrice(response?.data.propertyType, response?.data?.bedrooms)
       // Initialize ROI state if available
       setRoi(response?.data.roi != null ? String(response.data.roi) : '')
@@ -103,6 +92,9 @@ export const RequestTab = () => {
         setFormattedSizeSQFT,
       )
       setFeedback(response.data.feedback || '')
+      setCertificateDate(
+        formatDateForInput(response.data.evaluationCertificateDate),
+      )
       if (response.data.evaluationCertificate) {
         setFileUrl(response.data.evaluationCertificate) // Update URL from API
       }
@@ -118,19 +110,29 @@ export const RequestTab = () => {
 
   const router = useRouter()
   const [requestDocument, setRequestDocument] = useState([])
-  const [newDocument, setNewDocument] = useState('') // State for the new document
+  const [newDocument, setNewDocument] = useState('')
+  const [newDocumentDate, setNewDocumentDate] = useState('')
+  const [certificateDate, setCertificateDate] = useState('')
   const [showTextArea, setShowTextArea] = useState(false)
   const [editIndex, setEditIndex] = useState(null)
   const [editText, setEditText] = useState('')
   const handleAddDocument = () => {
-    if (newDocument.trim() !== '') {
-      setRequestDocument([
-        ...requestDocument,
-        { name: newDocument.trim(), document: null },
-      ])
-      setNewDocument('')
-      setShowTextArea(false)
+    if (newDocument.trim() === '') {
+      toast.error('Please enter a document name.')
+      return
     }
+    if (!newDocumentDate) {
+      toast.error('Please select a date for the document request.')
+      return
+    }
+
+    setRequestDocument([
+      ...requestDocument,
+      { name: newDocument.trim(), document: null, date: newDocumentDate },
+    ])
+    setNewDocument('')
+    setNewDocumentDate('')
+    setShowTextArea(false)
   }
 
   const handleEdit = (index) => {
@@ -155,6 +157,11 @@ export const RequestTab = () => {
   }
 
   const handleRequest = async () => {
+    if (requestDocumentsMissingDate(requestDocument)) {
+      toast.error('Each requested document must have a date.')
+      return
+    }
+
     try {
       const response = await customAxios.put(
         `${process.env.NEXT_PUBLIC_BASE_URL}/property/${propertyId}`,
@@ -181,6 +188,11 @@ export const RequestTab = () => {
   }, [propertyId])
 
   const handleApprove = async (fileName) => {
+    if (property?.status !== 1 && !certificateDate) {
+      toast.error('Please select a certificate date.')
+      return
+    }
+
     setIsLoading(true)
     try {
       let fileUpload = ''
@@ -202,6 +214,13 @@ export const RequestTab = () => {
             ...(sizeSQFT !== '' ? { sizeSQFT: Number(sizeSQFT) } : {}),
             evaluationCertificate:
               fileUpload?._id || property?.evaluationCertificate || null,
+            ...(property?.status !== 1 && certificateDate
+              ? {
+                  evaluationCertificateDate: new Date(
+                    certificateDate,
+                  ).toISOString(),
+                }
+              : {}),
             invoice: invoiceUpload?._id || property?.invoice || null,
             status: 1,
           }
@@ -258,21 +277,6 @@ export const RequestTab = () => {
 
   const closeModal = () => {
     setIsModalOpen(false)
-  }
-
-  const handleOpenMedia = (media) => {
-    setSelectedMedia(media)
-  }
-
-  const handleCloseModal = () => {
-    setSelectedMedia(null)
-  }
-
-  // Close modal when clicking outside
-  const handleClickOutside = (e) => {
-    if (e.target.id === 'modalOverlay') {
-      handleCloseModal()
-    }
   }
 
   const [evaluationPrice, setEvaluationPrice] = useState()
@@ -435,127 +439,7 @@ export const RequestTab = () => {
           />
         </div>
 
-        <div className='mb-4'>
-          <label className='block text-sm sm:text-base font-medium text-[#969696]'>
-            Media
-          </label>
-          <div className='mt-1 flex flex-col w-full px-3 py-3 rounded-md bg-white text-[#969696] text-sm sm:text-base border border-[#969696]'>
-            {noMediaFound ? (
-              <img
-                src='/listing/camera.svg'
-                alt='No listing media'
-                className='w-full max-h-48 object-contain opacity-60'
-              />
-            ) : (
-              <div className='w-full h-full flex gap-2 justify-center'>
-                {/* 3D Walkthrough container */}
-                {property?.video3DWalkthrough?.link ? (
-                  <div className='relative w-64 min-h-full flex-shrink-0 rounded-sm overflow-hidden'>
-                    <iframe
-                      src={property?.video3DWalkthrough?.link}
-                      className='w-full h-full object-cover'
-                      frameBorder='0'
-                      title='3D Walkthrough'
-                      style={{ pointerEvents: 'none' }}
-                    />
-                    <div
-                      className='absolute inset-0 bg-transparent'
-                      onClick={() =>
-                        handleOpenMedia(property?.video3DWalkthrough?.link)
-                      }
-                    />
-                  </div>
-                ) : null}
-
-                {/* Remaining media container */}
-                <div className='w-full flex flex-wrap gap-2'>
-                  {[
-                    ...(property?.pictures?.images?.length
-                      ? property.pictures.images.map((image) => ({
-                        type: 'image',
-                        src: getListingImageSrc(image),
-                      }))
-                      : property?.thumbnailImg?.images?.[0]
-                        ? [
-                          {
-                            type: 'image',
-                            src: getListingImageSrc(
-                              property.thumbnailImg.images[0]
-                            ),
-                          },
-                        ]
-                        : []),
-                    ...(property?.video?.videos
-                      ? property.video.videos.map((video) => ({
-                        type: 'video',
-                        src: getListingVideoSrc(video),
-                      }))
-                      : []),
-                  ].map((media, index) => (
-                    <div
-                      key={index}
-                      className='w-28 cursor-pointer h-28 rounded-sm overflow-hidden'
-                      onClick={() => handleOpenMedia(media.src)}
-                    >
-                      {media.type === 'video' ? (
-                        <video
-                          src={media.src}
-                          className='w-full h-full cursor-pointer object-cover rounded-sm'
-                          controls
-                        />
-                      ) : (
-                        <img
-                          src={media.src}
-                          className='w-full cursor-pointer h-full object-cover rounded-sm'
-                          alt='Property'
-                        />
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-          {selectedMedia && (
-            <div
-              id='modalOverlay'
-              className='fixed z-50 inset-0 bg-black bg-opacity-50 flex items-center justify-center'
-              onClick={handleClickOutside}
-            >
-              <div className='w-[50%] lg:w-[50%] lg:h-[50%] bg-white p-2 rounded-md relative'>
-                <button
-                  className='absolute cursor-pointer top-2 right-2 text-4xl'
-                  onClick={handleCloseModal}
-                >
-                  &times;
-                </button>
-                {/\.(mp4|webm|ogg)(\?|$)/i.test(selectedMedia) ? (
-                  <video
-                    src={selectedMedia}
-                    controls
-                    className='w-full h-full object-contain'
-                  />
-                ) : /\.(jpe?g|png|gif|webp|jfif|svg)(\?|$)/i.test(
-                  selectedMedia
-                ) ? (
-                  <img
-                    src={selectedMedia}
-                    alt='Selected'
-                    className='w-full h-full object-contain'
-                  />
-                ) : (
-                  <iframe
-                    src={selectedMedia}
-                    className='w-full cursor-pointer h-full object-contain'
-                    frameBorder='0'
-                    allowFullScreen
-                    title='3D Walkthrough'
-                  />
-                )}
-              </div>
-            </div>
-          )}
-        </div>
+        <EvaluatorListingMedia property={property} />
         {property?.status === 1 ? null : (
           <>
             <DocumentSection
@@ -586,16 +470,24 @@ export const RequestTab = () => {
                     </span>
                   </button>
                   {showTextArea && (
-                    <div className='flex w-full items-center gap-3'>
+                    <div className='flex w-full flex-col gap-3 sm:flex-row sm:items-end'>
                       <textarea
                         rows={1}
-                        className='block w-full pl-5 py-2 rounded-md bg-white text-[#969696] text-sm sm:text-base border border-[#969696]'
+                        className='block w-full rounded-md border border-[#969696] bg-white py-2 pl-5 text-sm text-[#969696] sm:text-base'
                         value={newDocument}
                         onChange={(e) => setNewDocument(e.target.value)}
+                        placeholder='Document name'
+                      />
+                      <EvaluatorDateField
+                        id='newDocumentDate'
+                        label='Date'
+                        value={newDocumentDate}
+                        onChange={(e) => setNewDocumentDate(e.target.value)}
+                        className='sm:w-48'
                       />
                       <button
                         onClick={handleAddDocument}
-                        className='border border-blue-500 primary-gradient text-white px-4 py-2 text-sm sm:text-base rounded-md'
+                        className='rounded-md border border-blue-500 primary-gradient px-4 py-2 text-sm text-white sm:text-base'
                       >
                         Add
                       </button>
@@ -656,10 +548,18 @@ export const RequestTab = () => {
                     </label>
                   </div>
                 </div>
-                <p className='text-xs m-2'>
+                <p className='m-2 text-xs'>
                   *Only pdfs are acceptable. Pdf should be less than 1mb.
                 </p>
               </div>
+
+              <EvaluatorDateField
+                id='certificateDate'
+                label='Certificate Date'
+                value={certificateDate}
+                onChange={(e) => setCertificateDate(e.target.value)}
+                className='w-full sm:w-auto'
+              />
 
               <div>
                 <label className='block text-sm sm:text-base font-medium'>

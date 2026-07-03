@@ -129,8 +129,8 @@ const Listing = ({
     },
   ]
 
-  const togglePriceDropdown = () => {}
-  const toggleBedsDropdown = () => {}
+  const togglePriceDropdown = () => { }
+  const toggleBedsDropdown = () => { }
   const handleMake = (make) => {
     handleMakeClick(make.brand)
     setModels(make.models)
@@ -156,6 +156,7 @@ const Listing = ({
       error: errors.assetType && formData.assetType === 'Select Asset Type',
       errorMessage: errors.assetType,
       disabled: isEvaluatorApprovedLocked,
+      required: true,
     },
     {
       label: 'All Countries',
@@ -173,6 +174,7 @@ const Listing = ({
       error: errors.country && !formData.country,
       errorMessage: errors.country,
       disabled: isEvaluatorApprovedLocked,
+      required: true,
     },
     {
       label: 'City',
@@ -188,6 +190,7 @@ const Listing = ({
       error: errors.city && !formData.city,
       errorMessage: errors.city,
       disabled: isEvaluatorApprovedLocked,
+      required: true,
     },
     {
       label: 'Neighbourhood',
@@ -203,6 +206,7 @@ const Listing = ({
       error: errors.city && !formData.neighbourhood,
       errorMessage: errors.neighbourhood,
       disabled: isEvaluatorApprovedLocked,
+      required: true,
     },
     {
       label: 'Make',
@@ -266,6 +270,7 @@ const Listing = ({
       error: errors.propertyType && !formData.propertyType,
       errorMessage: errors.propertyType,
       disabled: isEvaluatorApprovedLocked,
+      required: true,
     },
   ]
 

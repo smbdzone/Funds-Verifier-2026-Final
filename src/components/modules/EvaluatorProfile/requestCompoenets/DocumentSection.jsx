@@ -1,10 +1,8 @@
-import axios from 'axios'
 import React from 'react'
-import { toast } from 'react-toastify'
 import { EditIcon, DeleteIcon } from '@/components/Icons'
-import customAxios from '../../../../utils/apis/apis'
 import { getListingDocumentSrc } from '@/libs/listingCardMedia'
 import {
+  formatRequestDocumentDate,
   getRequestDocumentName,
   isRequestDocumentFulfilled,
 } from '@/utils/requestDocumentUtils'
@@ -22,24 +20,7 @@ const DocumentSection = ({
   editText,
   setEditIndex,
 }) => {
-  const handleDeleteDoc = async (id) => {
-    try {
-      const response = await customAxios.delete(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/delete-certificate/${id}`
-      )
-
-      if (response.status === 200) {
-        fetchData()
-        toast.success('File deleted successfully')
-      } else {
-        console.error('Failed to delete the document:', response.data)
-      }
-    } catch (error) {
-      console.error('An error occurred while deleting the document:', error)
-    }
-  }
-  return (
-    <div className='mb-4'>
+  return (    <div className='mb-4'>
       <div className='w-full primary-gradient rounded px-7 py-2 flex justify-between items-center'>
         <label className='sm:text-lg text-base lg:text-xl font-bold text-white'>
           {title}
@@ -65,17 +46,7 @@ const DocumentSection = ({
                     >
                       <img src='/icons/view.png' alt='View' />
                     </button>
-                    {title === 'All Invoices' ? null : (
-                      <button
-                        className='w-8 h-8'
-                        title='delete'
-                        onClick={() => handleDeleteDoc(doc.uuid)}
-                      >
-                        <img src='/icons/delete.png' alt='Delete' />
-                      </button>
-                    )}
-                  </div>
-                </>
+                  </div>                </>
               ) : title === 'Request documents' ? (
                 <>
                   <div className='flex items-center w-full justify-between gap-3 mb-2'>
@@ -103,9 +74,16 @@ const DocumentSection = ({
                       </div>
                     ) : (
                       <>
-                        <span className='block capitalize flex-1 py-2 text-sm'>
-                          {getRequestDocumentName(doc)}
-                        </span>
+                        <div className='flex min-w-0 flex-1 flex-col'>
+                          <span className='block py-2 text-sm capitalize'>
+                            {getRequestDocumentName(doc)}
+                          </span>
+                          {doc.date ? (
+                            <span className='-mt-1 text-xs text-gray-500'>
+                              {formatRequestDocumentDate(doc.date)}
+                            </span>
+                          ) : null}
+                        </div>
                         <div className='flex gap-2 items-center'>
                           {isRequestDocumentFulfilled(doc) ? (
                             <button

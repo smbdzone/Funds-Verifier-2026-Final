@@ -1,14 +1,8 @@
 import React, { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import {
-  FaceBookIcon,
-  InstaIcon,
-  LocationIcon,
-  TwitterIcon,
-  LinkdInIcon,
-  WhatsAppIcon,
-} from '../Icons'
+import { LocationIcon } from '../Icons'
+import ListingSocialShare from '@/components/shared/ListingSocialShare'
 import Modal from '../product-modal/modal'
 import Modal2 from '../product-modal/modal2'
 import { Navigation, Pagination, Scrollbar, A11y } from 'swiper/modules'
@@ -284,28 +278,14 @@ const ProductCard = ({
             )}
           </div>
         </div>
-        <div>
-          <p className='mb-3 text-base'>Share With:</p>
-          <div className='flex justify-between'>
-            <div className='flex gap-3'>
-              <Link href='#'>
-                <FaceBookIcon className='h-[21px] w-[21px]' />
-              </Link>
-              <Link href='#'>
-                <InstaIcon className='h-[21px] w-[21px]' />
-              </Link>
-              <Link href='#'>
-                <LinkdInIcon className='h-[21px] w-[21px]' />
-              </Link>
-              <Link href='#'>
-                <TwitterIcon className='h-[21px] w-[21px]' />
-              </Link>
-              <Link href='#'>
-                <WhatsAppIcon className='h-[21px] w-[21px]' />
-              </Link>
-            </div>
-          </div>
-        </div>
+        <ListingSocialShare
+          listing={{ ...item, type }}
+          label='Share With:'
+          labelClassName='mb-3 text-base'
+          iconClassName='h-[21px] w-[21px]'
+          iconGapClassName='gap-3'
+          stacked
+        />
       </div>
     </div>
   )

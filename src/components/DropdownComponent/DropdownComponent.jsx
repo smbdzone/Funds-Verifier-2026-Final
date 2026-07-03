@@ -20,14 +20,14 @@ const DropdownComponent = ({
   error,
   errorMessage,
   disabled, // ✅ added disabled prop
+  required = false,
 }) => {
   // ✅ Button (label) for dropdown
 
   const renderLabelContent = () => (
     <button
-      className={`dropdownButton h-full pl-2 pr-3 py-2 md:py-0 border-b md:border-b-none border-dark-grey md:border-r w-full text-start text-light-blue ${
-        disabled ? 'opacity-50 cursor-not-allowed bg-gray-100' : ''
-      }`}
+      className={`dropdownButton h-full pl-2 pr-3 py-2 md:py-0 border-b md:border-b-none border-dark-grey md:border-r w-full text-start text-light-blue ${disabled ? 'opacity-50 cursor-not-allowed bg-gray-100' : ''
+        }`}
       onClick={!disabled ? handleToggleDropdown : undefined}
       disabled={disabled}
     >
@@ -36,6 +36,11 @@ const DropdownComponent = ({
         <div>
           <p className='xl:text-lg lg:text-base md:text-[12px] xxs:text-sm font-medium text-dark-black text-start'>
             {label}
+            {required ? (
+              <span className='ml-0.5 text-reefGold font-semibold' aria-hidden='true'>
+                *
+              </span>
+            ) : null}
           </p>
           <p className='lg:text-xs md:text-[10px] truncate xxs:text-xs font-normal pt-[5px] text-dark-grey'>
             {formData || ''}
@@ -46,9 +51,8 @@ const DropdownComponent = ({
           height={12}
           src='/listing/arrowgold.svg'
           alt='arrowblue'
-          className={`xl:ml-[30px] lg:ml-[20px] xxs:ml-[10px] transition-transform ${
-            disabled ? 'opacity-40' : ''
-          }`}
+          className={`xl:ml-[30px] lg:ml-[20px] xxs:ml-[10px] transition-transform ${disabled ? 'opacity-40' : ''
+            }`}
         />
       </div>
     </button>
@@ -63,11 +67,10 @@ const DropdownComponent = ({
       {dropdownOptions?.map((option, index) => (
         <Link key={index} href={`/dashboard/${option.link}-listing`}>
           <div
-            className={`px-2 py-2 text-start ${
-              option.disabled
+            className={`px-2 py-2 text-start ${option.disabled
                 ? 'opacity-50 cursor-not-allowed'
                 : 'hover:text-[#8D7C3B] hover:bg-[#F5F5F5] text-gray-400 cursor-pointer'
-            }`}
+              }`}
             onClick={
               !option.disabled
                 ? () => handleSelectOption('assetType', option.value)
@@ -149,8 +152,8 @@ const DropdownComponent = ({
               ].includes(label)
                 ? option
                 : ['City', 'Neighbourhood'].includes(label)
-                ? option
-                : '',
+                  ? option
+                  : '',
               option
             )
           }
@@ -158,14 +161,14 @@ const DropdownComponent = ({
         >
           {label === 'All Countries'
             ? toUnitedArabEmiratesListingCountryName(option.country) ||
-              option.country
+            option.country
             : ['City', 'Neighbourhood'].includes(label)
-            ? option
-            : ['Category', 'Subcategory', 'Model'].includes(label)
-            ? option
-            : label === 'Make'
-            ? option.brand
-            : ''}
+              ? option
+              : ['Category', 'Subcategory', 'Model'].includes(label)
+                ? option
+                : label === 'Make'
+                  ? option.brand
+                  : ''}
         </div>
       ))}
     </div>

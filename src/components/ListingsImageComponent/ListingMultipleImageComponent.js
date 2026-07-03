@@ -1,6 +1,10 @@
 import Image from 'next/image'
 import React, { useMemo } from 'react'
 
+import {
+  LISTING_IMAGE_MAX_COUNT,
+} from '@/constants/listingUploadLimits'
+
 const ListingMultipleImageComponent = ({
   images,
   handleImageRemove,
@@ -44,6 +48,8 @@ const ListingMultipleImageComponent = ({
       .filter((preview) => preview !== null) // Filter out invalid entries
   }, [images])
 
+  const atImageLimit = images?.length >= LISTING_IMAGE_MAX_COUNT
+
   return (
     <>
       <div className='flex flex-wrap mt-2 w-[80%]'>
@@ -69,7 +75,7 @@ const ListingMultipleImageComponent = ({
                   }}
                   className='absolute top-0 right-0 w-6 flex justify-center items-center h-6 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity'
                   title='Remove image'
-                  // type="button"
+                // type="button"
                 >
                   &times;
                 </button>
@@ -84,18 +90,19 @@ const ListingMultipleImageComponent = ({
         className='opacity-0 absolute w-0 h-0'
         accept='image/*'
         multiple
-        required
-        disabled={disabled}
+        disabled={disabled || atImageLimit}
         onChange={(e) => {
           handleImageChange(e)
+          e.target.value = ''
         }}
       />
 
       <div className='absolute right-[20px] xl:top-0 xxs:top-[55px]'>
         <label
           // htmlFor='image'
-          htmlFor={!disabled ? 'image' : undefined}
-          className='flex flex-col items-center justify-center w-[176px] xl:h-[154px] xxs:h-[110px] shadow-neonsm cursor-pointer my-[19px]'
+          htmlFor={!disabled && !atImageLimit ? 'image' : undefined}
+          className={`flex flex-col items-center justify-center w-[176px] xl:h-[154px] xxs:h-[110px] shadow-neonsm my-[19px] ${atImageLimit ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
+            }`}
         >
           <Image
             width={45}

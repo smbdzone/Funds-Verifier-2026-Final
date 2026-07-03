@@ -9,6 +9,7 @@ import { toast } from 'react-toastify'
 import { usePathname, useRouter } from 'next/navigation'
 import customAxios from '../../utils/apis/apis'
 import { useNotificationSocket } from '@/hooks/useNotificationSocket'
+import { formatNotificationTimestamp } from '@/utils/formatNotificationTimestamp'
 
 const NotificationDropdown = ({ className }) => {
   const { user } = useProfile()
@@ -217,7 +218,11 @@ const NotificationDropdown = ({ className }) => {
           )
         }
         // Prepend new notification to the list
-        return [newNotification, ...prev]
+        return [newNotification, ...prev].sort((a, b) => {
+          const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0
+          const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0
+          return timeB - timeA
+        })
       })
 
       // Optional: Show toast or play sound for new notification
@@ -321,6 +326,11 @@ const NotificationDropdown = ({ className }) => {
                       {notification?.message}
                     </p>
                   )}
+                  <p className='mt-1 text-[11px] text-gray-400'>
+                    {formatNotificationTimestamp(
+                      notification?.createdAt || notification?.updatedAt,
+                    )}
+                  </p>
                   <button
                     onClick={() => deleteNotification(notification?.uuid)}
                     className='text-xs text-red-500 mt-1'

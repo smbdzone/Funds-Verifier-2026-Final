@@ -72,6 +72,31 @@ const handleFileUpload = async (file) => {
   }
 }
 
+/** Map /upload-certificate response to a URL the app can store and open later. */
+const resolveCertificateUploadUrl = (data) => {
+  if (!data || typeof data !== 'object') return ''
+
+  const certUuid = data.certificate?.uuid || data.uuid
+  if (typeof certUuid === 'string' && certUuid.trim()) {
+    const base = (process.env.NEXT_PUBLIC_BASE_URL || '').trim().replace(/\/$/, '')
+    if (base) {
+      return `${base}/evaluation-certificate/${encodeURIComponent(certUuid.trim())}/pdf`
+    }
+  }
+
+  const signedUrl = data.signedUrl
+  if (typeof signedUrl === 'string' && signedUrl.startsWith('http')) {
+    return signedUrl.trim()
+  }
+
+  const legacyUrl = data.Certificate?.url || data.certificate?.url
+  if (typeof legacyUrl === 'string' && legacyUrl.startsWith('http')) {
+    return legacyUrl.trim()
+  }
+
+  return ''
+}
+
 const handleVerificationUpload = async (file) => {
   if (!file) return
 
@@ -137,6 +162,7 @@ export {
   handleImageUpload,
   handleVideoUpload,
   handleFileUpload,
+  resolveCertificateUploadUrl,
   handleThumbnailUpload,
   handleVerificationUpload,
   handleDeleteImg,

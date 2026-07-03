@@ -4,8 +4,14 @@ import React, { useState, useEffect } from 'react'
 import { toast, ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 import ViewerDetails from '@/components/modules/SellerProfile/ViewerDetails'
+import { ViewerDetailsErrorBoundary } from '@/components/modules/SellerProfile/ViewerDetailsErrorBoundary'
 import { EyeIcon, DeleteIcon } from '@/components/Icons'
 import customAxios from '../../../utils/apis/apis'
+import {
+  formatViewingBookingStatus,
+  isViewingBookingUnderProcess,
+  viewingBookingStatusBadgeClass,
+} from '@/libs/bookingViewingStatus'
 
 const formatDate = (dateString) => {
   try {
@@ -20,16 +26,23 @@ const formatDate = (dateString) => {
   }
 }
 
-const statusBadge = (status) => {
-  const s = (status || 'open').toString().toLowerCase()
-  if (s.includes('confirm') || s.includes('accept'))
-    return 'bg-sky-50 text-sky-800 ring-sky-700/15'
-  if (s.includes('cancel') || s.includes('reject'))
-    return 'bg-rose-50 text-rose-800 ring-rose-600/15'
-  if (s.includes('complete') || s.includes('done'))
-    return 'bg-slate-100 text-slate-700 ring-slate-600/10'
-  return 'bg-emerald-50 text-emerald-800 ring-emerald-600/15'
-}
+const UnderProcessToggle = ({ checked, disabled, onChange }) => (
+  <button
+    type='button'
+    role='switch'
+    aria-checked={checked}
+    aria-label='Under process'
+    disabled={disabled}
+    onClick={onChange}
+    className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#a2913e]/50 ${checked ? 'bg-[#a2913e]' : 'bg-slate-300'
+      } ${disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}
+  >
+    <span
+      className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition ${checked ? 'translate-x-6' : 'translate-x-1'
+        }`}
+    />
+  </button>
+)
 
 export const TrusteeViewingRequest = () => {
   const [viewingRequests, setViewingRequests] = useState([])
@@ -37,6 +50,7 @@ export const TrusteeViewingRequest = () => {
   const [selectedBookingId, setSelectedBookingId] = useState(null)
   const [bookingToDelete, setBookingToDelete] = useState(null)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [togglingId, setTogglingId] = useState(null)
 
   const fetchBookings = async () => {
     try {
@@ -94,6 +108,41 @@ export const TrusteeViewingRequest = () => {
     }
   }
 
+  const handleToggleUnderProcess = async (viewer) => {
+    const bookingId = viewer?.uuid
+    if (!bookingId || togglingId) return
+
+    const nextUnderProcess = !isViewingBookingUnderProcess(viewer?.status)
+    setTogglingId(bookingId)
+
+    try {
+      const response = await customAxios.patch(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/arrange-view/bookings/${bookingId}/under-process`,
+        { underProcess: nextUnderProcess },
+      )
+
+      const nextStatus =
+        response?.data?.booking?.status ||
+        (nextUnderProcess ? 'under_process' : 'open')
+
+      setViewingRequests((prev) =>
+        prev.map((item) =>
+          item?.uuid === bookingId ? { ...item, status: nextStatus } : item,
+        ),
+      )
+
+      toast.success(
+        nextUnderProcess ? 'Marked as under process' : 'Marked as open',
+      )
+    } catch (error) {
+      toast.error(
+        error?.response?.data?.message || 'Could not update status.',
+      )
+    } finally {
+      setTogglingId(null)
+    }
+  }
+
   const pendingDeleteRequest = viewingRequests.find(
     (request) => request?.uuid === bookingToDelete,
   )
@@ -109,10 +158,6 @@ export const TrusteeViewingRequest = () => {
         <h1 className='mt-1 text-2xl font-bold tracking-tight text-[#002d4f] md:text-3xl'>
           Viewing requests
         </h1>
-        <p className='mt-2 max-w-2xl text-sm leading-relaxed text-slate-600 md:text-base'>
-          Review broker bookings, open details, and manage your viewing
-          calendar from one place.
-        </p>
       </div>
 
       <section className='overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm ring-1 ring-slate-900/5'>
@@ -160,6 +205,12 @@ export const TrusteeViewingRequest = () => {
                   </th>
                   <th
                     scope='col'
+                    className='whitespace-nowrap px-6 py-3.5 text-xs font-semibold uppercase tracking-wide text-[#002d4f]'
+                  >
+                    Under process
+                  </th>
+                  <th
+                    scope='col'
                     className='w-[120px] px-6 py-3.5 text-right text-xs font-semibold uppercase tracking-wide text-[#002d4f]'
                   >
                     Actions
@@ -169,7 +220,7 @@ export const TrusteeViewingRequest = () => {
               <tbody className='divide-y divide-slate-100'>
                 {viewingRequests.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className='px-6 py-16 text-center'>
+                    <td colSpan={6} className='px-6 py-16 text-center'>
                       <p className='text-base font-medium text-slate-700'>
                         No viewing requests yet
                       </p>
@@ -203,12 +254,17 @@ export const TrusteeViewingRequest = () => {
                       </td>
                       <td className='whitespace-nowrap px-6 py-4'>
                         <span
-                          className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ring-1 ring-inset ${statusBadge(viewer?.status)}`}
+                          className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ring-1 ring-inset ${viewingBookingStatusBadgeClass(viewer?.status)}`}
                         >
-                          {viewer?.status
-                            ? String(viewer.status)
-                            : 'Open'}
+                          {formatViewingBookingStatus(viewer?.status)}
                         </span>
+                      </td>
+                      <td className='whitespace-nowrap px-6 py-4'>
+                        <UnderProcessToggle
+                          checked={isViewingBookingUnderProcess(viewer?.status)}
+                          disabled={togglingId === viewer?.uuid}
+                          onChange={() => handleToggleUnderProcess(viewer)}
+                        />
                       </td>
                       <td className='whitespace-nowrap px-6 py-4 text-right'>
                         <div className='inline-flex items-center justify-end gap-1'>
@@ -267,10 +323,27 @@ export const TrusteeViewingRequest = () => {
                     </p>
                   </div>
                   <span
-                    className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide ring-1 ring-inset ${statusBadge(viewer?.status)}`}
+                    className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide ring-1 ring-inset ${viewingBookingStatusBadgeClass(viewer?.status)}`}
                   >
-                    {viewer?.status ? String(viewer.status) : 'Open'}
+                    {formatViewingBookingStatus(viewer?.status)}
                   </span>
+                </div>
+                <div className='flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5'>
+                  <div>
+                    <p className='text-xs font-semibold uppercase tracking-wide text-slate-500'>
+                      Under process
+                    </p>
+                    <p className='mt-0.5 text-sm text-slate-700'>
+                      {isViewingBookingUnderProcess(viewer?.status)
+                        ? 'Seller price locked'
+                        : 'Off'}
+                    </p>
+                  </div>
+                  <UnderProcessToggle
+                    checked={isViewingBookingUnderProcess(viewer?.status)}
+                    disabled={togglingId === viewer?.uuid}
+                    onChange={() => handleToggleUnderProcess(viewer)}
+                  />
                 </div>
                 <dl className='grid grid-cols-2 gap-2 text-sm'>
                   <div className='rounded-lg bg-slate-50 px-3 py-2'>
@@ -318,21 +391,19 @@ export const TrusteeViewingRequest = () => {
         <div
           className='fixed inset-0 z-50 flex items-center justify-center bg-slate-900/45 p-3 backdrop-blur-md sm:p-6'
           role='presentation'
-          onClick={(e) => {
-            if (e.target === e.currentTarget) handleClose()
-          }}
         >
           <div
             role='dialog'
             aria-modal='true'
             aria-labelledby='viewer-details-title'
-            className='relative flex max-h-[min(85vh,841px)] w-full max-w-[595px] flex-col overflow-hidden rounded-xl border border-slate-200/90 bg-white shadow-2xl ring-1 ring-slate-900/10'
-            onClick={(e) => e.stopPropagation()}
+            className='relative w-full max-w-[595px] max-h-[min(85vh,841px)] overflow-y-auto rounded-xl border border-slate-200/90 bg-white shadow-2xl ring-1 ring-slate-900/10'
           >
-            <ViewerDetails
-              bookingId={selectedBookingId}
-              handleClose={handleClose}
-            />
+            <ViewerDetailsErrorBoundary onClose={handleClose}>
+              <ViewerDetails
+                bookingId={selectedBookingId}
+                handleClose={handleClose}
+              />
+            </ViewerDetailsErrorBoundary>
           </div>
         </div>
       ) : null}

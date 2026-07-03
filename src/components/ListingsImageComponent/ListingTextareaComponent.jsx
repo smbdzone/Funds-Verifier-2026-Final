@@ -1,4 +1,5 @@
 import React from "react";
+import ListingFieldLabel from "@/components/ListingsForm/ListingFieldLabel";
 
 const ListingTextareaComponent = ({
   errors,
@@ -10,10 +11,21 @@ const ListingTextareaComponent = ({
   placeholder,
   maxLength,
   disabled,
+  required = false,
+  fieldLabel,
 }) => {
   const charCount = value?.length || 0;
+  const label =
+    fieldLabel ||
+    (required
+      ? String(placeholder || "")
+        .replace(/\(max\.[^)]+\)/gi, "")
+        .trim()
+      : "");
+
   return (
     <div className="custom-container-dev">
+      {label ? <ListingFieldLabel label={label} required={required} /> : null}
       <textarea
         className={`shadow-neons p-2 h-[116px] pl-5 placeholder:text-dark-grey outline-with-opacity placeholder:text-[15px] placeholder:font-normal ${errors ? "input-field-error" : ""
           }`}

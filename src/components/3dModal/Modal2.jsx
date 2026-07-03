@@ -7,6 +7,7 @@ import './calender.css'
 import { toast } from 'react-toastify'
 import customAxios from '../../utils/apis/apis'
 import { NoSlotsAvailable } from '@/components/global/NoSlotsAvailable'
+import { getBookableSlotsForDate } from '@/libs/slotTimeFilters'
 
 const getToday = () => {
   const today = new Date()
@@ -102,8 +103,7 @@ const Modal2 = ({ isOpen, onClose, formData, setFormData, userUUID }) => {
     }
   }
 
-  const availableSlots =
-    slots?.filter((slot) => slot && !slot.isBooked) ?? []
+  const availableSlots = getBookableSlotsForDate(slots, selectedDate)
 
   const handleCheckboxChange = (e) => {
     setIsChecked(e.target.checked)

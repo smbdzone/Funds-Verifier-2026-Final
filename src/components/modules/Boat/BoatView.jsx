@@ -9,15 +9,8 @@ import CalendarPopup from '@/components/CalendarPopup/CalendarPopup'
 import Link from 'next/link'
 import Description from '@/components/Product_page/Description'
 import Review from '@/components/Product_page/Review'
-import {
-  FaceBookIcon,
-  InstaIcon,
-  TwitterIcon,
-  WhiteLinkdInIcon,
-  WhiteTickTokIcon,
-} from '@/components/Icons'
-import { formatPriceUS } from '@/utils'
 import Open3dModal from '@/components/3dModal/Open3dModal'
+import ListingSocialShare from '@/components/shared/ListingSocialShare'
 import Modal2 from '@/components/product-modal/modal2'
 import Modal from '@/components/product-modal/modal'
 import ImageSlider from '../Jewelry/ImageSlider'
@@ -309,26 +302,10 @@ export default function BoatView({ data: boatData }) {
             Ref: {data?.uuid ? data.uuid.slice(0, 8) : 'N/A'}
           </span>
           <div className='flex w-full justify-between'>
-            <div className='flex gap-5 font-medium text-lg items-center'>
-              <span className='md:text-lg text-base'>Share:</span>
-              <div className='flex gap-2'>
-                <Link href='#'>
-                  <FaceBookIcon className='h-[16px] w-[16px]' />
-                </Link>
-                <Link href='#'>
-                  <InstaIcon className='h-[16px] w-[16px]' />
-                </Link>
-                <Link href='#'>
-                  <WhiteLinkdInIcon className='h-[16px] w-[16px]' />
-                </Link>
-                <Link href='#'>
-                  <TwitterIcon className='h-[16px] w-[16px]' />
-                </Link>
-                <Link href='#'>
-                  <WhiteTickTokIcon className='h-[16px] w-[16px]' />
-                </Link>
-              </div>
-            </div>
+            <ListingSocialShare
+              listing={{ ...data, type: 'boat' }}
+              linkedinIcon='white'
+            />
           </div>
         </div>
       </div>

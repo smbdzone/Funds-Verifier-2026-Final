@@ -511,6 +511,56 @@ html {
   box-shadow: 0 2px 10px rgba(0, 45, 79, 0.08);
 }
 
+.hero-filter-input {
+  cursor: text;
+  padding-right: 14px;
+}
+
+.hero-filter-input::-webkit-outer-spin-button,
+.hero-filter-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.hero-filter-input[type='number'] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.select-wrapper-roi {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 118px;
+  flex: 0.9 1 0;
+  max-width: 160px;
+}
+
+.hero-roi-input-wrap {
+  position: relative;
+  width: 100%;
+}
+
+.hero-roi-input {
+  padding-right: 30px;
+}
+
+.hero-roi-suffix {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #002d4f;
+  pointer-events: none;
+  line-height: 1;
+}
+
+.hero-search-bar--modal .hero-roi-suffix {
+  color: rgba(0, 45, 79, 0.7);
+}
+
 .hero-search-bar--modal h1 {
   color: #002d4f;
 }

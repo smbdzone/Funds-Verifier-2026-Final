@@ -6,8 +6,8 @@ export const LISTING_VIDEO_MAX_COUNT = 2
 export const LISTING_IMAGE_MAX_MB = LISTING_IMAGE_MAX_BYTES / (1024 * 1024)
 export const LISTING_VIDEO_MAX_MB = LISTING_VIDEO_MAX_BYTES / (1024 * 1024)
 
-export const LISTING_IMAGE_FORMATS_LABEL = `JPG, PNG, GIF. Up to ${LISTING_IMAGE_MAX_COUNT} images, ${LISTING_IMAGE_MAX_MB}MB each`
-export const LISTING_VIDEO_FORMATS_LABEL = `MP4, MOV. Up to ${LISTING_VIDEO_MAX_COUNT} videos, ${LISTING_VIDEO_MAX_MB}MB each`
+export const LISTING_IMAGE_FORMATS_LABEL = `JPG, PNG, GIF. Up to ${LISTING_IMAGE_MAX_COUNT} images, ${LISTING_IMAGE_MAX_MB}MB each (select up to ${LISTING_IMAGE_MAX_COUNT} at once)`
+export const LISTING_VIDEO_FORMATS_LABEL = `MP4, MOV. Optional — up to ${LISTING_VIDEO_MAX_COUNT} videos, ${LISTING_VIDEO_MAX_MB}MB each`
 
 export const getUploadErrorMessage = (error, fileType, maxMB) => {
   const status = error?.response?.status

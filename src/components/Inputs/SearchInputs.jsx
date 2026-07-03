@@ -9,18 +9,12 @@ import {
   propertyPricesForFilter,
 } from '@/constants/otherConstants'
 import customAxios from '@/utils/apis/apis'
+import { LISTING_COUNTRY_UAE_LABEL } from '@/libs/dummyLocationData'
 import {
-  DUMMY_UAE_CITY_PREDICTIONS,
-  filterCountriesToUaeOnly,
-  isDummyUaeLocationsEnabled,
-  isUnitedArabEmiratesListingCountry,
-  LISTING_COUNTRY_UAE_LABEL,
-  toUnitedArabEmiratesListingCountryName,
-} from '@/libs/dummyLocationData'
-import {
-  normalizeCountriesResponse,
-  normalizeCitiesResponse,
-} from '@/libs/normalizeCountriesResponse'
+  buildCountryToCitiesMap,
+  getListingCitiesForCountry,
+  UAE_ONLY_COUNTRY_OPTIONS,
+} from '@/libs/listingLocationUtils'
 
 const CATEGORY_ENDPOINTS = {
   Boat: '/boat',
@@ -35,71 +29,6 @@ const CATEGORY_OPTIONS = [
   { value: 'Car', label: 'Cars' },
   { value: 'Boat', label: 'Boats' },
 ]
-
-const ROI_OPTIONS = [
-  { value: '5', label: '5%' },
-  { value: '10', label: '10%' },
-  { value: '20', label: '20%' },
-]
-
-const normalizeCountryKey = (country) => {
-  if (
-    !country ||
-    country === 'Select Country' ||
-    country === 'required_country'
-  ) {
-    return null
-  }
-  return toUnitedArabEmiratesListingCountryName(country) || country
-}
-
-const resolveCountryCode = (countryName, countryCodeMap) => {
-  if (!countryName) return ''
-  if (countryCodeMap[countryName]) return countryCodeMap[countryName]
-  if (isUnitedArabEmiratesListingCountry(countryName)) return 'AE'
-  return ''
-}
-
-const mergeCityLists = (...lists) => {
-  const seen = new Set()
-  const merged = []
-  lists.flat().forEach((city) => {
-    const value = String(city || '').trim()
-    if (!value || seen.has(value)) return
-    seen.add(value)
-    merged.push(value)
-  })
-  return merged.sort((a, b) => a.localeCompare(b))
-}
-
-const fetchCitiesForCountry = async (countryName, countryCodeMap) => {
-  const listingCountry = normalizeCountryKey(countryName)
-  const code = resolveCountryCode(listingCountry, countryCodeMap)
-
-  if (isDummyUaeLocationsEnabled && code === 'AE') {
-    return DUMMY_UAE_CITY_PREDICTIONS.map((p) => p.description)
-  }
-
-  if (!code) return []
-
-  const response = await fetch(
-    `/api/country?name=${encodeURIComponent(code)}&query=`,
-  )
-  if (!response.ok) {
-    throw new Error('Failed to fetch cities')
-  }
-
-  const data = await response.json()
-  let apiCities = normalizeCitiesResponse(data)
-    .map((item) => item.description)
-    .filter(Boolean)
-
-  if (code === 'AE' && apiCities.length === 0) {
-    apiCities = DUMMY_UAE_CITY_PREDICTIONS.map((p) => p.description)
-  }
-
-  return apiCities
-}
 
 const SearchInputs = ({ setIsOpen, variant = 'hero' }) => {
   const [countries, setCountries] = useState([])
@@ -116,9 +45,7 @@ const SearchInputs = ({ setIsOpen, variant = 'hero' }) => {
   const [countryLoading, setCountryLoading] = useState(false)
   const [cityLoading, setCityLoading] = useState(false)
   const [countryCityMap, setCountryCityMap] = useState({})
-  const [countryCodeMap, setCountryCodeMap] = useState({})
   const locationCacheRef = useRef({})
-  const countryMetaLoadedRef = useRef(false)
   const prevCountryRef = useRef('')
   const handleSearch = () => {
     setIsLoading(true)
@@ -145,44 +72,7 @@ const SearchInputs = ({ setIsOpen, variant = 'hero' }) => {
     setIsLoading(false)
   }
 
-  // Load country name → ISO code map from backend (same as listing forms).
-  useEffect(() => {
-    if (countryMetaLoadedRef.current) return
-
-    let cancelled = false
-
-    const loadCountryMeta = async () => {
-      try {
-        const response = await fetch('/api/countries')
-        const data = await response.json()
-        if (cancelled) return
-
-        const list = filterCountriesToUaeOnly(normalizeCountriesResponse(data))
-        const codes = {}
-        list.forEach((entry) => {
-          if (entry.country && entry.code) {
-            codes[entry.country] = String(entry.code).toUpperCase()
-          }
-        })
-        codes[LISTING_COUNTRY_UAE_LABEL] = 'AE'
-        setCountryCodeMap(codes)
-        countryMetaLoadedRef.current = true
-      } catch (error) {
-        console.error('Error fetching country metadata:', error)
-        if (!cancelled) {
-          setCountryCodeMap({ [LISTING_COUNTRY_UAE_LABEL]: 'AE' })
-        }
-      }
-    }
-
-    loadCountryMeta()
-
-    return () => {
-      cancelled = true
-    }
-  }, [])
-
-  // Fetch listing locations when category changes; cities load when country is picked.
+  // Fetch listing cities from backend when category changes (UAE only).
   useEffect(() => {
     if (!category) return
 
@@ -198,13 +88,14 @@ const SearchInputs = ({ setIsOpen, variant = 'hero' }) => {
 
     const cached = locationCacheRef.current[category]
     if (cached) {
-      setCountries(cached.countries)
+      setCountries(UAE_ONLY_COUNTRY_OPTIONS)
       setCountryCityMap(cached.map)
+      setSelectedCountry(LISTING_COUNTRY_UAE_LABEL)
       return
     }
 
-    // Show UAE immediately so the country field is usable while cities load.
-    setCountries([LISTING_COUNTRY_UAE_LABEL])
+    setCountries(UAE_ONLY_COUNTRY_OPTIONS)
+    setSelectedCountry(LISTING_COUNTRY_UAE_LABEL)
 
     const endpoint = CATEGORY_ENDPOINTS[category]
     if (!endpoint) return
@@ -222,48 +113,22 @@ const SearchInputs = ({ setIsOpen, variant = 'hero' }) => {
         if (cancelled) return
 
         const products = response?.data?.products || []
-        const nextMap = {}
-
-        products.forEach((item) => {
-          const countryKey = normalizeCountryKey(item.country)
-          const city = item.city
-
-          if (!countryKey) return
-
-          if (!nextMap[countryKey]) {
-            nextMap[countryKey] = new Set()
-          }
-
-          if (city) {
-            nextMap[countryKey].add(city)
-          }
-        })
-
-        const formattedMap = Object.fromEntries(
-          Object.entries(nextMap).map(([country, citySet]) => [
-            country,
-            Array.from(citySet).sort((a, b) => a.localeCompare(b)),
-          ]),
-        )
-
-        const uniqueCountries = Object.keys(formattedMap)
-        const countryList = mergeCityLists(
-          [LISTING_COUNTRY_UAE_LABEL],
-          uniqueCountries,
-        )
+        const formattedMap = buildCountryToCitiesMap(products)
 
         locationCacheRef.current[category] = {
-          countries: countryList,
+          countries: UAE_ONLY_COUNTRY_OPTIONS,
           map: formattedMap,
         }
 
-        setCountries(countryList)
+        setCountries(UAE_ONLY_COUNTRY_OPTIONS)
         setCountryCityMap(formattedMap)
+        setSelectedCountry(LISTING_COUNTRY_UAE_LABEL)
       } catch (error) {
-        console.error('Error fetching countries data:', error)
+        console.error('Error fetching listing locations:', error)
         if (!cancelled) {
-          setCountries([LISTING_COUNTRY_UAE_LABEL])
+          setCountries(UAE_ONLY_COUNTRY_OPTIONS)
           setCountryCityMap({})
+          setSelectedCountry(LISTING_COUNTRY_UAE_LABEL)
         }
       } finally {
         if (!cancelled) setCountryLoading(false)
@@ -277,7 +142,7 @@ const SearchInputs = ({ setIsOpen, variant = 'hero' }) => {
     }
   }, [category])
 
-  // Fetch cities from /api/country when country changes; merge with listing cities.
+  // Cities come only from backend listings for the selected country.
   useEffect(() => {
     if (!selectedCountry) {
       setCities([])
@@ -291,48 +156,22 @@ const SearchInputs = ({ setIsOpen, variant = 'hero' }) => {
       prevCountryRef.current = selectedCountry
     }
 
-    const listingCities = countryCityMap[selectedCountry] || []
-    let cancelled = false
+    setCityLoading(true)
+    setCities(getListingCitiesForCountry(countryCityMap, selectedCountry))
+    setCityLoading(false)
+  }, [selectedCountry, countryCityMap])
 
-    const loadCities = async () => {
-      setCityLoading(true)
-      try {
-        const apiCities = await fetchCitiesForCountry(
-          selectedCountry,
-          countryCodeMap,
-        )
-        if (cancelled) return
-        setCities(mergeCityLists(apiCities, listingCities))
-      } catch (error) {
-        console.error('Error fetching cities:', error)
-        if (!cancelled) {
-          if (isUnitedArabEmiratesListingCountry(selectedCountry)) {
-            setCities(
-              mergeCityLists(
-                DUMMY_UAE_CITY_PREDICTIONS.map((p) => p.description),
-                listingCities,
-              ),
-            )
-          } else {
-            setCities(listingCities)
-          }
-        }
-      } finally {
-        if (!cancelled) setCityLoading(false)
-      }
+  const handleRoiChange = (e) => {
+    const next = e.target.value
+    if (next === '' || /^\d*\.?\d*$/.test(next)) {
+      setROI(next)
     }
-
-    loadCities()
-
-    return () => {
-      cancelled = true
-    }
-  }, [selectedCountry, countryCityMap, countryCodeMap])
+  }
 
   const handleCategoryChange = (nextCategory) => {
-    setSelectedCountry('')
+    setSelectedCountry(LISTING_COUNTRY_UAE_LABEL)
     setSelectedCity('')
-    prevCountryRef.current = ''
+    prevCountryRef.current = LISTING_COUNTRY_UAE_LABEL
     setROI('')
     setMinPrice('')
     setMaxPrice('')
@@ -452,15 +291,23 @@ const SearchInputs = ({ setIsOpen, variant = 'hero' }) => {
       />
 
       {category === 'Property For Sale' && (
-        <HeroFilterSelect
-          value={ROI}
-          onChange={setROI}
-          options={ROI_OPTIONS}
-          placeholder='ROI'
-          getOptionLabel={(opt) => opt.label}
-          getOptionValue={(opt) => opt.value}
-          title={ROI ? `${ROI}% ROI` : 'ROI'}
-        />
+        <div className='select-wrapper select-wrapper-roi relative'>
+          <div className='hero-roi-input-wrap'>
+            <input
+              type='text'
+              inputMode='decimal'
+              className='select-custom hero-filter-input hero-roi-input'
+              placeholder='ROI'
+              value={ROI}
+              onChange={handleRoiChange}
+              title={ROI ? `ROI ${ROI}%` : 'ROI'}
+              aria-label='ROI percentage'
+            />
+            <span className='hero-roi-suffix' aria-hidden='true'>
+              %
+            </span>
+          </div>
+        </div>
       )}
       <div className='hero-search-bar__action shrink-0' onClick={handleSearch}>
         <SearchButton isLoading={isLoading} />

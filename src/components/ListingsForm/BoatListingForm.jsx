@@ -30,6 +30,7 @@ import { XIcon } from 'lucide-react'
 import {
   canRequestPremiumServices,
   isListingEvaluatorApprovedLocked,
+  isListingPriceLocked,
 } from '@/libs/listingEditLock'
 import ListingApprovedEditNotice from '@/components/ListingsForm/ListingApprovedEditNotice'
 import {
@@ -123,6 +124,7 @@ const BoatListingForm = ({
   const [modalOpen, setModalOpen] = useState(false)
   const [RequestService, setRequestService] = useState('')
   const isEvaluatorApprovedLocked = isListingEvaluatorApprovedLocked(formData)
+  const isPriceLocked = isListingPriceLocked(formData)
   const canRequestPremium = canRequestPremiumServices(formData)
   const blocksTechnicalReport = blocksPremiumServiceRequest(formData?.technicalReport)
   const blocks3DWalkthrough = blocksPremiumServiceRequest(formData?.video3DWalkthrough)
@@ -210,6 +212,8 @@ const BoatListingForm = ({
           <ListingImageUploadLayout
             errors={errors.pictures && images.length === 0}
             formats={LISTING_IMAGE_FORMATS_LABEL}
+            label='Additional pictures'
+            required
           >
             <ListingMultipleImageComponent
               images={images}
@@ -223,6 +227,8 @@ const BoatListingForm = ({
           <ListingImageUploadLayout
             errors={errors.thumbnail && !thumbnail}
             formats={LISTING_IMAGE_FORMATS_LABEL}
+            label='Thumbnail'
+            required
           >
             <ListingsImageComponent
               errors={errors.thumbnail && !thumbnail}
@@ -233,7 +239,10 @@ const BoatListingForm = ({
               disabled={isEvaluatorApprovedLocked}
             />
           </ListingImageUploadLayout>
-          <ListingImageUploadLayout formats={LISTING_VIDEO_FORMATS_LABEL}>
+          <ListingImageUploadLayout
+            formats={LISTING_VIDEO_FORMATS_LABEL}
+            label='Video (optional)'
+          >
             <ListingsVideoComponent
               videos={videos}
               handleVideoRemove={handleVideoRemove}
@@ -273,6 +282,7 @@ const BoatListingForm = ({
                 errorsMessage={errors.price}
                 name='price'
                 type='text'
+                disabled={isPriceLocked}
               />
             </div>
             <div className='mt-5 relative-placeholder w-full'>
@@ -336,6 +346,9 @@ const BoatListingForm = ({
               onClose={handleClose1Modal}
               formData={formData}
               setFormData={setFormData}
+              assetType='Boats For Sale'
+              dropdown={groupedData}
+              title='Boat Brand'
             />
           </div>
           <div className='relative-placeholder w-full'>

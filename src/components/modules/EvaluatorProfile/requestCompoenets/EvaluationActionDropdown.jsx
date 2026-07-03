@@ -62,15 +62,28 @@ export default function EvaluationActionDropdown({
       onClose()
     }
 
+    const handleClick = (event) => {
+      const target = event.target
+      if (
+        anchorRef?.current?.contains(target) ||
+        menuRef.current?.contains(target)
+      ) {
+        return
+      }
+      onClose()
+    }
+
     const handleKeyDown = (event) => {
       if (event.key === 'Escape') onClose()
     }
 
     document.addEventListener('mousedown', handlePointerDown)
+    document.addEventListener('click', handleClick)
     document.addEventListener('keydown', handleKeyDown)
 
     return () => {
       document.removeEventListener('mousedown', handlePointerDown)
+      document.removeEventListener('click', handleClick)
       document.removeEventListener('keydown', handleKeyDown)
     }
   }, [open, onClose, anchorRef])

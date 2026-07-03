@@ -1,13 +1,12 @@
 'use client'
 import React from 'react'
+import ListingFieldLabel from '@/components/ListingsForm/ListingFieldLabel'
 
-const formatNumber = (value) => {
-  const cleaned = value?.toString().replace(/,/g, '')
-  const number = parseInt(cleaned, 10)
-
-  if (isNaN(number)) return ''
-  return number.toLocaleString('en-US')
-}
+const labelFromPlaceholder = (placeholder) =>
+  String(placeholder || '')
+    .replace(/\(max\.[^)]+\)/gi, '')
+    .replace(/\s+/g, ' ')
+    .trim()
 
 const ListingFormInput = ({
   errors,
@@ -15,6 +14,7 @@ const ListingFormInput = ({
   handleChange,
   handleBlur,
   required,
+  fieldLabel,
   placeholder,
   errorsMessage,
   name,
@@ -23,9 +23,11 @@ const ListingFormInput = ({
   disabled,
 }) => {
   const isPrice = placeholder === 'Price'
+  const label = fieldLabel || (required ? labelFromPlaceholder(placeholder) : '')
 
   return (
     <>
+      {label ? <ListingFieldLabel label={label} required={required} /> : null}
       {isPrice ? (
         <div
           className={`w-full flex items-center shadow-neons h-[50px] ${errors ? 'input-field-error' : ''
@@ -76,12 +78,20 @@ const ListingFormInput = ({
       )}
 
       {errors && (
-        <span className='text-red-500 lg:text-sm text-xs font-medium left-0 absolute top-[99%]'>
+        <span className='absolute left-0 top-[99%] text-xs font-medium text-red-500 lg:text-sm'>
           **{errorsMessage}
         </span>
       )}
     </>
   )
+}
+
+const formatNumber = (value) => {
+  const cleaned = value?.toString().replace(/,/g, '')
+  const number = parseInt(cleaned, 10)
+
+  if (isNaN(number)) return ''
+  return number.toLocaleString('en-US')
 }
 
 export default ListingFormInput

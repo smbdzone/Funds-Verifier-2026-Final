@@ -71,13 +71,11 @@ function Page() {
         throw new Error('File upload did not return a valid document id.')
       }
 
-      await customAxios.put(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/report/technical-report/${id}`,
-        {
-          assetId: productDetails?.uuid,
-          IsRecommended: Recommended,
-          reportFile: fileUpload._id,
-        },
+      await customAxios.put(`/report/technical-report/${id}`, {
+        assetId: productDetails?.uuid,
+        IsRecommended: Recommended,
+        reportFile: fileUpload._id,
+      },
       )
 
       setUploadSuccess(true)
@@ -104,9 +102,7 @@ function Page() {
     if (id) {
       const fetchWalkthrough = async () => {
         try {
-          const response = await customAxios.get(
-            `${process.env.NEXT_PUBLIC_BASE_URL}/report/technical-report/${id}`
-          )
+          const response = await customAxios.get(`/report/technical-report/${id}`)
 
           setReportDetails(response.data)
 
@@ -126,7 +122,7 @@ function Page() {
 
           if (endpoint) {
             const productResponse = await customAxios.get(
-              `${process.env.NEXT_PUBLIC_BASE_URL}/${endpoint}/${product.uuid}`
+              `/${endpoint}/${product.uuid}`,
             )
             setProductDetails(productResponse.data)
           }
@@ -309,6 +305,10 @@ function Page() {
                   Recommended Asset
                 </span>
               </label>
+              <p className='text-sm text-gray-500 -mt-2'>
+                When checked, this listing will show the Recommended badge on
+                public listings after you upload the report.
+              </p>
               <div className='flex justify-end items-center'>
                 <button
                   type='button'

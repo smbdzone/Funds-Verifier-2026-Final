@@ -16,6 +16,7 @@ import SlotTabEditModal from '@/components/Modals/SlotTabEditModal'
 import SlotTabDeleteModal from '@/components/Modals/SlotTabDeleteModal'
 import { useProfile } from '../../../context/UserContext'
 import customAxios from '../../../utils/apis/apis'
+import { filterPastTimeLabelsForDate } from '@/libs/slotTimeFilters'
 
 export const CreateViewingSlotTab = ({
   panelTitle = 'Create Viewing Slots',
@@ -196,6 +197,11 @@ export const CreateViewingSlotTab = ({
 
   // Generate the time options
   const timeOptions = generateTimeOptions()
+  const visiblePresetTimes = filterPastTimeLabelsForDate(times, message.date)
+  const visibleTimeOptions = filterPastTimeLabelsForDate(
+    timeOptions,
+    message.date,
+  )
 
   const handleAddCustomTime = () => {
     if (customTime) {
@@ -279,7 +285,7 @@ export const CreateViewingSlotTab = ({
                     <option value='' disabled>
                       Select Time
                     </option>
-                    {timeOptions.map((time, index) => (
+                    {visibleTimeOptions.map((time, index) => (
                       <option
                         key={index}
                         className='text-blue/90'
@@ -321,7 +327,7 @@ export const CreateViewingSlotTab = ({
                   Select Time Slots
                 </h2>
                 <div className='text-dune/70 grid grid-cols-3 lg:grid-cols-4 gap-3'>
-                  {times.map((time) => (
+                  {visiblePresetTimes.map((time) => (
                     <button
                       key={time}
                       value={time}

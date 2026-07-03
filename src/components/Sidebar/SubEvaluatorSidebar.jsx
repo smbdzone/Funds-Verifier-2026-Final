@@ -16,11 +16,11 @@ import { useProfile } from "../../context/UserContext";
 export default function SuEvaluatorSidebar() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(Array(8).fill(false));
   const path = usePathname();
-const { user, fetchProfile, logout } = useProfile();
+  const { user, fetchProfile, logout } = useProfile();
 
   useEffect(() => {
-     fetchProfile();
-   }, []);
+    fetchProfile();
+  }, []);
 
   const handleDropdownToggle = (index) => {
     setIsDropdownOpen((prevState) =>
@@ -62,24 +62,9 @@ const { user, fetchProfile, logout } = useProfile();
     },
     {
       icon: <PrimaryDocument />,
-      name: "Transaction Tracker",
-      link: "/sub-evaluator-profile/transaction-tracker",
+      name: "Price List",
+      link: "/sub-evaluator-profile/price-list",
     },
-    {
-          icon: <PrimaryDocument />,
-          name: "Electronic Consent",
-          link: "/sub-evaluator-profile/electronic-consent",
-        },
-        {
-          icon: <PrimaryDocument />,
-          name: "Documents Storage",
-          link: "/sub-evaluator-profile/document-storage",
-        },
-        {
-          icon: <PrimaryDocument />,
-          name: "Price List",
-          link: "/sub-evaluator-profile/price-list",
-        },
   ];
 
   return (
@@ -102,11 +87,10 @@ const { user, fetchProfile, logout } = useProfile();
                 tab.dropdown ? (
                   <div key={tab.name} className="relative">
                     <div
-                      className={`${
-                        tab.link === path
+                      className={`${tab.link === path
                           ? "bg-whiteSmoke font-medium focus:outline-none"
                           : "border-transparent"
-                      } whitespace-nowrap flex gap-3 hover:bg-whiteSmoke hover:text-prussianBlue items-center py-2 px-8 cursor-pointer sm:text-base text-sm lg:text-xl`}
+                        } whitespace-nowrap flex gap-3 hover:bg-whiteSmoke hover:text-prussianBlue items-center py-2 px-8 cursor-pointer sm:text-base text-sm lg:text-xl`}
                       onClick={() => handleDropdownToggle(i - 1)}
                     >
                       {tab.icon}
@@ -135,18 +119,17 @@ const { user, fetchProfile, logout } = useProfile();
                   <Link key={tab.name} href={`${tab.link}`}>
                     <button
                       type="button"
-                      className={`${
-                        tab.link === path
+                      className={`${tab.link === path
                           ? "bg-whiteSmoke text-prussianBlue w-full font-medium focus:outline-none"
                           : "border-transparent"
-                      } whitespace-nowrap w-full flex gap-3 hover:bg-whiteSmoke hover:text-prussianBlue items-center py-2 px-8 cursor-pointer sm:text-xl`}
+                        } whitespace-nowrap w-full flex gap-3 hover:bg-whiteSmoke hover:text-prussianBlue items-center py-2 px-8 cursor-pointer sm:text-xl`}
                     >
                       {tab.icon}
                       {tab.name}
                     </button>
                   </Link>
                 )
-              )}             
+              )}
               <div className="whitespace-nowrap flex gap-3 items-center py-2 px-10 cursor-pointer sm:text-base text-sm lg:text-xl">
                 <button
                   onClick={() => logout()}
@@ -155,7 +138,7 @@ const { user, fetchProfile, logout } = useProfile();
                   <span><PrimaryLogout /></span>
                   <span>Logout</span>
                 </button>
-              </div> 
+              </div>
             </nav>
           </div>
         </div>

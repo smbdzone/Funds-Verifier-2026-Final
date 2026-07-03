@@ -424,12 +424,6 @@ function Page() {
         throw new Error('Thumbnail is required')
       }
 
-      if (!videos.length) {
-        toast.error('At least one video is required.')
-        setLoading(false)
-        throw new Error('Video is required')
-      }
-
       return setShowPayment(true)
     }
   }

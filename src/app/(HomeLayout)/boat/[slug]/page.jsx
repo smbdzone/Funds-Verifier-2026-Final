@@ -4,9 +4,11 @@ import BoatView from "@/components/modules/Boat/BoatView";
 import axios from "axios";
 import Link from "next/link";
 import GlobalLoader from "@/utils/GlobalLoader";
-import { getPublicApiHeaders } from "@/libs/publicApiClient";
+import { getPublicApiHeaders } from '@/libs/publicApiClient'
+import { buildListingPageMetadata } from '@/libs/listingMetadata'
+import { cache } from 'react'
 
-const GetProductData = async ({ slug }) => {
+const GetProductData = cache(async ({ slug }) => {
   try {
     const headers = await getPublicApiHeaders()
     const propertyResponse = await axios.get(
@@ -35,6 +37,20 @@ const GetProductData = async ({ slug }) => {
   } catch (error) {
     return null
   }
+})
+
+export async function generateMetadata({ params }) {
+  const { slug } = await params
+  const data = await GetProductData({ slug })
+
+  if (!data?.boatInfo) {
+    return { title: 'Boat not found | Funds Verifier' }
+  }
+
+  return buildListingPageMetadata(data.boatInfo, {
+    routeSegment: 'boat',
+    listingId: slug,
+  })
 }
 
 export default async function Page({ params }) {

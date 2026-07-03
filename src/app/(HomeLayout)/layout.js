@@ -10,13 +10,17 @@ import { ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 import { UserProvider } from '../../context/UserContext'
 import { PublicTokenProvider } from '../../utils/PublicTokenProvider.'
+import { resolveSiteOrigin } from '@/libs/listingSocialShare'
 
 // ✅ CRITICAL: Add these to prevent prerendering of ALL pages in this layout
 export const dynamic = 'force-dynamic'
 export const dynamicParams = true
 export const revalidate = 0
 
+const siteOrigin = resolveSiteOrigin()
+
 export const metadata = {
+  ...(siteOrigin ? { metadataBase: new URL(siteOrigin) } : {}),
   title: 'Funds Verifier',
   description: 'Unlocking Secure Asset Transactions with Funds Verifier',
   icons: {

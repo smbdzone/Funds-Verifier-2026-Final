@@ -14,6 +14,11 @@ export function isListingEvaluatorApprovedLocked(formData) {
   return isListingEvaluatorApproved(formData)
 }
 
+/** Seller cannot edit listing price while trustee marked buyer-in-talks. */
+export function isListingPriceLocked(formData) {
+  return Boolean(formData?.underProcess)
+}
+
 /** 3D walkthrough / technical report — only after evaluator approval (Simo spec). */
 export function canRequestPremiumServices(formData) {
   return canRequestPremiumServicesFromStatus(formData)

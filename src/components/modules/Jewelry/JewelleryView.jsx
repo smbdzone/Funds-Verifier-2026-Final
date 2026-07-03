@@ -10,14 +10,8 @@ import Review from '@/components/Product_page/Review'
 import CalendarPopup from '@/components/CalendarPopup/CalendarPopup'
 import { formatPriceUS } from '@/utils'
 
-import {
-  FaceBookIcon,
-  InstaIcon,
-  TwitterIcon,
-  WhiteLinkdInIcon,
-  WhiteTickTokIcon,
-} from '@/components/Icons'
 import Open3dModal from '@/components/3dModal/Open3dModal'
+import ListingSocialShare from '@/components/shared/ListingSocialShare'
 import Modal2 from '@/components/product-modal/modal2'
 import Modal from '@/components/product-modal/modal'
 import ImageSlider from './ImageSlider'
@@ -306,26 +300,10 @@ export default function JewelleryView({ data }) {
             Ref: {data?.uuid ? data.uuid.slice(0, 8) : 'N/A'}
           </span>
           <div className='flex justify-between w-full items-end'>
-            <div className='flex gap-5 font-medium text-lg items-center'>
-              <span className='md:text-lg text-base'>Share:</span>
-              <div className='flex gap-2'>
-                <Link href='#'>
-                  <FaceBookIcon className='h-[16px] w-[16px]' />
-                </Link>
-                <Link href='#'>
-                  <InstaIcon className='h-[16px] w-[16px]' />
-                </Link>
-                <Link href='#'>
-                  <WhiteLinkdInIcon className='h-[16px] w-[16px]' />
-                </Link>
-                <Link href='#'>
-                  <TwitterIcon className='h-[16px] w-[16px]' />
-                </Link>
-                <Link href='#'>
-                  <WhiteTickTokIcon className='h-[16px] w-[16px]' />
-                </Link>
-              </div>
-            </div>
+            <ListingSocialShare
+              listing={{ ...data, type: 'jewelry' }}
+              linkedinIcon='white'
+            />
           </div>
         </div>
       </div>
@@ -333,8 +311,8 @@ export default function JewelleryView({ data }) {
         <div className='flex gap-4 pb-4 justify-center'>
           <button
             className={`flex-grow md:text-base text-xs flex justify-center py-1 ${openDiscription
-                ? 'text-lightBlue border-b-2 border-gold-800'
-                : 'text-black'
+              ? 'text-lightBlue border-b-2 border-gold-800'
+              : 'text-black'
               }`}
             onClick={() => {
               handleOpenValues('Description')
@@ -344,8 +322,8 @@ export default function JewelleryView({ data }) {
           </button>
           <button
             className={`flex-grow md:text-base text-xs flex justify-center py-1 ${openAdditional_info
-                ? 'text-lightBlue border-b-2 border-gold-800'
-                : 'text-black'
+              ? 'text-lightBlue border-b-2 border-gold-800'
+              : 'text-black'
               }`}
             onClick={() => {
               handleOpenValues('Additional')
@@ -355,8 +333,8 @@ export default function JewelleryView({ data }) {
           </button>
           <button
             className={`flex-grow md:text-base text-xs flex justify-center py-1 ${openReview
-                ? 'text-lightBlue border-b-2 border-gold-800'
-                : 'text-black'
+              ? 'text-lightBlue border-b-2 border-gold-800'
+              : 'text-black'
               }`}
             onClick={() => {
               handleOpenValues('Reviews')

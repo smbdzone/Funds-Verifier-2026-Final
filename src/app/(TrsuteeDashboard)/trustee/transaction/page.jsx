@@ -67,7 +67,7 @@ const Page = () => {
   }
 
   return (
-    <div>
+    <div className='min-w-0 max-w-full overflow-hidden'>
       <AllTransactions listings={listings} />
     </div>
   )

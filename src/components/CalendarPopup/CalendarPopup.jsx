@@ -7,6 +7,7 @@ import './styles.css'
 import { useProfile } from '../../context/UserContext'
 import customAxios from '../../utils/apis/apis'
 import { NoSlotsAvailable } from '@/components/global/NoSlotsAvailable'
+import { getBookableSlotsForDate } from '@/libs/slotTimeFilters'
 
 const resolveTrusteeFromListing = (product) => {
   if (!product) return null
@@ -98,7 +99,7 @@ const CalendarPopup = ({ onClose, productData }) => {
         const daySlotGroupId = response.data[0].uuid
 
         setTimeSlots(availableSlots)
-        const openSlots = availableSlots.filter((t) => !t.isBooked)
+        const openSlots = getBookableSlotsForDate(availableSlots, date)
         if (openSlots.length > 0) {
           setSelectedTime(openSlots[0].time)
           setTimeSlotId(openSlots[0].uuid)
@@ -110,7 +111,7 @@ const CalendarPopup = ({ onClose, productData }) => {
       setSlotsFetchError('network')
       toast.error(
         error?.response?.data?.message ||
-          'Could not check this date. Try again.',
+        'Could not check this date. Try again.',
       )
     } finally {
       setFetchingSlots(false)
@@ -248,7 +249,7 @@ const CalendarPopup = ({ onClose, productData }) => {
                   <p className='max-w-[220px] text-center text-sm text-white'>
                     Could not load this date. Pick another day or try again.
                   </p>
-                ) : timeSlots.filter((t) => !t.isBooked).length > 0 ? (
+                ) : getBookableSlotsForDate(timeSlots, selectedDate).length > 0 ? (
                   <>
                     <select
                       value={selectedTime}
@@ -263,16 +264,16 @@ const CalendarPopup = ({ onClose, productData }) => {
                       }}
                       className='mt-2 max-w-[220px] cursor-pointer rounded-[4px] bg-[#FFFFFF] px-3 py-2 text-[#8D7C3B]'
                     >
-                      {timeSlots
-                        .filter((time) => !time.isBooked)
-                        .map((slot) => (
+                      {getBookableSlotsForDate(timeSlots, selectedDate).map(
+                        (slot) => (
                           <option
                             key={slot.uuid || slot.time}
                             value={slot.time}
                           >
                             {slot.time}
                           </option>
-                        ))}
+                        ),
+                      )}
                     </select>
                     <button
                       type='button'

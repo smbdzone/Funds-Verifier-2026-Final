@@ -1,14 +1,12 @@
 import React, { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { LocationIcon } from '../Icons'
 import {
-  FaceBookIcon,
-  InstaIcon,
-  LocationIcon,
-  TwitterIcon,
-  LinkdInIcon,
-  WhatsAppIcon,
-} from '../Icons'
+  getListingPremiumDisplay,
+  getListingWalkthroughUrl,
+} from '@/libs/listingPremiumStatus'
+import ListingSocialShare from '@/components/shared/ListingSocialShare'
 import Modal2 from '../product-modal/modal2'
 import { Navigation, Pagination, Scrollbar, A11y } from 'swiper/modules'
 import { Swiper, SwiperSlide } from 'swiper/react'
@@ -27,10 +25,6 @@ import {
   isListingCarouselPlaceholderSlide,
   PLACEHOLDER,
 } from '@/libs/listingCardMedia'
-import {
-  getListingPremiumDisplay,
-  getListingWalkthroughUrl,
-} from '@/libs/listingPremiumStatus'
 
 const ProductCard = ({
   type,
@@ -299,30 +293,14 @@ const ProductCard = ({
             ) : null}
           </div>
         </div>
-        <div>
-          <p className='md:mb-3 mb-1 lg:text-base md:text-sm text-xs'>
-            Share With:
-          </p>
-          <div className='flex justify-between'>
-            <div className='flex gap-3'>
-              <Link href='#'>
-                <FaceBookIcon className='h-5 w-5' />
-              </Link>
-              <Link href='#'>
-                <InstaIcon className='h-5 w-5' />
-              </Link>
-              <Link href='#'>
-                <LinkdInIcon className='h-5 w-5' />
-              </Link>
-              <Link href='#'>
-                <TwitterIcon className='h-5 w-5' />
-              </Link>
-              <Link href='#'>
-                <WhatsAppIcon className='h-5 w-5' />
-              </Link>
-            </div>
-          </div>
-        </div>
+        <ListingSocialShare
+          listing={{ ...item, type }}
+          label='Share With:'
+          labelClassName='md:mb-3 mb-1 lg:text-base md:text-sm text-xs'
+          iconClassName='h-5 w-5'
+          iconGapClassName='gap-3'
+          stacked
+        />
       </div>
     </div>
   )

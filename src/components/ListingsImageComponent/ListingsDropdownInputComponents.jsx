@@ -1,5 +1,6 @@
 import Image from 'next/image'
 import React from 'react'
+import ListingFieldLabel from '@/components/ListingsForm/ListingFieldLabel'
 
 const ListingsDropdownInputComponents = ({
   errors,
@@ -14,15 +15,18 @@ const ListingsDropdownInputComponents = ({
   handleSelectOption,
   readOnly,
   disabled,
+  required = false,
 }) => {
   return (
     <div className='custom-container-dev'>
+      {placeholder ? (
+        <ListingFieldLabel label={placeholder} required={required} />
+      ) : null}
       <input
         type='text'
-        className={`w-full shadow-neons h-[50px] pl-5 placeholder:text-dark-grey outline-with-opacity placeholder:text-[15px] placeholder:font-normal ${
-          errors ? 'input-field-error ' : ''
-        }`}
-        placeholder={placeholder}
+        className={`w-full shadow-neons h-[50px] pl-5 placeholder:text-dark-grey outline-with-opacity placeholder:text-[15px] placeholder:font-normal ${errors ? 'input-field-error ' : ''
+          }`}
+        placeholder={value ? '' : `Select ${placeholder}`}
         name={name}
         value={value}
         readOnly={readOnly}

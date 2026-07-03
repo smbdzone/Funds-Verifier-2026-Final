@@ -16,6 +16,7 @@ import Link from 'next/link'
 import Modal2 from '../product-modal/modal2'
 import Image from 'next/image'
 import { formatNumberWithCommas } from '@/utils/global-functions/global'
+import { formatPropertySizeDisplay } from '@/libs/propertySizeUnits'
 import Open3dModal from '@/components/3dModal/Open3dModal'
 import {
   getListingCarouselItems,
@@ -66,7 +67,7 @@ const renderListingDetails = (listing, hasFeaturedStyling) => {
               : 'text-prussianBlue'
               }`}
           >
-            {formatNumberWithCommas(listing.sizeSQFT)} Sqft
+            {formatPropertySizeDisplay(listing)}
           </span>
         </div>
       )

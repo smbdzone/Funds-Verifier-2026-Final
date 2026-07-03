@@ -15,6 +15,7 @@ const DropDown = ({
   value,
   dropdown,
   fetchPrice,
+  buttonClassName = 'text-sm text-black/60',
 }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isSubDropdownOpen, setIsSubDropdownOpen] = useState(false);
@@ -65,7 +66,7 @@ const DropDown = ({
           <button
             onClick={toggleDropdown}
             type="button"
-            className="flex justify-between text-sm text-black/60 items-center gap-2 w-full bg-white"
+            className={`flex justify-between ${buttonClassName} items-center gap-2 w-full bg-white`}
           >
             {subCategory || "Select Category"}
             <SlArrowRight
@@ -117,7 +118,7 @@ const DropDown = ({
           <button
             type="button"
             onClick={toggleDropdown}
-            className="flex justify-between text-sm text-black/60 items-center gap-2 w-full bg-white"
+            className={`flex justify-between ${buttonClassName} items-center gap-2 w-full bg-white`}
           >
             {category || "Select Category"}
             <SlArrowRight
@@ -151,7 +152,7 @@ const DropDown = ({
           <button
             type="button"
             onClick={toggleBedroomsDropdown}
-            className="flex text-sm justify-between text-black/60 items-center gap-2 bg-white "
+            className={`flex ${buttonClassName} justify-between items-center gap-2 bg-white `}
           >
             {value || "Select"}
             <SlArrowRight

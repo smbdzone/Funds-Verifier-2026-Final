@@ -40,6 +40,11 @@ const PaymentModal = ({
 
   if (!show) return null
 
+  const evaluationAmount =
+    Number(formData?.evaluationFeePrice) > 0
+      ? Number(formData.evaluationFeePrice)
+      : EVALUATION_CLOZER_AMOUNT
+
   const handleClozerPay = async () => {
     if (!user?.uuid) {
       toast.error('Please log in to continue.')
@@ -73,7 +78,7 @@ const PaymentModal = ({
       const data = await initiateClozerPayment({
         userUUID: user.uuid,
         service: 'evaluation',
-        price: EVALUATION_CLOZER_AMOUNT,
+        price: evaluationAmount,
         success_url: `${origin}/clozer-return`,
         listingDraft,
       })
@@ -195,7 +200,7 @@ const PaymentModal = ({
           <PaymentChoiceModal
             show={paymentStep === 'choice'}
             onClose={handleClose}
-            amount={EVALUATION_CLOZER_AMOUNT}
+            amount={evaluationAmount}
             loading={clozerLoading}
             title='Payment for Evaluation'
             onPayFull={() => setPaymentStep('stripe')}
@@ -210,8 +215,8 @@ const PaymentModal = ({
               {getFullPayDiscountPercent() > 0 && (
                 <p className='text-sm text-green-700 mb-3'>
                   {getFullPayDiscountPercent()}% discount applied to evaluation fee (
-                  {formatAed(applyFullPayDiscount(EVALUATION_CLOZER_AMOUNT).discounted)}{' '}
-                  instead of {formatAed(EVALUATION_CLOZER_AMOUNT)} if charged after 90 days).
+                  {formatAed(applyFullPayDiscount(evaluationAmount).discounted)}{' '}
+                  instead of {formatAed(evaluationAmount)} if charged after 90 days).
                 </p>
               )}
               <div className='text-sm text-gray-600 bg-gray-50 border border-gray-200 rounded-md p-4 mb-4 w-full'>
@@ -224,7 +229,7 @@ const PaymentModal = ({
                   .<br />A small charge (~<strong>2 dirham</strong>) will confirm your payment method.
                 </p>
                 <ul className='list-disc list-inside space-y-1'>
-                  <li>If asset unsold after 90 days → <strong>2,500 dirhams</strong> evaluation fee.</li>
+                  <li>If asset unsold after 90 days → <strong>{formatAed(evaluationAmount)}</strong> evaluation fee.</li>
                   <li>If asset removed before 90 days → fee still applies.</li>
                   <li>If asset sold later via <strong>Funds Verifier</strong> → fee refunded.</li>
                 </ul>

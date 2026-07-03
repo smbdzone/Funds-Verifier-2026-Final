@@ -8,19 +8,12 @@ import Link from 'next/link'
 import Description from '@/components/Product_page/Description'
 import CalendarPopup from '@/components/CalendarPopup/CalendarPopup'
 import Review from '@/components/Product_page/Review'
-import {
-  FaceBookIcon,
-  InstaIcon,
-  TwitterIcon,
-  WhiteLinkdInIcon,
-  WhiteTickTokIcon,
-} from '../Icons'
+import Open3dModal from '../3dModal/Open3dModal'
+import ListingSocialShare from '@/components/shared/ListingSocialShare'
 import { IoCheckmarkSharp } from 'react-icons/io5'
 import { formatPriceUS } from '@/utils'
-import { formatColorList } from '@/utils/global-functions/global'
 import Modal2 from '../product-modal/modal2'
 import Modal from '../product-modal/modal'
-import Open3dModal from '../3dModal/Open3dModal'
 import ImageSlider from '../modules/Jewelry/ImageSlider'
 import { formatNumberWithCommas } from '../../utils/global-functions/global'
 import {
@@ -302,24 +295,10 @@ export default function ProductView({ data }) {
                 Ref: {data?.uuid ? data.uuid.slice(0, 8) : 'N/A'}
               </span>
               <div className='flex gap-5 font-medium text-lg items-center'>
-                <span className='md:text-lg text-base'>Share:</span>
-                <div className='flex gap-2'>
-                  <Link href='#'>
-                    <FaceBookIcon className='h-[16px] w-[16px]' />
-                  </Link>
-                  <Link href='#'>
-                    <InstaIcon className='h-[16px] w-[16px]' />
-                  </Link>
-                  <Link href='#'>
-                    <WhiteLinkdInIcon className='h-[16px] w-[16px]' />
-                  </Link>
-                  <Link href='#'>
-                    <TwitterIcon className='h-[16px] w-[16px]' />
-                  </Link>
-                  <Link href='#'>
-                    <WhiteTickTokIcon className='h-[16px] w-[16px]' />
-                  </Link>
-                </div>
+                <ListingSocialShare
+                  listing={{ ...data, type: 'car' }}
+                  linkedinIcon='white'
+                />
               </div>
             </div>
             {data?.VIN ? (

@@ -64,7 +64,7 @@ export default function RootLayout({ children }) {
                   </div>
                 }
               >
-                <main className="p-5">{children}</main>
+                <main className="p-5 min-w-0 max-w-full overflow-x-hidden">{children}</main>
               </Suspense>
             </div>
           </div>

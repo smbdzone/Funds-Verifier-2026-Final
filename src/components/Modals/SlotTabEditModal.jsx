@@ -4,6 +4,7 @@ import 'react-calendar/dist/Calendar.css'
 import axios from 'axios'
 import { toast } from 'react-toastify'
 import customAxios from '../../utils/apis/apis'
+import { filterPastTimeLabelsForDate } from '@/libs/slotTimeFilters'
 
 const times = [
   { time: '08:00 AM', isBooked: false },
@@ -113,7 +114,18 @@ const SlotTabEditModal = ({ disablePastDates, closeModal, id, fetchSlots }) => {
             <div className='flex flex-col'>
               <h3 className='text-lg font-medium mb-1'>Available Times</h3>
               <div className='grid grid-cols-3 gap-3'>
-                {times.map((time) => {
+                {times
+                  .filter(({ time }) => {
+                    const isFuture = filterPastTimeLabelsForDate(
+                      [time],
+                      selectedDate,
+                    ).includes(time)
+                    const alreadyOnSlot = timeSlots.some(
+                      (slot) => slot.time === time,
+                    )
+                    return isFuture || alreadyOnSlot
+                  })
+                  .map((time) => {
                   const isBooked =
                     timeSlots.find((slot) => slot.time === time.time)
                       ?.isBooked || false

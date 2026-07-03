@@ -23,14 +23,14 @@ import { formatNumberWithCommas } from '../../../utils/global-functions/global'
 import { IoCheckmarkSharp } from 'react-icons/io5'
 import { getCookie } from 'cookies-next'
 import customAxios from '../../../utils/apis/apis'
-import {
-  getListingImageSrc,
-  getListingVideoSrc,
-} from '@/libs/listingCardMedia'
+import EvaluatorListingMedia from './requestCompoenets/EvaluatorListingMedia'
 import { useProfile } from '../../../context/UserContext'
+import EvaluatorDateField from './requestCompoenets/EvaluatorDateField'
 import {
+  formatDateForInput,
   getRequestDocumentName,
   normalizeRequestDocuments,
+  requestDocumentsMissingDate,
   serializeRequestDocuments,
 } from '@/utils/requestDocumentUtils'
 import { length as boatLengthOptions } from '@/constants/boat-listings'
@@ -43,7 +43,6 @@ export const RequestTab2 = () => {
   const [fileName, setFileName] = useState('')
   const [uploadedFileId, setUploadedFileId] = useState(null)
   const [fileUrl, setFileUrl] = useState('') // For displaying file URL
-  const [noMediaFound, setNoMediaFound] = useState(false)
   const [evaluationPrice, setEvaluationPrice] = useState('')
   const [formattedPrice, setFormattedPrice] = useState('')
   const [listingPrice, setListingPrice] = useState('')
@@ -104,12 +103,6 @@ export const RequestTab2 = () => {
       const response = await customAxios.get(`/boat/${propertyId}`)
       setProperty(response.data)
 
-      if (
-        response.data.pictures.images > 0 ||
-        response.data.video3DWalkthrough > 0
-      ) {
-        setNoMediaFound(false)
-      }
       fetchPrice(response?.data.category)
 
       initFormattedPrice(
@@ -124,6 +117,9 @@ export const RequestTab2 = () => {
       )
       setRoi(response.data.roi != null ? String(response.data.roi) : '')
       setLength(response.data.length || '')
+      setCertificateDate(
+        formatDateForInput(response.data.evaluationCertificateDate),
+      )
       if (response.data.evaluationCertificate) {
         setFileUrl(response.data.evaluationCertificate) // Update URL from API
       }
@@ -137,20 +133,30 @@ export const RequestTab2 = () => {
     }
   }
   const [requestDocument, setRequestDocument] = useState([])
-  const [newDocument, setNewDocument] = useState('') // State for the new document
+  const [newDocument, setNewDocument] = useState('')
+  const [newDocumentDate, setNewDocumentDate] = useState('')
+  const [certificateDate, setCertificateDate] = useState('')
   const [showTextArea, setShowTextArea] = useState(false)
   const [editIndex, setEditIndex] = useState(null)
   const [editText, setEditText] = useState('')
   const [data, setData] = useState()
   const handleAddDocument = () => {
-    if (newDocument.trim() !== '') {
-      setRequestDocument([
-        ...requestDocument,
-        { name: newDocument.trim(), document: null },
-      ])
-      setNewDocument('')
-      setShowTextArea(false)
+    if (newDocument.trim() === '') {
+      toast.error('Please enter a document name.')
+      return
     }
+    if (!newDocumentDate) {
+      toast.error('Please select a date for the document request.')
+      return
+    }
+
+    setRequestDocument([
+      ...requestDocument,
+      { name: newDocument.trim(), document: null, date: newDocumentDate },
+    ])
+    setNewDocument('')
+    setNewDocumentDate('')
+    setShowTextArea(false)
   }
 
   const handleEdit = (index) => {
@@ -174,7 +180,10 @@ export const RequestTab2 = () => {
     setRequestDocument(updatedDocuments)
   }
   const handleRequest = async () => {
-    // console.log(requestDocument)
+    if (requestDocumentsMissingDate(requestDocument)) {
+      toast.error('Each requested document must have a date.')
+      return
+    }
 
     try {
       const response = await customAxios.put(
@@ -228,6 +237,12 @@ export const RequestTab2 = () => {
         return
       }
 
+      if (property?.status !== 1 && !certificateDate) {
+        toast.error('Please select a certificate date.')
+        setIsLoading(false)
+        return
+      }
+
       const approvalPayload = buildEvaluatorUpdatePayload({
         listingPrice,
         evaluationPrice,
@@ -237,6 +252,11 @@ export const RequestTab2 = () => {
       })
       if (certificateId) {
         approvalPayload.evaluationCertificate = certificateId
+      }
+      if (property?.status !== 1 && certificateDate) {
+        approvalPayload.evaluationCertificateDate = new Date(
+          certificateDate,
+        ).toISOString()
       }
       approvalPayload.invoice = invoiceUpload?._id || property?.invoice || null
       if (certificateId || property?.status === 1) {
@@ -302,23 +322,6 @@ export const RequestTab2 = () => {
 
   const closeModal = () => {
     setIsModalOpen(false)
-  }
-
-  const [selectedMedia, setSelectedMedia] = useState(null)
-
-  const handleOpenMedia = (media) => {
-    setSelectedMedia(media)
-  }
-
-  const handleCloseModal = () => {
-    setSelectedMedia(null)
-  }
-
-  // Close modal when clicking outside
-  const handleClickOutside = (e) => {
-    if (e.target.id === 'modalOverlay') {
-      handleCloseModal()
-    }
   }
 
   const handleEvaluationPrice = (e) => {
@@ -464,116 +467,10 @@ export const RequestTab2 = () => {
             </div>
           ))}
         </div>
-        <div className='mb-4'>
-          <label className='block text-sm font-medium text-[#969696]'>
-            Media
-          </label>
-          <div className='mt-1 flex flex-col w-full px-3 py-3 rounded-md bg-white text-[#969696] text-sm border border-[#969696]'>
-            {noMediaFound ? (
-              <img
-                src='/listing/no-image.png'
-                alt='No image'
-                className='w-full'
-              />
-            ) : (
-              <div className='w-full h-full flex gap-2'>
-                {/* 3D Walkthrough container */}
-                {property?.video3DWalkthrough?.link ? (
-                  <div className='relative w-64 min-h-full flex-shrink-0 rounded-sm overflow-hidden'>
-                    <iframe
-                      src={property?.video3DWalkthrough?.link}
-                      className='w-full h-full object-cover'
-                      frameBorder='0'
-                      title='3D Walkthrough'
-                      style={{ pointerEvents: 'none' }}
-                    />
-                    <div
-                      className='absolute inset-0 bg-transparent'
-                      onClick={() =>
-                        handleOpenMedia(property?.video3DWalkthrough?.link)
-                      }
-                    />
-                  </div>
-                ) : null}
-
-                {/* Remaining media container */}
-                <div className='flex flex-wrap gap-2'>
-                  {[
-                    ...(property.pictures
-                      ? property.pictures.images.map((image) => ({
-                        type: 'image',
-                        src: getListingImageSrc(image),
-                      }))
-                      : []),
-                    ...(property?.video
-                      ? property?.video.videos.map((video) => ({
-                        type: 'video',
-                        src: getListingVideoSrc(video),
-                      }))
-                      : []),
-                  ].map((media, index) => (
-                    <div
-                      key={index}
-                      className='w-28 h-28 rounded-sm overflow-hidden'
-                      onClick={() => handleOpenMedia(media.src)}
-                    >
-                      {media.type === 'video' ? (
-                        <video
-                          src={media.src}
-                          className='w-full h-full object-cover rounded-sm'
-                          controls
-                        />
-                      ) : (
-                        <img
-                          src={media.src}
-                          className='w-full h-full object-cover rounded-sm'
-                          alt='Property'
-                        />
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-          {selectedMedia && (
-            <div
-              id='modalOverlay'
-              className='fixed z-50 inset-0 bg-black bg-opacity-50 flex items-center justify-center'
-              onClick={handleClickOutside}
-            >
-              <div className='w-[50%] lg:h-[50%] bg-white p-2 rounded-md relative'>
-                <button
-                  className='absolute top-2 right-2 text-4xl'
-                  onClick={handleCloseModal}
-                >
-                  &times;
-                </button>
-                {selectedMedia.includes('.mp4') ? (
-                  <video
-                    src={selectedMedia}
-                    controls
-                    className='w-full h-full object-contain'
-                  />
-                ) : selectedMedia.includes('.jpg' || '.png') ? (
-                  <img
-                    src={selectedMedia}
-                    alt='Selected'
-                    className='w-full h-full object-contain'
-                  />
-                ) : (
-                  <iframe
-                    src={selectedMedia}
-                    className='w-full h-full object-contain'
-                    frameBorder='0'
-                    allowFullScreen
-                    title='3D Walkthrough'
-                  />
-                )}
-              </div>
-            </div>
-          )}
-        </div>
+        <EvaluatorListingMedia
+          property={property}
+          emptyImage='/listing/no-image.png'
+        />
         {property?.status === 1 ? null : (
           <>
             <DocumentSection
@@ -604,16 +501,24 @@ export const RequestTab2 = () => {
                     </span>
                   </button>
                   {showTextArea && (
-                    <div className='flex w-full items-center gap-3'>
+                    <div className='flex w-full flex-col gap-3 sm:flex-row sm:items-end'>
                       <textarea
                         rows={1}
-                        className='block w-full pl-5 py-2 rounded-md bg-white text-[#969696] text-sm sm:text-base border border-[#969696]'
+                        className='block w-full rounded-md border border-[#969696] bg-white py-2 pl-5 text-sm text-[#969696] sm:text-base'
                         value={newDocument}
                         onChange={(e) => setNewDocument(e.target.value)}
+                        placeholder='Document name'
+                      />
+                      <EvaluatorDateField
+                        id='newDocumentDate'
+                        label='Date'
+                        value={newDocumentDate}
+                        onChange={(e) => setNewDocumentDate(e.target.value)}
+                        className='sm:w-48'
                       />
                       <button
                         onClick={handleAddDocument}
-                        className='border border-blue-500 primary-gradient text-white px-4 py-2 text-sm sm:text-base rounded-md'
+                        className='rounded-md border border-blue-500 primary-gradient px-4 py-2 text-sm text-white sm:text-base'
                       >
                         Add
                       </button>
@@ -642,11 +547,11 @@ export const RequestTab2 = () => {
         <Modal isOpen={isModalOpen} onClose={closeModal} fileUrl={pdfUrl} />
         {property?.status === 1 ? null : (
           <>
-            <div className='my-6 grid grid-cols-1 gap-4 sm:grid-cols-2'>
+            <div className='my-6 grid grid-cols-1 gap-4 sm:grid-cols-3'>
               <div className='min-w-0'>
                 <label
                   htmlFor='uploadDocument'
-                  className='mb-2 block text-sm sm:text-base font-medium text-gray-700'
+                  className='mb-2 block text-sm font-medium text-gray-700 sm:text-base'
                 >
                   Evaluation Certificate
                 </label>
@@ -660,7 +565,7 @@ export const RequestTab2 = () => {
                 />
                 <label
                   htmlFor='uploadDocument'
-                  className='flex h-[48px] w-full cursor-pointer items-center justify-between rounded-md border border-[#8d7c3b] bg-white px-3 text-sm sm:text-base text-gray-800'
+                  className='flex h-[48px] w-full cursor-pointer items-center justify-between rounded-md border border-[#8d7c3b] bg-white px-3 text-sm text-gray-800 sm:text-base'
                 >
                   <span className='truncate pr-2'>
                     {fileName?.name ? fileName.name : 'Upload certificate'}
@@ -668,6 +573,13 @@ export const RequestTab2 = () => {
                   <UploadIcon className='h-6 w-5 shrink-0' />
                 </label>
               </div>
+
+              <EvaluatorDateField
+                id='certificateDate'
+                label='Certificate Date'
+                value={certificateDate}
+                onChange={(e) => setCertificateDate(e.target.value)}
+              />
 
               <div className='min-w-0'>
                 <label className='mb-2 block text-sm sm:text-base font-medium text-gray-700'>
