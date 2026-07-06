@@ -19,8 +19,8 @@ import avator1 from '@/assets/avators/Avatars 1.png'
 import avator2 from '@/assets/avators/Avatars 2.png'
 import avator3 from '@/assets/avators/Avatars 3.png'
 import arrow_right from '@/assets/vector1.svg'
-import { usePublicTokenContext } from '@/utils/PublicTokenProvider.'
 import { HomeListingSliderSkeleton } from '@/components/home/HomeSectionSkeletons'
+import { publicApiFetch } from '@/libs/publicApiClient'
 
 const avatars = [avator1, avator2, avator3]
 
@@ -54,7 +54,6 @@ export default function CarSaleSliderStatic() {
   const [approvedCars, setApprovedCars] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const swiperRef = useRef(null)
-  const publicToken = usePublicTokenContext()
 
   useEffect(() => {
     let cancelled = false
@@ -62,20 +61,8 @@ export default function CarSaleSliderStatic() {
     const fetchApprovedCars = async () => {
       setIsLoading(true)
       try {
-        const base = process.env.NEXT_PUBLIC_BASE_URL
-        if (!base) {
-          setApprovedCars([])
-          return
-        }
-
-        const headers = {}
-        if (publicToken) {
-          headers['x-public-token'] = publicToken
-        }
-
-        const response = await fetch(`${base}${APPROVED_CARS_URL}`, {
+        const response = await publicApiFetch(APPROVED_CARS_URL, {
           cache: 'no-store',
-          headers,
         })
 
         if (!response.ok) {
@@ -103,7 +90,7 @@ export default function CarSaleSliderStatic() {
     return () => {
       cancelled = true
     }
-  }, [publicToken])
+  }, [])
 
   const handlePrevSlide = () => {
     if (swiperRef.current?.swiper) {

@@ -14,6 +14,11 @@ import arrow_right from '@/assets/vector1.svg'
 import Link from 'next/link'
 import { swiperCanLoop } from '@/utils/swiperLoop'
 import { HomeNewsTrendsSkeleton } from '@/components/home/HomeSectionSkeletons'
+import {
+  filterActiveBlogs,
+  PUBLIC_BLOG_FETCH_OPTIONS,
+  sortBlogsForDisplay,
+} from '@/utils/blogVisibility'
 
 function stripHtml(html) {
   if (!html || typeof html !== 'string') return ''
@@ -97,10 +102,11 @@ export default function NewsTrends() {
       const started = Date.now()
       try {
         const res = await fetch(
-          `${process.env.NEXT_PUBLIC_BASE_URL}/blog/getAll?limit=5&page=1`
+          `${process.env.NEXT_PUBLIC_BASE_URL}/blog/getAll?limit=5&page=1`,
+          PUBLIC_BLOG_FETCH_OPTIONS,
         )
         const data = await res.json()
-        const articles = data?.data || []
+        const articles = sortBlogsForDisplay(filterActiveBlogs(data?.data || []))
 
         const dummyImages = { house, boats, cars, planes, jewellry }
 

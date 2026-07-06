@@ -37,6 +37,7 @@ const roleRoutes = {
     '/profile',
     '/profile/deal-preference',
     '/profile/purchase-tracker',
+    '/seller-profile/all-slot',
     '/advertise-with-us',
     '/advertise-with-us/analytics',
   ],

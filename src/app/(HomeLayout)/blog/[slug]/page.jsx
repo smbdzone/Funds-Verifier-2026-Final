@@ -1,11 +1,18 @@
 'use client'
 import Image from 'next/image'
 import Link from 'next/link'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { usePathname } from 'next/navigation'
 import { formatDate, sanitizeHTML } from '../../../../utils/global-functions/global'
 import { Banner } from '@/components/modules/Banner'
 import parse from 'html-react-parser'
+import {
+  filterActiveBlogs,
+  isFeaturedBlog,
+  PUBLIC_BLOG_FETCH_OPTIONS,
+  sortBlogsForDisplay,
+} from '@/utils/blogVisibility'
+import BlogComments from '@/components/blog/BlogComments'
 
 export default function ClientInsight() {
   const [detailData, setDetailData] = useState(null)
@@ -19,12 +26,7 @@ export default function ClientInsight() {
       try {
         const response = await fetch(
           `${process.env.NEXT_PUBLIC_BASE_URL}/blog/getBySlug/${slug}`,
-          {
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-          }
+          PUBLIC_BLOG_FETCH_OPTIONS,
         )
         const result = await response.json()
         setDetailData(result.data)
@@ -37,15 +39,10 @@ export default function ClientInsight() {
       try {
         const response = await fetch(
           `${process.env.NEXT_PUBLIC_BASE_URL}/blog/getAll?category=${query}`,
-          {
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-          }
+          PUBLIC_BLOG_FETCH_OPTIONS,
         )
         const result = await response.json()
-        setSidebarData(result.data)
+        setSidebarData(filterActiveBlogs(result.data))
       } catch (error) {
         console.error('Error fetching sidebar data:', error)
       }
@@ -54,6 +51,12 @@ export default function ClientInsight() {
     fetchDetailData()
     fetchSidebarData()
   }, [slug, query])
+
+  const featuredInsights = useMemo(() => {
+    return sortBlogsForDisplay(filterActiveBlogs(sidebarData))
+      .filter((item) => isFeaturedBlog(item) && item.slug !== slug)
+      .slice(0, 4)
+  }, [sidebarData, slug])
 
   return (
     <>
@@ -100,27 +103,9 @@ export default function ClientInsight() {
                   <div className='blog-article-prose prose prose-sm sm:prose-base lg:prose-lg max-w-none text-gray-700 leading-relaxed break-words'>
                     {parse(sanitizeHTML(detailData?.services))}
                   </div>
-
-                  {detailData?.faqs && detailData.faqs.length > 0 && (
-                    <section className='mt-8 sm:mt-10 -mx-4 sm:mx-0 bg-gray-50 rounded-none sm:rounded-xl px-4 sm:px-6 py-6 sm:py-8'>
-                      <div className='space-y-3 sm:space-y-4'>
-                        {detailData.faqs.map((faq, index) => (
-                          <div
-                            key={index}
-                            className='bg-white rounded-lg shadow-sm p-4 sm:p-5'
-                          >
-                            <p className='text-base sm:text-lg font-medium text-gray-900 mb-2 sm:mb-3'>
-                              {faq.question}
-                            </p>
-                            <div className='text-sm sm:text-base text-gray-700 leading-relaxed break-words'>
-                              {parse(sanitizeHTML(faq.answer || ''))}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </section>
-                  )}
                 </article>
+
+                <BlogComments blogUuid={detailData.uuid} />
               </>
             ) : (
               <div className='animate-pulse space-y-4'>
@@ -138,41 +123,55 @@ export default function ClientInsight() {
 
           {/* Sidebar */}
           <div className='w-full lg:w-1/3 min-w-0'>
-            <div className='bg-gray-50 rounded-lg p-4 sm:p-6 lg:sticky lg:top-8'>
-              <h2 className='text-lg sm:text-xl font-semibold text-gray-900 mb-3 sm:mb-4'>
-                Most Red Featured Insight
-              </h2>
+            <div className='rounded-2xl bg-gradient-to-br from-reefGold/70 via-reefGold/25 to-prussianBlue/20 p-[1px] shadow-[0_8px_30px_rgba(162,145,62,0.15)] lg:sticky lg:top-8'>
+              <div className='rounded-[15px] bg-white p-4 sm:p-5'>
+                <div className='mb-4 border-b border-reefGold/20 pb-3'>
+                  <h2 className='text-lg font-semibold text-prussianBlue sm:text-xl'>
+                    Top Featured Insights
+                  </h2>
+                  <p className='mt-1 text-xs text-gray-500'>
+                    Hand-picked articles worth reading
+                  </p>
+                </div>
 
-              <div className='space-y-3 sm:space-y-4'>
-                {sidebarData.length > 0 ? (
-                  sidebarData.slice(0, 6).map((item, index) => (
-                    <Link href={`/blog/${item.slug}`} key={index} className='block'>
-                      <div className='flex gap-3 p-3 bg-white rounded-lg hover:shadow-md transition-shadow'>
-                        <div className='shrink-0'>
-                          <Image
-                            src={item.banner}
-                            height={80}
-                            width={80}
-                            className='h-16 w-16 sm:h-20 sm:w-20 object-cover rounded-lg'
-                            alt={item.title}
-                          />
+                <div className='space-y-3'>
+                  {featuredInsights.length > 0 ? (
+                    featuredInsights.map((item) => (
+                      <Link
+                        href={`/blog/${item.slug}`}
+                        key={item.uuid || item.slug}
+                        className='group block'
+                      >
+                        <div className='flex gap-3 rounded-xl border border-reefGold/15 bg-gradient-to-r from-white to-gray-50/60 p-3 transition-all duration-300 hover:border-reefGold/45 hover:shadow-[0_4px_16px_rgba(162,145,62,0.12)]'>
+                          <div className='relative shrink-0 overflow-hidden rounded-lg ring-1 ring-reefGold/20'>
+                            <Image
+                              src={item.banner}
+                              height={80}
+                              width={80}
+                              className='h-16 w-16 object-cover transition-transform duration-300 group-hover:scale-105 sm:h-[72px] sm:w-[72px]'
+                              alt={item.title}
+                            />
+                          </div>
+                          <div className='min-w-0 flex-1'>
+                            <span className='mb-1 inline-block rounded-full bg-reefGold/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-reefGold'>
+                              Featured
+                            </span>
+                            <h3 className='line-clamp-2 text-sm font-medium leading-snug text-gray-900 transition-colors group-hover:text-prussianBlue'>
+                              {item.title}
+                            </h3>
+                            <p className='mt-1 text-xs text-gray-500'>
+                              {formatDate(item.createdAt)}
+                            </p>
+                          </div>
                         </div>
-                        <div className='flex-1 min-w-0'>
-                          <h3 className='text-sm font-medium text-gray-900 line-clamp-2 mb-1 sm:mb-2 leading-snug'>
-                            {item.title}
-                          </h3>
-                          <p className='text-xs text-gray-500'>
-                            {formatDate(item.createdAt)}
-                          </p>
-                        </div>
-                      </div>
-                    </Link>
-                  ))
-                ) : (
-                  <div className='text-center text-gray-500 py-6 sm:py-8 text-sm'>
-                    <p>No related articles found</p>
-                  </div>
-                )}
+                      </Link>
+                    ))
+                  ) : (
+                    <div className='rounded-xl border border-dashed border-reefGold/25 py-8 text-center text-sm text-gray-500'>
+                      <p>No featured insights yet</p>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>

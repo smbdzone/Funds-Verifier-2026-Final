@@ -15,6 +15,7 @@ import Modal2 from '@/components/product-modal/modal2'
 import Modal from '@/components/product-modal/modal'
 import ImageSlider from '../Jewelry/ImageSlider'
 import { formatNumberWithCommas } from '../../../utils/global-functions/global'
+import { formatPriceUS } from '@/utils'
 import {
   getListingDetailMediaItems,
   getListingDocumentSrc,

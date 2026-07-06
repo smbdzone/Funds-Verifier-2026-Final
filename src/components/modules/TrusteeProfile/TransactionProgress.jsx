@@ -1,166 +1,118 @@
-import React, { useEffect, useState } from 'react'
+'use client'
+
+import React, { useCallback, useEffect, useState } from 'react'
 import { Upload2Icon } from '@/components/Icons'
-import { useSearchParams, usePathname, useRouter } from 'next/navigation'
-import axios from 'axios'
+import { usePathname, useRouter } from 'next/navigation'
 import { handleFileUpload } from '@/libs/uploadAsset'
 import { toast } from 'react-toastify'
 import Loader from '../EvaluatorProfile/requestCompoenets/Loader'
 import customAxios from '../../../utils/apis/apis'
+import {
+  formatAssetLabel,
+  formatTransactionPhase,
+} from '@/libs/transactionPhase'
 
-// Function to format the date
 const formatDate = (dateString) => {
   try {
-    const date = new Date(dateString)
     return new Intl.DateTimeFormat('en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
-    })?.format(date)
-  } catch (error) {
-    return ''
+    }).format(new Date(dateString))
+  } catch {
+    return '—'
   }
 }
 
 const TransactionProgress = () => {
-  const [selectedProperty, setSelectedProperty] = useState(null) // State to store selected property details
-  const [uploadDocument, setUploadDocument] = useState([])
-  const [loading, setLoading] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
-  const [viewerData, setViewerData] = useState(null)
-  const [note, setNote] = useState(null)
-  const searchParams = useSearchParams()
+  const [booking, setBooking] = useState(null)
+  const [uploadFile, setUploadFile] = useState(null)
+  const [note, setNote] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const path = usePathname()
-  const id = path.split('/')[3]
-  const assetType = searchParams.get('assetType')
-  const type = assetType?.split(' ')[0]
   const router = useRouter()
-  useEffect(() => {
-    if (assetType && id && type) {
-      handleFetchdata()
-    }
-  }, [])
+  const bookingId = path.split('/').pop()
 
-  const handleFetchdata = async () => {
+  const loadBooking = useCallback(async () => {
+    if (!bookingId) return
     setLoading(true)
     try {
-      let endpoint = ''
-
-      switch (assetType) {
-        case 'Property For Lease':
-        case 'Property For Sale':
-        case 'Property Off Plan For Sale':
-          endpoint = `/property/${id}`
-          break
-        case 'Car For Sale':
-          endpoint = `/car/${id}`
-          break
-        case 'Jewellery For Sale':
-          endpoint = `/jewelry/${id}`
-          break
-        case 'Boats For Sale':
-          endpoint = `/boat/${id}`
-          break
-        default:
-          console.error('Unknown asset type:', assetType)
-          return
-      }
-
       const response = await customAxios.get(
-        `${process.env.NEXT_PUBLIC_BASE_URL}${endpoint}`,
-        { status: 0 }
+        `/arrange-view/bookings/${bookingId}`,
       )
-
-      if (response.status === 200) {
-        setSelectedProperty({ ...response.data, type: type })
-        setLoading(false)
-      }
+      setBooking(response.data)
     } catch (error) {
-      console.error('Error deleting listing:', error)
+      toast.error(
+        error?.response?.data?.message || 'Could not load transaction details.',
+      )
+      setBooking(null)
     } finally {
       setLoading(false)
     }
-  }
+  }, [bookingId])
 
-  const commonFields = [
-    {
-      label: 'Asset',
-      value: `${selectedProperty?.title} at ${selectedProperty?.neighbourhood}`,
-    },
-    {
-      label: 'Buyer',
-      value: `${selectedProperty?.dealhunterId?.name || 'No Buyer'}`,
-    },
-    {
-      label: 'Seller',
-      value: `${selectedProperty?.userUUID?.name || 'No Seller'}`,
-    },
-    {
-      label: 'Viewing Scheduled',
-      value: viewerData
-        ? `${formatDate(
-            viewerData?.slotId?.date
-          )}``${viewerData?.timeSlot?.time}`
-        : 'No Schedule For Viewing',
-    },
-    {
-      label: 'Deposit Received',
-      value: selectedProperty?.transactionDepositDocument?.Certificate.name
-        ? 'Received'
-        : 'Pending',
-    },
-  ]
+  useEffect(() => {
+    loadBooking()
+  }, [loadBooking])
 
-  const fieldsMap = {
-    Property: [...commonFields],
-    Car: [...commonFields],
-    Boats: [...commonFields],
-    Jewellery: [...commonFields],
-  }
+  const productData = booking?.productData || {}
+  const transferDocuments = productData.transferDocuments || {}
+  const hasDepositReceipt = Boolean(booking?.productData?.hasDepositReceipt)
 
-  const handleSubmit = async (file) => {
-    setIsLoading(true)
-    try {
-      let apiUrl
-      if (selectedProperty?.type === 'Property') {
-        apiUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/property/${id}`
-      } else if (selectedProperty?.type === 'Car') {
-        apiUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/car/${id}`
-      } else if (selectedProperty?.type === 'Boats') {
-        apiUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/boat/${id}`
-      } else if (selectedProperty?.type === 'Jewellery') {
-        apiUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/jewelry/${id}`
-      }
-      const fileUpload = await handleFileUpload(file)
+  const summaryFields = booking
+    ? [
+      {
+        label: 'Asset',
+        value: formatAssetLabel({
+          title: productData.title,
+          neighbourhood: productData.neighbourhood,
+        }),
+      },
+      {
+        label: 'Seller',
+        value: booking.assetHolder?.name || '—',
+      },
+      {
+        label: 'Buyer',
+        value: booking.brokerId?.name || '—',
+      },
+      {
+        label: 'Viewing',
+        value:
+          booking.date && booking.time
+            ? `${formatDate(booking.date)} · ${booking.time}`
+            : '—',
+      },
+      {
+        label: 'Transaction status',
+        value: formatTransactionPhase(
+          productData.dealClosed
+            ? 'transferred'
+            : transferDocuments.PaymentProof
+              ? 'payment_proof_received'
+              : transferDocuments.assetTransferDocument
+                ? 'awaiting_payment'
+                : 'under_process',
+        ),
+      },
+      {
+        label: 'Success fee',
+        value: transferDocuments.successFee
+          ? `AED ${Number(transferDocuments.successFee).toLocaleString()}`
+          : transferDocuments.assetTransferDocument
+            ? 'Sent to broker'
+            : 'Not set',
+      },
+      {
+        label: 'Deposit receipt',
+        value: hasDepositReceipt ? 'Received' : 'Pending',
+      },
+    ]
+    : []
 
-      const response = await customAxios.put(apiUrl, {
-        transactionDepositDocument: fileUpload.uuid,
-        trusteeNote: note,
-      })
-
-      if (response?.status === 200) {
-        toast.success('Uploaded successfully.')
-        setIsLoading(false)
-        router.replace('/trustee/transaction')
-      } else {
-        console.error('Failed to upload document:', response.data)
-      }
-    } catch (error) {
-      console.error(
-        'An error occurred while uploading the document:',
-        error?.message
-      )
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const handleViewDocument = () => {
-    window.open(uploadDocument, '_blank')
-  }
-
-  const handleFilechange = async (e) => {
-    const selectedFile = e.target.files[0]
-
+  const handleFileChange = (e) => {
+    const selectedFile = e.target.files?.[0]
     if (!selectedFile) return
 
     const allowedTypes = [
@@ -169,170 +121,159 @@ const TransactionProgress = () => {
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     ]
 
-    if (allowedTypes.includes(selectedFile.type)) {
-      if (selectedFile.size > 2 * 1024 * 1024) {
-        setError('File size exceeds 2MB.')
-        return
-      }
-
-      setUploadDocument(selectedFile) // Ensure key matches the backend's `req.file`
+    if (!allowedTypes.includes(selectedFile.type)) {
+      toast.error('Please upload a PDF or Word document.')
+      e.target.value = ''
+      return
     }
+
+    if (selectedFile.size > 2 * 1024 * 1024) {
+      toast.error('File size exceeds 2MB.')
+      e.target.value = ''
+      return
+    }
+
+    setUploadFile(selectedFile)
   }
 
   const handleFileSubmit = async () => {
-    await handleSubmit(uploadDocument) // Upload the files
-  }
+    if (!uploadFile) {
+      toast.error('Please choose a deposit receipt file.')
+      return
+    }
 
-  const renderField = (label, value, fieldType = 'text') => (
-    <div className='mb-4 grid grid-cols-1 gap-2 sm:gap-4'>
-      <div>
-        <h1 className='block lg:text-lg sm:text-base text-sm font-semibold text-prussianBlue'>
-          {label}
-        </h1>
-        <h1 className='block lg:text-lg sm:text-base text-sm font-semibold text-prussianBlue/50'>
-          {value}
-        </h1>
-      </div>
-    </div>
-  )
-
-  const fetchBookingDetails = async () => {
+    setIsSubmitting(true)
     try {
-      const response = await customAxios.get(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/arrange-view/booking/${id}`
+      const fileUpload = await handleFileUpload(uploadFile)
+      const certId = fileUpload?.uuid || fileUpload?.certificate?.uuid
+      if (!certId) {
+        throw new Error('Upload finished but no document id was returned.')
+      }
+
+      await customAxios.put(
+        `/arrange-view/trustee/transaction/${bookingId}/deposit`,
+        {
+          transactionDepositDocument: certId,
+          trusteeNote: note,
+        },
       )
-      setViewerData(response.data)
+
+      toast.success('Deposit receipt uploaded.')
+      router.replace('/trustee/transaction')
     } catch (error) {
-      console.error('Error fetching booking details', error.message)
+      toast.error(
+        error?.response?.data?.message ||
+        error?.message ||
+        'Could not upload deposit receipt.',
+      )
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
-  useEffect(() => {
-    fetchBookingDetails()
-  }, [id])
+  if (loading) {
+    return <p className='p-4 text-slate-600'>Loading transaction...</p>
+  }
+
+  if (!booking) {
+    return (
+      <div className='p-4'>
+        <p className='text-red-600'>Transaction not found.</p>
+        <button
+          type='button'
+          onClick={() => router.replace('/trustee/transaction')}
+          className='mt-3 text-sm text-[#002d4f] underline'
+        >
+          Back to transactions
+        </button>
+      </div>
+    )
+  }
 
   return (
     <div>
-      {/* add there */}
-      {!loading ? (
-        <>
-          <span className='lg:text-3xl sm:text-xl text-lg font-bold text-prussianBlue/80 mb-4 block'>
-            Transaction Management
-          </span>
-          <span>{}</span>
-          <div className='gap-2 px-8 py-4 w-full'>
-            <div className='grid grid-cols-1 gap-4'>
-              {fieldsMap[selectedProperty?.type]?.map((field, index) =>
-                renderField(field.label, field.value, field.fieldType)
-              )}
-            </div>
+      <button
+        type='button'
+        onClick={() => router.replace('/trustee/transaction')}
+        className='mb-4 text-sm text-[#002d4f] underline'
+      >
+        ← Back to transactions
+      </button>
 
-            <div className='w-full mb-4 gap-4'>
-              <div className='flex flex-col gap-2 !w-full'>
-                <label className='primary-gradient !w-full !p-2 text-sm font-medium text-[#969696]'>
-                  Transaction Deposit Receipt
-                </label>
-                <div className='flex-1'>
-                  {selectedProperty?.transactionDepositDocument && (
-                    <div className='mb-2'>
-                      <p className='text-base capitalize'>
-                        {
-                          selectedProperty?.transactionDepositDocument
-                            ?.Certificate.name
-                        }
-                      </p>
-                    </div>
-                  )}
-                </div>
-                {selectedProperty?.transactionDepositDocument?.Certificate
-                  .name ? null : (
-                  <>
-                    <label className='flex cursor-pointer flex-col py-11 justify-center items-center'>
-                      <input
-                        type='file'
-                        onChange={handleFilechange}
-                        className='hidden'
-                        id='file-upload'
-                      />
-                      <span className='mb-4'>
-                        <Upload2Icon className='' />
-                      </span>
+      <h1 className='mb-2 text-xl font-bold text-prussianBlue'>
+        Deposit receipt
+      </h1>
+      <p className='mb-6 text-sm text-slate-600'>
+        Upload the buyer&apos;s deposit receipt for this deal. Transfer
+        documents and success fees are managed from{' '}
+        <strong>Manage transfer &amp; fee</strong> on the transaction list.
+      </p>
 
-                      <span className='custom-shadow sm:text-base text-sm rounded py-3  px-7  font-medium mb-3'>
-                        Upload Receipt
-                      </span>
-                      <span className='text-black/30  sm:text-base text-sm'>
-                        Maximum file size: 2MB
-                      </span>
-                      <p className='text-black  sm:text-base text-sm'>
-                        {uploadDocument?.name}
-                      </p>
-                    </label>
-                    <div>
-                      {uploadDocument.length > 0 && (
-                        <div className='flex flex-col gap-2'>
-                          {uploadDocument.map((file, index) => (
-                            <div
-                              key={index}
-                              className='flex justify-between w-full'
-                            >
-                              <p className='sm:text-base text-sm'>
-                                {file.name}
-                              </p>
-                              <div className='flex gap-3'>
-                                <button onClick={handleViewDocument}>
-                                  <img src='./icons/view.png' />
-                                </button>
-                                <button
-                                  onClick={() => {
-                                    const newUploadDocument =
-                                      uploadDocument.filter(
-                                        (_, i) => i !== index
-                                      )
-                                    setUploadDocument(newUploadDocument) // Update the state after deletion
-                                  }}
-                                >
-                                  <img
-                                    src='./icons/delete.png'
-                                    className='w-full'
-                                  />
-                                </button>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                    <div>
-                      <label className='block  sm:text-base text-sm font-medium'>
-                        Add Note
-                      </label>
-                      <div className='relative'>
-                        <input
-                          type='text'
-                          onChange={(e) => setNote(e.target.value)}
-                          className=' mt-1 block w-full pl-2 py-2.5  rounded-md bg-white  border border-[#8d7c3b] text-gray-800 focus:outline-none'
-                        />
-                      </div>
-                    </div>
-                    <div className='flex justify-center space-x-4'>
-                      <button
-                        onClick={() => handleFileSubmit()}
-                        className='primary-gradient text-white px-4 py-2 rounded-md'
-                      >
-                        Upload
-                      </button>
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
+      <div className='mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2'>
+        {summaryFields.map((field) => (
+          <div key={field.label}>
+            <p className='text-sm font-semibold text-prussianBlue'>
+              {field.label}
+            </p>
+            <p className='text-sm text-prussianBlue/60'>{field.value}</p>
           </div>
-        </>
-      ) : (
-        <p>Loading...</p>
-      )}
-      <Loader isOpen={isLoading} />
+        ))}
+      </div>
+
+      <div className='w-full'>
+        <label className='primary-gradient mb-3 block w-full p-2 text-sm font-medium text-white'>
+          Transaction deposit receipt
+        </label>
+
+        {hasDepositReceipt ? (
+          <p className='rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800'>
+            Deposit receipt already on file for this transaction.
+          </p>
+        ) : (
+          <>
+            <label className='flex cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-[#8d7c3b] py-10'>
+              <input
+                type='file'
+                onChange={handleFileChange}
+                className='hidden'
+                accept='.pdf,.doc,.docx,application/pdf'
+              />
+              <Upload2Icon className='mb-4' />
+              <span className='custom-shadow mb-3 rounded px-7 py-3 text-sm font-medium'>
+                Upload receipt
+              </span>
+              <span className='text-sm text-black/40'>Maximum file size: 2MB</span>
+              {uploadFile ? (
+                <p className='mt-2 text-sm text-prussianBlue'>{uploadFile.name}</p>
+              ) : null}
+            </label>
+
+            <div className='mt-4'>
+              <label className='mb-1 block text-sm font-medium'>Trustee note</label>
+              <input
+                type='text'
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                className='mt-1 block w-full rounded-md border border-[#8d7c3b] bg-white py-2.5 pl-2 text-gray-800 focus:outline-none'
+                placeholder='Optional note about this deposit'
+              />
+            </div>
+
+            <div className='mt-4 flex justify-end'>
+              <button
+                type='button'
+                onClick={handleFileSubmit}
+                disabled={isSubmitting}
+                className='primary-gradient rounded-md px-4 py-2 text-white disabled:opacity-60'
+              >
+                {isSubmitting ? 'Uploading…' : 'Save deposit receipt'}
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+
+      <Loader isOpen={isSubmitting} />
     </div>
   )
 }

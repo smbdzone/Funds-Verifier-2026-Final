@@ -72,6 +72,10 @@ const SellerProfileSidebar = () => {
           name: 'All Viewing Requests',
           link: '/seller-profile/all-slot',
         },
+        {
+          name: 'Success Fee Invoice',
+          link: '/seller-profile/success-fee-invoice',
+        },
       ],
     },
     {

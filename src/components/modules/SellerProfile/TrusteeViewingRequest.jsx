@@ -1,10 +1,9 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import dynamic from 'next/dynamic'
 import { toast, ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
-import ViewerDetails from '@/components/modules/SellerProfile/ViewerDetails'
-import { ViewerDetailsErrorBoundary } from '@/components/modules/SellerProfile/ViewerDetailsErrorBoundary'
 import { EyeIcon, DeleteIcon } from '@/components/Icons'
 import customAxios from '../../../utils/apis/apis'
 import {
@@ -12,6 +11,19 @@ import {
   isViewingBookingUnderProcess,
   viewingBookingStatusBadgeClass,
 } from '@/libs/bookingViewingStatus'
+
+const ViewerDetails = dynamic(
+  () => import('@/components/modules/SellerProfile/ViewerDetails'),
+  { ssr: false },
+)
+
+const ViewerDetailsErrorBoundary = dynamic(
+  () =>
+    import('@/components/modules/SellerProfile/ViewerDetailsErrorBoundary').then(
+      (module) => ({ default: module.ViewerDetailsErrorBoundary }),
+    ),
+  { ssr: false },
+)
 
 const formatDate = (dateString) => {
   try {
@@ -44,7 +56,7 @@ const UnderProcessToggle = ({ checked, disabled, onChange }) => (
   </button>
 )
 
-export const TrusteeViewingRequest = () => {
+function TrusteeViewingRequest() {
   const [viewingRequests, setViewingRequests] = useState([])
   const [openDetails, setOpenDetails] = useState(false)
   const [selectedBookingId, setSelectedBookingId] = useState(null)
@@ -280,7 +292,7 @@ export const TrusteeViewingRequest = () => {
                           <button
                             type='button'
                             onClick={() => openDeleteDialog(viewer?.uuid)}
-                            className='inline-flex h-9 w-9 items-center justify-center rounded-lg border border-transparent text-[#a2913e] transition hover:bg-rose-50 hover:text-rose-700'
+                            className='inline-flex h-9 w-9 items-center justify-center rounded-lg border border-transparent text-[#a2913e] transition hover:bg-[#a2913e]/10 hover:text-[#002d4f]'
                             title='Delete request'
                             aria-label='Delete viewing request'
                           >
@@ -375,7 +387,7 @@ export const TrusteeViewingRequest = () => {
                   <button
                     type='button'
                     onClick={() => openDeleteDialog(viewer?.uuid)}
-                    className='rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-rose-700 transition hover:bg-rose-50'
+                    className='rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-[#002d4f] transition hover:border-[#a2913e]/50 hover:bg-[#a2913e]/5'
                     aria-label='Delete'
                   >
                     Delete
@@ -465,7 +477,7 @@ export const TrusteeViewingRequest = () => {
                 type='button'
                 onClick={handleConfirmDelete}
                 disabled={isDeleting}
-                className='rounded-xl bg-rose-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-60'
+                className='primary-gradient rounded-xl px-4 py-2.5 text-sm font-medium text-white transition disabled:cursor-not-allowed disabled:opacity-60'
               >
                 {isDeleting ? 'Deleting…' : 'Delete request'}
               </button>
@@ -476,3 +488,5 @@ export const TrusteeViewingRequest = () => {
     </div>
   )
 }
+
+export default TrusteeViewingRequest

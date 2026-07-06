@@ -19,8 +19,8 @@ import avatar2 from '@/assets/avators/Avatars 2.png'
 import avatar3 from '@/assets/avators/Avatars 3.png'
 import location from '@/assets/vector2.svg'
 import arrow_right from '@/assets/vector1.svg'
-import { usePublicTokenContext } from '@/utils/PublicTokenProvider.'
 import { HomeListingSliderSkeleton } from '@/components/home/HomeSectionSkeletons'
+import { publicApiFetch } from '@/libs/publicApiClient'
 
 const avatars = [avatar1, avatar2, avatar3]
 
@@ -73,7 +73,6 @@ export default function PropertySaleSlider() {
   const [approvedProperties, setApprovedProperties] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const swiperRef = useRef(null)
-  const publicToken = usePublicTokenContext()
 
   useEffect(() => {
     let cancelled = false
@@ -81,20 +80,8 @@ export default function PropertySaleSlider() {
     const fetchApprovedProperties = async () => {
       setIsLoading(true)
       try {
-        const base = process.env.NEXT_PUBLIC_BASE_URL
-        if (!base) {
-          setApprovedProperties([])
-          return
-        }
-
-        const headers = {}
-        if (publicToken) {
-          headers['x-public-token'] = publicToken
-        }
-
-        const response = await fetch(`${base}${APPROVED_PROPERTIES_URL}`, {
+        const response = await publicApiFetch(APPROVED_PROPERTIES_URL, {
           cache: 'no-store',
-          headers,
         })
 
         if (!response.ok) {
@@ -122,7 +109,7 @@ export default function PropertySaleSlider() {
     return () => {
       cancelled = true
     }
-  }, [publicToken])
+  }, [])
 
   const handlePrevSlide = () => {
     if (swiperRef.current?.swiper) {

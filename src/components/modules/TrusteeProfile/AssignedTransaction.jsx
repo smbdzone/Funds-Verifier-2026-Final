@@ -1,18 +1,36 @@
 'use client'
-import { useState, useEffect } from 'react'
-import axios from 'axios'
+import { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Disclosure } from '@headlessui/react'
 import { OpenDisclosure, CloseDisclosure } from '@/components/Icons'
 import DeleteModal from '@/components/Modals/DeleteModal'
 import { toast } from 'react-toastify'
 import customAxios from '../../../utils/apis/apis'
+import EvaluationActionDropdown, {
+  evaluationMenuItemClass,
+} from '../EvaluatorProfile/requestCompoenets/EvaluationActionDropdown'
 
 export const AssignedTransaction = ({ propertyListings, onDelete }) => {
-  const [show, setShow] = useState(-1)
+  const [openDropdown, setOpenDropdown] = useState(null)
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
+  const menuAnchorRef = useRef(null)
 
-  const router = useRouter() // Initialize router
+  const router = useRouter()
+
+  const closeActionMenu = () => {
+    setOpenDropdown(null)
+    menuAnchorRef.current = null
+  }
+
+  const toggleActionMenu = (event, propertyUuid) => {
+    event.stopPropagation()
+    if (openDropdown === propertyUuid) {
+      closeActionMenu()
+      return
+    }
+    menuAnchorRef.current = event.currentTarget
+    setOpenDropdown(propertyUuid)
+  }
 
   const handleTabClick = async (selectedProperty) => {
     if (selectedProperty?.type === 'property') {
@@ -81,9 +99,8 @@ export const AssignedTransaction = ({ propertyListings, onDelete }) => {
             {({ open }) => (
               <>
                 <Disclosure.Button
-                  className={`w-full primary-gradient rounded px-7 py-4 justify-between items-center flex ${
-                    open && 'mb-3'
-                  }`}
+                  className={`w-full primary-gradient rounded px-7 py-4 justify-between items-center flex ${open && 'mb-3'
+                    }`}
                 >
                   <span className='whitespace-nowrap sm:text-xl font-medium text-white'>
                     Transactions
@@ -118,7 +135,7 @@ export const AssignedTransaction = ({ propertyListings, onDelete }) => {
                                   Address
                                 </th>
                                 <th className='py-2 text-xs sm:text-base px-4 text-left'>
-                                  Status
+                                  Viewing slot
                                 </th>
                                 <th className='py-2 text-xs sm:text-base px-4 text-left'>
                                   Action
@@ -151,19 +168,41 @@ export const AssignedTransaction = ({ propertyListings, onDelete }) => {
                                         {property.title}
                                       </td>
                                       <td className='py-4 text-xs sm:text-base px-4'>
-                                        Sale of {property.type} at
-                                        <span className='ml-1'>
-                                          {property.neighbourhood}
-                                        </span>
+                                        {property.brokerName ? (
+                                          <>
+                                            <span className='block font-medium text-slate-800'>
+                                              {property.brokerName}
+                                            </span>
+                                            <span className='text-slate-500'>
+                                              Sale of {property.type} at{' '}
+                                              {property.neighbourhood}
+                                            </span>
+                                          </>
+                                        ) : (
+                                          <>
+                                            Sale of {property.type} at
+                                            <span className='ml-1'>
+                                              {property.neighbourhood}
+                                            </span>
+                                          </>
+                                        )}
                                       </td>
                                       <td className='py-4 text-xs sm:text-base capitalize px-4'>
-                                        {property.transactionStatus}
+                                        {property.viewingTime
+                                          ? `${property.viewingTime}${property.viewingDate ? ` · ${new Date(property.viewingDate).toLocaleDateString()}` : ''}`
+                                          : property.transactionStatus || '—'}
                                       </td>
 
-                                      <td className='py-4 px-4 relative'>
-                                        {/* Action Button */}
+                                      <td className='py-4 px-4'>
                                         <button
-                                          onClick={() => setShow(i)}
+                                          type='button'
+                                          aria-haspopup='menu'
+                                          aria-expanded={
+                                            openDropdown === property.uuid
+                                          }
+                                          onClick={(e) =>
+                                            toggleActionMenu(e, property.uuid)
+                                          }
                                           className='bg-gray-200 px-4 py-2 rounded hover:bg-gray-300'
                                         >
                                           <svg
@@ -176,38 +215,43 @@ export const AssignedTransaction = ({ propertyListings, onDelete }) => {
                                             <path d='M12 7a2 2 0 110-4 2 2 0 010 4zm0 7a2 2 0 110-4 2 2 0 010 4zm0 7a2 2 0 110-4 2 2 0 010 4z' />
                                           </svg>
                                         </button>
-                                        {/* Dropdown Menu */}
-                                        {show === i && (
-                                          <ul
-                                            onMouseLeave={() => setShow(-1)}
-                                            className={`absolute bg-white border z-50 rounded shadow ${
-                                              show == i ? 'block' : 'hidden'
-                                            } w-32 mt-2`}
+                                        <EvaluationActionDropdown
+                                          open={openDropdown === property.uuid}
+                                          onClose={closeActionMenu}
+                                          anchorRef={menuAnchorRef}
+                                          className='w-44 min-w-[11rem]'
+                                        >
+                                          <button
+                                            type='button'
+                                            className={evaluationMenuItemClass}
+                                            onClick={() => {
+                                              handleSubmit(property)
+                                              closeActionMenu()
+                                            }}
                                           >
-                                            <li
-                                              className='px-4 py-2 hover:bg-gray-100 cursor-pointer'
-                                              onClick={() =>
-                                                handleSubmit(property)
-                                              }
-                                            >
-                                              Marked as Complete
-                                            </li>
-                                            <li
-                                              className='px-4 py-2 hover:bg-gray-100 cursor-pointer'
-                                              onClick={() =>
-                                                handleTabClick(property)
-                                              }
-                                            >
-                                              View
-                                            </li>
-                                            <li
-                                              className='px-4 py-2 hover:bg-gray-100 cursor-pointer text-red-600'
-                                              onClick={() => onDelete(property)}
-                                            >
-                                              Delete
-                                            </li>
-                                          </ul>
-                                        )}
+                                            Marked as Complete
+                                          </button>
+                                          <button
+                                            type='button'
+                                            className={evaluationMenuItemClass}
+                                            onClick={() => {
+                                              handleTabClick(property)
+                                              closeActionMenu()
+                                            }}
+                                          >
+                                            View
+                                          </button>
+                                          <button
+                                            type='button'
+                                            className={`${evaluationMenuItemClass} text-red-600`}
+                                            onClick={() => {
+                                              onDelete(property)
+                                              closeActionMenu()
+                                            }}
+                                          >
+                                            Delete
+                                          </button>
+                                        </EvaluationActionDropdown>
                                       </td>
                                     </tr>
                                   )

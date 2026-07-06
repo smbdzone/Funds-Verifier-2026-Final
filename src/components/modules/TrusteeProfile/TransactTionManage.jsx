@@ -1,45 +1,35 @@
 'use client'
+
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Disclosure } from '@headlessui/react'
 import { OpenDisclosure, CloseDisclosure } from '@/components/Icons'
-import { toast } from 'react-toastify'
-import customAxios from '../../../utils/apis/apis'
+import {
+  formatAssetLabel,
+  formatTransactionPhase,
+  transactionPhaseBadgeClass,
+} from '@/libs/transactionPhase'
 
-function formatAssetDetails(property) {
-  const title = property?.title || 'Untitled'
-  const area = property?.neighbourhood ? ` at ${property.neighbourhood}` : ''
-  return `${title}${area}`
+const formatViewing = (row) => {
+  if (!row?.viewingDate) return '—'
+  try {
+    const date = new Date(row.viewingDate).toLocaleDateString()
+    return row.viewingTime ? `${date} · ${row.viewingTime}` : date
+  } catch {
+    return '—'
+  }
 }
 
-export const TransactionMange = ({ propertyListings, totalCount = 0, onDelete }) => {
+export const TransactionMange = ({
+  transactions = [],
+  onView,
+  onRefresh,
+}) => {
   const [show, setShow] = useState(-1)
   const router = useRouter()
 
-  const handleTabClick = async (selectedProperty) => {
-    router.replace(
-      `/trustee/transaction/${selectedProperty.uuid}?assetType=${selectedProperty.assetType}`,
-    )
-  }
-
-  const handleSubmit = async (selectedProperty, action) => {
-    try {
-      const apiUrl = `/${selectedProperty.type}/${selectedProperty.uuid}`
-      const requestData =
-        action === 'markComplete'
-          ? { transactionStatus: 'completed' }
-          : { depositReceipt: 'received' }
-
-      const response = await customAxios.put(apiUrl, requestData)
-
-      if (response.status === 200) {
-        toast.success('Submitted')
-      } else {
-        toast.error('Something went wrong')
-      }
-    } catch (error) {
-      toast.error('An error occurred while updating')
-    }
+  const handleDepositClick = (row) => {
+    router.push(`/trustee/transaction/${row.bookingUuid}`)
   }
 
   return (
@@ -49,12 +39,11 @@ export const TransactionMange = ({ propertyListings, totalCount = 0, onDelete })
           {({ open }) => (
             <>
               <Disclosure.Button
-                className={`w-full primary-gradient rounded px-4 sm:px-7 py-4 justify-between items-center flex ${
-                  open && 'mb-3'
-                }`}
+                className={`w-full primary-gradient rounded px-4 sm:px-7 py-4 justify-between items-center flex ${open && 'mb-3'
+                  }`}
               >
                 <span className='whitespace-nowrap text-base sm:text-xl font-medium text-white'>
-                  Transactions Management
+                  Transaction Management
                 </span>
                 <span className='flex-shrink-0'>
                   {open ? (
@@ -65,70 +54,116 @@ export const TransactionMange = ({ propertyListings, totalCount = 0, onDelete })
                 </span>
               </Disclosure.Button>
               <Disclosure.Panel as='div' className='gap-4 px-3'>
-                <div className='custom-shadow rounded w-full max-w-full min-w-0 overflow-hidden mb-8'>
-                  <table className='w-full table-fixed text-xs sm:text-sm bg-white'>
+                <div className='custom-shadow rounded w-full max-w-full min-w-0 overflow-x-auto mb-8'>
+                  <table className='w-full min-w-[900px] table-auto text-xs sm:text-sm bg-white'>
                     <thead>
                       <tr className='primary-gradient text-white'>
-                        <th className='py-2 px-2 text-left font-medium w-[28%]'>
-                          Asset Details
+                        <th className='py-2 px-2 text-left font-medium'>
+                          Asset
                         </th>
-                        <th className='py-2 px-2 text-left font-medium w-[18%]'>
+                        <th className='py-2 px-2 text-left font-medium'>
                           Seller
                         </th>
-                        <th className='py-2 px-2 text-left font-medium w-[18%]'>
+                        <th className='py-2 px-2 text-left font-medium'>
                           Buyer
                         </th>
-                        <th className='py-2 px-2 text-left font-medium w-[16%]'>
+                        <th className='py-2 px-2 text-left font-medium'>
+                          Viewing
+                        </th>
+                        <th className='py-2 px-2 text-left font-medium'>
+                          Success fee
+                        </th>
+                        <th className='py-2 px-2 text-left font-medium'>
+                          Deposit
+                        </th>
+                        <th className='py-2 px-2 text-left font-medium'>
                           Status
                         </th>
-                        <th className='py-2 px-2 text-left font-medium w-[20%]'>
+                        <th className='py-2 px-2 text-left font-medium'>
+                          Documents
+                        </th>
+                        <th className='py-2 px-2 text-left font-medium'>
                           Action
                         </th>
                       </tr>
                     </thead>
                     <tbody>
-                      {propertyListings.length === 0 ? (
+                      {transactions.length === 0 ? (
                         <tr>
                           <td
-                            colSpan={5}
+                            colSpan={9}
                             className='py-8 px-2 text-center text-gray-500'
                           >
-                            {totalCount === 0
-                              ? 'No transactions found.'
-                              : 'No transactions on this page.'}
+                            No active transactions yet. Mark a viewing as under
+                            process or submit transfer documents from Viewing.
                           </td>
                         </tr>
                       ) : (
-                        propertyListings.map((property, i) => (
+                        transactions.map((row, i) => (
                           <tr
-                            key={property.uuid}
+                            key={row.bookingUuid}
                             className='border-t border-gray-200 hover:bg-gray-50'
                           >
                             <td
-                              className='py-2 px-2 text-prussianBlue truncate capitalize'
-                              title={formatAssetDetails(property)}
+                              className='py-2 px-2 text-prussianBlue'
+                              title={formatAssetLabel(row)}
                             >
-                              <span className='font-medium'>
-                                {property.type}:
-                              </span>{' '}
-                              {formatAssetDetails(property)}
+                              <span className='line-clamp-2'>
+                                {formatAssetLabel(row)}
+                              </span>
                             </td>
-                            <td
-                              className='py-2 px-2 text-prussianBlue truncate'
-                              title={property?.userUUID?.name || 'Not found'}
-                            >
-                              {property?.userUUID?.name || 'Not found'}
+                            <td className='py-2 px-2 text-prussianBlue truncate'>
+                              {row.sellerName}
                             </td>
-                            <td
-                              className='py-2 px-2 text-prussianBlue truncate'
-                              title={
-                                property?.dealhunterId?.name || 'Not found'
-                              }
-                            >
-                              {property?.dealhunterId?.name || 'Not found'}
+                            <td className='py-2 px-2 text-prussianBlue truncate'>
+                              {row.buyerName}
                             </td>
-                            <td className='py-2 px-2 capitalize text-prussianBlue truncate'>
-                              {property.transactionStatus || '—'}
+                            <td className='py-2 px-2 text-prussianBlue whitespace-nowrap'>
+                              {formatViewing(row)}
+                            </td>
+                            <td className='py-2 px-2 text-prussianBlue whitespace-nowrap'>
+                              {row.successFee
+                                ? `AED ${Number(row.successFee).toLocaleString()}`
+                                : row.hasTransferDoc
+                                  ? 'Sent'
+                                  : '—'}
+                            </td>
+                            <td className='py-2 px-2 text-prussianBlue'>
+                              {row.hasDepositReceipt ? 'Received' : 'Pending'}
+                            </td>
+                            <td className='py-2 px-2'>
+                              <span
+                                className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 ring-inset ${transactionPhaseBadgeClass(row.phase)}`}
+                              >
+                                {formatTransactionPhase(row.phase)}
+                              </span>
+                            </td>
+                            <td className='py-2 px-2 text-prussianBlue text-xs'>
+                              <div className='flex flex-col gap-1'>
+                                {row.transferDocumentUrl ? (
+                                  <a
+                                    href={row.transferDocumentUrl}
+                                    target='_blank'
+                                    rel='noopener noreferrer'
+                                    className='text-[#002d4f] underline'
+                                  >
+                                    Transfer doc
+                                  </a>
+                                ) : null}
+                                {row.paymentProofUrl ? (
+                                  <a
+                                    href={row.paymentProofUrl}
+                                    target='_blank'
+                                    rel='noopener noreferrer'
+                                    className='text-[#002d4f] underline'
+                                  >
+                                    Fee invoice
+                                  </a>
+                                ) : null}
+                                {!row.transferDocumentUrl && !row.paymentProofUrl
+                                  ? '—'
+                                  : null}
+                              </div>
                             </td>
                             <td className='py-2 px-2 relative'>
                               <button
@@ -151,56 +186,51 @@ export const TransactionMange = ({ propertyListings, totalCount = 0, onDelete })
                                   <path d='M12 7a2 2 0 110-4 2 2 0 010 4zm0 7a2 2 0 110-4 2 2 0 010 4zm0 7a2 2 0 110-4 2 2 0 010 4z' />
                                 </svg>
                               </button>
-                              {show === i && (
+                              {show === i ? (
                                 <ul
                                   onMouseLeave={() => setShow(-1)}
-                                  className='absolute right-0 bg-white border z-20 rounded shadow w-44 mt-1 text-sm'
+                                  className='absolute right-0 bg-white border z-20 rounded shadow w-48 mt-1 text-sm'
                                 >
                                   <li>
                                     <button
                                       type='button'
                                       className='w-full px-4 py-2 text-left hover:bg-gray-50'
-                                      onClick={() =>
-                                        handleSubmit(property, 'markComplete')
-                                      }
+                                      onClick={() => {
+                                        setShow(-1)
+                                        onView?.(row.bookingUuid)
+                                      }}
                                     >
-                                      Mark as Completed
+                                      Manage transfer &amp; fee
                                     </button>
                                   </li>
                                   <li>
                                     <button
                                       type='button'
                                       className='w-full px-4 py-2 text-left hover:bg-gray-50'
-                                      onClick={() =>
-                                        handleSubmit(
-                                          property,
-                                          'confirmDeposit',
-                                        )
-                                      }
+                                      onClick={() => {
+                                        setShow(-1)
+                                        handleDepositClick(row)
+                                      }}
                                     >
-                                      Confirm Deposit
+                                      Upload deposit receipt
                                     </button>
                                   </li>
-                                  <li>
-                                    <button
-                                      type='button'
-                                      className='w-full px-4 py-2 text-left hover:bg-gray-50'
-                                      onClick={() => handleTabClick(property)}
-                                    >
-                                      View
-                                    </button>
-                                  </li>
-                                  <li>
-                                    <button
-                                      type='button'
-                                      className='w-full px-4 py-2 text-left text-red-600 hover:bg-gray-50'
-                                      onClick={() => onDelete(property)}
-                                    >
-                                      Delete
-                                    </button>
-                                  </li>
+                                  {onRefresh ? (
+                                    <li>
+                                      <button
+                                        type='button'
+                                        className='w-full px-4 py-2 text-left hover:bg-gray-50'
+                                        onClick={() => {
+                                          setShow(-1)
+                                          onRefresh()
+                                        }}
+                                      >
+                                        Refresh
+                                      </button>
+                                    </li>
+                                  ) : null}
                                 </ul>
-                              )}
+                              ) : null}
                             </td>
                           </tr>
                         ))

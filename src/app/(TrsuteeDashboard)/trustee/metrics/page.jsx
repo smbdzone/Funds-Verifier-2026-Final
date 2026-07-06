@@ -1,90 +1,49 @@
-/* eslint-disable react-hooks/rules-of-hooks */
 'use client'
 import React, { useEffect, useState } from 'react'
-import { getTokenFromCookie } from '../../../../utils/helper'
+import customAxios from '@/utils/apis/apis'
 
 const fetchListingsData = async () => {
-  const token = getTokenFromCookie()
+  const [boatRes, propertyRes, carRes, jewelryRes] = await Promise.all([
+    customAxios.get('/boat', { params: { limit: 500, page: 1 } }),
+    customAxios.get('/property', { params: { limit: 500, page: 1 } }),
+    customAxios.get('/car', { params: { limit: 500, page: 1 } }),
+    customAxios.get('/jewelry', { params: { limit: 500, page: 1 } }),
+  ])
 
-  try {
-    const [boatResponse, propertyResponse, carResponse, jewelryResponse] =
-      await Promise.all([
-        fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/boat`, {
-          cache: 'no-store',
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }),
-        fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/property`, {
-          cache: 'no-store',
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }),
-        fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/car`, {
-          cache: 'no-store',
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }),
-        fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/jewelry`, {
-          cache: 'no-store',
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }),
-      ])
+  const keepListing = (item) =>
+    item.status === undefined || item.status === 1 || item.status === 0
 
-    if (
-      !boatResponse.ok ||
-      !propertyResponse.ok ||
-      !carResponse.ok ||
-      !jewelryResponse.ok
-    ) {
-      throw new Error('Failed to fetch listings data')
-    }
+  return [
+    ...propertyRes.data.products.filter(keepListing).map((item) => ({
+      ...item,
+      type: 'property',
+    })),
+    ...boatRes.data.products.filter(keepListing).map((item) => ({
+      ...item,
+      type: 'boat',
+    })),
+    ...carRes.data.products.filter(keepListing).map((item) => ({
+      ...item,
+      type: 'car',
+    })),
+    ...jewelryRes.data.products.filter(keepListing).map((item) => ({
+      ...item,
+      type: 'jewelry',
+    })),
+  ]
+}
 
-    const [boatData, propertyData, carData, jewelryData] = await Promise.all([
-      boatResponse.json(),
-      propertyResponse.json(),
-      carResponse.json(),
-      jewelryResponse.json(),
-    ])
+const fetchAssignedTransactionsCount = async () => {
+  const response = await customAxios.get('/arrange-view/bookings', {
+    params: { assignedTo: 'fv_admin' },
+  })
 
-    const filteredBoatListings = boatData.products.filter(
-      (item) =>
-        item.status === undefined || item.status === 1 || item.status === 0
-    )
-    const filteredPropertyListings = propertyData.products.filter(
-      (item) =>
-        item.status === undefined || item.status === 1 || item.status === 0
-    )
-    const filteredCarListings = carData.products.filter(
-      (item) =>
-        item.status === undefined || item.status === 1 || item.status === 0
-    )
-    const filteredJewelryListings = jewelryData.products.filter(
-      (item) =>
-        item.status === undefined || item.status === 1 || item.status === 0
-    )
-
-    return [
-      ...filteredPropertyListings.map((item) => ({
-        ...item,
-        type: 'property',
-      })),
-      ...filteredBoatListings.map((item) => ({ ...item, type: 'boat' })),
-      ...filteredCarListings.map((item) => ({ ...item, type: 'car' })),
-      ...filteredJewelryListings.map((item) => ({ ...item, type: 'jewelry' })),
-    ]
-  } catch (error) {
-    console.error('Error fetching listings:', error)
-    throw error
-  }
+  return Array.isArray(response.data) ? response.data.length : 0
 }
 
 const page = () => {
   const [listings, setListings] = useState([])
+  const [assignedCount, setAssignedCount] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
@@ -92,10 +51,14 @@ const page = () => {
     const fetchData = async () => {
       try {
         setLoading(true)
-        const data = await fetchListingsData()
+        const [data, assignedTotal] = await Promise.all([
+          fetchListingsData(),
+          fetchAssignedTransactionsCount(),
+        ])
         setListings(data)
+        setAssignedCount(assignedTotal)
       } catch (error) {
-        setError(error.message)
+        setError(error?.response?.data?.message || error.message)
       } finally {
         setLoading(false)
       }
@@ -127,6 +90,14 @@ const page = () => {
         Performance Metrics
       </h2>
       <ul className='space-y-3'>
+        <li className='flex items-center justify-between bg-white p-4 rounded-md shadow-sm'>
+          <span className='text-prussianBlue sm:text-base text-sm font-medium'>
+            Assigned Transactions
+          </span>
+          <span className='text-purple-600 sm:text-base text-sm font-bold'>
+            {assignedCount}
+          </span>
+        </li>
         <li className='flex items-center justify-between bg-white p-4 rounded-md shadow-sm'>
           <span className='text-prussianBlue sm:text-base text-sm font-medium'>
             Transactions Completed

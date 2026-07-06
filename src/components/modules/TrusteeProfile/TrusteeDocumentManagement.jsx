@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'react-toastify'
-import { PlusIcon } from '@/components/Icons'
+import { PlusIcon, SearchIcon } from '@/components/Icons'
 import { SlArrowRight } from 'react-icons/sl'
 import Modal from '../../documents/modal'
 import Loader from '../EvaluatorProfile/requestCompoenets/Loader'
@@ -21,61 +21,15 @@ import {
   requestDocumentsMissingDate,
 } from '@/utils/requestDocumentUtils'
 
-const LISTING_CATEGORY_ORDER = [
-  'Property For Sale',
-  'Property For Lease',
-  'Property Off Plan For Sale',
-  'Car For Sale',
-  'Boats For Sale',
-  'Jewellery For Sale',
-]
-
 const LISTING_DROPDOWN_VISIBLE_ROWS = 5
 const LISTING_ROW_HEIGHT_PX = 40
 
-function getListingCategoryLabel(listing) {
-  if (listing?.assetType) return listing.assetType
-  const typeMap = {
-    Property: 'Property For Sale',
-    Car: 'Car For Sale',
-    Boats: 'Boats For Sale',
-    Jewellery: 'Jewellery For Sale',
-  }
-  return typeMap[listing?.listingType] || formatDocumentAssetType(listing?.listingType) || 'Other'
-}
-
-function groupListingsByCategory(listings) {
-  const groups = {}
-
-  listings.forEach((listing) => {
-    const category = getListingCategoryLabel(listing)
-    if (!groups[category]) groups[category] = []
-    groups[category].push(listing)
-  })
-
-  Object.values(groups).forEach((items) =>
-    items.sort((a, b) =>
-      String(a.title || '').localeCompare(String(b.title || '')),
-    ),
-  )
-
-  const ordered = []
-
-  LISTING_CATEGORY_ORDER.forEach((category) => {
-    if (groups[category]?.length) {
-      ordered.push({ category, items: groups[category] })
-      delete groups[category]
-    }
-  })
-
-  Object.keys(groups)
-    .sort()
-    .forEach((category) => {
-      ordered.push({ category, items: groups[category] })
-    })
-
-  return ordered
-}
+const ASSET_TYPE_OPTIONS = [
+  { value: 'Property', label: 'Property' },
+  { value: 'Car', label: 'Car' },
+  { value: 'Boats', label: 'Boats' },
+  { value: 'Jewellery', label: 'Jewellery' },
+]
 
 export const TrusteeDocumentManagement = () => {
   const { user } = useProfile()
@@ -96,11 +50,13 @@ export const TrusteeDocumentManagement = () => {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [pdfUrl, setPdfUrl] = useState('')
   const [pdfFileName, setPdfFileName] = useState('')
-  const [selectedCategory, setSelectedCategory] = useState('')
-  const [listingSearch, setListingSearch] = useState('')
   const [listingMenuOpen, setListingMenuOpen] = useState(false)
+  const [assetTypeMenuOpen, setAssetTypeMenuOpen] = useState(false)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [selectedAssetType, setSelectedAssetType] = useState('')
   const [searchMenuOpen, setSearchMenuOpen] = useState(false)
   const listingDropdownRef = useRef(null)
+  const assetTypeDropdownRef = useRef(null)
   const searchDropdownRef = useRef(null)
 
   const selectedListing = useMemo(
@@ -108,89 +64,114 @@ export const TrusteeDocumentManagement = () => {
     [listings, selectedListingId],
   )
 
-  const groupedListings = useMemo(
-    () => groupListingsByCategory(listings),
+  const sortedListings = useMemo(
+    () =>
+      [...listings].sort((a, b) =>
+        String(a.title || '').localeCompare(String(b.title || '')),
+      ),
     [listings],
   )
 
-  const availableCategories = useMemo(
-    () => groupedListings.map((group) => group.category),
-    [groupedListings],
-  )
+  const listingMatchesName = (listing, term) => {
+    const title = String(listing.title || '').toLowerCase()
+    return title.includes(term)
+  }
 
-  const listingsForCategory = useMemo(() => {
-    const group = groupedListings.find(
-      (entry) => entry.category === selectedCategory,
-    )
-    return group?.items || []
-  }, [groupedListings, selectedCategory])
+  const propertyNameSearchResults = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase()
+    if (!term) return []
 
-  const normalizedListingSearch = listingSearch.trim().toLowerCase()
+    return sortedListings.filter((listing) => listingMatchesName(listing, term))
+  }, [sortedListings, searchTerm])
 
-  const searchResults = useMemo(() => {
-    if (!normalizedListingSearch) return []
+  const filteredListings = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase()
 
-    const pool = selectedCategory ? listingsForCategory : listings
+    return sortedListings.filter((listing) => {
+      if (selectedAssetType && listing.listingType !== selectedAssetType) {
+        return false
+      }
+      if (!term) return true
+      return listingMatchesName(listing, term)
+    })
+  }, [sortedListings, selectedAssetType, searchTerm])
 
-    return pool
-      .filter((listing) =>
-        String(listing.title || '')
-          .toLowerCase()
-          .includes(normalizedListingSearch),
-      )
-      .sort((a, b) =>
-        String(a.title || '').localeCompare(String(b.title || '')),
-      )
-  }, [listings, listingsForCategory, selectedCategory, normalizedListingSearch])
+  const handleSearchChange = (event) => {
+    const value = event.target.value
+    setSearchTerm(value)
+    setSearchMenuOpen(value.trim().length > 0)
 
-  const handleSelectListing = (listing, { fromSearch = false } = {}) => {
-    setSelectedListingId(listing.uuid)
-    setSelectedCategory(getListingCategoryLabel(listing))
-    if (fromSearch) {
-      setListingSearch(listing.title || '')
-      setSearchMenuOpen(false)
+    if (!value.trim()) {
+      setSelectedListingId('')
     }
+  }
+
+  const handleSelectFromSearch = (listing) => {
+    setSelectedAssetType(listing.listingType || '')
+    setSelectedListingId(listing.uuid)
+    setSearchTerm(listing.title || '')
+    setSearchMenuOpen(false)
+    setListingMenuOpen(false)
+    setAssetTypeMenuOpen(false)
+  }
+
+  const handleSelectAssetType = (assetType) => {
+    setSelectedAssetType(assetType)
+    setSelectedListingId('')
+    setAssetTypeMenuOpen(false)
     setListingMenuOpen(false)
   }
 
-  useEffect(() => {
-    if (!selectedCategory) {
-      if (selectedListingId) setSelectedListingId('')
-      return
-    }
-
-    if (
-      selectedListingId &&
-      !listingsForCategory.some((listing) => listing.uuid === selectedListingId)
-    ) {
-      setSelectedListingId('')
-    }
-  }, [selectedCategory, listingsForCategory, selectedListingId])
+  const handleSelectListing = (listing) => {
+    setSelectedListingId(listing.uuid)
+    setSearchTerm(listing.title || '')
+    setListingMenuOpen(false)
+    setSearchMenuOpen(false)
+  }
 
   useEffect(() => {
-    if (selectedListing && !selectedCategory) {
-      setSelectedCategory(getListingCategoryLabel(selectedListing))
-    }
-  }, [selectedListing, selectedCategory])
-
-  useEffect(() => {
-    if (!listingMenuOpen && !searchMenuOpen) return
+    if (!listingMenuOpen && !assetTypeMenuOpen && !searchMenuOpen) return
 
     const handleClickOutside = (event) => {
-      const inListing =
+      const clickedOutsideListing =
         listingDropdownRef.current &&
-        listingDropdownRef.current.contains(event.target)
-      const inSearch =
+        !listingDropdownRef.current.contains(event.target)
+      const clickedOutsideAssetType =
+        assetTypeDropdownRef.current &&
+        !assetTypeDropdownRef.current.contains(event.target)
+      const clickedOutsideSearch =
         searchDropdownRef.current &&
-        searchDropdownRef.current.contains(event.target)
+        !searchDropdownRef.current.contains(event.target)
 
-      if (!inListing) setListingMenuOpen(false)
-      if (!inSearch) setSearchMenuOpen(false)
+      if (listingMenuOpen && clickedOutsideListing) {
+        setListingMenuOpen(false)
+      }
+      if (assetTypeMenuOpen && clickedOutsideAssetType) {
+        setAssetTypeMenuOpen(false)
+      }
+      if (searchMenuOpen && clickedOutsideSearch) {
+        setSearchMenuOpen(false)
+      }
     }
 
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [listingMenuOpen, searchMenuOpen])
+  }, [listingMenuOpen, assetTypeMenuOpen, searchMenuOpen])
+
+  useEffect(() => {
+    if (searchTerm.trim() && selectedAssetType) {
+      setListingMenuOpen(true)
+    }
+  }, [searchTerm, selectedAssetType])
+
+  useEffect(() => {
+    if (
+      selectedListingId &&
+      !filteredListings.some((listing) => listing.uuid === selectedListingId)
+    ) {
+      setSelectedListingId('')
+    }
+  }, [filteredListings, selectedListingId])
 
   const loadListings = async () => {
     try {
@@ -393,31 +374,32 @@ export const TrusteeDocumentManagement = () => {
           </h2>
 
           <div className='mb-4' ref={searchDropdownRef}>
-            <label
-              htmlFor='listing-search'
-              className='block text-sm font-medium text-prussianBlue mb-2'
-            >
-              Search Listing
+            <label className='mb-2 block text-sm font-medium text-prussianBlue'>
+              Search Property by Name
             </label>
             <div className='relative'>
-              <input
-                id='listing-search'
-                type='search'
-                value={listingSearch}
-                disabled={loadingListings}
-                onChange={(e) => {
-                  setListingSearch(e.target.value)
-                  setSearchMenuOpen(true)
-                }}
-                onFocus={() => {
-                  if (normalizedListingSearch) setSearchMenuOpen(true)
-                }}
-                placeholder='Search by listing name...'
-                className='w-full rounded-md border border-prussianBlue bg-white px-3 py-2.5 text-sm text-prussianBlue outline-none placeholder:text-gray-400 disabled:opacity-60'
-              />
+              <div className='flex items-center overflow-hidden rounded-md border border-prussianBlue'>
+                <input
+                  type='text'
+                  value={searchTerm}
+                  onChange={handleSearchChange}
+                  onFocus={() => {
+                    if (searchTerm.trim()) setSearchMenuOpen(true)
+                  }}
+                  placeholder='Type property name...'
+                  className='flex-1 px-3 py-2.5 text-sm text-prussianBlue outline-none'
+                />
+                <button
+                  type='button'
+                  className='bg-gray-100 px-3 py-2.5 text-prussianBlue'
+                  aria-label='Search property by name'
+                >
+                  <SearchIcon />
+                </button>
+              </div>
 
-              {searchMenuOpen && normalizedListingSearch ? (
-                <div className='absolute z-40 mt-1 w-full overflow-hidden rounded-md border border-prussianBlue bg-white shadow-lg'>
+              {searchMenuOpen && searchTerm.trim() ? (
+                <div className='absolute z-30 mt-1 w-full overflow-hidden rounded-md border border-prussianBlue bg-white shadow-lg'>
                   <div
                     className='overflow-y-auto'
                     style={{
@@ -425,32 +407,34 @@ export const TrusteeDocumentManagement = () => {
                         LISTING_ROW_HEIGHT_PX * LISTING_DROPDOWN_VISIBLE_ROWS,
                     }}
                   >
-                    {searchResults.length === 0 ? (
-                      <p className='px-3 py-2.5 text-sm text-gray-500'>
-                        No listings match your search.
-                      </p>
-                    ) : (
-                      searchResults.map((listing) => {
+                    {propertyNameSearchResults.length > 0 ? (
+                      propertyNameSearchResults.map((listing) => {
                         const isSelected = listing.uuid === selectedListingId
                         return (
                           <button
                             key={listing.uuid}
                             type='button'
-                            onMouseDown={(e) => e.preventDefault()}
-                            onClick={() =>
-                              handleSelectListing(listing, { fromSearch: true })
-                            }
-                            className={`block w-full truncate px-3 text-left text-sm hover:bg-gray-100 ${isSelected
+                            onClick={() => handleSelectFromSearch(listing)}
+                            className={`block w-full px-3 text-left text-sm hover:bg-gray-100 ${isSelected
                               ? 'bg-whiteSmoke font-medium text-prussianBlue'
                               : 'text-prussianBlue'
                               }`}
-                            style={{ height: LISTING_ROW_HEIGHT_PX }}
+                            style={{ minHeight: LISTING_ROW_HEIGHT_PX }}
                             title={listing.title || 'Untitled'}
                           >
-                            {listing.title || 'Untitled'}
+                            <span className='block truncate font-medium'>
+                              {listing.title || 'Untitled'}
+                            </span>
+                            <span className='block truncate text-xs text-slate-500'>
+                              {formatDocumentAssetType(listing.listingType)}
+                            </span>
                           </button>
                         )
                       })
+                    ) : (
+                      <p className='px-3 py-3 text-sm text-gray-500'>
+                        No properties found for &quot;{searchTerm.trim()}&quot;
+                      </p>
                     )}
                   </div>
                 </div>
@@ -459,54 +443,78 @@ export const TrusteeDocumentManagement = () => {
           </div>
 
           <div className='mb-4 grid grid-cols-1 gap-4 sm:grid-cols-2'>
-            <div>
-              <label className='block text-sm font-medium text-prussianBlue mb-2'>
-                Asset Type
+            <div ref={assetTypeDropdownRef}>
+              <label className='mb-2 block text-sm font-medium text-prussianBlue'>
+                Select Asset Type
               </label>
-              <select
-                value={selectedCategory}
-                disabled={loadingListings}
-                onChange={(e) => {
-                  setSelectedCategory(e.target.value)
-                  setSelectedListingId('')
-                  setListingMenuOpen(false)
-                }}
-                className='w-full rounded-md border border-prussianBlue bg-white px-3 py-2.5 text-sm text-prussianBlue outline-none disabled:opacity-60'
-              >
-                <option value=''>
-                  {loadingListings ? 'Loading...' : 'Choose asset type'}
-                </option>
-                {availableCategories.map((category) => (
-                  <option key={category} value={category}>
-                    {category}
-                  </option>
-                ))}
-              </select>
+              <div className='relative'>
+                <button
+                  type='button'
+                  disabled={loadingListings}
+                  onClick={() => setAssetTypeMenuOpen((open) => !open)}
+                  className='flex w-full items-center justify-between rounded-md border border-prussianBlue bg-white px-3 py-2.5 text-left text-sm text-prussianBlue outline-none disabled:cursor-not-allowed disabled:opacity-60'
+                >
+                  <span className='truncate pr-2'>
+                    {loadingListings
+                      ? 'Loading...'
+                      : selectedAssetType || 'Choose asset type'}
+                  </span>
+                  <span
+                    className={`shrink-0 rotate-90 transition-transform ${assetTypeMenuOpen ? '-rotate-90' : ''}`}
+                  >
+                    <SlArrowRight className='text-prussianBlue' />
+                  </span>
+                </button>
+
+                {assetTypeMenuOpen ? (
+                  <div className='absolute z-30 mt-1 w-full overflow-hidden rounded-md border border-prussianBlue bg-white shadow-lg'>
+                    {ASSET_TYPE_OPTIONS.map((option) => {
+                      const isSelected = selectedAssetType === option.value
+                      return (
+                        <button
+                          key={option.value}
+                          type='button'
+                          onClick={() => handleSelectAssetType(option.value)}
+                          className={`block w-full truncate px-3 text-left text-sm hover:bg-gray-100 ${isSelected
+                            ? 'bg-whiteSmoke font-medium text-prussianBlue'
+                            : 'text-prussianBlue'
+                            }`}
+                          style={{ height: LISTING_ROW_HEIGHT_PX }}
+                        >
+                          {option.label}
+                        </button>
+                      )
+                    })}
+                  </div>
+                ) : null}
+              </div>
             </div>
 
             <div ref={listingDropdownRef}>
-              <label className='block text-sm font-medium text-prussianBlue mb-2'>
-                Select Listing
+              <label className='mb-2 block text-sm font-medium text-prussianBlue'>
+                Select Listing Name
               </label>
               <div className='relative'>
                 <button
                   type='button'
                   disabled={
                     loadingListings ||
-                    !selectedCategory ||
-                    listingsForCategory.length === 0
+                    !selectedAssetType ||
+                    filteredListings.length === 0
                   }
                   onClick={() => setListingMenuOpen((open) => !open)}
                   className='flex w-full items-center justify-between rounded-md border border-prussianBlue bg-white px-3 py-2.5 text-left text-sm text-prussianBlue outline-none disabled:cursor-not-allowed disabled:opacity-60'
                 >
                   <span className='truncate pr-2'>
-                    {!selectedCategory
-                      ? 'Choose asset type first'
-                      : listingsForCategory.length === 0
-                        ? 'No listings in this category'
-                        : selectedListing
-                          ? selectedListing.title || 'Untitled'
-                          : 'Choose listing'}
+                    {loadingListings
+                      ? 'Loading listings...'
+                      : !selectedAssetType
+                        ? 'Select asset type first'
+                        : filteredListings.length === 0
+                          ? 'No listings found'
+                          : selectedListing
+                            ? selectedListing.title || 'Untitled'
+                            : 'Choose listing name'}
                   </span>
                   <span
                     className={`shrink-0 rotate-90 transition-transform ${listingMenuOpen ? '-rotate-90' : ''}`}
@@ -515,9 +523,7 @@ export const TrusteeDocumentManagement = () => {
                   </span>
                 </button>
 
-                {listingMenuOpen &&
-                  selectedCategory &&
-                  listingsForCategory.length > 0 ? (
+                {listingMenuOpen && selectedAssetType && filteredListings.length > 0 ? (
                   <div className='absolute z-30 mt-1 w-full overflow-hidden rounded-md border border-prussianBlue bg-white shadow-lg'>
                     <div
                       className='overflow-y-auto'
@@ -526,7 +532,7 @@ export const TrusteeDocumentManagement = () => {
                           LISTING_ROW_HEIGHT_PX * LISTING_DROPDOWN_VISIBLE_ROWS,
                       }}
                     >
-                      {listingsForCategory.map((listing) => {
+                      {filteredListings.map((listing) => {
                         const isSelected = listing.uuid === selectedListingId
                         return (
                           <button
