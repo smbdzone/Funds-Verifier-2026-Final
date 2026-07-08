@@ -26,6 +26,10 @@ import {
   LISTING_IMAGE_MAX_BYTES,
   LISTING_VIDEO_MAX_BYTES,
 } from '@/constants/listingUploadLimits'
+import {
+  ensureWithinSize,
+  isCompressionConfigured,
+} from '@/libs/imageCompression'
 
 const getMaxLengthForCountry = (country) => {
   const exampleNumber = getExampleNumber(country, metadata)
@@ -38,6 +42,9 @@ export const ListingContext = createContext()
 
 const ListingsProvider = ({ children }) => {
   const [loading, setLoading] = useState(false)
+  // True while oversized images are being sent to the compression API. Consuming
+  // forms must block submission until this is false.
+  const [isCompressing, setIsCompressing] = useState(false)
   const [cityLoading, setCityLoading] = useState(false)
   const [video, setVideo] = useState(null)
   const [errors, setErrors] = useState({})
@@ -381,56 +388,76 @@ const ListingsProvider = ({ children }) => {
   const handleImageChange = (e) => {
     const files = Array.from(e.target.files)
     const validFiles = []
-    const checkFile = (file) => {
+    const checkFile = async (file) => {
+      let workingFile = file
+      // Oversized images are compressed via the API before proceeding. If the
+      // API isn't configured yet, keep the original reject-and-skip behaviour.
       if (file.size > LISTING_IMAGE_MAX_BYTES) {
-        toast.error(`The file ${file.name} exceeds the 5MB size limit`)
-        return Promise.resolve(null)
+        if (!isCompressionConfigured()) {
+          toast.error(`The file ${file.name} exceeds the 5MB size limit`)
+          return null
+        }
+        try {
+          workingFile = await ensureWithinSize(file, LISTING_IMAGE_MAX_BYTES)
+        } catch (err) {
+          toast.error(
+            `Could not compress ${file.name}: ${err?.message || 'try again'}`,
+          )
+          return null
+        }
       }
       return new Promise((resolve) => {
         const reader = new FileReader()
         reader.onload = (event) => {
           const img = new window.Image()
           img.onload = () => {
-            resolve(file) // File is valid
+            resolve(workingFile) // File is valid (possibly compressed)
           }
           img.onerror = () => {
-            toast.error(`The file ${file.name} could not be loaded as an image`)
+            toast.error(
+              `The file ${workingFile.name} could not be loaded as an image`,
+            )
             resolve(null) // Invalid file
           }
           img.src = event.target.result
         }
         reader.onerror = () => {
-          alert(`The file ${file.name} could not be read`)
+          alert(`The file ${workingFile.name} could not be read`)
           resolve(null) // Error reading file
         }
-        reader.readAsDataURL(file)
+        reader.readAsDataURL(workingFile)
       })
     }
 
     const processFiles = async () => {
-      for (const file of files) {
-        const validFile = await checkFile(file)
-        if (validFile) {
-          validFiles.push(validFile) // Add valid files to the array
+      setIsCompressing(true)
+      try {
+        for (const file of files) {
+          const validFile = await checkFile(file)
+          if (validFile) {
+            validFiles.push(validFile) // Add valid files to the array
+          }
         }
+
+        // Check if the number of images exceeds the limit
+        if (images.length + validFiles.length > 7) {
+          toast.error('You can only upload a maximum of 7 images')
+          return
+        }
+
+        // Update images state
+        setImages((prevImages) => [...prevImages, ...validFiles])
+
+        // Update formData with the new images
+        const imageIDs = await handleImageUpload(validFiles) // Ensure this returns the correct IDs
+
+        setFormData((prevFormData) => ({
+          ...prevFormData,
+          pictures: imageIDs, // Update the pictures field in formData
+        }))
+      } finally {
+        setIsCompressing(false)
       }
-
-      // Check if the number of images exceeds the limit
-      if (images.length + validFiles.length > 7) {
-        toast.error('You can only upload a maximum of 7 images')
-        return
-      }
-
-      // Update images state
-      setImages((prevImages) => [...prevImages, ...validFiles])
-
-      // Update formData with the new images
-      const imageIDs = await handleImageUpload(validFiles) // Ensure this returns the correct IDs
-
-      setFormData((prevFormData) => ({
-        ...prevFormData,
-        pictures: imageIDs, // Update the pictures field in formData
-      }))
     }
 
     processFiles()
@@ -487,31 +514,55 @@ const ListingsProvider = ({ children }) => {
     video.src = URL.createObjectURL(file)
   }
 
-  const handleThumbImageChange = (event) => {
-    const selectedFile = event.target.files[0]
+  const handleThumbImageChange = async (event) => {
+    let selectedFile = event.target.files[0]
     if (selectedFile) {
+      // Oversized thumbnails are compressed via the API before proceeding;
+      // otherwise keep the original reject behaviour until the API is set.
       if (selectedFile.size > LISTING_IMAGE_MAX_BYTES) {
-        toast.error(`The file ${selectedFile.name} exceeds the 5MB size limit`)
-        event.target.value = null
-        return
+        if (!isCompressionConfigured()) {
+          toast.error(
+            `The file ${selectedFile.name} exceeds the 5MB size limit`,
+          )
+          event.target.value = null
+          return
+        }
+        setIsCompressing(true)
+        try {
+          selectedFile = await ensureWithinSize(
+            selectedFile,
+            LISTING_IMAGE_MAX_BYTES,
+          )
+        } catch (err) {
+          toast.error(
+            `Could not compress ${selectedFile.name}: ${
+              err?.message || 'try again'
+            }`,
+          )
+          event.target.value = null
+          return
+        } finally {
+          setIsCompressing(false)
+        }
       }
+      const finalFile = selectedFile
       const reader = new FileReader()
       reader.onload = (e) => {
         const img = new window.Image()
         img.onload = () => {
-          setThumbnail(selectedFile)
+          setThumbnail(finalFile)
         }
         img.onerror = () => {
           toast.error(
-            `The file ${selectedFile.name} could not be loaded as an image`,
+            `The file ${finalFile.name} could not be loaded as an image`,
           )
         }
         img.src = e.target.result
       }
       reader.onerror = () => {
-        toast.error(`The file ${selectedFile.name} could not be read`)
+        toast.error(`The file ${finalFile.name} could not be read`)
       }
-      reader.readAsDataURL(selectedFile)
+      reader.readAsDataURL(finalFile)
     }
   }
 
@@ -657,6 +708,7 @@ const ListingsProvider = ({ children }) => {
     <ListingContext.Provider
       value={{
         loading,
+        isCompressing,
         cityLoading,
         video,
         errors,

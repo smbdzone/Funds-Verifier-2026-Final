@@ -36,10 +36,16 @@ import {
   handleThumbnailUpload,
 } from '@/libs/uploadAsset'
 import customAxios from '../../../../utils/apis/apis'
+import {
+  ensureWithinSize,
+  isCompressionConfigured,
+} from '@/libs/imageCompression'
 
 export const dynamic = 'force-dynamic'
 const Page = () => {
   const [isClient, setIsClient] = useState(false)
+  // True while oversized images are being compressed via the API — blocks submit.
+  const [isCompressing, setIsCompressing] = useState(false)
 
   useEffect(() => {
     setIsClient(true)
@@ -167,16 +173,38 @@ const Page = () => {
     })
   }
 
-  const handleFileChange = (e, mediaType, maxSize) => {
+  const handleFileChange = async (e, mediaType, maxSize) => {
     const files = Array.from(e.target.files)
     const maxSizeInBytes = maxSize * 1024 * 1024
+    const hasOversized = files.some((file) => file.size > maxSizeInBytes)
 
-    if (files.some((file) => file.size > maxSizeInBytes)) {
-      setErrors((prevErrors) => ({
-        ...prevErrors,
-        [mediaType]: `File size exceeds ${maxSize}MB.`,
-      }))
-      return
+    let processed = files
+    if (hasOversized) {
+      // Videos aren't compressed, and if the compression API isn't configured
+      // yet, keep the original reject behaviour.
+      if (mediaType === 'video' || !isCompressionConfigured()) {
+        setErrors((prevErrors) => ({
+          ...prevErrors,
+          [mediaType]: `File size exceeds ${maxSize}MB.`,
+        }))
+        return
+      }
+      setIsCompressing(true)
+      try {
+        // Oversized images are sent to the compression API; await the results
+        // before the user can proceed.
+        processed = await Promise.all(
+          files.map((file) => ensureWithinSize(file, maxSizeInBytes)),
+        )
+      } catch (err) {
+        setErrors((prevErrors) => ({
+          ...prevErrors,
+          [mediaType]: err?.message || 'Image compression failed.',
+        }))
+        return
+      } finally {
+        setIsCompressing(false)
+      }
     }
 
     // Reset errors
@@ -186,14 +214,14 @@ const Page = () => {
     }))
 
     if (mediaType === 'thumbnail') {
-      setFormData((prev) => ({ ...prev, [mediaType]: files[0] }))
+      setFormData((prev) => ({ ...prev, [mediaType]: processed[0] }))
     } else if (mediaType === 'pictures') {
       setFormData((prev) => ({
         ...prev,
-        pictures: [...(prev.pictures || []), ...files],
+        pictures: [...(prev.pictures || []), ...processed],
       }))
     } else if (mediaType === 'video') {
-      setFormData((prev) => ({ ...prev, video: files[0] }))
+      setFormData((prev) => ({ ...prev, video: processed[0] }))
     }
   }
 
@@ -611,9 +639,9 @@ const Page = () => {
             <button
               className={`text-whitee flex justify-center items-center text-xl font-medium w-[205px] h-[50px] rounded-[3px] bg-light-gold shadow-neons`}
               onClick={submitConfirmation}
-              disabled={loading}
+              disabled={loading || isCompressing}
             >
-              {loading ? (
+              {loading || isCompressing ? (
                 <IoReload size={24} className='animate-spin' />
               ) : (
                 'Submit'

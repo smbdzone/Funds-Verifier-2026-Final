@@ -3,6 +3,7 @@
 import { JewelleryListingCard } from '@/components/modules/Jewelry/Jewellery-listing-card'
 import { Banner } from '@/components/modules/Banner'
 import CarWrapper from '../../../components/Wrappers/CarWrapper'
+import QuarterPageBanner from '@/components/advertisementComponent/QuarterPageBanner'
 import { Suspense } from 'react'
 
 export default function page({ searchParams }) {
@@ -14,6 +15,7 @@ export default function page({ searchParams }) {
           catagory={searchParams?.category || 'Jewelery'}
           subcatagory={searchParams?.model || ''}
         />
+        <QuarterPageBanner />
         <CarWrapper>
           <JewelleryListingCard />
         </CarWrapper>

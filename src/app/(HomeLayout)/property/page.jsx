@@ -3,6 +3,7 @@
 import React, { Suspense, useEffect } from 'react'
 import { Banner } from '@/components/modules/Banner'
 import ClientWrapper from '@/components/Wrappers/ClientWrapper'
+import QuarterPageBanner from '@/components/advertisementComponent/QuarterPageBanner'
 import { propertyType } from '../../../constants/listing-data'
 import { useSecureAxios } from '../../../utils/useSecureAxios'
 import { usePublicTokenContext } from '../../../utils/PublicTokenProvider.'
@@ -51,6 +52,7 @@ export default function Page({ params }) {
           catagory={propertyTypeText || 'Properties'}
           subcatagory={propertyTypeValue || 'Apartment'}
         />
+        <QuarterPageBanner />
         <ClientWrapper params={params} />
       </div>
     </Suspense>

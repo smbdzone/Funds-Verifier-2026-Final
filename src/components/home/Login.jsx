@@ -68,14 +68,26 @@ export default function Login() {
 
   // Handle login submission
   const handleSubmit = async (user) => {
+    // If the user started from the advertiser sign-in, create them as an
+    // Advertiser account (hint stashed before the UAE Pass round-trip).
+    const signupRole =
+      typeof window !== 'undefined'
+        ? localStorage.getItem('uaePassSignupRole')
+        : null
+    if (signupRole) localStorage.removeItem('uaePassSignupRole')
+
     const payload = {
       name: user?.fullnameEN,
       lastname: user?.lastnameEN,
       email: user?.email,
-      role: 'DealHunter',
+      role: signupRole || 'DealHunter',
       uuid: user?.uuid,
       userType: user?.userType,
       phone: user?.mobile,
+      // Ad-targeting attributes from UAE Pass when the profile provides them.
+      gender: user?.gender || undefined,
+      city: user?.city || user?.emirate || undefined,
+      dateOfBirth: user?.dateofbirth || user?.dob || user?.dateOfBirth || undefined,
     }
 
     try {
@@ -108,6 +120,16 @@ export default function Login() {
       // -------------------------------
       // 🚀 REDIRECT (SAME AS login)
       // -------------------------------
+      // Honor an intended destination (e.g. "Get Started" from Advertise with Us)
+      // captured before sign-in. Survives the UAE Pass external round-trip via localStorage.
+      const redirectTo = localStorage.getItem('postLoginRedirect')
+      if (redirectTo) {
+        localStorage.removeItem('postLoginRedirect')
+        // Full navigation so middleware and UserContext see new HttpOnly cookies
+        window.location.href = redirectTo
+        return
+      }
+
       const targetRoute =
         data?.role === 'AssetHolder' ? '/seller-profile' : '/profile'
 

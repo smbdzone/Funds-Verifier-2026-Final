@@ -179,7 +179,22 @@ export const login = async (values, router) => {
     }
     toast.success(data?.message)
 
+    // Honor an intended destination (e.g. "Get Started" from Advertise with Us)
+    // captured before sign-in. Takes precedence over the role-based default below.
+    const redirectTo =
+      typeof window !== 'undefined'
+        ? localStorage.getItem('postLoginRedirect')
+        : null
+    if (redirectTo) {
+      localStorage.removeItem('postLoginRedirect')
+      router.replace(redirectTo)
+      return data
+    }
+
     switch (assignedRole) {
+      case 'Advertiser':
+        router.replace('/advertiser-dashboard')
+        break
       case 'AssetHolder':
         router.replace('/seller-profile')
         break

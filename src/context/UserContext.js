@@ -6,6 +6,7 @@ import { toast } from 'react-toastify'
 import { getCookie, getCookies } from 'cookies-next'
 import {
   clearAccessToken,
+  getAccessToken,
   setAccessToken,
 } from '../utils/auth/accessTokenStore'
 // ADD AT TOP
@@ -64,6 +65,18 @@ export const UserProvider = ({ children }) => {
         response = await customAxios.get('/user/me', {
           withCredentials: true,
         })
+        // /me authenticates via the HttpOnly cookie and returns no JS token.
+        // Warm the in-memory access token so client flows that must send a
+        // Bearer (ad create → /api/stripe-advertisement, ad tracking) have one
+        // after a fresh page load. Non-fatal if it fails.
+        if (!getAccessToken()) {
+          try {
+            const warmToken = await refreshAccessToken()
+            setAccessTokenState(warmToken)
+          } catch (warmErr) {
+            console.warn('Could not warm access token after /me', warmErr)
+          }
+        }
       } catch (meError) {
         if (meError.response?.status !== 401) throw meError
         const newToken = await refreshAccessToken()

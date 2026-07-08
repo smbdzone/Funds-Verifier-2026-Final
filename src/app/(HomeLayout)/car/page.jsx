@@ -3,6 +3,7 @@
 import { CarListingCard } from '@/components/modules/Car/Car-listing-card'
 import { Banner } from '@/components/modules/Banner'
 import CarWrapper from '../../../components/Wrappers/CarWrapper'
+import QuarterPageBanner from '@/components/advertisementComponent/QuarterPageBanner'
 import { Suspense } from 'react'
 export default function page({ searchParams }) {
   return (
@@ -14,6 +15,7 @@ export default function page({ searchParams }) {
         catagory={searchParams.make || 'Cars'}
         subcatagory={searchParams?.model || null}
       />
+      <QuarterPageBanner />
       <CarWrapper>
         <CarListingCard />
       </CarWrapper>
