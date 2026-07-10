@@ -115,10 +115,12 @@ const Modal2 = ({ isOpen, onClose, formData, setFormData, userUUID }) => {
     <div className='fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50'>
       <div className='relative max-h-[90vh] overflow-auto bg-white p-5 rounded shadow-lg w-11/12 md:w-1/2 text-[#002D4F]'>
         <button
+          type='button'
           onClick={onClose}
-          className='absolute top-2 text-base right-2 bg-blue-500 text-black w-8 h-8 flex justify-center items-center'
+          className='absolute top-2 right-2 flex h-8 w-8 items-center justify-center rounded border-2 border-light-gold text-light-gold font-semibold hover:bg-light-gold/10'
+          aria-label='Close'
         >
-          x
+          X
         </button>
         <h2 className='text-3xl font-semibold mb-4'>Select Date and Time</h2>
         <p className='mb-8'>

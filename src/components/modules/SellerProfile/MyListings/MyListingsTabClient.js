@@ -16,6 +16,7 @@ const MyListingTabClient = ({
   const tabs = [
     { name: "All Listing" },
     { name: "Properties For Sale" },
+    { name: "Off Plan Properties" },
     { name: "Cars For Sale" },
     { name: "Jewelleries For Sale" },
     { name: "Boats For Sale" },
@@ -60,7 +61,7 @@ const MyListingTabClient = ({
       <div className="custom-shadow w-full rounded">
         <div className="primary-gradient w-full rounded px-4 md:px-12 overflow-x-auto">
           <nav
-            className="flex flex-col md:flex-row justify-between items-center gap-4 md:w-[500px] xl:w-full"
+            className="flex flex-col md:flex-row justify-between items-center gap-4 md:w-[700px] xl:w-full"
             aria-label="Tabs"
           >
             {tabs.map((tab, i) => (

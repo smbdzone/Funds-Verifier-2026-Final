@@ -15,7 +15,7 @@ import { formatPriceUS } from '@/utils'
 import Modal2 from '../product-modal/modal2'
 import Modal from '../product-modal/modal'
 import ImageSlider from '../modules/Jewelry/ImageSlider'
-import { formatNumberWithCommas } from '../../utils/global-functions/global'
+import { formatNumberWithCommas, formatColorList } from '../../utils/global-functions/global'
 import {
   getListingDetailMediaItems,
   getListingDocumentSrc,

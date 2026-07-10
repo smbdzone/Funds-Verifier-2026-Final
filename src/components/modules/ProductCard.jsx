@@ -18,6 +18,7 @@ import {
   isListingCarouselPlaceholderSlide,
   PLACEHOLDER,
 } from '@/libs/listingCardMedia'
+import { getListingSharePath } from '@/libs/listingSocialShare'
 
 const ProductCard = ({
   type,
@@ -54,6 +55,7 @@ const ProductCard = ({
     if (type === 'property') setShowROI(true)
   })
   const carouselSlides = getListingCarouselItems(item)
+  const listingHref = getListingSharePath({ ...item, type })
   const hasAdditionalContent =
     getListingDocumentSrc(technicalReport) &&
     getListingDocumentSrc(evaluationCertificate) &&
@@ -154,7 +156,7 @@ const ProductCard = ({
           }`}
       >
         <div className='flex justify-between gap-2 w-full'>
-          <Link href={`/${type}/${item.uuid}`}>
+          <Link href={listingHref}>
             <h2
               className={`text-xl font-semibold capitalize ${hasAdditionalContent ? 'text-white' : 'text-black'
                 }`}

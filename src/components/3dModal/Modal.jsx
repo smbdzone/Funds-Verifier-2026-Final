@@ -398,9 +398,10 @@ const Modal = ({
           </div>
           <div className='absolute top-2 right-2 flex justify-end'>
             <button
-              className='px-4 py-2 bg-blue-500 text-prussianBlue rounded'
-              onClick={onClose}
               type='button'
+              className='flex h-8 w-8 items-center justify-center rounded border-2 border-light-gold text-light-gold font-semibold hover:bg-light-gold/10'
+              onClick={onClose}
+              aria-label='Close'
             >
               X
             </button>

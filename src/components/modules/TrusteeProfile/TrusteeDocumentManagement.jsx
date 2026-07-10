@@ -26,6 +26,7 @@ const LISTING_ROW_HEIGHT_PX = 40
 
 const ASSET_TYPE_OPTIONS = [
   { value: 'Property', label: 'Property' },
+  { value: 'OffPlan', label: 'Off Plan' },
   { value: 'Car', label: 'Car' },
   { value: 'Boats', label: 'Boats' },
   { value: 'Jewellery', label: 'Jewellery' },

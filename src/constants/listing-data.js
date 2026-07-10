@@ -1238,6 +1238,120 @@ export const bedroomsOptions = [
   "12+",
 ];
 
+export const deliveryQuarterOptions = ["Q1", "Q2", "Q3", "Q4"];
+
+const currentYear = new Date().getFullYear();
+export const deliveryYearOptions = Array.from({ length: 20 }, (_, i) =>
+  String(currentYear + i),
+);
+
+export const sizeTypeOptions = ["SQFT", "SQM"];
+
+export const layoutOptions = [
+  "Studio",
+  "1 BHK",
+  "2 BHK",
+  "2 BHK Duplex",
+  "3 BHK",
+  "3 BHK Duplex",
+  "Penthouse",
+  "Villa",
+  "Townhouse",
+];
+
+export const numberOfFloorsOptions = [
+  "1",
+  "2",
+  "3",
+  "4",
+  "5",
+  "6",
+  "7",
+  "8",
+  "9",
+  "10",
+  "11",
+  "12+",
+];
+
+export const availableApartmentOptions = [
+  "Studio",
+  "1 BHK",
+  "2 BHK",
+  "2 BHK Duplex",
+  "3 BHK Duplex",
+  "Penthouse",
+];
+
+export const OFF_PLAN_LAYOUT_IMAGE_FORMATS_LABEL =
+  "JPG, PNG, GIF. Maximum file size: 5MB";
+
+export const apartmentLayoutUploads = [
+  { key: "studioLayout", label: "Studio Unit Layout" },
+  { key: "oneBhkLayout", label: "1 BHK Unit Layout" },
+  { key: "twoBhkLayout", label: "2 BHK Unit Layout" },
+  { key: "twoBhkDuplexLayout", label: "2 BHK Duplex Unit Layout" },
+  { key: "threeBhkDuplexLayout", label: "3 BHK Duplex Unit Layout" },
+  { key: "penthouseLayout", label: "Penthouse Unit Layout" },
+];
+
+export const OFF_PLAN_PAYMENT_STEP_META = [
+  { stepLabel: "1: First Step", paymentLabel: "Down Payment" },
+  { stepLabel: "2: Second Step", paymentLabel: "Payment Share" },
+  { stepLabel: "3: Third Step", paymentLabel: "Payment Share" },
+  { stepLabel: "4: Fourth Step", paymentLabel: "Payment Share" },
+  { stepLabel: "5: Fifth Step", paymentLabel: "Final Payment" },
+];
+
+export const MAX_OFF_PLAN_PAYMENT_STEPS = 5;
+export const MIN_OFF_PLAN_PAYMENT_STEPS = 1;
+
+const OFF_PLAN_STEP_ORDINALS = [
+  "First",
+  "Second",
+  "Third",
+  "Fourth",
+  "Fifth",
+];
+
+export const getOffPlanPaymentLabel = (index, total) => {
+  if (index === 0) return "Down Payment";
+  if (total > 1 && index === total - 1) return "Final Payment";
+  return "Payment Share";
+};
+
+export const reindexOffPlanPaymentPlan = (steps = []) =>
+  steps.map((step, index) => ({
+    ...step,
+    step: index + 1,
+    stepLabel: `${index + 1}: ${OFF_PLAN_STEP_ORDINALS[index]} Step`,
+    paymentLabel: getOffPlanPaymentLabel(index, steps.length),
+  }));
+
+export const createDefaultOffPlanPaymentPlan = (count = MAX_OFF_PLAN_PAYMENT_STEPS) =>
+  reindexOffPlanPaymentPlan(
+    Array.from(
+      { length: Math.min(Math.max(count, MIN_OFF_PLAN_PAYMENT_STEPS), MAX_OFF_PLAN_PAYMENT_STEPS) },
+      () => ({
+        sharePercent: "",
+        milestone: "",
+      }),
+    ),
+  );
+
+export const addOffPlanPaymentStep = (plan = []) => {
+  if (plan.length >= MAX_OFF_PLAN_PAYMENT_STEPS) return plan;
+  return reindexOffPlanPaymentPlan([
+    ...plan,
+    { sharePercent: "", milestone: "" },
+  ]);
+};
+
+export const removeOffPlanPaymentStep = (plan = [], index) => {
+  if (plan.length <= MIN_OFF_PLAN_PAYMENT_STEPS) return plan;
+  return reindexOffPlanPaymentPlan(plan.filter((_, stepIndex) => stepIndex !== index));
+};
+
 export const asset = [
   { value: "Property For Sale", link: "property" },
   // { value: "Property For Lease", link: "property" },

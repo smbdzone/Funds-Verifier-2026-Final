@@ -11,7 +11,6 @@ import "swiper/css/navigation";
 
 // import required modules
 import { Navigation } from "swiper/modules";
-import { swiperCanLoop } from "@/utils/swiperLoop";
 
 // Import your slide component
 import FundTypeSlide from "./slides/fund-type-slide";
@@ -26,8 +25,13 @@ import jewellery_one from "@/assets/images/jewellery_one.png";
 import jewellery_two from "@/assets/images/jewellery_two.png";
 import jewellery_three from "@/assets/images/jewellery_three.png";
 
+// Boat type slider images
+import boat_yacht from "@/assets/images/rectangle-58@2x.png";
+import boat_fishing from "@/assets/images/rectangle-63@2x.png";
+import boat_sail from "@/assets/images/rectangle-64@2x.png";
+
 export default function FundsTypeSlider() {
-  const { propertyTypeData } = useAppContext();
+  const { propertyTypeData, boatsForSale } = useAppContext();
 
   const villaThumbnail = getListingThumbSrc(
     propertyTypeData?.[0]?.products?.[0],
@@ -41,6 +45,21 @@ export default function FundsTypeSlider() {
     propertyTypeData?.[2]?.products?.[0],
     "/villa.jpg"
   );
+  const offPlanVillaThumbnail = "/offplan/image1.svg";
+  const offPlanApartmentThumbnail = "/offplan/image1.svg";
+  const offPlanPenthouseThumbnail = "/offplan/image1.svg";
+  const boatYachtThumbnail = getListingThumbSrc(
+    boatsForSale?.products?.[0],
+    boat_yacht
+  );
+  const boatFishingThumbnail = getListingThumbSrc(
+    boatsForSale?.products?.[1],
+    boat_fishing
+  );
+  const boatSailThumbnail = getListingThumbSrc(
+    boatsForSale?.products?.[2],
+    boat_sail
+  );
 
   const slides = [
     {
@@ -53,6 +72,34 @@ export default function FundsTypeSlider() {
         "Explore verified villas for sale and lease.",
         "Browse approved apartments across the UAE.",
         "View verified commercial and residential buildings.",
+      ],
+    },
+    {
+      slide_title: "Off Plan Properties",
+      photos: [
+        offPlanVillaThumbnail,
+        offPlanApartmentThumbnail,
+        offPlanPenthouseThumbnail,
+      ],
+      context_types: ["Villa", "Apartment", "Penthouse"],
+      slide_description:
+        "Discover verified off-plan projects with flexible payment plans and trusted developers across the UAE.",
+      context_descriptions: [
+        "Premium off-plan villas with spacious layouts and private amenities.",
+        "Waterfront and city apartments with flexible handover timelines.",
+        "Exclusive penthouse residences with luxury finishes and views.",
+      ],
+    },
+    {
+      slide_title: "Boat Types",
+      photos: [boatYachtThumbnail, boatFishingThumbnail, boatSailThumbnail],
+      context_types: ["Yacht", "Fishing Boat", "Sailboats"],
+      slide_description:
+        "Browse evaluator-approved boats for sale, from luxury yachts to fishing and leisure vessels.",
+      context_descriptions: [
+        "Luxury yachts listed with evaluator approval and clear pricing.",
+        "Fishing boats ready for secure, verified purchase.",
+        "Sailboats and cruisers available across the UAE.",
       ],
     },
     {
@@ -83,7 +130,7 @@ export default function FundsTypeSlider() {
 
   return (
     <div className="container mx-auto my-5">
-      <Swiper modules={[Navigation]} loop={swiperCanLoop(slides.length, 1)} className="mySwiper">
+      <Swiper modules={[Navigation]} loop={false} className="mySwiper">
         {slides.map((slide, index) => (
           <SwiperSlide key={index}>
             <FundTypeSlide data={slide} />

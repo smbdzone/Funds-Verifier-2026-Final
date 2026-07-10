@@ -25,7 +25,13 @@ import {
   occupancyStatusOptions,
   isFurnishedOptions,
   facilities,
+  apartmentLayoutUploads,
+  createDefaultOffPlanPaymentPlan,
+  addOffPlanPaymentStep,
+  removeOffPlanPaymentStep,
+  reindexOffPlanPaymentPlan,
 } from '@/constants/listing-data'
+import { LISTING_IMAGE_MAX_BYTES, LISTING_IMAGE_MAX_MB } from '@/constants/listingUploadLimits'
 import { ListingContext } from '@/components/ListingContext/ListingsProvider'
 import { propertyType } from '../../../../constants/listing-data'
 import PayModal from '../../../../components/Modals/PayModal'
@@ -55,13 +61,39 @@ const dropdownData = {
   bathrooms: false,
   isFurnished: false,
   occupancyStatus: false,
-  bedrooms: false,
   assetType: false,
+  advertisementId: false,
+  sizeType: false,
+  deliveryQuarter: false,
+  deliveryYear: false,
+  layout: false,
+  numberOfFloors: false,
+  availableApartment: false,
+}
+
+const OFF_PLAN_MEDIA_KEYS = [
+  'unitLayout',
+  'floorPlan',
+  ...apartmentLayoutUploads.map((item) => item.key),
+]
+
+const emptyOffPlanMedia = () =>
+  OFF_PLAN_MEDIA_KEYS.reduce((acc, key) => {
+    acc[key] = null
+    return acc
+  }, {})
+
+const formatPriceDisplay = (rawValue) => {
+  if (!rawValue) return ''
+  return new Intl.NumberFormat('en-US').format(rawValue)
 }
 
 const Page = () => {
   const [isOpenModal, setIsOpenModal] = useState(false)
   const [showPayment, setShowPayment] = useState(false)
+  const [totalPriceFrom, setTotalPriceFrom] = useState('')
+  const [totalPriceTo, setTotalPriceTo] = useState('')
+  const [offPlanMedia, setOffPlanMedia] = useState(emptyOffPlanMedia)
   const { user } = useProfile()
 
   const {
@@ -195,25 +227,160 @@ const Page = () => {
     sellerTransferFee: '',
     buyerTransferFee: '',
     occupancyStatus: '',
+    priceFrom: '',
+    priceTo: '',
+    advertisementId: '',
+    deliveryQuarter: '',
+    deliveryYear: '',
+    sizeType: '',
+    layout: '',
+    numberOfFloors: '',
+    availableApartment: '',
+    paymentPlan: createDefaultOffPlanPaymentPlan(),
     listings: [],
     facilities: [],
     createdAt: new Date(),
     updatedAt: new Date(),
   }
+  const assetTypeParam = searchParams.get('assetType')
+
   useEffect(() => {
     if (id) {
       fetchData('property')
-    } else {
-      resetForm()
-      handleFormData(initialFormData, dropdownData)
-      setLoading(false)
+      return
     }
-  }, [searchParams])
+    resetForm()
+    handleFormData(
+      {
+        ...initialFormData,
+        assetType: assetTypeParam || initialFormData.assetType,
+      },
+      dropdownData,
+    )
+    setLoading(false)
+  }, [id, assetTypeParam])
 
   useRefreshListingAfterServicePayment(id, 'property', fetchData)
   useRestoreListingAfterClozerPayment(setFormData)
   useRestorePendingListingDraft(id, setFormData)
   useRefetchListingOnReturn(id, 'property', fetchData)
+
+  const isOffPlan = formData?.assetType === 'Property Off Plan For Sale'
+
+  useEffect(() => {
+    if (
+      isOffPlan &&
+      (!Array.isArray(formData.paymentPlan) || formData.paymentPlan.length === 0)
+    ) {
+      setFormData((prev) => ({
+        ...prev,
+        paymentPlan: createDefaultOffPlanPaymentPlan(),
+      }))
+    }
+  }, [isOffPlan, formData.paymentPlan?.length, setFormData])
+
+  useEffect(() => {
+    if (formData?.priceFrom != null && formData.priceFrom !== '') {
+      setTotalPriceFrom(formatPriceDisplay(String(formData.priceFrom)))
+    }
+    if (formData?.priceTo != null && formData.priceTo !== '') {
+      setTotalPriceTo(formatPriceDisplay(String(formData.priceTo)))
+    }
+  }, [formData?.priceFrom, formData?.priceTo])
+
+  useEffect(() => {
+    if (!isOffPlan || !id) return
+    setOffPlanMedia({
+      unitLayout: formData?.unitLayout?.images?.[0] ?? formData?.unitLayout ?? null,
+      floorPlan: formData?.floorPlan?.images?.[0] ?? formData?.floorPlan ?? null,
+      studioLayout:
+        formData?.studioLayout?.images?.[0] ?? formData?.studioLayout ?? null,
+      oneBhkLayout:
+        formData?.oneBhkLayout?.images?.[0] ?? formData?.oneBhkLayout ?? null,
+      twoBhkLayout:
+        formData?.twoBhkLayout?.images?.[0] ?? formData?.twoBhkLayout ?? null,
+      twoBhkDuplexLayout:
+        formData?.twoBhkDuplexLayout?.images?.[0] ??
+        formData?.twoBhkDuplexLayout ??
+        null,
+      threeBhkDuplexLayout:
+        formData?.threeBhkDuplexLayout?.images?.[0] ??
+        formData?.threeBhkDuplexLayout ??
+        null,
+      penthouseLayout:
+        formData?.penthouseLayout?.images?.[0] ??
+        formData?.penthouseLayout ??
+        null,
+    })
+  }, [
+    id,
+    isOffPlan,
+    formData?.unitLayout,
+    formData?.floorPlan,
+    formData?.studioLayout,
+    formData?.oneBhkLayout,
+    formData?.twoBhkLayout,
+    formData?.twoBhkDuplexLayout,
+    formData?.threeBhkDuplexLayout,
+    formData?.penthouseLayout,
+  ])
+
+  const handleOffPlanImageChange = (key) => (event) => {
+    const selectedFile = event.target.files?.[0]
+    if (!selectedFile) return
+    if (selectedFile.size > LISTING_IMAGE_MAX_BYTES) {
+      toast.error(
+        `The file ${selectedFile.name} exceeds the ${LISTING_IMAGE_MAX_MB}MB size limit`,
+      )
+      event.target.value = null
+      return
+    }
+    setOffPlanMedia((prev) => ({ ...prev, [key]: selectedFile }))
+  }
+
+  const handleOffPlanImageRemove = (key) => {
+    setOffPlanMedia((prev) => ({ ...prev, [key]: null }))
+    setFormData((prev) => ({ ...prev, [key]: null }))
+  }
+
+  const handlePaymentPlanStepChange = (index, field, value) => {
+    setFormData((prev) => {
+      const plan = reindexOffPlanPaymentPlan(
+        prev.paymentPlan?.length
+          ? [...prev.paymentPlan]
+          : createDefaultOffPlanPaymentPlan(),
+      )
+      plan[index] = { ...plan[index], [field]: value }
+      return { ...prev, paymentPlan: reindexOffPlanPaymentPlan(plan) }
+    })
+  }
+
+  const handlePaymentPlanStepRemove = (index) => {
+    setFormData((prev) => ({
+      ...prev,
+      paymentPlan: removeOffPlanPaymentStep(prev.paymentPlan || [], index),
+    }))
+  }
+
+  const handlePaymentPlanStepAdd = () => {
+    setFormData((prev) => ({
+      ...prev,
+      paymentPlan: addOffPlanPaymentStep(prev.paymentPlan || []),
+    }))
+  }
+
+  const handleListingSelectOption = (dropdownName, option) => {
+    if (dropdownName === 'sizeType') {
+      setFormData((prev) => ({
+        ...prev,
+        sizeType: option,
+        sizeUnit: option,
+      }))
+      setDropdowns({ ...dropdowns, sizeType: false })
+      return
+    }
+    handleSelectOption(dropdownName, option)
+  }
 
   const router = useRouter()
 
@@ -236,10 +403,34 @@ const Page = () => {
 
   const submitConfirmation = async (e) => {
     const validationErrors = validateForm(formData)
+
     if (id) {
+      setLoading(true)
       finalizeSubmission()
       return
     }
+
+    if (isOffPlan) {
+      if (Object.keys(validationErrors).length > 0) {
+        setErrors(validationErrors)
+        setLoading(false)
+        handleScroll()
+        return
+      }
+      if (!images?.length) {
+        toast.error('At least one image is required.')
+        return
+      }
+      if (!thumbnail) {
+        toast.error('Thumbnail image is required.')
+        return
+      }
+      setLoading(true)
+      setConfirmationModal(false)
+      finalizeSubmission()
+      return
+    }
+
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors)
       setLoading(false)
@@ -262,7 +453,7 @@ const Page = () => {
         setLoading(false)
         throw new Error('Image is required')
       }
-      if (!formData?.evaluationDateTime) {
+      if (!isOffPlan && !formData?.evaluationDateTime) {
         toast.error('Evalaution required.')
         setLoading(false)
         throw new Error('Evalaution required')
@@ -272,6 +463,13 @@ const Page = () => {
         toast.error('Thumbnail image is required.')
         setLoading(false)
         throw new Error('Thumbnail is required')
+      }
+
+      if (isOffPlan) {
+        setLoading(true)
+        setConfirmationModal(false)
+        finalizeSubmission()
+        return
       }
 
       return setShowPayment(true)
@@ -355,8 +553,8 @@ const Page = () => {
         }
       }
 
-      // ✅ Require payment only when first submitting (no `id`)
-      if (!id) {
+      // ✅ Require payment only when first submitting (no `id`) and not off-plan
+      if (!id && !isOffPlan) {
         const checkoutSessionRaw = localStorage.getItem('checkoutSession')
         const checkoutSession = checkoutSessionRaw
           ? JSON.parse(checkoutSessionRaw)
@@ -396,6 +594,20 @@ const Page = () => {
         // thumbnail and images will remain unchanged
       }
 
+      const offPlanMediaRefs = {}
+      if (isOffPlan) {
+        for (const key of OFF_PLAN_MEDIA_KEYS) {
+          const media = offPlanMedia[key]
+          if (media instanceof File) {
+            const uploaded = await handleImageUpload([media])
+            offPlanMediaRefs[key] =
+              listingMediaRef(uploaded) ?? listingMediaRef(formData?.[key])
+          } else {
+            offPlanMediaRefs[key] = listingMediaRef(formData?.[key])
+          }
+        }
+      }
+
       const checkoutSessionRaw = localStorage.getItem('checkoutSession')
       const checkoutSession = checkoutSessionRaw
         ? JSON.parse(checkoutSessionRaw)
@@ -405,7 +617,12 @@ const Page = () => {
         ...formData,
         sizeSQFT: formData.sizeSQFT ? Number(formData.sizeSQFT) : 0,
         sizeSQM: formData.sizeSQM ? Number(formData.sizeSQM) : 0,
-        sizeUnit: formData.sizeUnit || 'SQFT',
+        sizeUnit: formData.sizeType || formData.sizeUnit || 'SQFT',
+        priceFrom: formData.priceFrom ? Number(formData.priceFrom) : undefined,
+        priceTo: formData.priceTo ? Number(formData.priceTo) : undefined,
+        price: isOffPlan
+          ? Number(formData.priceFrom || 0)
+          : Number(formData.price || 0),
         userUUID: user?.uuid,
         pictures:
           listingMediaRef(imageID) ?? listingMediaRef(formData?.pictures),
@@ -418,9 +635,16 @@ const Page = () => {
           listingMediaRef(thumbnailID) ??
           listingMediaRef(formData?.thumbnailImg),
         propertyForSale:
-          formData.assetType === 'Property For Sale' ? 'Yes' : '',
+          formData.assetType === 'Property For Sale' ||
+            formData.assetType === 'Property Off Plan For Sale'
+            ? 'Yes'
+            : '',
         propertyForLease:
           formData.assetType === 'Property For Lease' ? 'Yes' : '',
+        ...(isOffPlan ? offPlanMediaRefs : {}),
+        paymentPlan: reindexOffPlanPaymentPlan(
+          Array.isArray(formData.paymentPlan) ? formData.paymentPlan : [],
+        ),
       }
 
       applyPremiumServiceRefs(updatedFormData, formData, {
@@ -432,7 +656,7 @@ const Page = () => {
       const validationErrors = validateForm(updatedFormData)
 
       if (Object.keys(validationErrors).length === 0) {
-        if (!id) {
+        if (!id && !isOffPlan) {
           await bookEvaluationTimeslotFromFormData(formData)
         }
 
@@ -460,11 +684,14 @@ const Page = () => {
         toast.success(
           id
             ? 'Updated successfully'
-            : 'Submitted successfully. Evaluator will evaluate it.'
+            : isOffPlan
+              ? 'Submitted successfully'
+              : 'Submitted successfully. Evaluator will evaluate it.',
         )
 
         // Reset everything
         setDropdowns(dropdownData)
+        setOffPlanMedia(emptyOffPlanMedia())
         if (!id) {
           resetForm()
           setFormData(initialFormData)
@@ -492,21 +719,23 @@ const Page = () => {
   const handleChange = (e) => {
     const { name, value } = e.target
 
-    if (name === 'price') {
-      // Remove non-digit characters from the price input
-      const rawValue = value.replace(/[^\d]/g, '') // Remove commas, dots, etc.
+    if (name === 'price' || name === 'priceFrom' || name === 'priceTo') {
+      const rawValue = value.replace(/[^\d]/g, '')
 
-      // Check if input is a valid number and update the state
       if (/^\d*$/.test(rawValue)) {
-        // Store the raw numeric value in formData
         setFormData((prevFormData) => ({
           ...prevFormData,
-          [name]: rawValue, // Update the raw value in formData
+          [name]: rawValue,
         }))
 
-        // Optionally, format the number for display with commas
-        const formattedValue = new Intl.NumberFormat('en-US').format(rawValue)
-        setTotalPrice(formattedValue)
+        const formattedValue = formatPriceDisplay(rawValue)
+        if (name === 'price') {
+          setTotalPrice(formattedValue)
+        } else if (name === 'priceFrom') {
+          setTotalPriceFrom(formattedValue)
+        } else if (name === 'priceTo') {
+          setTotalPriceTo(formattedValue)
+        }
       }
     } else if (name === 'sizeSQFT' || name === 'sizeSQM') {
       // Handled by PropertySizeField via handleSizeChange
@@ -515,17 +744,23 @@ const Page = () => {
     }
   }
 
-  const handleSizeChange = ({ sizeSQFT, sizeSQM, sizeUnit }) => {
+  const handleSizeChange = ({ sizeSQFT, sizeSQM, sizeUnit, sizeType }) => {
     setFormData((prev) => ({
       ...prev,
       ...(sizeSQFT !== undefined ? { sizeSQFT } : {}),
       ...(sizeSQM !== undefined ? { sizeSQM } : {}),
       sizeUnit: sizeUnit || prev.sizeUnit || 'SQFT',
+      ...(sizeType !== undefined
+        ? { sizeType }
+        : sizeUnit
+          ? { sizeType: sizeUnit }
+          : {}),
     }))
   }
 
   const validateForm = (data) => {
     const errors = {}
+    const offPlan = data.assetType === 'Property Off Plan For Sale'
     // Convert all values to string safely using String() and provide fallback if undefined
     const phoneNumber = String(data.phoneNumber || '')
     // Check for phoneNumber validation
@@ -568,35 +803,82 @@ const Page = () => {
       errors.neighbourhood = 'Neighbourhood is required'
     }
 
-    const sizeUnit = data.sizeUnit || 'SQFT'
-    const activeSize =
-      sizeUnit === 'SQM' ? data.sizeSQM : data.sizeSQFT
+    if (!offPlan) {
+      const sizeUnit = data.sizeUnit || 'SQFT'
+      const activeSize =
+        sizeUnit === 'SQM' ? data.sizeSQM : data.sizeSQFT
 
-    if (!String(activeSize || '').trim()) {
-      errors.sizeSQFT = 'Size is required'
+      if (!String(activeSize || '').trim()) {
+        errors.sizeSQFT = 'Size is required'
+      }
+    } else {
+      const sizeUnit = data.sizeUnit || data.sizeType || 'SQFT'
+      const activeSize =
+        sizeUnit === 'SQM' ? data.sizeSQM : data.sizeSQFT
+
+      if (!String(activeSize || '').trim()) {
+        errors.sizeSQFT = 'Size is required'
+      }
     }
-
-    // if (!String(data.evaluationDateTime || "").trim()) {
-    //   errors.evaluationDateTime = "Evaluation is required";
-    // }
 
     if (!String(data.title || '').trim()) {
       errors.title = 'Title is required'
-    } else if (data.title.length > 30) {
+    } else if (offPlan && data.title.length > 50) {
+      errors.title = 'Title must be less than 50 characters'
+    } else if (!offPlan && data.title.length > 30) {
       errors.title = 'Title must be less than 30 characters'
     }
 
-    if (!String(data.price || '').trim() && !totalprice) {
+    if (offPlan) {
+      if (!String(data.priceFrom || '').trim()) {
+        errors.price = 'Price from is required'
+      } else if (parseInt(data.priceFrom) === 0) {
+        errors.price = 'Price from is invalid'
+      } else if (!String(data.priceTo || '').trim()) {
+        errors.price = 'Price to is required'
+      } else if (parseInt(data.priceTo) === 0) {
+        errors.price = 'Price to is invalid'
+      } else if (Number(data.priceTo) < Number(data.priceFrom)) {
+        errors.price = 'Price to must be greater than or equal to price from'
+      }
+
+      if (!String(data.deliveryQuarter || '').trim() || !String(data.deliveryYear || '').trim()) {
+        errors.deliveryTime = 'Delivery time is required'
+      }
+
+      if (!String(data.developer || '').trim()) {
+        errors.developer = 'Developer is required'
+      }
+
+      const plan = Array.isArray(data.paymentPlan) ? data.paymentPlan : []
+      const downPayment = plan[0]?.sharePercent
+      if (!String(downPayment || '').trim()) {
+        errors.paymentPlan = 'Down payment share is required'
+      } else {
+        const totalShare = plan.reduce(
+          (sum, step) => sum + Number(step?.sharePercent || 0),
+          0,
+        )
+        if (totalShare > 100) {
+          errors.paymentPlan = 'Payment plan shares cannot exceed 100%'
+        }
+      }
+    } else if (!String(data.price || '').trim() && !totalprice) {
       errors.price = 'Price is required'
     } else if (parseInt(totalprice) === 0) {
       errors.price = 'Price is invalid'
     }
 
-    if (!String(data.additionalDescription || '').trim()) {
-      errors.additionalDescription = 'Additional description is required'
-    } else if (data.additionalDescription.length > 1000) {
+    if (!offPlan) {
+      if (!String(data.additionalDescription || '').trim()) {
+        errors.additionalDescription = 'Additional description is required'
+      } else if (data.additionalDescription.length > 1000) {
+        errors.additionalDescription =
+          'Additional Description must be less than 1000 characters'
+      }
+    } else if (data.additionalDescription?.length > 1000) {
       errors.additionalDescription =
-        'Additional Description must be less than 1000 characters'
+        'Additional Properties must be less than 1000 characters'
     }
 
     if (!String(data.bathrooms || '').trim()) {
@@ -607,7 +889,7 @@ const Page = () => {
       errors.bedrooms = 'Bedrooms are required'
     }
 
-    if (!String(data.occupancyStatus || '').trim()) {
+    if (!offPlan && !String(data.occupancyStatus || '').trim()) {
       errors.occupancyStatus = 'Occupancy Status is required'
     }
 
@@ -755,7 +1037,7 @@ const Page = () => {
             handleModelClick={handleModelClick}
             handleNeighbour={handleNeighbour}
             handleCountrySelect={handleCountrySelect}
-            handleSelectOption={handleSelectOption}
+            handleSelectOption={handleListingSelectOption}
             selectedCity={selectedCity}
             selectedCountry={selectedCountry}
             selectType={selectType}
@@ -793,8 +1075,10 @@ const Page = () => {
                 handleToggleDropdown={handleToggleDropdown}
                 id={id}
                 totalprice={totalprice}
+                totalPriceFrom={totalPriceFrom}
+                totalPriceTo={totalPriceTo}
                 handleVideoRemove={handleVideoRemove}
-                handleSelectOption={handleSelectOption}
+                handleSelectOption={handleListingSelectOption}
                 handleOpenModal1={handleOpenModal1}
                 isModal1Open={isModal1Open}
                 setFormData={setFormData}
@@ -818,6 +1102,12 @@ const Page = () => {
                 handleSizeChange={handleSizeChange}
                 leaseNumberofChequesOptions={leaseNumberofChequesOptions}
                 isFurnishedOptions={isFurnishedOptions}
+                offPlanMedia={offPlanMedia}
+                onOffPlanImageChange={handleOffPlanImageChange}
+                onOffPlanImageRemove={handleOffPlanImageRemove}
+                onPaymentPlanStepChange={handlePaymentPlanStepChange}
+                onPaymentPlanStepRemove={handlePaymentPlanStepRemove}
+                onPaymentPlanStepAdd={handlePaymentPlanStepAdd}
               />
               {/* input two  */}
               <Facilities

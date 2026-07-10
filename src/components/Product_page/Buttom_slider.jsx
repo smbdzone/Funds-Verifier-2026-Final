@@ -15,6 +15,7 @@ import {
   getListingCardImageSrc,
   PLACEHOLDER,
 } from '@/libs/listingCardMedia'
+import { getListingDetailId } from '@/libs/listingSlug'
 
 const ButtomSlider = ({ data }) => {
   const router = useRouter()
@@ -62,7 +63,7 @@ const ButtomSlider = ({ data }) => {
         pathToGo = ''
     }
     if (pathToGo) {
-      router.push(`/${pathToGo}/${value.slug || value.uuid}`)
+      router.push(`/${pathToGo}/${getListingDetailId(value)}`)
     }
   }
 

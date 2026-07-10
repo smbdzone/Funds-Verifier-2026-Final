@@ -1,6 +1,7 @@
 'use client'
 import Image from 'next/image'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import { toUnitedArabEmiratesListingCountryName } from '@/libs/dummyLocationData'
 
 const DropdownComponent = ({
@@ -22,7 +23,7 @@ const DropdownComponent = ({
   disabled, // ✅ added disabled prop
   required = false,
 }) => {
-  // ✅ Button (label) for dropdown
+  const pathname = usePathname()
 
   const renderLabelContent = () => (
     <button
@@ -64,23 +65,48 @@ const DropdownComponent = ({
       onMouseLeave={handleMouseLeave}
       className='absolute mt-2 left-0 right-0 bg-white rounded-lg shadow-neon z-10 py-2'
     >
-      {dropdownOptions?.map((option, index) => (
-        <Link key={index} href={`/dashboard/${option.link}-listing`}>
-          <div
-            className={`px-2 py-2 text-start ${option.disabled
-                ? 'opacity-50 cursor-not-allowed'
-                : 'hover:text-[#8D7C3B] hover:bg-[#F5F5F5] text-gray-400 cursor-pointer'
-              }`}
-            onClick={
-              !option.disabled
-                ? () => handleSelectOption('assetType', option.value)
-                : undefined
-            }
-          >
-            {option.value}
-          </div>
-        </Link>
-      ))}
+      {dropdownOptions?.map((option, index) => {
+        const targetPath = `/dashboard/${option.link}-listing`
+        const href = `${targetPath}?assetType=${encodeURIComponent(option.value)}`
+        const isSameListingPage = pathname === targetPath
+        const optionClassName = `px-2 py-2 text-start ${option.disabled
+            ? 'opacity-50 cursor-not-allowed'
+            : 'hover:text-[#8D7C3B] hover:bg-[#F5F5F5] text-gray-400 cursor-pointer'
+          }`
+
+        if (isSameListingPage) {
+          return (
+            <div
+              key={index}
+              role='button'
+              tabIndex={option.disabled ? -1 : 0}
+              className={optionClassName}
+              onClick={
+                !option.disabled
+                  ? () => handleSelectOption('assetType', option.value)
+                  : undefined
+              }
+            >
+              {option.value}
+            </div>
+          )
+        }
+
+        return (
+          <Link key={index} href={href}>
+            <div
+              className={optionClassName}
+              onClick={
+                !option.disabled
+                  ? () => handleSelectOption('assetType', option.value)
+                  : undefined
+              }
+            >
+              {option.value}
+            </div>
+          </Link>
+        )
+      })}
     </div>
   )
 

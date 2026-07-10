@@ -565,6 +565,26 @@ html {
   color: #002d4f;
 }
 
+.values-marquee-container {
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.values-marquee-content {
+  display: inline-block;
+  animation: marquee 18s linear infinite;
+  padding-right: 1.5rem;
+}
+
+.values-marquee-item {
+  display: inline-block;
+  min-width: 150px;
+  text-align: center;
+  color: #fff;
+  padding: 0 1rem;
+  vertical-align: top;
+}
+
 @keyframes marquee {
   0% {
     transform: translateX(0%);

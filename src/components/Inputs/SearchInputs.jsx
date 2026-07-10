@@ -15,16 +15,19 @@ import {
   getListingCitiesForCountry,
   UAE_ONLY_COUNTRY_OPTIONS,
 } from '@/libs/listingLocationUtils'
+import { OFF_PLAN_DUMMY_LISTINGS } from '@/constants/offPlanDummyListings'
 
 const CATEGORY_ENDPOINTS = {
   Boat: '/boat',
   'Property For Sale': '/property',
+  'Property Off Plan For Sale': '/offplan',
   Car: '/car',
   Jewelry: '/jewelry',
 }
 
 const CATEGORY_OPTIONS = [
   { value: 'Property For Sale', label: 'Properties For Sale' },
+  { value: 'Property Off Plan For Sale', label: 'Off Plan' },
   { value: 'Jewelry', label: 'Jewellery' },
   { value: 'Car', label: 'Cars' },
   { value: 'Boat', label: 'Boats' },
@@ -60,6 +63,9 @@ const SearchInputs = ({ setIsOpen, variant = 'hero' }) => {
     if (category === 'Property For Sale') {
       pathCategory = 'property'
       query.append('assetType', `${category}`)
+    } else if (category === 'Property Off Plan For Sale') {
+      pathCategory = 'offplan'
+      query.append('assetType', `${category}`)
     }
 
     if (router) {
@@ -76,7 +82,7 @@ const SearchInputs = ({ setIsOpen, variant = 'hero' }) => {
   useEffect(() => {
     if (!category) return
 
-    if (category === 'Property For Sale') {
+    if (category === 'Property For Sale' || category === 'Property Off Plan For Sale') {
       setPriceOptions(propertyPricesForFilter)
     } else if (category === 'Boat') {
       setPriceOptions(boatPricesForFilter)
@@ -105,14 +111,20 @@ const SearchInputs = ({ setIsOpen, variant = 'hero' }) => {
     const fetchLocations = async () => {
       setCountryLoading(true)
       try {
-        const response = await customAxios.get(
-          `${process.env.NEXT_PUBLIC_BASE_URL}${endpoint}`,
-          { params: { limit: 500, statusFilter: 1 } },
-        )
+        let products = []
+
+        if (category === 'Property Off Plan For Sale') {
+          products = OFF_PLAN_DUMMY_LISTINGS
+        } else {
+          const response = await customAxios.get(
+            `${process.env.NEXT_PUBLIC_BASE_URL}${endpoint}`,
+            { params: { limit: 500, statusFilter: 1 } },
+          )
+          products = response?.data?.products || []
+        }
 
         if (cancelled) return
 
-        const products = response?.data?.products || []
         const formattedMap = buildCountryToCitiesMap(products)
 
         locationCacheRef.current[category] = {

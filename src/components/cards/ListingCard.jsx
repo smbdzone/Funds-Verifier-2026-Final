@@ -34,12 +34,14 @@ import {
   getListingEditPath,
   getPendingEvaluationViewPath,
 } from '@/libs/listingEditPaths'
+import { getListingDetailId } from '@/libs/listingSlug'
 
 const renderListingDetails = (listing, hasFeaturedStyling) => {
   switch (listing.assetType) {
     case 'Property For Lease':
     case 'Property For Sale':
     case 'Property Off Plan':
+    case 'Property Off Plan For Sale':
       return (
         <div className='flex flex-wrap gap-3 items-center mb-3'>
           <span className='bg-[#F5F5F5] shrink-0 rounded-full h-[25px] w-[25px] '></span>
@@ -422,10 +424,17 @@ const ListingCard = ({
                   : ''
                   }`}
               >
-                {assetTypeText} for Sale
+                {listing.assetType === 'Property Off Plan For Sale'
+                  ? 'Off Plan Property'
+                  : `${assetTypeText} for Sale`}
               </span>
 
-              <Link href={getDynamicLink(listing?.assetType, listing.uuid)}>
+              <Link
+                href={getDynamicLink(
+                  listing?.assetType,
+                  getListingDetailId(listing),
+                )}
+              >
                 {hasFeaturedStyling ? (
                   <div className='flex items-center'>
                     <h2 className='text-gradient-custom lg:text-3xl sm:text-xl text-lg font-semibold capitalize'>

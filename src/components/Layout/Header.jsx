@@ -62,6 +62,9 @@ const Header = () => {
           <Link href='/aboutus'>
             <li className={navLinkClass('/aboutus')}>About</li>
           </Link>
+          <Link href='/offplan'>
+            <li className={navLinkClass('/offplan')}>Off Plan</li>
+          </Link>
           <Link href='/auctions'>
             <li className={`${navLinkClass('/auctions')} flex flex-col items-center`}>
               <span className='mb-0.5 block text-[8px] font-medium uppercase leading-none tracking-[0.12em] text-reefGold'>
@@ -152,6 +155,15 @@ const Header = () => {
                         >
                           Categories
                         </li>
+
+                        <Link href='/offplan'>
+                          <li
+                            onClick={() => setIsOpen(false)}
+                            className='cursor-pointer text-center text-lg text-white'
+                          >
+                            Off Plan
+                          </li>
+                        </Link>
 
                         <Link href='/auctions'>
                           <li

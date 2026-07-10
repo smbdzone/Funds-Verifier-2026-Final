@@ -1,5 +1,6 @@
 import React, { Suspense } from 'react'
 import Link from 'next/link'
+import { redirect } from 'next/navigation'
 import ButtomSlider from '@/components/Product_page/Buttom_slider'
 import JewelleryView from '@/components/modules/Jewelry/JewelleryView'
 import { api } from '@/config'
@@ -54,6 +55,10 @@ export default async function page({ params }) {
   }
 
   const { propertyInfo, propertyData } = data
+
+  if (propertyInfo?.slug && id === propertyInfo.uuid) {
+    redirect(`/jewelry/${propertyInfo.slug}`)
+  }
 
   return (
     <div className='w-full pb-8'>

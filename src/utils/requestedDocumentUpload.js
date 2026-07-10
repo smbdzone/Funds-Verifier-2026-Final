@@ -1,5 +1,6 @@
 import customAxios from './apis/apis'
 import { getListingDocumentSrc } from '@/libs/listingCardMedia'
+import { isOffPlanListing } from '@/libs/filterMyListingTab'
 import {
   formatRequestDocumentDate,
   isRequestDocumentFulfilled,
@@ -10,6 +11,7 @@ import {
 
 const ASSET_ENDPOINTS = {
   Property: '/property',
+  OffPlan: '/property',
   Car: '/car',
   Boats: '/boat',
   Jewellery: '/jewelry',
@@ -19,6 +21,8 @@ const ASSET_HOLDER_LISTING_QUERY = { dashboard: true, limit: 200, page: 1 }
 const TRUSTEE_LISTING_QUERY = { limit: 500, page: 1 }
 
 export function resolveListingType(listing) {
+  if (isOffPlanListing(listing)) return 'OffPlan'
+
   const assetType = String(listing?.assetType || '')
   if (/property/i.test(assetType)) return 'Property'
   if (/car/i.test(assetType)) return 'Car'
@@ -26,6 +30,7 @@ export function resolveListingType(listing) {
   if (/jewell/i.test(assetType)) return 'Jewellery'
 
   const type = String(listing?.type || listing?.listingType || '').toLowerCase()
+  if (type === 'offplan' || type === 'off plan') return 'OffPlan'
   if (type === 'property') return 'Property'
   if (type === 'car') return 'Car'
   if (type === 'boat' || type === 'boats') return 'Boats'
@@ -34,7 +39,11 @@ export function resolveListingType(listing) {
 }
 
 export function getListingApiUrl(assetType, listingId) {
-  const endpoint = ASSET_ENDPOINTS[assetType]
+  const resolvedType =
+    ASSET_ENDPOINTS[assetType] != null
+      ? assetType
+      : resolveListingType({ assetType, listingType: assetType })
+  const endpoint = ASSET_ENDPOINTS[resolvedType]
   if (!endpoint || !listingId) return null
   return `${process.env.NEXT_PUBLIC_BASE_URL}${endpoint}/${listingId}`
 }
@@ -46,6 +55,18 @@ function normalizeListings(data, type) {
       ? data
       : []
   return items.map((item) => ({ ...item, listingType: type }))
+}
+
+function normalizePropertyListings(data) {
+  const items = Array.isArray(data?.products)
+    ? data.products
+    : Array.isArray(data)
+      ? data
+      : []
+  return items.map((item) => ({
+    ...item,
+    listingType: isOffPlanListing(item) ? 'OffPlan' : 'Property',
+  }))
 }
 
 function isActiveListing(item) {
@@ -61,7 +82,7 @@ async function fetchAssetHolderListings() {
   ])
 
   return [
-    ...normalizeListings(propertyRes.data, 'Property'),
+    ...normalizePropertyListings(propertyRes.data),
     ...normalizeListings(carRes.data, 'Car'),
     ...normalizeListings(boatRes.data, 'Boats'),
     ...normalizeListings(jewelryRes.data, 'Jewellery'),
@@ -77,7 +98,7 @@ export async function fetchTrusteeListings() {
   ])
 
   return [
-    ...normalizeListings(propertyRes.data, 'Property').filter(isActiveListing),
+    ...normalizePropertyListings(propertyRes.data).filter(isActiveListing),
     ...normalizeListings(carRes.data, 'Car').filter(isActiveListing),
     ...normalizeListings(boatRes.data, 'Boats').filter(isActiveListing),
     ...normalizeListings(jewelryRes.data, 'Jewellery').filter(isActiveListing),
@@ -101,6 +122,8 @@ function mapListingDocumentRequests(listing) {
 
 export function formatDocumentAssetType(value) {
   if (!value) return '—'
+  if (value === 'OffPlan') return 'Off Plan'
+  if (/off\s*plan/i.test(String(value))) return 'Off Plan'
   return String(value).replace(/([a-z])([A-Z])/g, '$1 $2')
 }
 

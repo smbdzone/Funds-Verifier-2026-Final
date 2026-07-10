@@ -2,42 +2,24 @@ import arrow_right from "@/assets/vector1.svg";
 import { useSwiper } from "swiper/react";
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
 
 export default function FundTypeSlide({ data }) {
   const swiper = useSwiper();
-  const [itemsToShow, setItemsToShow] = useState(3); // Default to 3 items
-  const items = new Array(3).fill(null);
 
-  // Adjust items based on window width
-  const adjustItems = () => {
-    if (window.innerWidth >= 1280) {
-      setItemsToShow(3); // Desktop
-    } else if (window.innerWidth >= 800) {
-      setItemsToShow(2); // Tablet
-    } else {
-      setItemsToShow(1); // Mobile
-    }
-  };
-
-  useEffect(() => {
-    // Set initial value based on screen size
-    adjustItems();
-
-    // Add resize event listener
-    window.addEventListener("resize", adjustItems);
-
-    // Cleanup event listener on component unmount
-    return () => {
-      window.removeEventListener("resize", adjustItems);
-    };
-  }, []);
-
-  // Function to generate the dynamic URL based on the slide title and context type
   const generateUrl = (slideTitle, contextType) => {
     switch (slideTitle.toLowerCase()) {
       case "property types":
         return `/property?propertyType=${encodeURIComponent(contextType)}`;
+      case "off plan properties":
+        return "/offplan";
+      case "boat types": {
+        const boatLinks = {
+          Yacht: "/boat?category=Motorboats&model=Yacht",
+          "Fishing Boat": "/boat?category=Motorboats&model=Fishing%20Boat",
+          Sailboats: "/boat?category=Sailboats",
+        };
+        return boatLinks[contextType] || "/boat";
+      }
       case "car types":
         return `/car?propertyType=${encodeURIComponent(contextType)}`;
       case "jewellery types":
@@ -119,45 +101,39 @@ export default function FundTypeSlide({ data }) {
           </div>
         </div>
       </div>
-      <div
-        className={`grid ${itemsToShow === 3
-            ? "xl:grid-cols-3"
-            : itemsToShow === 2
-              ? "md:grid-cols-2"
-              : "grid-cols-1"
-          } gap-x-8`}
-      >
-        {data.context_types.slice(0, itemsToShow).map((type, index) => (
-          <div
-            key={index}
-            className="shadow-[0px_0px_8px_rgba(0,_0,_0,_0.15)] rounded-md bg-white col-span-1"
-          >
-            <div className="flex w-full h-[170px]">
-              <Image
-                width={350}
-                height={350}
-                className="rounded-md object-cover"
-                alt="photo"
-                src={data.photos[index]}
-              />
-            </div>
-            <div className="px-2">
-              <div className="text-[#002D4F] mt-4 mb-2 text-center text-xl font-medium w-full inline-block">
-                {data.context_types[index]}
+
+      <div className="w-full min-w-0 overflow-x-auto">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3 min-w-0">
+          {data.context_types.map((type, index) => (
+            <div
+              key={type}
+              className="shadow-[0px_0px_8px_rgba(0,_0,_0,_0.15)] rounded-md bg-white h-full"
+            >
+              <div className="flex w-full h-[170px]">
+                <Image
+                  width={350}
+                  height={350}
+                  className="rounded-md object-cover w-full h-[170px]"
+                  alt={type}
+                  src={data.photos[index]}
+                />
               </div>
-              <div className="text-xs leading-[22px] w-full text-center text-black inline-block px-3">
-                {data.context_descriptions?.[index] || data.slide_description}
+              <div className="px-2 pb-4">
+                <div className="text-[#002D4F] mt-4 mb-2 text-center text-xl font-medium w-full inline-block">
+                  {type}
+                </div>
+                <div className="text-xs leading-[22px] w-full text-center text-black inline-block px-3 min-h-[44px]">
+                  {data.context_descriptions?.[index] || data.slide_description}
+                </div>
+                <Link href={generateUrl(data.slide_title, type)}>
+                  <span className="text-sm my-3 cursor-pointer text-[#002D4F] [text-decoration:underline] font-medium inline-block w-full text-center">
+                    View All
+                  </span>
+                </Link>
               </div>
-              <Link
-                href={generateUrl(data.slide_title, data.context_types[index])}
-              >
-                <span className="text-sm my-3 cursor-pointer text-[#002D4F] [text-decoration:underline] font-medium inline-block w-full text-center">
-                  View All
-                </span>
-              </Link>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </div>
   );

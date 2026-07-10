@@ -12,6 +12,7 @@ const PropertySizeField = ({
   sizeSQFT = '',
   sizeSQM = '',
   sizeUnit = 'SQFT',
+  label = 'Property size',
   errors,
   errorsMessage,
   disabled,
@@ -37,13 +38,13 @@ const PropertySizeField = ({
   const handleUnitPick = (unit) => {
     setUnitOpen(false)
     if (unit !== sizeUnit) {
-      onSizeChange?.({ sizeSQFT, sizeSQM, sizeUnit: unit })
+      onSizeChange?.({ sizeSQFT, sizeSQM, sizeUnit: unit, sizeType: unit })
     }
   }
 
   return (
     <div className='relative w-full'>
-      <ListingFieldLabel label='Property size' required />
+      <ListingFieldLabel label={label} required />
       <div
         className={`flex w-full items-stretch shadow-neons ${errors ? 'input-field-error' : ''}`}
       >
@@ -87,7 +88,7 @@ const PropertySizeField = ({
         />
       </div>
       {errors ? (
-        <span className='absolute top-[calc(100%-4px)] text-xs font-medium text-red-500 lg:text-sm'>
+        <span className='mt-1 text-xs font-medium text-red-500 lg:text-sm'>
           **{errorsMessage}
         </span>
       ) : null}

@@ -32,6 +32,7 @@ import PayModal from '../../../../components/Modals/PayModal'
 import { useProfile } from '../../../../context/UserContext'
 import StripeElement from '../../../../components/Stripe/StripeElement'
 import customAxios from '../../../../utils/apis/apis'
+import { generateListingSlug } from '@/libs/listingSlug'
 import { useRefreshListingAfterServicePayment } from '@/hooks/useRefreshListingAfterServicePayment'
 import { useRestoreListingAfterClozerPayment } from '@/hooks/useRestoreListingAfterClozerPayment'
 import {
@@ -84,6 +85,7 @@ function Page() {
     make: '',
     grams: '',
     title: '',
+    slug: '',
     phoneNumber: '',
     condition: '',
     price: '',
@@ -217,6 +219,15 @@ function Page() {
       setLoading(false)
     }
   }, [searchParams])
+
+  useEffect(() => {
+    if (!formData?.title) return
+
+    const nextSlug = generateListingSlug(formData.title)
+    if (formData.slug === nextSlug) return
+
+    setFormData((prev) => ({ ...prev, slug: nextSlug }))
+  }, [formData?.title, formData?.slug, setFormData])
 
   useRefreshListingAfterServicePayment(id, 'jewelry', fetchData)
   useRestoreListingAfterClozerPayment(setFormData)

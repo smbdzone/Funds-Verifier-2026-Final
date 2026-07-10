@@ -10,12 +10,15 @@ const ASSET_TYPE_ROUTE = {
 export function getListingRouteSegment(listing = {}) {
   if (listing.type) return String(listing.type).toLowerCase()
   const assetType = String(listing.assetType || '').toLowerCase()
+  if (assetType.includes('off plan')) return 'offplan'
   return ASSET_TYPE_ROUTE[assetType] || 'property'
 }
 
+import { getListingDetailId } from '@/libs/listingSlug'
+
 export function getListingSharePath(listing = {}) {
   const segment = getListingRouteSegment(listing)
-  const id = listing.uuid || listing.slug || listing._id
+  const id = getListingDetailId(listing)
   if (!id) return '/'
   return `/${segment}/${id}`
 }
@@ -82,10 +85,15 @@ export function getListingShareDescription(listing = {}) {
 
   const text = String(raw).replace(/\s+/g, ' ').trim()
   const price = Number(listing?.price)
-  const priceLabel =
-    Number.isFinite(price) && price > 0
-      ? `AED ${price.toLocaleString('en-US')}`
-      : ''
+  const priceFrom = Number(listing?.priceFrom)
+  const priceTo = Number(listing?.priceTo)
+  let priceLabel = ''
+
+  if (Number.isFinite(price) && price > 0) {
+    priceLabel = `AED ${price.toLocaleString('en-US')}`
+  } else if (Number.isFinite(priceFrom) && Number.isFinite(priceTo)) {
+    priceLabel = `AED ${priceFrom.toLocaleString('en-US')} - ${priceTo.toLocaleString('en-US')}`
+  }
 
   return (
     [text, priceLabel].filter(Boolean).join(' — ') ||

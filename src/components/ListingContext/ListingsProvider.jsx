@@ -34,6 +34,7 @@ import {
   LISTING_IMAGE_MAX_COUNT,
   LISTING_VIDEO_MAX_COUNT,
 } from '@/constants/listingUploadLimits'
+import { createDefaultOffPlanPaymentPlan, reindexOffPlanPaymentPlan } from '@/constants/listing-data'
 
 const getMaxLengthForCountry = (country) => {
   const exampleNumber = getExampleNumber(country, metadata)
@@ -166,6 +167,19 @@ const ListingsProvider = ({ children }) => {
           description: d.description || '',
           additionalDescription: d.additionalDescription || '',
           country: countryNorm,
+          priceFrom: d.priceFrom ?? '',
+          priceTo: d.priceTo ?? '',
+          advertisementId: d.advertisementId || '',
+          deliveryQuarter: d.deliveryQuarter || '',
+          deliveryYear: d.deliveryYear || '',
+          sizeType: d.sizeType || d.sizeUnit || '',
+          layout: d.layout || '',
+          numberOfFloors: d.numberOfFloors || '',
+          availableApartment: d.availableApartment || '',
+          paymentPlan:
+            Array.isArray(d.paymentPlan) && d.paymentPlan.length
+              ? reindexOffPlanPaymentPlan(d.paymentPlan)
+              : createDefaultOffPlanPaymentPlan(),
         }
         setFormData(normalized)
         restorePendingPremiumModals(normalized)
@@ -660,8 +674,8 @@ const ListingsProvider = ({ children }) => {
   }
 
   const handleSelectOption = (dropdownName, option) => {
-    setFormData({ ...formData, [dropdownName]: option })
-    setDropdowns({ ...dropdowns, [dropdownName]: false })
+    setFormData((prev) => ({ ...prev, [dropdownName]: option }))
+    setDropdowns((prev) => ({ ...prev, [dropdownName]: false }))
   }
 
   const toggleModelDropdown = () => {

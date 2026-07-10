@@ -22,53 +22,60 @@ const ListingsDropdownInputComponents = ({
       {placeholder ? (
         <ListingFieldLabel label={placeholder} required={required} />
       ) : null}
-      <input
-        type='text'
-        className={`w-full shadow-neons h-[50px] pl-5 placeholder:text-dark-grey outline-with-opacity placeholder:text-[15px] placeholder:font-normal ${errors ? 'input-field-error ' : ''
-          }`}
-        placeholder={value ? '' : `Select ${placeholder}`}
-        name={name}
-        value={value}
-        readOnly={readOnly}
-        onClick={handleToggleDropdown}
-      />
+      <div className='relative w-full'>
+        <input
+          type='text'
+          className={`w-full shadow-neons h-[50px] pl-5 pr-10 placeholder:text-dark-grey outline-with-opacity placeholder:text-[15px] placeholder:font-normal ${errors ? 'input-field-error ' : ''
+            }`}
+          placeholder={value ? '' : `Select ${placeholder}`}
+          name={name}
+          value={value}
+          readOnly={readOnly}
+          onClick={handleToggleDropdown}
+        />
+
+        <button
+          type='button'
+          aria-label={`Toggle ${placeholder || name} dropdown`}
+          className='absolute right-3 top-1/2 flex -translate-y-1/2 flex-col items-center justify-center gap-0.5 cursor-pointer dropdown-toggle disabled:cursor-not-allowed'
+          onClick={handleToggleDropdown}
+          disabled={disabled}
+        >
+          <Image
+            width={12}
+            height={12}
+            src='/listing/Vector.svg'
+            alt=''
+            className='toggle-icon pointer-events-none'
+          />
+          <Image
+            width={12}
+            height={12}
+            src='/listing/vector1.svg'
+            alt=''
+            className='toggle-icon rotate-180 pointer-events-none'
+          />
+        </button>
+
+        {dropdown && !disabled && (
+          <div className='absolute left-0 right-0 top-[calc(100%+4px)] z-10 flex max-h-80 flex-col gap-2 overflow-auto rounded-md border border-gray-200 bg-white shadow-md cursor-pointer dropdown-toggle'>
+            {dropdownOptions.map((option, index) => (
+              <div
+                key={index}
+                className='hover:bg-offwhite hover:text-reefGold p-3'
+                onClick={() => handleSelectOption(dropdownType, option)}
+              >
+                {option}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       {errors && (
-        <span className='text-red-500 lg:text-sm text-xs font-medium absolute top-[50px]'>
+        <span className='mt-1 text-xs font-medium text-red-500 lg:text-sm'>
           **{errorMessage}
         </span>
-      )}
-
-      <div className='absolute inset-y-0 right-0 top-3 flex flex-col gap-2 items-center pr-[15px] cursor-pointer dropdown-toggle'>
-        <Image
-          width={12}
-          height={12}
-          src='/listing/Vector.svg'
-          alt='Dropdown'
-          className='toggle-icon'
-          onClick={handleToggleDropdown}
-        />
-        <Image
-          width={12}
-          height={12}
-          src='/listing/vector1.svg'
-          alt='Dropdown'
-          className='toggle-icon rotate-180'
-          onClick={handleToggleDropdown}
-        />
-      </div>
-      {dropdown && !disabled && (
-        <div className='absolute z-10 inset-y-0 right-0 w-full h-80 overflow-auto bg-white border border-gray-2 rounded-md shadow-md top-[60px] flex flex-col gap-2 cursor-pointer dropdown-toggle'>
-          {dropdownOptions.map((option, index) => (
-            <div
-              key={index}
-              className='hover:bg-offwhite hover:text-reefGold p-3'
-              onClick={() => handleSelectOption(dropdownType, option)}
-            >
-              {option}
-            </div>
-          ))}
-        </div>
       )}
     </div>
   )

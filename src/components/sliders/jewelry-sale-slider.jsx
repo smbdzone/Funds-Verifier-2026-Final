@@ -13,6 +13,7 @@ import {
   getListingCardImageSrc,
   PLACEHOLDER,
 } from '@/libs/listingCardMedia'
+import { getListingDetailId } from '@/libs/listingSlug'
 import { FaStar } from 'react-icons/fa'
 import location from '@/assets/vector2.svg'
 import avatar1 from '@/assets/avators/Avatars 1.png'
@@ -282,7 +283,7 @@ export default function JewelrySaleSlider() {
                           </div>
                         </div>
                         <Link
-                          href={`/jewelry/${item.slug || item.uuid}`}
+                          href={`/jewelry/${getListingDetailId(item)}`}
                           className='flex text-[#002D4F] md:text-xl text-sm font-medium w-full text-left capitalize'
                         >
                           {truncateTitle(item.title)}

@@ -25,6 +25,7 @@ import {
   isListingCarouselPlaceholderSlide,
   PLACEHOLDER,
 } from '@/libs/listingCardMedia'
+import { getListingSharePath } from '@/libs/listingSocialShare'
 
 const ProductCard = ({
   type,
@@ -63,6 +64,7 @@ const ProductCard = ({
   const { badge: premiumBadge } = getListingPremiumDisplay(item)
 
   const carouselSlides = getListingCarouselItems(item)
+  const listingHref = getListingSharePath({ ...item, type })
 
   return (
     <div
@@ -161,7 +163,7 @@ const ProductCard = ({
         className={`w-full text-base text-reef-gold`}
       >
         <div className='flex justify-between gap-2 w-full'>
-          <Link href={`/${type}/${item.uuid}`}>
+          <Link href={listingHref}>
             <h2
               className='xl:text-xl md:text-lg text-base font-semibold capitalize text-black'
             >

@@ -118,6 +118,9 @@ const Footer = () => {
                     <Link href='/property'>Properties For Sale</Link>
                   </li>
                   <li className='text-[12px] sm:text-base mb-2'>
+                    <Link href='/offplan'>Off Plan Properties</Link>
+                  </li>
+                  <li className='text-[12px] sm:text-base mb-2'>
                     <Link href='/car'>Cars For Sale</Link>
                   </li>
                   <li className='text-[12px] sm:text-base mb-2'>
@@ -260,6 +263,9 @@ const Footer = () => {
                   <ul className='space-y-2'>
                     <li>
                       <Link href='/property'>Properties For Sale</Link>
+                    </li>
+                    <li>
+                      <Link href='/offplan'>Off Plan Properties</Link>
                     </li>
                     <li>
                       <Link href='/car'>Cars For Sale</Link>
