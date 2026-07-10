@@ -685,7 +685,7 @@ const Page = () => {
           id
             ? 'Updated successfully'
             : isOffPlan
-              ? 'Submitted successfully'
+              ? 'Submitted successfully. Your off-plan listing is now live.'
               : 'Submitted successfully. Evaluator will evaluate it.',
         )
 

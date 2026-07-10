@@ -226,6 +226,7 @@ const NewListing = ({ formData, setFormData }) => {
           options={[
             "Property For Sale",
             "Property For Lease",
+            "Property Off Plan For Sale",
             "Car For Sale",
             "Boats For Sale",
             "Jewellery For Sale",
@@ -396,7 +397,8 @@ const NewListing = ({ formData, setFormData }) => {
 
         {/* Property Specific Fields */}
         {(formData.assetType === "Property For Sale" ||
-          formData.assetType === "Property For Lease") && (
+          formData.assetType === "Property For Lease" ||
+          formData.assetType === "Property Off Plan For Sale") && (
           <div className="relative border-r py-3 pr-4 w-full flex flex-col items-center justify-center">
             <button
               className="dropdownButton flex flex-col items-center text-light-blue"

@@ -4,6 +4,7 @@ export const globalFormInput = {
   city: "",
   phoneNumber: "",
   neighbourhood: "",
+  propertyType: "",
   title: "",
   slug: "",
   pictures: null,
@@ -14,8 +15,25 @@ export const globalFormInput = {
   technicalReport: "",
   evaluationDateTime: "",
   price: "",
+  priceFrom: "",
+  priceTo: "",
   description: "",
   additionalDescription: "",
+  bedrooms: "",
+  bathrooms: "",
+  developer: "",
+  advertisementId: "",
+  sizeSQFT: "",
+  sizeSQM: "",
+  sizeType: "SQFT",
+  deliveryQuarter: "",
+  deliveryYear: "",
+  layout: "",
+  numberOfFloors: "",
+  availableApartment: "",
+  paymentPlan: [],
+  facilities: [],
+  listings: [],
 };
 
 export const globalFormInputFields = [
@@ -112,6 +130,72 @@ export const globalFormInputFields = [
     required: false,
   },
 
+];
+
+/** Shared base fields for off-plan listings on add-asset (no single price / evaluation booking). */
+export const offPlanGlobalFormInputFields = [
+  {
+    type: "text",
+    label: "Title your property",
+    placeholder: "Title your property (max. 50 characters)",
+    name: "title",
+    maxLength: 50,
+    required: true,
+  },
+  {
+    type: "phoneNumber",
+    label: "Phone Number",
+    name: "phoneNumber",
+    placeholder: "Enter your phone number",
+    required: true,
+  },
+  {
+    type: "file",
+    mediaType: "thumbnail",
+    name: "thumbnailImg",
+    label: "Thumbnail",
+    acceptedFormats: "JPG, PNG, GIF",
+    maxSize: "2MB",
+    files: [],
+    formDataKey: "thumbnailImg",
+    multiple: false,
+    errorKey: "thumbnail",
+    required: true,
+  },
+  {
+    type: "file",
+    mediaType: "pictures",
+    name: "pictures",
+    label: "Pictures",
+    acceptedFormats: "JPG, PNG, GIF. Up to 10 images, 2MB each (select up to 10 at once)",
+    maxSize: "2MB each (max 10)",
+    files: [],
+    formDataKey: "pictures",
+    multiple: true,
+    errorKey: "pictures",
+    required: true,
+  },
+  {
+    type: "file",
+    mediaType: "video",
+    name: "video",
+    label: "Video",
+    acceptedFormats: "MP4, MOV. Optional — up to 2 videos, 5MB each",
+    maxSize: "5MB each (max 2)",
+    files: [],
+    formDataKey: "video",
+    multiple: true,
+    errorKey: "video",
+    required: false,
+  },
+  {
+    type: "textarea",
+    label: "Tell us about your property",
+    name: "description",
+    placeholder: "Tell us about your property (max. 300 characters)",
+    maxLength: 300,
+    required: true,
+  },
 ];
 
 export const propertyFormFields = [
@@ -1294,6 +1378,18 @@ export const apartmentLayoutUploads = [
   { key: "threeBhkDuplexLayout", label: "3 BHK Duplex Unit Layout" },
   { key: "penthouseLayout", label: "Penthouse Unit Layout" },
 ];
+
+export const OFF_PLAN_MEDIA_KEYS = [
+  "unitLayout",
+  "floorPlan",
+  ...apartmentLayoutUploads.map((item) => item.key),
+];
+
+export const createEmptyOffPlanMedia = () =>
+  OFF_PLAN_MEDIA_KEYS.reduce((acc, key) => {
+    acc[key] = null;
+    return acc;
+  }, {});
 
 export const OFF_PLAN_PAYMENT_STEP_META = [
   { stepLabel: "1: First Step", paymentLabel: "Down Payment" },

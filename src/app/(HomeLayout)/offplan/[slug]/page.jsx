@@ -4,13 +4,13 @@ import OffPlanProductView from '@/components/offplan/OffPlanProductView'
 import OffPlanPropertyCard from '@/components/offplan/OffPlanPropertyCard'
 import GlobalLoader from '@/utils/GlobalLoader'
 import {
-  OFF_PLAN_DUMMY_LISTINGS,
-  getOffPlanListingBySlug,
-} from '@/constants/offPlanDummyListings'
+  fetchApprovedOffPlanListings,
+  fetchOffPlanListingBySlug,
+} from '@/libs/offPlanListings'
 
 export async function generateMetadata({ params }) {
   const { slug } = await params
-  const listing = getOffPlanListingBySlug(slug)
+  const listing = await fetchOffPlanListingBySlug(slug)
 
   if (!listing) {
     return { title: 'Off-plan property not found | Funds Verifier' }
@@ -24,7 +24,7 @@ export async function generateMetadata({ params }) {
 
 export default async function OffPlanDetailPage({ params }) {
   const { slug } = await params
-  const listing = getOffPlanListingBySlug(slug)
+  const listing = await fetchOffPlanListingBySlug(slug)
 
   if (!listing) {
     return (
@@ -34,9 +34,10 @@ export default async function OffPlanDetailPage({ params }) {
     )
   }
 
-  const relatedListings = OFF_PLAN_DUMMY_LISTINGS.filter(
-    (item) => item.slug !== listing.slug,
-  ).slice(0, 3)
+  const allListings = await fetchApprovedOffPlanListings({ limit: 50 })
+  const relatedListings = allListings
+    .filter((item) => item.slug !== listing.slug)
+    .slice(0, 3)
 
   return (
     <div className='w-full sm:pb-8'>

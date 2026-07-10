@@ -6,6 +6,7 @@ import { routes } from '@/libs/api'
 import Image from 'next/image'
 import { toast, ToastContainer } from 'react-toastify'
 import NewListing from '@/components/global/NewListing'
+import AddAssetOffPlanFields from '@/components/AddListing/AddAssetOffPlanFields'
 import {
   boatCheckBoxFields,
   boatFormFields,
@@ -13,11 +14,18 @@ import {
   carFormFields,
   globalFormInput,
   globalFormInputFields,
+  offPlanGlobalFormInputFields,
   jewelleryCheckBoxFields,
   jewelleryFormFields,
   propertyCheckBoxFields,
   propertyFormFields,
   propertyLeaseFields,
+  createDefaultOffPlanPaymentPlan,
+  createEmptyOffPlanMedia,
+  OFF_PLAN_MEDIA_KEYS,
+  reindexOffPlanPaymentPlan,
+  addOffPlanPaymentStep,
+  removeOffPlanPaymentStep,
 } from '@/constants/listing-data'
 import TextInput from '@/components/AddListing/TextInput'
 import FileUpload from '@/components/AddListing/FileUpload'
@@ -28,7 +36,7 @@ import BookingField from '@/components/AddListing/BookingField'
 import ConfirmationModal from '@/components/AddListing/ConfirmationModal'
 import { IoReload } from 'react-icons/io5'
 import propertyAd from '@/assets/images/advertisement.png'
-import { validateAsset } from '../../../../utils/validateForms'
+import { validateAsset, validateOffPlanAsset } from '../../../../utils/validateForms'
 import {
   handleImageUpload,
   handleVideoUpload,
@@ -40,6 +48,7 @@ import {
   ensureWithinSize,
   isCompressionConfigured,
 } from '@/libs/imageCompression'
+import { listingMediaRef } from '@/libs/listingMediaRef'
 
 export const dynamic = 'force-dynamic'
 const Page = () => {
@@ -65,13 +74,44 @@ const Page = () => {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [confirmationModal, setConfirmationModal] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [offPlanMedia, setOffPlanMedia] = useState(createEmptyOffPlanMedia)
+  const [totalPriceFrom, setTotalPriceFrom] = useState('')
+  const [totalPriceTo, setTotalPriceTo] = useState('')
+
+  const isOffPlan = formData.assetType === 'Property Off Plan For Sale'
 
   useEffect(() => {
-    setFormData((prev) => ({
-      ...globalFormInput,
-      assetType: prev.assetType,
-    }))
+    setFormData((prev) => {
+      const next = {
+        ...globalFormInput,
+        assetType: prev.assetType,
+      }
+      if (prev.assetType === 'Property Off Plan For Sale') {
+        next.paymentPlan = createDefaultOffPlanPaymentPlan()
+      }
+      return next
+    })
+    if (formData.assetType === 'Property Off Plan For Sale') {
+      setOffPlanMedia(createEmptyOffPlanMedia())
+    }
   }, [formData.assetType])
+
+  useEffect(() => {
+    if (formData?.priceFrom != null && formData.priceFrom !== '') {
+      setTotalPriceFrom(
+        new Intl.NumberFormat('en-US').format(String(formData.priceFrom)),
+      )
+    } else {
+      setTotalPriceFrom('')
+    }
+    if (formData?.priceTo != null && formData.priceTo !== '') {
+      setTotalPriceTo(
+        new Intl.NumberFormat('en-US').format(String(formData.priceTo)),
+      )
+    } else {
+      setTotalPriceTo('')
+    }
+  }, [formData?.priceFrom, formData?.priceTo])
 
   // Function to generate a slug
   const generateSlug = (title) => {
@@ -113,9 +153,14 @@ const Page = () => {
     setSelectedCountryPhone(countryCode)
   }
 
+  const getFileFormKey = (mediaType) => {
+    if (mediaType === 'thumbnail') return 'thumbnailImg'
+    return mediaType
+  }
+
   // General input change handler
   const handleInputChange = (name, value) => {
-    if (name === 'price') {
+    if (name === 'price' || name === 'priceFrom' || name === 'priceTo') {
       const rawValue = value.replace(/[^\d]/g, '')
       if (/^\d*$/.test(rawValue)) {
         setFormData((prevFormData) => ({
@@ -152,6 +197,56 @@ const Page = () => {
     })
   }
 
+  const handleDropdownSelect = (name, value) => {
+    handleInputChange(name, value)
+    setDropdownOpen('')
+  }
+
+  const handleOffPlanImageChange = (key) => (event) => {
+    const selectedFile = event.target.files?.[0]
+    if (!selectedFile) return
+    setOffPlanMedia((prev) => ({ ...prev, [key]: selectedFile }))
+    event.target.value = null
+  }
+
+  const handleOffPlanImageRemove = (key) => {
+    setOffPlanMedia((prev) => ({ ...prev, [key]: null }))
+    setFormData((prev) => ({ ...prev, [key]: null }))
+  }
+
+  const handlePaymentPlanStepChange = (index, field, value) => {
+    setFormData((prev) => {
+      const plan = reindexOffPlanPaymentPlan(
+        prev.paymentPlan?.length
+          ? [...prev.paymentPlan]
+          : createDefaultOffPlanPaymentPlan(),
+      )
+      plan[index] = { ...plan[index], [field]: value }
+      return { ...prev, paymentPlan: reindexOffPlanPaymentPlan(plan) }
+    })
+  }
+
+  const handlePaymentPlanStepRemove = (index) => {
+    setFormData((prev) => ({
+      ...prev,
+      paymentPlan: removeOffPlanPaymentStep(prev.paymentPlan || [], index),
+    }))
+  }
+
+  const handlePaymentPlanStepAdd = () => {
+    setFormData((prev) => ({
+      ...prev,
+      paymentPlan: addOffPlanPaymentStep(prev.paymentPlan || []),
+    }))
+  }
+
+  const getValidationErrors = () => {
+    if (isOffPlan) {
+      return validateOffPlanAsset(formData, offPlanGlobalFormInputFields)
+    }
+    return validateAsset(formData, globalFormInputFields)
+  }
+
   // Dropdown open handling
   const handleDropdownOpen = (name) => {
     setDropdownOpen((prevOpen) => (prevOpen === name ? '' : name))
@@ -173,7 +268,7 @@ const Page = () => {
     })
   }
 
-  const handleFileChange = async (e, mediaType, maxSize) => {
+  const handleFileChange = async (e, mediaType, maxSize = 2) => {
     const files = Array.from(e.target.files)
     const maxSizeInBytes = maxSize * 1024 * 1024
     const hasOversized = files.some((file) => file.size > maxSizeInBytes)
@@ -214,7 +309,10 @@ const Page = () => {
     }))
 
     if (mediaType === 'thumbnail') {
-      setFormData((prev) => ({ ...prev, [mediaType]: processed[0] }))
+      setFormData((prev) => ({
+        ...prev,
+        [getFileFormKey(mediaType)]: processed[0],
+      }))
     } else if (mediaType === 'pictures') {
       setFormData((prev) => ({
         ...prev,
@@ -227,16 +325,16 @@ const Page = () => {
 
   // File removal handler
   const handleFileRemove = (mediaType, index) => {
+    const formKey = getFileFormKey(mediaType)
     setFormData((prevFormData) => {
       if (mediaType === 'pictures') {
-        const updatedPictures = prevFormData.pictures.filter(
-          (_, i) => i !== index
+        const updatedPictures = (prevFormData.pictures || []).filter(
+          (_, i) => i !== index,
         )
 
         return { ...prevFormData, pictures: updatedPictures }
-      } else {
-        return { ...prevFormData, [mediaType]: null }
       }
+      return { ...prevFormData, [formKey]: null }
     })
   }
 
@@ -295,9 +393,18 @@ const Page = () => {
             label={field.label}
             acceptedFormats={field.acceptedFormats}
             maxSize={field.maxSize}
-            files={formData[field.mediaType] || []}
+            files={
+              formData[field.formDataKey || getFileFormKey(field.mediaType)] ||
+              (field.mediaType === 'pictures' ? [] : null)
+            }
             errors={errors}
-            onFileChange={(e) => handleFileChange(e, field.mediaType)}
+            onFileChange={(e) =>
+              handleFileChange(
+                e,
+                field.mediaType,
+                field.mediaType === 'video' ? 5 : 2,
+              )
+            }
             onFileRemove={handleFileRemove}
             formData={formData}
           />
@@ -354,26 +461,23 @@ const Page = () => {
     }
   }
 
-  const submitConfirmation = async (e) => {
-    {
-      const validationErrors = validateAsset(formData, globalFormInputFields)
+  const submitConfirmation = async () => {
+    const validationErrors = getValidationErrors()
 
-      if (Object.keys(validationErrors).length > 0) {
-        setErrors(validationErrors)
-        setLoading(false)
-        return
-      } else setConfirmationModal(true)
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors)
+      setLoading(false)
+      return
     }
+    setConfirmationModal(true)
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
 
-    // Validate form data before creating FormData object
-    const validationErrors = validateAsset(formData, globalFormInputFields)
+    const validationErrors = getValidationErrors()
 
-    // If there are validation errors, display them and stop submission
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors)
       setLoading(false)
@@ -381,50 +485,65 @@ const Page = () => {
     }
 
     try {
-      // Handle image uploads
-      let uploadedImageIDs = []
+      let uploadedImages = null
       if (formData.pictures && formData.pictures.length > 0) {
-        const imageUploadResponse = await handleImageUpload(formData.pictures)
-        uploadedImageIDs.push(imageUploadResponse.uuid)
+        uploadedImages = await handleImageUpload(formData.pictures)
       }
 
-      // Handle video upload
       let uploadedVideoID = null
       if (formData.video) {
         const videoUploadResponse = await handleVideoUpload(formData.video)
-        uploadedVideoID = videoUploadResponse.uuid
+        uploadedVideoID = videoUploadResponse
       }
 
-      // Handle thumbnail image upload
       let uploadedThumbnailID = null
-      if (formData.thumbnailImg) {
-        const thumbnailUploadResponse = await handleThumbnailUpload(
-          formData.thumbnailImg
-        )
-        uploadedThumbnailID = thumbnailUploadResponse.uuid
+      const thumbnailFile = formData.thumbnailImg || formData.thumbnail
+      if (thumbnailFile) {
+        uploadedThumbnailID = await handleThumbnailUpload(thumbnailFile)
       }
 
-      // Handle evaluation certificate upload
       let uploadedCertificateID = null
       if (formData.evaluationCertificate) {
-        const certificateUploadResponse = await handleFileUpload(
-          formData.evaluationCertificate
+        uploadedCertificateID = await handleFileUpload(
+          formData.evaluationCertificate,
         )
-        uploadedCertificateID = certificateUploadResponse.uuid
       }
 
-      // Prepare the final form data object
+      const offPlanMediaRefs = {}
+      if (isOffPlan) {
+        for (const key of OFF_PLAN_MEDIA_KEYS) {
+          const media = offPlanMedia[key]
+          if (media instanceof File) {
+            const uploaded = await handleImageUpload([media])
+            offPlanMediaRefs[key] = listingMediaRef(uploaded)
+          }
+        }
+      }
+
       const finalFormData = {
         ...formData,
-        pictures: uploadedImageIDs,
-        ...(uploadedVideoID && { video: uploadedVideoID }),
-        ...(uploadedThumbnailID && { thumbnailImg: uploadedThumbnailID }),
+        pictures: listingMediaRef(uploadedImages),
+        ...(uploadedVideoID && { video: listingMediaRef(uploadedVideoID) }),
+        ...(uploadedThumbnailID && {
+          thumbnailImg: listingMediaRef(uploadedThumbnailID),
+        }),
         ...(uploadedCertificateID && {
-          evaluationCertificate: uploadedCertificateID,
+          evaluationCertificate: listingMediaRef(uploadedCertificateID),
+        }),
+        ...(isOffPlan && {
+          priceFrom: formData.priceFrom ? Number(formData.priceFrom) : undefined,
+          priceTo: formData.priceTo ? Number(formData.priceTo) : undefined,
+          price: Number(formData.priceFrom || 0),
+          sizeSQFT: formData.sizeSQFT ? Number(formData.sizeSQFT) : 0,
+          sizeUnit: formData.sizeType || 'SQFT',
+          propertyForSale: 'Yes',
+          paymentPlan: reindexOffPlanPaymentPlan(
+            Array.isArray(formData.paymentPlan) ? formData.paymentPlan : [],
+          ),
+          ...offPlanMediaRefs,
         }),
       }
 
-      // Determine which API route to call based on asset type
       let apiRoute = ''
       switch (formData.assetType) {
         case 'Car For Sale':
@@ -438,6 +557,7 @@ const Page = () => {
           break
         case 'Property For Sale':
         case 'Property For Lease':
+        case 'Property Off Plan For Sale':
           apiRoute = routes.propertyListing
           break
         default:
@@ -447,9 +567,12 @@ const Page = () => {
       // Submit the form data to the API
       const response = await customAxios.post(apiRoute, finalFormData)
 
-      // Handle success response
-      if (response.data.success) {
-        toast.success('Asset created successfully!')
+      if (response?.data?.property || response?.status === 200 || response?.status === 201) {
+        toast.success(
+          isOffPlan
+            ? 'Off-plan listing submitted. It is now live on the site.'
+            : 'Asset created successfully!',
+        )
       } else {
         throw new Error('Error creating asset')
       }
@@ -473,7 +596,28 @@ const Page = () => {
           <NewListing formData={formData} setFormData={setFormData} />
 
           <form className='w-full  min-w-full p-10 grid grid-cols-1 lg:grid-cols-2 gap-5'>
-            {globalFormInputFields.map((field) => renderField(field))}
+            {(isOffPlan ? offPlanGlobalFormInputFields : globalFormInputFields).map(
+              (field) => renderField(field),
+            )}
+
+            {isOffPlan && (
+              <AddAssetOffPlanFields
+                formData={formData}
+                errors={errors}
+                dropdownOpen={dropdownOpen}
+                onDropdownOpen={handleDropdownOpen}
+                onInputChange={handleInputChange}
+                onSelectOption={handleDropdownSelect}
+                totalPriceFrom={totalPriceFrom}
+                totalPriceTo={totalPriceTo}
+                offPlanMedia={offPlanMedia}
+                onOffPlanImageChange={handleOffPlanImageChange}
+                onOffPlanImageRemove={handleOffPlanImageRemove}
+                onPaymentPlanStepChange={handlePaymentPlanStepChange}
+                onPaymentPlanStepRemove={handlePaymentPlanStepRemove}
+                onPaymentPlanStepAdd={handlePaymentPlanStepAdd}
+              />
+            )}
 
             {formData.assetType === 'Property For Lease' &&
               propertyLeaseFields.map((field) => renderField(field))}
@@ -514,6 +658,18 @@ const Page = () => {
                   </div>
                 </>
               )}
+            {isOffPlan && (
+              <div className='grid col-span-2 place-items-center mt-[49px]'>
+                <Image
+                  width={1500}
+                  quality={90}
+                  className='w-[98%]'
+                  height={700}
+                  src={propertyAd}
+                  alt='off-plan property'
+                />
+              </div>
+            )}
             {formData.assetType === 'Car For Sale' && (
               <>
                 {carFormFields.map((field) => renderField(field))}

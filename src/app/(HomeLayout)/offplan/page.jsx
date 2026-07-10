@@ -6,7 +6,7 @@ import { Banner } from '@/components/modules/Banner'
 import PaginationComponent from '@/components/modules/Pagination'
 import OffPlanPropertyCard from '@/components/offplan/OffPlanPropertyCard'
 import OffPlanPageSkeleton from '@/components/offplan/OffPlanPageSkeleton'
-import { OFF_PLAN_DUMMY_LISTINGS } from '@/constants/offPlanDummyListings'
+import { fetchApprovedOffPlanListings } from '@/libs/offPlanListings'
 
 function filterOffPlanListings(listings, { country, city, minPrice, maxPrice }) {
   return listings.filter((listing) => {
@@ -27,7 +27,9 @@ function filterOffPlanListings(listings, { country, city, minPrice, maxPrice }) 
 
 export default function OffPlanPage() {
   const searchParams = useSearchParams()
-  const [isPageReady, setIsPageReady] = useState(false)
+  const [listings, setListings] = useState([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [loadError, setLoadError] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [showFullListing, setShowFullListing] = useState(false)
   const [mobileCardIndex, setMobileCardIndex] = useState(0)
@@ -38,23 +40,49 @@ export default function OffPlanPage() {
   const minPrice = searchParams.get('minPrice') || ''
   const maxPrice = searchParams.get('maxPrice') || ''
 
+  useEffect(() => {
+    let cancelled = false
+
+    const load = async () => {
+      setIsLoading(true)
+      setLoadError('')
+      try {
+        const rows = await fetchApprovedOffPlanListings({
+          country,
+          city,
+          minPrice,
+          maxPrice,
+          limit: 200,
+        })
+        if (!cancelled) setListings(rows)
+      } catch (error) {
+        if (!cancelled) {
+          setListings([])
+          setLoadError(error?.message || 'Could not load off-plan listings')
+        }
+      } finally {
+        if (!cancelled) setIsLoading(false)
+      }
+    }
+
+    load()
+    return () => {
+      cancelled = true
+    }
+  }, [country, city, minPrice, maxPrice])
+
   const filteredListings = useMemo(
     () =>
-      filterOffPlanListings(OFF_PLAN_DUMMY_LISTINGS, {
+      filterOffPlanListings(listings, {
         country,
         city,
         minPrice,
         maxPrice,
       }),
-    [country, city, minPrice, maxPrice],
+    [listings, country, city, minPrice, maxPrice],
   )
 
   const hasActiveFilters = Boolean(country || city || minPrice || maxPrice)
-
-  useEffect(() => {
-    const timer = window.setTimeout(() => setIsPageReady(true), 650)
-    return () => window.clearTimeout(timer)
-  }, [])
 
   useEffect(() => {
     setCurrentPage(1)
@@ -64,7 +92,7 @@ export default function OffPlanPage() {
     }
   }, [country, city, minPrice, maxPrice, hasActiveFilters])
 
-  if (!isPageReady) {
+  if (isLoading) {
     return <OffPlanPageSkeleton />
   }
 
@@ -103,81 +131,93 @@ export default function OffPlanPage() {
             </p>
           </div>
 
-          <div className='hidden sm:grid grid-cols-1 justify-items-center gap-6 sm:grid-cols-2 xl:grid-cols-3'>
-            {paginatedListings.map((listing) => (
-              <OffPlanPropertyCard
-                key={listing.id}
-                href={`/offplan/${listing.slug}`}
-                title={listing.title}
-                location={listing.location}
-                deliveryLabel={listing.deliveryLabel}
-                paymentPlanLabel={listing.paymentPlanLabel}
-                rating={listing.rating}
-                reviewCount={listing.reviewCount}
-                listingRef={listing.ref}
-                priceFrom={listing.priceFrom}
-                priceTo={listing.priceTo}
-                images={listing.images}
-                developerAvatar={listing.developerAvatar}
-              />
-            ))}
-          </div>
+          {loadError ? (
+            <p className='mb-6 text-center text-sm text-red-600'>{loadError}</p>
+          ) : null}
 
-          <div className='sm:hidden'>
-            {mobileVisibleCard ? (
-              <>
-                {mobileListings.length > 1 ? (
-                  <div className='mb-4 flex items-center justify-center gap-4'>
-                    <button
-                      type='button'
-                      onClick={() => setMobileCardIndex((prev) => prev - 1)}
-                      disabled={!canGoMobilePrev}
-                      className='flex h-10 w-10 items-center justify-center rounded-sm [background:linear-gradient(90deg,_#a2913e,_#d7c590_35.28%,_#a2913e_68.99%,_#d7c58f)] disabled:cursor-not-allowed disabled:opacity-40'
-                      aria-label='Previous card'
-                    >
-                      <img
-                        src='/icons/golden-arrow-previous.png'
-                        alt=''
-                        className='h-3 w-3'
-                      />
-                    </button>
-                    <span className='text-[18px] font-medium text-prussianBlue'>
-                      {mobileCardIndex + 1} / {mobileListings.length}
-                    </span>
-                    <button
-                      type='button'
-                      onClick={() => setMobileCardIndex((prev) => prev + 1)}
-                      disabled={!canGoMobileNext}
-                      className='flex h-10 w-10 items-center justify-center rounded-sm [background:linear-gradient(90deg,_#a2913e,_#d7c590_35.28%,_#a2913e_68.99%,_#d7c58f)] disabled:cursor-not-allowed disabled:opacity-40'
-                      aria-label='Next card'
-                    >
-                      <img
-                        src='/icons/golden-arrow-previous.png'
-                        alt=''
-                        className='h-3 w-3 rotate-180'
-                      />
-                    </button>
-                  </div>
+          {!filteredListings.length ? (
+            <p className='py-12 text-center text-base text-black/60'>
+              No off-plan listings are available yet. Check back soon.
+            </p>
+          ) : (
+            <>
+              <div className='hidden sm:grid grid-cols-1 justify-items-center gap-6 sm:grid-cols-2 xl:grid-cols-3'>
+                {paginatedListings.map((listing) => (
+                  <OffPlanPropertyCard
+                    key={listing.id}
+                    href={`/offplan/${listing.slug}`}
+                    title={listing.title}
+                    location={listing.location}
+                    deliveryLabel={listing.deliveryLabel}
+                    paymentPlanLabel={listing.paymentPlanLabel}
+                    rating={listing.rating}
+                    reviewCount={listing.reviewCount}
+                    listingRef={listing.ref}
+                    priceFrom={listing.priceFrom}
+                    priceTo={listing.priceTo}
+                    images={listing.images}
+                    developerAvatar={listing.developerAvatar}
+                  />
+                ))}
+              </div>
+
+              <div className='sm:hidden'>
+                {mobileVisibleCard ? (
+                  <>
+                    {mobileListings.length > 1 ? (
+                      <div className='mb-4 flex items-center justify-center gap-4'>
+                        <button
+                          type='button'
+                          onClick={() => setMobileCardIndex((prev) => prev - 1)}
+                          disabled={!canGoMobilePrev}
+                          className='flex h-10 w-10 items-center justify-center rounded-sm [background:linear-gradient(90deg,_#a2913e,_#d7c590_35.28%,_#a2913e_68.99%,_#d7c58f)] disabled:cursor-not-allowed disabled:opacity-40'
+                          aria-label='Previous card'
+                        >
+                          <img
+                            src='/icons/golden-arrow-previous.png'
+                            alt=''
+                            className='h-3 w-3'
+                          />
+                        </button>
+                        <span className='text-[18px] font-medium text-prussianBlue'>
+                          {mobileCardIndex + 1} / {mobileListings.length}
+                        </span>
+                        <button
+                          type='button'
+                          onClick={() => setMobileCardIndex((prev) => prev + 1)}
+                          disabled={!canGoMobileNext}
+                          className='flex h-10 w-10 items-center justify-center rounded-sm [background:linear-gradient(90deg,_#a2913e,_#d7c590_35.28%,_#a2913e_68.99%,_#d7c58f)] disabled:cursor-not-allowed disabled:opacity-40'
+                          aria-label='Next card'
+                        >
+                          <img
+                            src='/icons/golden-arrow-previous.png'
+                            alt=''
+                            className='h-3 w-3 rotate-180'
+                          />
+                        </button>
+                      </div>
+                    ) : null}
+
+                    <OffPlanPropertyCard
+                      key={mobileVisibleCard.id}
+                      href={`/offplan/${mobileVisibleCard.slug}`}
+                      title={mobileVisibleCard.title}
+                      location={mobileVisibleCard.location}
+                      deliveryLabel={mobileVisibleCard.deliveryLabel}
+                      paymentPlanLabel={mobileVisibleCard.paymentPlanLabel}
+                      rating={mobileVisibleCard.rating}
+                      reviewCount={mobileVisibleCard.reviewCount}
+                      listingRef={mobileVisibleCard.ref}
+                      priceFrom={mobileVisibleCard.priceFrom}
+                      priceTo={mobileVisibleCard.priceTo}
+                      images={mobileVisibleCard.images}
+                      developerAvatar={mobileVisibleCard.developerAvatar}
+                    />
+                  </>
                 ) : null}
-
-                <OffPlanPropertyCard
-                  key={mobileVisibleCard.id}
-                  href={`/offplan/${mobileVisibleCard.slug}`}
-                  title={mobileVisibleCard.title}
-                  location={mobileVisibleCard.location}
-                  deliveryLabel={mobileVisibleCard.deliveryLabel}
-                  paymentPlanLabel={mobileVisibleCard.paymentPlanLabel}
-                  rating={mobileVisibleCard.rating}
-                  reviewCount={mobileVisibleCard.reviewCount}
-                  listingRef={mobileVisibleCard.ref}
-                  priceFrom={mobileVisibleCard.priceFrom}
-                  priceTo={mobileVisibleCard.priceTo}
-                  images={mobileVisibleCard.images}
-                  developerAvatar={mobileVisibleCard.developerAvatar}
-                />
-              </>
-            ) : null}
-          </div>
+              </div>
+            </>
+          )}
 
           {!showFullListing && filteredListings.length > 3 ? (
             <div className='mt-8 hidden justify-center sm:flex'>

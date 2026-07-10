@@ -15,7 +15,6 @@ import {
   getListingCitiesForCountry,
   UAE_ONLY_COUNTRY_OPTIONS,
 } from '@/libs/listingLocationUtils'
-import { OFF_PLAN_DUMMY_LISTINGS } from '@/constants/offPlanDummyListings'
 
 const CATEGORY_ENDPOINTS = {
   Boat: '/boat',
@@ -114,7 +113,17 @@ const SearchInputs = ({ setIsOpen, variant = 'hero' }) => {
         let products = []
 
         if (category === 'Property Off Plan For Sale') {
-          products = OFF_PLAN_DUMMY_LISTINGS
+          const response = await customAxios.get(
+            `${process.env.NEXT_PUBLIC_BASE_URL}/property`,
+            {
+              params: {
+                limit: 500,
+                statusFilter: 1,
+                assetType: 'Property Off Plan For Sale',
+              },
+            },
+          )
+          products = response?.data?.products || []
         } else {
           const response = await customAxios.get(
             `${process.env.NEXT_PUBLIC_BASE_URL}${endpoint}`,
