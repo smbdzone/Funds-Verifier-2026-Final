@@ -5,8 +5,13 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
 
 export async function POST(req) {
   try {
-    const { price, pathName, data } = await req.json()
+    const { price, pathName, data, origin } = await req.json()
     const token = await req.headers.get('token')
+
+    // Where to return the user after checkout. Prefer the caller's real origin
+    // (browser location); fall back to this route's origin. Never hardcode the
+    // production domain so localhost/staging return correctly too.
+    const returnOrigin = origin || pathName || req.nextUrl.origin
 
     // ✅ TEMP: Ensure sessionId is unique before DB insertion
     if (!data.sessionId) {
@@ -43,13 +48,16 @@ export async function POST(req) {
         ],
         mode: 'payment',
         metadata: {
-          id: responseData?.data.uuid,
+          // Mongo _id so the confirmation handler's findById works.
+          id: responseData?.data?._id || responseData?.data?.uuid,
           adTitle: responseData?.data?.title || null,
           userUUID: responseData?.data?.userUUID || null,
           token,
         },
-        success_url: `${pathName}?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: decodeURIComponent(pathName),
+        // Return through the confirmation handler (marks the ad paid) which then
+        // redirects to the dashboard on the same origin.
+        success_url: `${returnOrigin}/api/stripe-advertisement?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${returnOrigin}/advertiser-dashboard/create`,
       })
 
       return NextResponse.json(
@@ -102,12 +110,15 @@ export async function GET(req) {
     const origin = req.nextUrl.origin
 
     if (!response?.ok) {
-      return NextResponse.redirect(`${origin}/error`, { status: 302 })
-    } else {
-      return NextResponse.redirect(`${origin}/advertise-with-us`, {
-        status: 302,
-      })
+      // Payment succeeded on Stripe but confirming paymentStatus failed (e.g.
+      // the token expired during checkout). Don't strand the user on /error —
+      // send them to the dashboard; the paid status can be reconciled later.
+      console.error('Advertisement payment confirmation failed:', AdData)
     }
+
+    return NextResponse.redirect(`${origin}/advertiser-dashboard`, {
+      status: 302,
+    })
 
     // return NextResponse.json({
     //   message: `If you are notredirected, please check your advertisement status.`,

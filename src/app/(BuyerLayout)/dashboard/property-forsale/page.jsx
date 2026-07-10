@@ -24,6 +24,10 @@ import 'react-phone-number-input/style.css'
 import PhoneInput from 'react-phone-number-input'
 import flags from 'react-phone-number-input/flags'
 import adImage from '@/assets/images/advertisement.png'
+import {
+  ensureWithinSize,
+  isCompressionConfigured,
+} from '@/libs/imageCompression'
 
 import {
   handleImageUpload,
@@ -86,6 +90,8 @@ function Page() {
   const [errors, setErrors] = useState({})
 
   const [images, setImages] = useState([])
+  // True while oversized images are being compressed via the API — blocks submit.
+  const [isCompressing, setIsCompressing] = useState(false)
 
   const handleImageChange = (e) => {
     const files = Array.from(e.target.files)
@@ -132,25 +138,43 @@ function Page() {
     }
 
     const processFiles = async () => {
-      for (const file of files) {
-        if (file.size > LISTING_IMAGE_MAX_BYTES) {
-          toast.error(`The file ${file.name} exceeds the ${LISTING_IMAGE_MAX_MB}MB size limit`)
-        } else {
-          const validFile = await checkFile(file)
+      setIsCompressing(true)
+      try {
+        for (const file of files) {
+          let working = file
+          // Oversized images are compressed via the API before proceeding;
+          // otherwise keep the original reject behaviour until the API is set.
+          if (file.size > LISTING_IMAGE_MAX_BYTES) {
+            if (!isCompressionConfigured()) {
+              toast.error(`The file ${file.name} exceeds the ${LISTING_IMAGE_MAX_MB}MB size limit`)
+              continue
+            }
+            try {
+              working = await ensureWithinSize(file, LISTING_IMAGE_MAX_BYTES)
+            } catch (err) {
+              toast.error(
+                `Could not compress ${file.name}: ${err?.message || 'try again'}`,
+              )
+              continue
+            }
+          }
+          const validFile = await checkFile(working)
           if (validFile) {
             validFiles.push(validFile)
           }
         }
-      }
 
-      if (images.length + validFiles.length > LISTING_IMAGE_MAX_COUNT) {
-        toast.error(
-          `You can only upload a maximum of ${LISTING_IMAGE_MAX_COUNT} images`,
-        )
-        return
-      }
+        if (images.length + validFiles.length > LISTING_IMAGE_MAX_COUNT) {
+          toast.error(
+            `You can only upload a maximum of ${LISTING_IMAGE_MAX_COUNT} images`,
+          )
+          return
+        }
 
-      setImages((prevImages) => [...prevImages, ...validFiles])
+        setImages((prevImages) => [...prevImages, ...validFiles])
+      } finally {
+        setIsCompressing(false)
+      }
     }
 
     processFiles()
@@ -2080,10 +2104,11 @@ function Page() {
                 </div>
                 <div className='grid place-items-center mt-[30px] pb-[65px]'>
                   <button
-                    className='text-whitee text-xl font-medium w-[205px] h-[50px] rounded-[3px] bg-light-gold shadow-neons'
+                    className='text-whitee text-xl font-medium w-[205px] h-[50px] rounded-[3px] bg-light-gold shadow-neons disabled:opacity-60 disabled:cursor-not-allowed'
                     onClick={handleSubmit}
+                    disabled={isCompressing}
                   >
-                    Submit
+                    {isCompressing ? 'Compressing…' : 'Submit'}
                   </button>
                 </div>
               </div>

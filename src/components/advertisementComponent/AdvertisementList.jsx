@@ -89,7 +89,7 @@ const AdvertisementList = ({
   };
 
   return (
-    <div className="survey-listings-container !mt-0 mx-auto w-full !max-w-[88%]">
+    <div className="survey-listings-container !mt-0 mx-auto w-full !max-w-full">
       <div className="bg-[#ffffff] w-full rounded-[12px] overflow-auto hide-scrollbar">
         <table className=" text-[#000000] w-full table-auto ">
           <thead>
@@ -107,19 +107,19 @@ const AdvertisementList = ({
           <tbody>
             {getUserAdvertisement && getUserAdvertisement.length > 0 ? (
               getUserAdvertisement.map((ads, index) =>
-                ads.creatives.map((e) => {
+                ads.creatives.map((e, creativeIndex) => {
                   const isCompleted =
                     getSurveyStatus(
                       ads.targetedAudience.startAt[0],
                       ads.targetedAudience.endAt[0]
                     ) === "Completed";
                   return (
-                    <tr key={e.uuid}>
+                    <tr key={e._id || e.uuid || `${index}-${creativeIndex}`}>
                       <td className="pl-3 py-2 h-[64px] w-[64px] text-start">
                         <Link href={e?.adLink} target="_blank">
                           <img
                             className=" object-cover h-full w-full rounded-[8px]"
-                            src={e?.img}
+                            src={e?.signedImg || e?.img?.url || e?.img}
                             alt=""
                           />
                         </Link>
@@ -162,7 +162,7 @@ const AdvertisementList = ({
                       <td className="px-4 py-2">
                         <div className="flex items-center gap-2">
                           <Link
-                            href={`/advertise-with-us/analytics?id=${ads.uuid}&creative=${e.uuid}`}
+                            href={`/advertiser-dashboard/analytics?id=${ads._id}&creative=${e._id}`}
                             className="relative border group px-2 py-1 rounded-[4px] border-[#A2913E]"
                           >
                             <span className="absolute mt-1 -top-10 -left-3 whitespace-nowrap px-2 py-1 text-xs shadow-md bg-white rounded hidden group-hover:flex z-10">
@@ -171,7 +171,7 @@ const AdvertisementList = ({
                             <ChartPieIcon className="size-5 text-[#A2913E]" />
                           </Link>
                           <button
-                            onClick={() => showDeletePopup(ads.uuid, e.uuid)}
+                            onClick={() => showDeletePopup(ads._id, e._id)}
                             className="relative group border px-2 py-1 rounded-[4px] border-[#A2913E]"
                           >
                             <Trash2Icon className="size-5 text-[#A2913E]" />

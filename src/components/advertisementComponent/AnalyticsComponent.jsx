@@ -6,7 +6,7 @@ import { getTokenFromCookie } from "../../utils/helper";
 import GlobalLoader from "@/utils/GlobalLoader";
 import Link from "next/link";
 
-const AnalyticsComponent = ({ id }) => {
+const AnalyticsComponent = ({ id, creativeId }) => {
   const [token, setToken] = useState(null);
   const [advertisement, setAdvertisement] = useState({});
   const [ad, setAd] = useState({});
@@ -53,12 +53,14 @@ const AnalyticsComponent = ({ id }) => {
         const adData = res.data?.data;
         setAdvertisement(adData);
 
-        adData.creatives &&
-          adData.creatives.forEach((creative) => {
-            if (creative.uuid === id) {
-              setAd(creative);
-            }
-          });
+        if (adData.creatives?.length) {
+          // Select the creative from the query (by _id) or fall back to the first.
+          const selected =
+            adData.creatives.find(
+              (c) => String(c._id) === String(creativeId)
+            ) || adData.creatives[0];
+          setAd(selected);
+        }
 
         const totalImpressions =
           adData.creatives &&

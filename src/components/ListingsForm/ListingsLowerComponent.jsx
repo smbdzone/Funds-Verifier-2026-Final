@@ -1,7 +1,9 @@
 "use client";
+import { useContext } from "react";
 import { IoReload } from "react-icons/io5";
 import Modal from "@/components/Boat-listing/Modal";
 import FooterAdd from "@/components/advertisementComponent/FooterAdd";
+import { ListingContext } from "@/components/ListingContext/ListingsProvider";
 
 const ListingsLowerComponent = ({
   image,
@@ -12,6 +14,10 @@ const ListingsLowerComponent = ({
   setConfirmationModal,
   id,
 }) => {
+  // Block submission while oversized images are being compressed via the API.
+  const { isCompressing } = useContext(ListingContext) || {};
+  const busy = loading || isCompressing;
+
   return (
     <>
       <div className="grid place-items-center mt-[49px]">
@@ -29,11 +35,11 @@ const ListingsLowerComponent = ({
       </div>
       <div className="grid place-items-center mt-[30px] pb-[65px]">
         <button
-          className={`text-whitee flex justify-center items-center md:text-xl sm:text-lg text-base font-medium md:w-[205px] md:px-0 px-3 h-10 md:h-[50px] rounded-[3px] bg-light-gold shadow-neons`}
+          className={`text-whitee flex justify-center items-center md:text-xl sm:text-lg text-base font-medium md:w-[205px] md:px-0 px-3 h-10 md:h-[50px] rounded-[3px] bg-light-gold shadow-neons disabled:opacity-60 disabled:cursor-not-allowed`}
           onClick={submitConfirmation}
-          disabled={loading}
+          disabled={busy}
         >
-          {loading ? (
+          {busy ? (
             <IoReload size={24} className="animate-spin" />
           ) : id ? (
             "Update"

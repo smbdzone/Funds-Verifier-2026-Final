@@ -435,14 +435,15 @@ const EditAdvertisementPopup = ({ onClose, EditableData }) => {
 
           <div className='grid grid-cols-1 sm:grid-cols-3 gap-4 p-4'>
             <select
-              defaultValue={[21, 30]}
+              defaultValue=''
               className='bg-[#002D4F]/10 text-[#8D7C3B] border border-[#8D7C3B] rounded-md px-4 py-2  w-full'
             >
-              <option value={''}>Targeted age</option>
-              <option value={[21, 30]}>21 - 30</option>
-              <option value={[31, 40]}>31 - 40</option>
-              <option value={[41, 50]}>41 - 50</option>
-              <option value={[60]}>60+</option>
+              <option value=''>Targeted age</option>
+              <option value='21-30'>21 - 30</option>
+              <option value='31-40'>31 - 40</option>
+              <option value='41-50'>41 - 50</option>
+              <option value='51-60'>51 - 60</option>
+              <option value='60+'>60+</option>
             </select>
 
             <select className='bg-[#002D4F]/10 text-[#8D7C3B] border border-[#8D7C3B] rounded-md px-4 py-2  w-full'>

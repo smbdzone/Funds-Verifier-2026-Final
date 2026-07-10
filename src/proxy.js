@@ -382,7 +382,5 @@ export const config = {
     '/trustee/:path*',
     '/3d-walkthrough/:path*',
     '/survey-dashboard/:path*',
-    '/advertise-with-us',
-    '/advertise-with-us/:path*',
   ],
 }
