@@ -25,7 +25,7 @@ import {
   occupancyStatusOptions,
   isFurnishedOptions,
   facilities,
-  apartmentLayoutUploads,
+  OFF_PLAN_MEDIA_KEYS,
   createDefaultOffPlanPaymentPlan,
   addOffPlanPaymentStep,
   removeOffPlanPaymentStep,
@@ -62,20 +62,12 @@ const dropdownData = {
   isFurnished: false,
   occupancyStatus: false,
   assetType: false,
-  advertisementId: false,
   sizeType: false,
   deliveryQuarter: false,
   deliveryYear: false,
   layout: false,
   numberOfFloors: false,
-  availableApartment: false,
 }
-
-const OFF_PLAN_MEDIA_KEYS = [
-  'unitLayout',
-  'floorPlan',
-  ...apartmentLayoutUploads.map((item) => item.key),
-]
 
 const emptyOffPlanMedia = () =>
   OFF_PLAN_MEDIA_KEYS.reduce((acc, key) => {
@@ -293,37 +285,8 @@ const Page = () => {
     setOffPlanMedia({
       unitLayout: formData?.unitLayout?.images?.[0] ?? formData?.unitLayout ?? null,
       floorPlan: formData?.floorPlan?.images?.[0] ?? formData?.floorPlan ?? null,
-      studioLayout:
-        formData?.studioLayout?.images?.[0] ?? formData?.studioLayout ?? null,
-      oneBhkLayout:
-        formData?.oneBhkLayout?.images?.[0] ?? formData?.oneBhkLayout ?? null,
-      twoBhkLayout:
-        formData?.twoBhkLayout?.images?.[0] ?? formData?.twoBhkLayout ?? null,
-      twoBhkDuplexLayout:
-        formData?.twoBhkDuplexLayout?.images?.[0] ??
-        formData?.twoBhkDuplexLayout ??
-        null,
-      threeBhkDuplexLayout:
-        formData?.threeBhkDuplexLayout?.images?.[0] ??
-        formData?.threeBhkDuplexLayout ??
-        null,
-      penthouseLayout:
-        formData?.penthouseLayout?.images?.[0] ??
-        formData?.penthouseLayout ??
-        null,
     })
-  }, [
-    id,
-    isOffPlan,
-    formData?.unitLayout,
-    formData?.floorPlan,
-    formData?.studioLayout,
-    formData?.oneBhkLayout,
-    formData?.twoBhkLayout,
-    formData?.twoBhkDuplexLayout,
-    formData?.threeBhkDuplexLayout,
-    formData?.penthouseLayout,
-  ])
+  }, [id, isOffPlan, formData?.unitLayout, formData?.floorPlan])
 
   const handleOffPlanImageChange = (key) => (event) => {
     const selectedFile = event.target.files?.[0]

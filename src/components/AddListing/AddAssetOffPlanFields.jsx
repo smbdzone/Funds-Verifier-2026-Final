@@ -33,7 +33,6 @@ const AddAssetOffPlanFields = ({
   const dropdowns = {
     layout: dropdownOpen === 'layout',
     numberOfFloors: dropdownOpen === 'numberOfFloors',
-    availableApartment: dropdownOpen === 'availableApartment',
     deliveryQuarter: dropdownOpen === 'deliveryQuarter',
     deliveryYear: dropdownOpen === 'deliveryYear',
   }
@@ -66,6 +65,16 @@ const AddAssetOffPlanFields = ({
         value={formData.developer || ''}
         onChange={(e) => onInputChange('developer', e.target.value)}
         required
+        errors={errors}
+      />
+
+      <TextInput
+        type='text'
+        name='advertisementId'
+        placeholder='Advertisement ID'
+        value={formData.advertisementId || ''}
+        onChange={(e) => onInputChange('advertisementId', e.target.value)}
+        required={false}
         errors={errors}
       />
 

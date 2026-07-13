@@ -1382,7 +1382,6 @@ export const apartmentLayoutUploads = [
 export const OFF_PLAN_MEDIA_KEYS = [
   "unitLayout",
   "floorPlan",
-  ...apartmentLayoutUploads.map((item) => item.key),
 ];
 
 export const createEmptyOffPlanMedia = () =>

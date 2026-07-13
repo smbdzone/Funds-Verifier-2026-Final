@@ -102,7 +102,6 @@ export const ImageUploadComponent = React.memo(
   }) => {
     const [data, setData] = useState()
     const [data2, setData2] = useState()
-    const [advertisementOptions, setAdvertisementOptions] = useState([])
 
     const isOffPlan = formData?.assetType === 'Property Off Plan For Sale'
 
@@ -125,27 +124,6 @@ export const ImageUploadComponent = React.memo(
       getIdByRole()
       getIdByRole3d()
     }, [])
-
-    useEffect(() => {
-      if (!isOffPlan) return
-      const fetchAdvertisements = async () => {
-        try {
-          const response = await customAxios.get(
-            `${process.env.NEXT_PUBLIC_BASE_URL}/advertisement/getUserAdvertisement`,
-          )
-          const ads = Array.isArray(response?.data) ? response.data : []
-          setAdvertisementOptions(
-            ads.map((ad) => ({
-              label: ad?.title || ad?.uuid || ad?._id,
-              value: ad?.uuid || ad?._id,
-            })),
-          )
-        } catch (error) {
-          console.error('Error loading advertisements:', error)
-        }
-      }
-      fetchAdvertisements()
-    }, [isOffPlan])
 
     const getIdByRole3d = async () => {
       try {
@@ -352,34 +330,16 @@ export const ImageUploadComponent = React.memo(
               />
             </div>
             <div className='relative w-full dropdown-container'>
-              <ListingsDropdownInputComponents
+              <ListingFormInput
                 errors={errors.advertisementId && !formData.advertisementId}
-                errorMessage={errors.advertisementId}
-                value={
-                  advertisementOptions.find(
-                    (ad) => ad.value === formData.advertisementId,
-                  )?.label ||
-                  formData.advertisementId ||
-                  ''
-                }
+                value={formData.advertisementId || ''}
+                handleChange={handleChange}
+                handleBlur={handleBlur}
                 placeholder='Advertisement ID'
+                fieldLabel='Advertisement ID'
+                errorsMessage={errors.advertisementId}
                 name='advertisementId'
-                handleToggleDropdown={() =>
-                  handleToggleDropdown('advertisementId')
-                }
-                dropdown={dropdowns.advertisementId}
-                dropdownType='advertisementId'
-                dropdownOptions={advertisementOptions.map((ad) => ad.label)}
-                handleSelectOption={(_, option) => {
-                  const match = advertisementOptions.find(
-                    (ad) => ad.label === option,
-                  )
-                  handleSelectOption(
-                    'advertisementId',
-                    match?.value || option,
-                  )
-                }}
-                readOnly={isEvaluatorApprovedLocked}
+                type='text'
                 disabled={isEvaluatorApprovedLocked}
               />
             </div>
