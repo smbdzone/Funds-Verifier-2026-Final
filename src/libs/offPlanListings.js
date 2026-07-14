@@ -10,16 +10,18 @@ const OFF_PLAN_PLACEHOLDER = '/offplan/image1.svg'
 const OFF_PLAN_ASSET_TYPE = 'Property Off Plan For Sale'
 
 function resolveLayoutImageSrc(field) {
-  if (!field) return OFF_PLAN_PLACEHOLDER
+  if (!field) return null
   if (typeof field === 'string') {
     return field.startsWith('http') || field.startsWith('/')
       ? field
-      : OFF_PLAN_PLACEHOLDER
+      : null
   }
   if (Array.isArray(field?.images) && field.images[0]) {
-    return getListingImageSrc(field.images[0])
+    const src = getListingImageSrc(field.images[0])
+    return src && src !== '/listing/camera.svg' ? src : null
   }
-  return getListingImageSrc(field)
+  const src = getListingImageSrc(field)
+  return src && src !== '/listing/camera.svg' ? src : null
 }
 
 function getOffPlanImageUrls(listing) {

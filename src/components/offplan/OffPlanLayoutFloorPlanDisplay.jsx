@@ -33,9 +33,21 @@ const ActionIconButton = ({ onClick, disabled, ariaLabel, children }) => (
 )
 
 const PlanImagePanel = ({ title, src, downloadName, alt }) => {
-  const imageSrc = src || '/offplan/image1.svg'
   const [isPreviewOpen, setIsPreviewOpen] = useState(false)
   const [isDownloading, setIsDownloading] = useState(false)
+
+  if (!src) {
+    return (
+      <div className='rounded-sm border border-black/10 bg-white p-4 shadow-neons'>
+        <h4 className='mb-3 text-base font-medium text-prussianBlue'>{title}</h4>
+        <p className='py-16 text-center text-sm text-black/50'>
+          No {title.toLowerCase()} uploaded for this property.
+        </p>
+      </div>
+    )
+  }
+
+  const imageSrc = src
 
   const handleDownload = async (event) => {
     event?.preventDefault?.()

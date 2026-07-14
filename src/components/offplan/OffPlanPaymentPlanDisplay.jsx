@@ -65,7 +65,10 @@ const OffPlanPaymentPlanDisplay = ({ paymentPlan = [] }) => {
                     backgroundClip: 'text',
                   }}
                 >
-                  {step.sharePercent}%
+                  {String(step.sharePercent ?? '')
+                    .replace(/%\s*$/, '')
+                    .trim() || '0'}
+                  %
                 </span>
                 <span className='text-center text-base font-medium leading-5 text-prussianBlue'>
                   {step.paymentLabel}
