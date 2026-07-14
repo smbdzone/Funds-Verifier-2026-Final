@@ -16,6 +16,14 @@ export function formatRequestDocumentDate(value) {
   })
 }
 
+/** Upload timestamp for evaluator "Uploaded documents" (asset-holder uploads). */
+export function getUploadedDocumentDate(doc) {
+  if (!doc || typeof doc !== 'object') return ''
+  const raw =
+    doc.uploadedAt || doc.createdAt || doc.updatedAt || doc.Certificate?.uploadedAt
+  return formatRequestDocumentDate(raw)
+}
+
 export function getRequestDocumentName(entry) {
   if (!entry) return ''
   if (typeof entry === 'string') return entry
@@ -34,10 +42,11 @@ export function normalizeRequestDocuments(docs) {
         const name = (entry.name || '').trim()
         return name
           ? {
-              name,
-              document: entry.document || null,
-              date: formatDateForInput(entry.date),
-            }
+            name,
+            document: entry.document || null,
+            date: formatDateForInput(entry.date),
+            uploadedAt: entry.uploadedAt || null,
+          }
           : null
       }
       return null

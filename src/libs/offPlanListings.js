@@ -72,7 +72,9 @@ export function mapApiListingToOffPlanCard(listing) {
     paymentPlanLabel: getOffPlanPaymentPlanLabel(listing?.paymentPlan),
     rating: 0,
     reviewCount: Array.isArray(listing?.reviews) ? listing.reviews.length : 0,
-    ref: listing?.uuid || listing?.ref || '—',
+    ref: listing?.uuid
+      ? String(listing.uuid).slice(0, 8)
+      : listing?.ref || '—',
     priceFrom: listing?.priceFrom ?? listing?.price,
     priceTo: listing?.priceTo ?? listing?.price,
     images: getOffPlanImageUrls(listing),

@@ -7,9 +7,15 @@ import { handleFileUpload, resolveCertificateUploadUrl } from '@/libs/uploadAsse
 import { toast } from 'react-toastify'
 import { useProfile } from '../../../context/UserContext'
 import Modal from '../../product-modal/modal'
+import CancelTransferModal from '@/components/Modals/CancelTransferModal'
+import TransferPaymentLinkModal from '@/components/Modals/TransferPaymentLinkModal'
 import customAxios from '../../../utils/apis/apis'
 import { getListingImageSrc } from '@/libs/listingCardMedia'
 import { parseSlotTimeOnDate } from '@/libs/slotTimeFilters'
+import {
+  formatTransactionPhase,
+  transactionPhaseBadgeClass,
+} from '@/libs/transactionPhase'
 
 const ViewerDetails = ({ bookingId, handleClose }) => {
   const [viewerData, setViewerData] = useState(null)
@@ -24,6 +30,13 @@ const ViewerDetails = ({ bookingId, handleClose }) => {
   const [transferProofUploading, setTransferProofUploading] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
   const [transferDocOpen, setTransferDocOpen] = useState(false)
+  const [isCancelTransferModalOpen, setIsCancelTransferModalOpen] = useState(false)
+  const [paymentLinkModal, setPaymentLinkModal] = useState({
+    open: false,
+    url: '',
+    recipientEmail: '',
+    emailFailed: false,
+  })
   const [TransferProof, setTransferProof] = useState({
     PaymentProof: '',
   })
@@ -33,6 +46,7 @@ const ViewerDetails = ({ bookingId, handleClose }) => {
     assetTransferDocument: '',
   })
   const [loading, setLoading] = useState(false)
+  const [transferActionLoading, setTransferActionLoading] = useState(null)
   const [error, setError] = useState('')
   const { user } = useProfile()
 
@@ -115,6 +129,36 @@ const ViewerDetails = ({ bookingId, handleClose }) => {
     }))
   }
 
+  const openPaymentLinkModal = ({ paymentUrl, recipientEmail, emailFailed }) => {
+    if (!paymentUrl) return
+    setPaymentLinkModal({
+      open: true,
+      url: paymentUrl,
+      recipientEmail: recipientEmail || '',
+      emailFailed: Boolean(emailFailed),
+    })
+  }
+
+  const handlePaymentLinkResponse = (response) => {
+    const emailSent = response?.data?.emailSent !== false
+    const paymentUrl = response?.data?.PaymentUrl
+    const recipientEmail = response?.data?.recipientEmail
+
+    if (emailSent) {
+      return { successToast: true, paymentUrl }
+    }
+
+    if (paymentUrl) {
+      openPaymentLinkModal({
+        paymentUrl,
+        recipientEmail,
+        emailFailed: true,
+      })
+    }
+
+    return { successToast: false, paymentUrl }
+  }
+
   const handleSubmit = async () => {
     if (!TransferDocs.assetTransferDocument) {
       toast.error('Please upload transfer documents.')
@@ -126,7 +170,8 @@ const ViewerDetails = ({ bookingId, handleClose }) => {
     }
     const dataToSend = {
       success_url: window.location.origin,
-      ...TransferDocs,
+      assetTransferDocument: TransferDocs.assetTransferDocument,
+      fees: Number(TransferDocs.fees),
     }
     try {
       const response = await customAxios.post(
@@ -134,17 +179,91 @@ const ViewerDetails = ({ bookingId, handleClose }) => {
         dataToSend,
         { params: { id: bookingId } }
       )
-      toast.success(
-        response?.data?.message?.includes('successfully')
-          ? 'Payment link sent to the seller by email. They must pay and upload the fee invoice before you confirm transfer.'
-          : response?.data?.message || 'Payment link sent to the seller.',
-      )
+
+      const { successToast } = handlePaymentLinkResponse(response)
+
+      if (successToast) {
+        toast.success(
+          'Payment link sent to the seller by email. They must pay and upload the fee invoice before you confirm transfer.',
+        )
+      } else {
+        toast.warning(
+          response?.data?.mailError ||
+          response?.data?.message ||
+          'Transfer saved. Share the payment link with the seller manually.',
+        )
+      }
+
       await fetchBookingDetails({ silent: true })
     } catch (error) {
       console.error('Error sending mail:', error)
       toast.error(
         error?.response?.data?.message || error?.message || 'Not submitted.',
       )
+    }
+  }
+
+  const handleCancelTransfer = async () => {
+    if (!bookingId) return
+    if (viewerData?.productData?.transferDocuments?.PaymentProof) return
+
+    setTransferActionLoading('cancel')
+    try {
+      await customAxios.post(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/arrange-view/cancel-transfer`,
+        {},
+        { params: { id: bookingId } },
+      )
+      setTransferDocs({ fees: 0, assetTransferDocument: '' })
+      setTransferFile(null)
+      setTransferProof({ PaymentProof: '' })
+      setIsCancelTransferModalOpen(false)
+      toast.success('Transfer submission cancelled.')
+      await fetchBookingDetails({ silent: true })
+    } catch (err) {
+      toast.error(
+        err?.response?.data?.message ||
+        err?.message ||
+        'Could not cancel transfer submission.',
+      )
+    } finally {
+      setTransferActionLoading(null)
+    }
+  }
+
+  const handleResendPayment = async () => {
+    if (!bookingId) return
+    if (viewerData?.productData?.transferDocuments?.PaymentProof) return
+
+    setTransferActionLoading('resend')
+    try {
+      const response = await customAxios.post(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/arrange-view/transfer-payment/resend`,
+        { success_url: window.location.origin },
+        { params: { id: bookingId } },
+      )
+
+      const { successToast } = handlePaymentLinkResponse(response)
+
+      if (successToast) {
+        toast.success('Payment link resent to the seller by email.')
+      } else {
+        toast.warning(
+          response?.data?.mailError ||
+          response?.data?.message ||
+          'Could not send payment email. Use the payment link popup to share manually.',
+        )
+      }
+
+      await fetchBookingDetails({ silent: true })
+    } catch (err) {
+      toast.error(
+        err?.response?.data?.message ||
+        err?.message ||
+        'Could not resend payment link.',
+      )
+    } finally {
+      setTransferActionLoading(null)
     }
   }
 
@@ -175,14 +294,15 @@ const ViewerDetails = ({ bookingId, handleClose }) => {
       }
 
       const savedTransfer = data?.productData?.transferDocuments || {}
-      if (savedTransfer.assetTransferDocument || savedTransfer.successFee) {
-        setTransferDocs({
-          fees: Number(savedTransfer.successFee) || 0,
-          assetTransferDocument: savedTransfer.assetTransferDocument || '',
-        })
-      }
-      if (savedTransfer.PaymentProof) {
-        setTransferProof({ PaymentProof: savedTransfer.PaymentProof })
+      setTransferDocs({
+        fees: Number(savedTransfer.successFee) || 0,
+        assetTransferDocument: savedTransfer.assetTransferDocument || '',
+      })
+      setTransferProof({
+        PaymentProof: savedTransfer.PaymentProof || '',
+      })
+      if (savedTransfer.assetTransferDocument) {
+        setTransferFile(null)
       }
     } catch (err) {
       console.error('Error fetching booking details', err)
@@ -389,13 +509,30 @@ const ViewerDetails = ({ bookingId, handleClose }) => {
   const email = broker.email ?? ''
   const phone = broker.phone ?? broker.phoneNumber ?? ''
   const transferDocuments = viewerData?.productData?.transferDocuments || {}
+  const transferPhase =
+    viewerData?.productData?.transactionPhase ||
+    (viewerData?.productData?.dealClosed
+      ? 'transferred'
+      : transferDocuments.PaymentProof
+        ? 'payment_proof_received'
+        : transferDocuments.assetTransferDocument
+          ? 'awaiting_payment'
+          : null)
   const hasTransferDocSubmitted = Boolean(
     transferDocuments.assetTransferDocument,
   )
-  const submittedSuccessFee =
-    Number(transferDocuments.successFee) || Number(TransferDocs.fees) || 0
+  const submittedSuccessFee = (() => {
+    const apiFee = Number(transferDocuments.successFee)
+    const stateFee = Number(TransferDocs.fees)
+    if (Number.isFinite(apiFee) && apiFee > 0) return apiFee
+    if (Number.isFinite(stateFee) && stateFee > 0) return stateFee
+    return 0
+  })()
   const submittedTransferDocUrl = transferDocuments.assetTransferDocument || ''
+  const storedPaymentUrl = transferDocuments.paymentUrl || ''
   const hasPaymentProof = Boolean(transferDocuments.PaymentProof)
+  const missingRecordedFee =
+    hasTransferDocSubmitted && submittedSuccessFee <= 0 && !hasPaymentProof
   const assetHolder = viewerData?.assetHolder || {}
   const isAssetHolderViewer =
     user?.role === 'AssetHolder' &&
@@ -535,24 +672,41 @@ const ViewerDetails = ({ bookingId, handleClose }) => {
         {user?.role === 'Trustee' ? (
           <>
             <div>
-              <h3 className='mb-1 text-sm font-bold uppercase tracking-wide text-[#a2913e]'>
-                Step 1: Send transfer documents &amp; success fee
-              </h3>
+              <div className='mb-3 flex flex-wrap items-center gap-3'>
+                <h3 className='text-sm font-bold uppercase tracking-wide text-[#a2913e]'>
+                  Step 1: Send transfer documents &amp; success fee
+                </h3>
+                {transferPhase ? (
+                  <span
+                    className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset ${transactionPhaseBadgeClass(transferPhase)}`}
+                  >
+                    {formatTransactionPhase(transferPhase)}
+                  </span>
+                ) : null}
+              </div>
               <p className='mb-3 text-sm text-slate-600'>
                 Upload the transfer document and enter the success fee. The seller
                 (asset holder) will receive a payment link by email.
               </p>
 
               {hasTransferDocSubmitted ? (
-                <div className='mb-3 rounded-md border border-green-200 bg-green-50 px-3 py-3 text-sm text-green-900'>
+                <div className='mb-3 rounded-md border border-light-gold/50 bg-light-gold/10 px-3 py-3 text-sm text-prussianBlue'>
                   <p className='font-medium'>Submitted to broker</p>
                   <p className='mt-1'>
                     Success fee:{' '}
                     <span className='font-semibold'>
-                      AED {submittedSuccessFee.toLocaleString()}
+                      {submittedSuccessFee > 0
+                        ? `AED ${submittedSuccessFee.toLocaleString()}`
+                        : 'Not recorded'}
                     </span>
                   </p>
-                  <p className='mt-1 text-green-800'>
+                  {missingRecordedFee ? (
+                    <p className='mt-1 text-amber-800'>
+                      Fee was not saved on this submission. Use Cancel, then
+                      submit again with the correct amount.
+                    </p>
+                  ) : null}
+                  <p className='mt-1 text-prussianBlue/80'>
                     Waiting for the seller to pay the success fee and upload the
                     invoice.
                   </p>
@@ -564,6 +718,47 @@ const ViewerDetails = ({ bookingId, handleClose }) => {
                     >
                       View submitted transfer document
                     </button>
+                  ) : null}
+                  {storedPaymentUrl && !hasPaymentProof ? (
+                    <button
+                      type='button'
+                      onClick={() =>
+                        openPaymentLinkModal({
+                          paymentUrl: storedPaymentUrl,
+                          recipientEmail: assetHolder?.email || '',
+                          emailFailed: false,
+                        })
+                      }
+                      className='mt-2 block text-sm font-medium text-[#002d4f] underline'
+                    >
+                      View / copy Stripe payment link
+                    </button>
+                  ) : null}
+                  {!hasPaymentProof ? (
+                    <div className='mt-3 flex flex-wrap gap-2'>
+                      <button
+                        type='button'
+                        onClick={handleResendPayment}
+                        disabled={
+                          transferActionLoading != null || missingRecordedFee
+                        }
+                        className='rounded-md border border-[#002d4f] px-3 py-1.5 text-sm font-medium text-[#002d4f] disabled:cursor-not-allowed disabled:opacity-50'
+                      >
+                        {transferActionLoading === 'resend'
+                          ? 'Resending…'
+                          : 'Resend payment link'}
+                      </button>
+                      <button
+                        type='button'
+                        onClick={() => setIsCancelTransferModalOpen(true)}
+                        disabled={transferActionLoading != null}
+                        className='rounded-md border border-red-300 px-3 py-1.5 text-sm font-medium text-red-700 disabled:cursor-not-allowed disabled:opacity-50'
+                      >
+                        {transferActionLoading === 'cancel'
+                          ? 'Cancelling…'
+                          : 'Cancel'}
+                      </button>
+                    </div>
                   ) : null}
                 </div>
               ) : null}
@@ -610,7 +805,9 @@ const ViewerDetails = ({ bookingId, handleClose }) => {
                   placeholder='asset success fee (AED)'
                   value={
                     hasTransferDocSubmitted
-                      ? submittedSuccessFee
+                      ? submittedSuccessFee > 0
+                        ? submittedSuccessFee
+                        : ''
                       : TransferDocs.fees === 0
                         ? ''
                         : TransferDocs.fees
@@ -834,6 +1031,27 @@ const ViewerDetails = ({ bookingId, handleClose }) => {
           onClose={() => setTransferDocOpen(false)}
           fileUrl={submittedTransferDocUrl}
         />
+        {isCancelTransferModalOpen ? (
+          <CancelTransferModal
+            onClose={() => {
+              if (transferActionLoading !== 'cancel') {
+                setIsCancelTransferModalOpen(false)
+              }
+            }}
+            onConfirm={handleCancelTransfer}
+            loading={transferActionLoading === 'cancel'}
+          />
+        ) : null}
+        {paymentLinkModal.open ? (
+          <TransferPaymentLinkModal
+            paymentUrl={paymentLinkModal.url}
+            recipientEmail={paymentLinkModal.recipientEmail}
+            emailFailed={paymentLinkModal.emailFailed}
+            onClose={() =>
+              setPaymentLinkModal((prev) => ({ ...prev, open: false }))
+            }
+          />
+        ) : null}
       </div>
     </div>
   )

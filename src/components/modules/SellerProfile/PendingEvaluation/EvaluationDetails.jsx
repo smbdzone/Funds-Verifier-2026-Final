@@ -485,6 +485,15 @@ const EvaluationDetails = () => {
                               {formatRequestDocumentDate(doc.date)}
                             </p>
                           ) : null}
+                          {isRequestDocumentFulfilled(doc) &&
+                            (doc.uploadedAt || doc.document?.createdAt) ? (
+                            <p className='text-xs text-gray-500'>
+                              Uploaded:{' '}
+                              {formatRequestDocumentDate(
+                                doc.uploadedAt || doc.document?.createdAt,
+                              )}
+                            </p>
+                          ) : null}
                         </div>
                         <div className='flex items-center gap-3'>
                           {isRequestDocumentFulfilled(doc) ? (

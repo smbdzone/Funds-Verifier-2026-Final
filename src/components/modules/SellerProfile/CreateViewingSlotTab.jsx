@@ -42,6 +42,7 @@ export const CreateViewingSlotTab = ({
   const [editTimes, setEditTimes] = useState([])
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const [slotIdToDelete, setSlotIdToDelete] = useState(null)
+  const [isDeleting, setIsDeleting] = useState(false)
   const { user } = useProfile()
 
   useEffect(() => {
@@ -178,20 +179,27 @@ export const CreateViewingSlotTab = ({
 
   // Handle deleting a slot
   const handleConfirmDelete = async () => {
-    setLoading(true)
-    try {
-      // console.log({ slotIdToDelete })
+    if (!slotIdToDelete || isDeleting) return
 
+    setIsDeleting(true)
+    try {
       await customAxios.delete(
         `${process.env.NEXT_PUBLIC_BASE_URL}/arrange-view/slots/delete/${slotIdToDelete}`
       )
       toast.success('Slot deleted successfully.')
-      fetchSlots()
+      await fetchSlots()
       closeDeleteModal()
     } catch (error) {
-      toast.error('Error deleting slot.')
+      const message = error?.response?.data?.message || ''
+      if (/already deleted/i.test(message)) {
+        toast.success('Slot deleted successfully.')
+        await fetchSlots()
+        closeDeleteModal()
+      } else {
+        toast.error(message || 'Error deleting slot.')
+      }
     } finally {
-      setLoading(false)
+      setIsDeleting(false)
     }
   }
 
@@ -448,6 +456,7 @@ export const CreateViewingSlotTab = ({
         <SlotTabDeleteModal
           handleConfirmDelete={handleConfirmDelete}
           closeDeleteModal={closeDeleteModal}
+          loading={isDeleting}
         />
       )}
     </>
