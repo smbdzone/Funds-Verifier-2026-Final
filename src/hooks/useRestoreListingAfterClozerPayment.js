@@ -10,6 +10,7 @@ import {
 
 /**
  * Restores listing form data after returning from Clozer evaluation payment (approved).
+ * Sets a flag so the listing page can auto-finalize without asking to pay again.
  */
 export function useRestoreListingAfterClozerPayment(restoreApi) {
   useEffect(() => {
@@ -46,9 +47,12 @@ export function useRestoreListingAfterClozerPayment(restoreApi) {
       }))
 
       clearPendingListingDraft()
-      toast.info(
-        'Installment plan confirmed. Review your listing and click Submit to publish.',
-      )
+      try {
+        sessionStorage.setItem('fv.autoFinalizeEvaluationPayment', '1')
+      } catch {
+        /* ignore */
+      }
+      toast.success('Payment confirmed. Finishing your listing…')
     } catch {
       /* ignore corrupt storage */
     }

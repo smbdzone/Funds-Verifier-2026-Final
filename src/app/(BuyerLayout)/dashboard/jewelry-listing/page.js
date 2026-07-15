@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useContext } from 'react'
+import { useState, useEffect, useContext, useMemo } from 'react'
 import axios from 'axios'
 import { Suspense } from 'react'
 import {
@@ -39,6 +39,8 @@ import {
   useRestorePendingListingDraft,
   useRefetchListingOnReturn,
 } from '@/hooks/useRestorePendingListingDraft'
+import { useAutoFinalizeAfterEvaluationPayment } from '@/hooks/useAutoFinalizeAfterEvaluationPayment'
+import { hasPendingListingDraft } from '@/libs/pendingListingDraft'
 
 function Page() {
   const [neighbourhood, setNeighbourhood] = useState('Select Neighbourhood')
@@ -208,16 +210,60 @@ function Page() {
     setSelectedCategory,
     setPhoneNumber,
     setIsValid,
+    setImages,
+    setThumbnail,
+    setVideos,
+    setSelectedCountry,
+    setSelectedCity,
+    setSelectedNeighbourhood,
+    setCountryCode,
   } = useContext(ListingContext)
+
+  const listingDraftRestoreApi = useMemo(
+    () => ({
+      setFormData,
+      setImages,
+      setThumbnail,
+      setVideos,
+      setSelectedCountry,
+      setSelectedCity,
+      setSelectedNeighbourhood,
+      setCountryCode,
+      setPhoneNumber,
+      setTotalPrice,
+      setSelectedCategory,
+      setSelectedModel,
+    }),
+    [
+      setFormData,
+      setImages,
+      setThumbnail,
+      setVideos,
+      setSelectedCountry,
+      setSelectedCity,
+      setSelectedNeighbourhood,
+      setCountryCode,
+      setPhoneNumber,
+      setTotalPrice,
+      setSelectedCategory,
+      setSelectedModel,
+    ],
+  )
 
   useEffect(() => {
     if (id) {
       fetchData('jewelry')
-    } else {
-      resetForm()
-      handleFormData(initialFormData, dropdownData)
-      setLoading(false)
+      return
     }
+
+    if (hasPendingListingDraft()) {
+      setLoading(false)
+      return
+    }
+
+    resetForm()
+    handleFormData(initialFormData, dropdownData)
+    setLoading(false)
   }, [searchParams])
 
   useEffect(() => {
@@ -230,8 +276,8 @@ function Page() {
   }, [formData?.title, formData?.slug, setFormData])
 
   useRefreshListingAfterServicePayment(id, 'jewelry', fetchData)
-  useRestoreListingAfterClozerPayment(setFormData)
-  useRestorePendingListingDraft(id, setFormData)
+  useRestoreListingAfterClozerPayment(listingDraftRestoreApi)
+  useRestorePendingListingDraft(id, listingDraftRestoreApi)
   useRefetchListingOnReturn(id, 'jewelry', fetchData)
 
   const handleTechnicalModal = () => {
@@ -458,6 +504,23 @@ function Page() {
         throw new Error('Thumbnail is required')
       }
 
+      try {
+        const sessionRaw = localStorage.getItem('checkoutSession')
+        const session = sessionRaw ? JSON.parse(sessionRaw) : null
+        if (
+          hasConfirmedEvaluationPayment(formData) ||
+          hasConfirmedEvaluationPayment(session)
+        ) {
+          setLoading(true)
+          setConfirmationModal(false)
+          setShowPayment(false)
+          finalizeSubmission()
+          return
+        }
+      } catch {
+        /* ignore */
+      }
+
       return setShowPayment(true)
     }
   }
@@ -658,6 +721,17 @@ function Page() {
       setLoading(false)
     }
   }
+
+  useAutoFinalizeAfterEvaluationPayment({
+    listingId: id,
+    formData,
+    images,
+    thumbnail,
+    finalizeSubmission,
+    setLoading,
+    setShowPayment,
+    setConfirmationModal,
+  })
 
   const toggleDropdown = () => {
     setDropdownVisible(!dropdownVisible)

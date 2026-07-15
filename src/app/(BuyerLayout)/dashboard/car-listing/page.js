@@ -18,7 +18,7 @@ import {
 } from '@/libs/evaluationBooking'
 import { carBrands } from '@/utils'
 import axios from 'axios'
-import { Suspense, useContext, useEffect, useState } from 'react'
+import { Suspense, useContext, useEffect, useMemo, useState } from 'react'
 import flags from 'react-phone-number-input/flags'
 import 'react-phone-number-input/style.css'
 import { toast, ToastContainer } from 'react-toastify'
@@ -45,6 +45,8 @@ import {
   useRestorePendingListingDraft,
   useRefetchListingOnReturn,
 } from '@/hooks/useRestorePendingListingDraft'
+import { useAutoFinalizeAfterEvaluationPayment } from '@/hooks/useAutoFinalizeAfterEvaluationPayment'
+import { hasPendingListingDraft } from '@/libs/pendingListingDraft'
 import customAxios from '../../../../utils/apis/apis'
 
 const initialFormData = {
@@ -197,17 +199,62 @@ function Page() {
     fetchData,
     setVideo,
     resetForm,
+    setImages,
+    setThumbnail,
+    setVideos,
+    setSelectedCountry,
+    setSelectedCity,
+    setSelectedNeighbourhood,
+    setCountryCode,
+    setPhoneNumber,
+    setSelectedModel,
   } = useContext(ListingContext)
+
+  const listingDraftRestoreApi = useMemo(
+    () => ({
+      setFormData,
+      setImages,
+      setThumbnail,
+      setVideos,
+      setSelectedCountry,
+      setSelectedCity,
+      setSelectedNeighbourhood,
+      setCountryCode,
+      setPhoneNumber,
+      setTotalPrice,
+      setSelectedMake,
+      setSelectedModel,
+    }),
+    [
+      setFormData,
+      setImages,
+      setThumbnail,
+      setVideos,
+      setSelectedCountry,
+      setSelectedCity,
+      setSelectedNeighbourhood,
+      setCountryCode,
+      setPhoneNumber,
+      setTotalPrice,
+      setSelectedModel,
+    ],
+  )
 
   useEffect(() => {
     if (id) {
       fetchData('car')
-    } else {
-      resetForm()
-      setFormData(initialFormData)
-      handleFormData(initialFormData, dropdownData)
-      setLoading(false)
+      return
     }
+
+    if (hasPendingListingDraft()) {
+      setLoading(false)
+      return
+    }
+
+    resetForm()
+    setFormData(initialFormData)
+    handleFormData(initialFormData, dropdownData)
+    setLoading(false)
   }, [searchParams])
 
   useEffect(() => {
@@ -217,8 +264,8 @@ function Page() {
   }, [id, formData?.make])
 
   useRefreshListingAfterServicePayment(id, 'car', fetchData)
-  useRestoreListingAfterClozerPayment(setFormData)
-  useRestorePendingListingDraft(id, setFormData)
+  useRestoreListingAfterClozerPayment(listingDraftRestoreApi)
+  useRestorePendingListingDraft(id, listingDraftRestoreApi)
   useRefetchListingOnReturn(id, 'car', fetchData)
 
   const handleTechnicalModal = () => {
@@ -277,6 +324,23 @@ function Page() {
         toast.error('Thumbnail image is required.')
         setLoading(false)
         throw new Error('Thumbnail is required')
+      }
+
+      try {
+        const sessionRaw = localStorage.getItem('checkoutSession')
+        const session = sessionRaw ? JSON.parse(sessionRaw) : null
+        if (
+          hasConfirmedEvaluationPayment(formData) ||
+          hasConfirmedEvaluationPayment(session)
+        ) {
+          setLoading(true)
+          setConfirmationModal(false)
+          setShowPayment(false)
+          finalizeSubmission()
+          return
+        }
+      } catch {
+        /* ignore */
       }
 
       return setShowPayment(true)
@@ -463,6 +527,17 @@ function Page() {
       setLoading(false)
     }
   }
+
+  useAutoFinalizeAfterEvaluationPayment({
+    listingId: id,
+    formData,
+    images,
+    thumbnail,
+    finalizeSubmission,
+    setLoading,
+    setShowPayment,
+    setConfirmationModal,
+  })
 
   const handleChange = (e) => {
     const { name, value } = e.target

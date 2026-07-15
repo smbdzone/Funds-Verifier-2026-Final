@@ -301,6 +301,43 @@ const Page = () => {
 
   const isOffPlan = formData?.assetType === 'Property Off Plan For Sale'
 
+  // After Clozer evaluation payment: restore draft then create listing automatically.
+  useEffect(() => {
+    if (id || isOffPlan) return
+    try {
+      if (sessionStorage.getItem('fv.autoFinalizeEvaluationPayment') !== '1') {
+        return
+      }
+      const sessionRaw = localStorage.getItem('checkoutSession')
+      const session = sessionRaw ? JSON.parse(sessionRaw) : null
+      if (
+        !hasConfirmedEvaluationPayment(session) &&
+        !hasConfirmedEvaluationPayment(formData)
+      ) {
+        return
+      }
+      if (!formData?.title || !formData?.evaluationDateTime) return
+      if (!images?.length || !thumbnail) return
+
+      sessionStorage.removeItem('fv.autoFinalizeEvaluationPayment')
+      setLoading(true)
+      setShowPayment(false)
+      setConfirmationModal(false)
+      finalizeSubmission()
+    } catch {
+      /* ignore */
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- run when restored form is ready
+  }, [
+    id,
+    isOffPlan,
+    formData?.title,
+    formData?.evaluationDateTime,
+    formData?.EvaluationPaymentStatus,
+    images?.length,
+    thumbnail,
+  ])
+
   useEffect(() => {
     if (
       isOffPlan &&
@@ -475,6 +512,24 @@ const Page = () => {
         setConfirmationModal(false)
         finalizeSubmission()
         return
+      }
+
+      // Already paid for evaluation (Stripe or Clozer) — create listing, don't ask to pay again.
+      try {
+        const sessionRaw = localStorage.getItem('checkoutSession')
+        const session = sessionRaw ? JSON.parse(sessionRaw) : null
+        if (
+          hasConfirmedEvaluationPayment(formData) ||
+          hasConfirmedEvaluationPayment(session)
+        ) {
+          setLoading(true)
+          setConfirmationModal(false)
+          setShowPayment(false)
+          finalizeSubmission()
+          return
+        }
+      } catch {
+        /* ignore corrupt session */
       }
 
       return setShowPayment(true)

@@ -1,6 +1,6 @@
 'use client'
 
-import { useContext, useState } from 'react'
+import { useContext, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { toast } from 'react-toastify'
 import {
@@ -19,7 +19,7 @@ import {
   formatAed,
   getFullPayDiscountPercent,
 } from '@/libs/paymentDiscount'
-import { clearAbandonedEvaluationPaymentDraft, clearEvaluationSlotSelection } from '@/libs/evaluationBooking'
+import { clearAbandonedEvaluationPaymentDraft } from '@/libs/evaluationBooking'
 import { savePendingListingDraft } from '@/libs/pendingListingDraft'
 import {
   handleImageUpload,
@@ -45,6 +45,16 @@ const PaymentModal = ({
   const [loading, setLoading] = useState(false)
   const [paymentStep, setPaymentStep] = useState('choice')
   const [clozerLoading, setClozerLoading] = useState(false)
+
+  useEffect(() => {
+    if (!show || !formData) return
+    savePendingListingDraft({
+      formData,
+      images: listingCtx.images || [],
+      thumbnail: listingCtx.thumbnail,
+      videos: listingCtx.videos || [],
+    })
+  }, [show, formData, listingCtx.images, listingCtx.thumbnail, listingCtx.videos])
 
   if (!show) return null
 
@@ -242,17 +252,35 @@ const PaymentModal = ({
   }
 
   const handleClose = () => {
+    // Keep listing form + evaluation slot; only drop unpaid checkout session.
     clearAbandonedEvaluationPaymentDraft()
-    if (!formData?.EvaluationPaymentStatus) {
-      clearEvaluationSlotSelection(setFormData)
+    if (formData) {
+      savePendingListingDraft({
+        formData,
+        images: listingCtx.images || [],
+        thumbnail: listingCtx.thumbnail,
+        videos: listingCtx.videos || [],
+      })
     }
     setPaymentStep('choice')
     onClose()
   }
 
   const handleBackToPaymentChoice = () => {
-    clearEvaluationSlotSelection(setFormData)
+    // Switching Pay in Full ↔ Installments must not clear listing/slot data.
     setPaymentStep('choice')
+  }
+
+  const persistDraftThen = async (next) => {
+    if (formData) {
+      savePendingListingDraft({
+        formData,
+        images: listingCtx.images || [],
+        thumbnail: listingCtx.thumbnail,
+        videos: listingCtx.videos || [],
+      })
+    }
+    if (typeof next === 'function') next()
   }
 
   return (
@@ -272,7 +300,9 @@ const PaymentModal = ({
             amount={evaluationAmount}
             loading={clozerLoading}
             title='Payment for Evaluation'
-            onPayFull={() => setPaymentStep('stripe')}
+            onPayFull={() => {
+              persistDraftThen(() => setPaymentStep('stripe'))
+            }}
             onPayInstallments={handleClozerPay}
           />
 

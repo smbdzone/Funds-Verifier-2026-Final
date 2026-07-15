@@ -6,7 +6,19 @@ const PLACEHOLDER = '/listing/camera.svg'
  * stored unsigned `url` if the response didn't include a signed one.
  */
 export function getListingImageSrc(image) {
-  if (!image || typeof image !== 'object') return PLACEHOLDER
+  if (!image) return PLACEHOLDER
+  if (typeof image === 'string') {
+    if (
+      image.startsWith('http') ||
+      image.startsWith('blob:') ||
+      image.startsWith('data:') ||
+      image.startsWith('/')
+    ) {
+      return image
+    }
+    return PLACEHOLDER
+  }
+  if (typeof image !== 'object') return PLACEHOLDER
   const signed = image.signedUrl
   if (typeof signed === 'string' && signed.startsWith('http')) return signed
   const url = image.url
@@ -29,40 +41,44 @@ export function getListingVideoSrc(video) {
 }
 
 /**
- * Items for listing card carousel: valid gallery images first, then videos.
- * Skips picture entries with no usable URL (same idea as the property detail page).
- * If there is still no image slide, uses thumbnail; otherwise a placeholder icon.
+ * Items for listing card carousel: thumbnail cover first (when set), then gallery
+ * images, then videos. Falls back to placeholder only when nothing usable exists.
  */
 export function getListingCarouselItems(listing) {
   const items = []
+  const seen = new Set()
+
+  const pushImage = (img) => {
+    const src = getListingImageSrc(img)
+    if (!src || src === PLACEHOLDER || seen.has(src)) return
+    seen.add(src)
+    items.push({ type: 'image', src })
+  }
+
+  // Card cover: uploaded Thumbnail must lead previews on dashboard + public cards.
+  const thumbs = listing?.thumbnailImg?.images
+  if (Array.isArray(thumbs) && thumbs.length) {
+    for (const thumb of thumbs) pushImage(thumb)
+  } else if (listing?.thumbnailImg && !listing.thumbnailImg.images) {
+    pushImage(listing.thumbnailImg)
+  }
 
   const pics = listing?.pictures?.images
   if (Array.isArray(pics)) {
-    for (const img of pics) {
-      const src = getListingImageSrc(img)
-      if (src && src !== PLACEHOLDER) items.push({ type: 'image', src })
-    }
+    for (const img of pics) pushImage(img)
   }
 
   const vids = listing?.video?.videos
   if (Array.isArray(vids)) {
     for (const v of vids) {
       const src = getListingVideoSrc(v)
-      if (src)
+      if (src) {
         items.push({
           type: 'video',
           src,
           contentType: v?.contentType,
         })
-    }
-  }
-
-  const hasImageSlide = items.some((i) => i.type === 'image')
-  if (!hasImageSlide) {
-    const thumb = listing?.thumbnailImg?.images?.[0]
-    if (thumb) {
-      const src = getListingImageSrc(thumb)
-      if (src && src !== PLACEHOLDER) items.unshift({ type: 'image', src })
+      }
     }
   }
 
@@ -138,22 +154,29 @@ export function getListingDetailMediaItems(listing) {
 
 /** @deprecated use getListingCarouselItems — kept for any older imports */
 export function getListingGalleryImages(listing) {
+  const thumb = listing?.thumbnailImg?.images?.[0]
+  if (thumb) return [thumb]
   const pics = listing?.pictures?.images
   if (Array.isArray(pics) && pics.length > 0) return pics
-  const thumb = listing?.thumbnailImg?.images?.[0]
-  return thumb ? [thumb] : []
+  return []
 }
 
 /**
  * Best-effort single-image source for a listing card / slider cell.
- * Prefers the fresh signedUrl on the thumbnail, then the first picture,
+ * Prefers the listing Thumbnail, then the first gallery picture,
  * then `fallback` (caller-provided default like '/villa.jpg').
  */
 export function getListingThumbSrc(listing, fallback = PLACEHOLDER) {
-  const candidate =
-    listing?.pictures?.images?.[0] || listing?.thumbnailImg?.images?.[0]
-  const src = getListingImageSrc(candidate)
-  return src && src !== PLACEHOLDER ? src : fallback
+  const thumb =
+    listing?.thumbnailImg?.images?.[0] ||
+    (listing?.thumbnailImg && !listing.thumbnailImg.images
+      ? listing.thumbnailImg
+      : null)
+  const thumbSrc = getListingImageSrc(thumb)
+  if (thumbSrc && thumbSrc !== PLACEHOLDER) return thumbSrc
+
+  const picSrc = getListingImageSrc(listing?.pictures?.images?.[0])
+  return picSrc && picSrc !== PLACEHOLDER ? picSrc : fallback
 }
 
 /** First uploaded gallery/thumbnail image for listing cards — never a static asset. */

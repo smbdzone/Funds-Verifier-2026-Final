@@ -114,6 +114,9 @@ export function savePendingListingDraft({
           assetType: formData.assetType || '',
           phoneNumber: formData.phoneNumber || '',
           price: formData.price ?? '',
+          make: formData.make || '',
+          category: formData.category || '',
+          model: formData.model || '',
         },
         savedAt: Date.now(),
       }),
@@ -168,6 +171,9 @@ export function applyPendingListingDraft(draft, api = {}) {
     setCountryCode,
     setPhoneNumber,
     setTotalPrice,
+    setSelectedMake,
+    setSelectedCategory,
+    setSelectedModel,
     clearEvalSlots = true,
   } = api
 
@@ -199,6 +205,9 @@ export function applyPendingListingDraft(draft, api = {}) {
     nextForm.neighbourhood || draft.ui?.neighbourhood || ''
   const propertyType =
     nextForm.propertyType || draft.ui?.propertyType || ''
+  const make = nextForm.make || draft.ui?.make || ''
+  const category = nextForm.category || draft.ui?.category || ''
+  const model = nextForm.model || draft.ui?.model || ''
 
   if (country && typeof setSelectedCountry === 'function') {
     setSelectedCountry(country)
@@ -217,6 +226,15 @@ export function applyPendingListingDraft(draft, api = {}) {
   }
   if (propertyType && typeof setSelectType === 'function') {
     setSelectType(propertyType)
+  }
+  if (make && typeof setSelectedMake === 'function') {
+    setSelectedMake(make)
+  }
+  if (category && typeof setSelectedCategory === 'function') {
+    setSelectedCategory(category)
+  }
+  if (model && typeof setSelectedModel === 'function') {
+    setSelectedModel(model)
   }
   if (nextForm.phoneNumber && typeof setPhoneNumber === 'function') {
     setPhoneNumber(String(nextForm.phoneNumber))

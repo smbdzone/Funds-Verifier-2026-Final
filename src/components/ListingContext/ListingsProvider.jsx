@@ -106,10 +106,10 @@ const ListingsProvider = ({ children }) => {
     category: '',
     subCategory: '',
     value: '',
-    payment_details: {},
+    payment_details: null,
     payment_method_status: '',
     price: null,
-    userUUID: user?.uuid,
+    userUUID: '',
   })
   const [technicalModalData, setTechnicalModalData] = useState({
     name: '',
@@ -122,10 +122,10 @@ const ListingsProvider = ({ children }) => {
     category: '',
     subCategory: '',
     value: '',
-    payment_details: {},
+    payment_details: null,
     payment_method_status: '',
     price: null,
-    userUUID: user?.uuid,
+    userUUID: '',
   })
 
   const [selectedCategory, setSelectedCategory] = useState('Any')
@@ -680,15 +680,11 @@ const ListingsProvider = ({ children }) => {
     } else setThumbnail(null)
   }
 
+  /** True when the user actually requested 3D or technical report (has a fee). */
   const isValidState = (state) => {
-    return (
-      state !== null &&
-      state !== undefined &&
-      Object.keys(state).length > 0 &&
-      Object.values(state).some(
-        (value) => value !== null && value !== undefined && value !== '',
-      )
-    )
+    if (!state || typeof state !== 'object') return false
+    const price = Number(state.price)
+    return Number.isFinite(price) && price > 0
   }
 
   const handleCheckboxChange = (e, key) => {

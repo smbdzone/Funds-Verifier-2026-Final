@@ -1,5 +1,28 @@
 import Image from 'next/image'
-import React, { useMemo } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
+import { getListingImageSrc } from '@/libs/listingCardMedia'
+
+const PLACEHOLDER = '/listing/camera.svg'
+
+function resolveThumbnailPreview(image) {
+  if (!image) return null
+
+  if (typeof image === 'string') {
+    if (image.startsWith('http') || image.startsWith('blob:') || image.startsWith('/')) {
+      return image
+    }
+    return null
+  }
+
+  if (image instanceof File || image instanceof Blob) {
+    return URL.createObjectURL(image)
+  }
+
+  const fromMedia = getListingImageSrc(image)
+  if (fromMedia && fromMedia !== PLACEHOLDER) return fromMedia
+
+  return null
+}
 
 const ListingsImageComponent = ({
   errors,
@@ -9,36 +32,46 @@ const ListingsImageComponent = ({
   handleThumbImageChange,
   disabled,
 }) => {
+  const [objectUrl, setObjectUrl] = useState(null)
+
   const imageUrl = useMemo(() => {
     if (!image) return null
-    if (typeof image?.signedUrl === 'string' && image?.signedUrl.startsWith('http')) {
-      return image?.signedUrl
+    if (image instanceof File || image instanceof Blob) {
+      return objectUrl
     }
-    if (typeof image?.url === 'string' && image?.url.startsWith('http')) {
-      return image?.url
-    } else if (typeof image === 'object') {
-      return URL.createObjectURL(image)
-    } else {
-      return null
+    return resolveThumbnailPreview(image)
+  }, [image, objectUrl])
+
+  useEffect(() => {
+    if (!(image instanceof File || image instanceof Blob)) {
+      setObjectUrl(null)
+      return undefined
+    }
+    const url = URL.createObjectURL(image)
+    setObjectUrl(url)
+    return () => {
+      URL.revokeObjectURL(url)
     }
   }, [image])
 
   return (
     <>
       <div className='flex flex-wrap mt-2 w-[80%]'>
-        {image && (
+        {image && imageUrl ? (
           <div className='w-2/5 p-2 relative group'>
             <div className='h-[20px]'>
               <Image
                 width={100}
                 height={100}
                 src={imageUrl}
-                alt='uploaded-image'
+                alt='Uploaded thumbnail'
+                unoptimized
                 className='w-full bg-cover h-[100px] object-contain'
               />
             </div>
             {!disabled && (
               <button
+                type='button'
                 onClick={() => handleImageRemove(image?.public_id)}
                 className='absolute top-0 right-0 w-6 flex justify-center items-center h-6 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity'
                 title='Remove image'
@@ -47,7 +80,7 @@ const ListingsImageComponent = ({
               </button>
             )}
           </div>
-        )}
+        ) : null}
       </div>
 
       <input
@@ -61,12 +94,11 @@ const ListingsImageComponent = ({
 
       <div className='absolute right-[20px] xl:top-0 xxs:top-[55px]'>
         <label
-          htmlFor={!disabled ? 'thumbnail' : undefined} // ✅ Prevent click when disabled
-          className={`flex flex-col items-center justify-center w-[176px] xl:h-[154px] xxs:h-[110px] shadow-neonsm my-[19px] ${
-            disabled
-              ? 'cursor-not-allowed opacity-50 pointer-events-none' // ✅ disable interaction
+          htmlFor={!disabled ? 'thumbnail' : undefined}
+          className={`flex flex-col items-center justify-center w-[176px] xl:h-[154px] xxs:h-[110px] shadow-neonsm my-[19px] ${disabled
+              ? 'cursor-not-allowed opacity-50 pointer-events-none'
               : 'cursor-pointer'
-          }`}
+            }`}
         >
           <Image
             width={45}
