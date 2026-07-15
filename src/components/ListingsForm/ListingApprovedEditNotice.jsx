@@ -18,16 +18,17 @@ export default function ListingApprovedEditNotice({ formData }) {
           {approvedLocked ? (
             <>
               {' '}
-              You can still request a 3D walkthrough or technical report. Other
-              fields remain locked after evaluator approval.
+              You can still change Public/Private, request a 3D walkthrough, or
+              request a technical report. Other fields remain locked after
+              evaluator approval.
             </>
           ) : null}
         </>
       ) : (
         <>
           This listing is approved with an evaluation certificate. You can update
-          the price, request a 3D walkthrough, or request a technical report.
-          Other fields are locked.
+          the price, Public/Private listing, request a 3D walkthrough, or request
+          a technical report. Other fields are locked.
         </>
       )}
     </p>

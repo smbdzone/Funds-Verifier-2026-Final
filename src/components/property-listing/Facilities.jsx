@@ -20,11 +20,14 @@ const Facilities = React.memo(
     id,
   }) => {
     const fieldsLocked = isListingEvaluatorApprovedLocked(formData)
+    // Private/Public stays editable after approval; show on edit so visibility can change.
+    const showListingVisibility =
+      Number(formData?.price) >= 5000000 || Boolean(id) || fieldsLocked
 
     return (
       <div className="pt-[30px]">
         <div className="px-[19px] space-y-3">
-          {formData.price >= 5000000 ? (
+          {showListingVisibility ? (
             <>
               <h2 className="text-dark-black text-xl font-medium pt-5">
                 Listing
@@ -40,7 +43,6 @@ const Facilities = React.memo(
                       id={`listing-${index}`}
                       checked={formData.listing === listing}
                       onChange={(e) => handleRadioChange(e, "listing")}
-                      disabled={fieldsLocked}
                     />
                     <label
                       className="custom-label"
