@@ -87,6 +87,7 @@ export function mapApiListingToOffPlanCard(listing) {
     bathrooms: listing?.bathrooms,
     sizeUnit: listing?.sizeUnit || listing?.sizeType || 'SQFT',
     sizeSQFT: listing?.sizeSQFT,
+    sizeSQM: listing?.sizeSQM,
     description: listing?.description,
     additionalDescription: listing?.additionalDescription,
     facilities: listing?.facilities || [],

@@ -1200,7 +1200,7 @@ export const data = [
     Dubai: {
       Apartment: 2500,
       Villa: 3000,
-      Townhouse: 0,
+      Townhouse: 2800,
       Multiple: 0,
       Penthouse: 0,
       "Residential Building": 10000,
@@ -1230,7 +1230,7 @@ export const data = [
     "Abu Dhabi": {
       Apartment: 2500,
       Villa: 3000,
-      Townhouse: 0,
+      Townhouse: 2800,
       Multiple: 0,
       Penthouse: 0,
       "Residential Building": 10000,
@@ -1260,7 +1260,7 @@ export const data = [
     "Sharjah & North Emirates": {
       Apartment: 2500,
       Villa: 3000,
-      Townhouse: 0,
+      Townhouse: 2800,
       Multiple: 0,
       Penthouse: 0,
       "Residential Building": 10000,

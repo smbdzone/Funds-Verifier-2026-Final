@@ -35,6 +35,7 @@ import {
   getPendingEvaluationViewPath,
 } from '@/libs/listingEditPaths'
 import { getListingDetailId } from '@/libs/listingSlug'
+import { hasPendingDocumentRequests } from '@/utils/requestDocumentUtils'
 
 const renderListingDetails = (listing, hasFeaturedStyling) => {
   switch (listing.assetType) {
@@ -261,6 +262,7 @@ const ListingCard = ({
       const { hasFeaturedStyling, badge: premiumBadge, hasPaidTechnical } =
         getListingPremiumDisplay(listing)
       const technicalReportPending = hasPaidTechnical && !technicalReportSrc
+      const documentRequestedPending = hasPendingDocumentRequests(listing)
 
       const showDocIcons =
         usePendingEvaluation || listing.status !== 0
@@ -283,6 +285,16 @@ const ListingCard = ({
             }
           >
             <div className='md:absolute top-2 w-full right-2 z-50 items-center justify-end flex gap-2'>
+              {documentRequestedPending ? (
+                <div className='relative group'>
+                  <span className='inline-flex items-center rounded bg-yellow-400 px-2.5 py-1 text-xs font-semibold text-black shadow-sm'>
+                    Document Requested
+                  </span>
+                  <span className='absolute top-full left-1/2 z-50 mt-1 hidden -translate-x-1/2 whitespace-nowrap rounded bg-white px-2 py-1 text-xs text-black shadow-md group-hover:flex'>
+                    Upload requested documents in Documents Storage
+                  </span>
+                </div>
+              ) : null}
               {/* status */}
               {listing.status === 0 ? (
                 <>

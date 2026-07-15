@@ -67,6 +67,55 @@ export function isRequestDocumentFulfilled(entry) {
   return Boolean(entry.document)
 }
 
+/** True when the listing has at least one unfulfilled document request. */
+export function hasPendingDocumentRequests(listingOrDocs) {
+  const docs = Array.isArray(listingOrDocs)
+    ? listingOrDocs
+    : listingOrDocs?.requestDocument
+  return normalizeRequestDocuments(docs).some(
+    (entry) => !isRequestDocumentFulfilled(entry),
+  )
+}
+
+/**
+ * Evaluator "Uploaded documents" list: fulfilled request docs first,
+ * then other uploadDocument files not already represented.
+ */
+export function buildEvaluatorUploadedDocuments(
+  requestDocument = [],
+  uploadDocument = [],
+) {
+  const fromRequests = normalizeRequestDocuments(requestDocument)
+    .filter(isRequestDocumentFulfilled)
+    .map((req) => {
+      const doc =
+        req.document && typeof req.document === 'object' ? req.document : {}
+      return {
+        ...doc,
+        Certificate: {
+          ...(doc.Certificate || {}),
+          name: req.name || doc.Certificate?.name || 'Document',
+        },
+        uploadedAt: req.uploadedAt || req.date || doc.uploadedAt,
+      }
+    })
+
+  const seen = new Set(
+    fromRequests
+      .map((doc) => String(doc?._id || doc?.uuid || ''))
+      .filter(Boolean),
+  )
+
+  const extras = (Array.isArray(uploadDocument) ? uploadDocument : []).filter(
+    (doc) => {
+      const id = String(doc?._id || doc?.uuid || '')
+      return id ? !seen.has(id) : true
+    },
+  )
+
+  return [...fromRequests, ...extras]
+}
+
 export function requestDocumentsMissingDate(docs) {
   return normalizeRequestDocuments(docs).some((doc) => !doc.date)
 }

@@ -76,8 +76,15 @@ function ClozerReturnContent() {
           return
         }
 
-        if (['rejected', 'defaulted'].includes(status)) {
-          setError('Your installment application was not approved. Please try pay in full or contact support.')
+        if (['rejected', 'defaulted', 'cancelled', 'canceled', 'failed'].includes(status)) {
+          const returnUrl =
+            localStorage.getItem('clozerReturnUrl') ||
+            '/dashboard/property-listing'
+          localStorage.removeItem('clozerReturnUrl')
+          toast.error(
+            'Installment payment was not completed. Your listing details were kept — you can try again.',
+          )
+          router.replace(returnUrl)
           return
         }
 
@@ -85,10 +92,15 @@ function ClozerReturnContent() {
         if (attempts < 8) {
           setTimeout(poll, 2500)
         } else {
+          const returnUrl =
+            localStorage.getItem('clozerReturnUrl') ||
+            '/dashboard/property-listing'
+          localStorage.removeItem('clozerReturnUrl')
           setError(
-            'Your application is being processed. Check your dashboard for updates, or contact support with reference: ' +
-            transactionId,
+            'Your application is still processing. We saved your listing details — return to the form to continue.',
           )
+          // Keep draft; after timeout send user back so fields are restored.
+          setTimeout(() => router.replace(returnUrl), 2500)
         }
       } catch (err) {
         if (cancelled) return
@@ -113,9 +125,15 @@ function ClozerReturnContent() {
         <button
           type='button'
           className='btn-gradient px-6 py-2'
-          onClick={() => router.push('/dashboard/property-listing')}
+          onClick={() => {
+            const returnUrl =
+              localStorage.getItem('clozerReturnUrl') ||
+              '/dashboard/property-listing'
+            localStorage.removeItem('clozerReturnUrl')
+            router.push(returnUrl)
+          }}
         >
-          Back to dashboard
+          Back to listing form
         </button>
       </div>
     )

@@ -1,6 +1,6 @@
 /* eslint-disable react-hooks/rules-of-hooks */
 'use client'
-import { PlusIcon, UploadIcon } from '@/components/Icons'
+import { UploadIcon } from '@/components/Icons'
 import axios from 'axios'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
@@ -22,7 +22,9 @@ import { formatNumberWithCommas } from '../../../utils/global-functions/global'
 import customAxios from '../../../utils/apis/apis'
 import EvaluatorListingMedia from '../EvaluatorProfile/requestCompoenets/EvaluatorListingMedia'
 import EvaluatorDateField from '../EvaluatorProfile/requestCompoenets/EvaluatorDateField'
+import RequestDocumentsActions from '../EvaluatorProfile/requestCompoenets/RequestDocumentsActions'
 import {
+  buildEvaluatorUploadedDocuments,
   formatDateForInput,
   getRequestDocumentName,
   normalizeRequestDocuments,
@@ -216,10 +218,10 @@ export const RequestTab = () => {
               fileUpload?._id || property?.evaluationCertificate || null,
             ...(property?.status !== 1 && certificateDate
               ? {
-                  evaluationCertificateDate: new Date(
-                    certificateDate,
-                  ).toISOString(),
-                }
+                evaluationCertificateDate: new Date(
+                  certificateDate,
+                ).toISOString(),
+              }
               : {}),
             invoice: invoiceUpload?._id || property?.invoice || null,
             status: 1,
@@ -269,14 +271,18 @@ export const RequestTab = () => {
   }
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [pdfUrl, setPdfUrl] = useState('')
+  const [pdfFileName, setPdfFileName] = useState('')
 
-  const handleOpenDoc = (url) => {
+  const handleOpenDoc = (url, fileName = 'document.pdf') => {
     setPdfUrl(url)
+    setPdfFileName(fileName)
     setIsModalOpen(true)
   }
 
   const closeModal = () => {
     setIsModalOpen(false)
+    setPdfUrl('')
+    setPdfFileName('')
   }
 
   const [evaluationPrice, setEvaluationPrice] = useState()
@@ -455,65 +461,34 @@ export const RequestTab = () => {
               editText={editText}
               setEditIndex={setEditIndex}
             />
-            <div className='flex sm:flex-row flex-col justify-between w-full sm:items-center items-start sm:gap-0 gap-3 mb-5'>
-              <div className='sm:flex sm:items-center gap-3'>
-                <div className='flex sm:flex-row flex-col sm:space-y-0 space-y-2 gap-3'>
-                  <button
-                    onClick={() => setShowTextArea(!showTextArea)}
-                    className='border border-blue-500 px-2 py-2 text-sm sm:text-base rounded-md flex gap-2 items-center'
-                  >
-                    <div className='flex items-center justify-center rounded-full bg-prussianBlue'>
-                      <PlusIcon />
-                    </div>
-                    <span className='text-prussianBlue truncate sm:text-base text-xs '>
-                      Add More Documents
-                    </span>
-                  </button>
-                  {showTextArea && (
-                    <div className='flex w-full flex-col gap-3 sm:flex-row sm:items-end'>
-                      <textarea
-                        rows={1}
-                        className='block w-full rounded-md border border-[#969696] bg-white py-2 pl-5 text-sm text-[#969696] sm:text-base'
-                        value={newDocument}
-                        onChange={(e) => setNewDocument(e.target.value)}
-                        placeholder='Document name'
-                      />
-                      <EvaluatorDateField
-                        id='newDocumentDate'
-                        label='Date'
-                        value={newDocumentDate}
-                        onChange={(e) => setNewDocumentDate(e.target.value)}
-                        className='sm:w-48'
-                      />
-                      <button
-                        onClick={handleAddDocument}
-                        className='rounded-md border border-blue-500 primary-gradient px-4 py-2 text-sm text-white sm:text-base'
-                      >
-                        Add
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-              <div className='flex sm:justify-center justify-end'>
-                <button
-                  className='primary-gradient text-white py-2 px-6 text-sm sm:text-base rounded-md '
-                  onClick={() => handleRequest()}
-                >
-                  Request
-                </button>
-              </div>
-            </div>
+            <RequestDocumentsActions
+              showTextArea={showTextArea}
+              setShowTextArea={setShowTextArea}
+              newDocument={newDocument}
+              setNewDocument={setNewDocument}
+              newDocumentDate={newDocumentDate}
+              setNewDocumentDate={setNewDocumentDate}
+              onAdd={handleAddDocument}
+              onRequest={() => handleRequest()}
+            />
           </>
         )}
 
         <DocumentSection
           title='Uploaded documents'
-          documents={property.uploadDocument}
+          documents={buildEvaluatorUploadedDocuments(
+            requestDocument,
+            property.uploadDocument,
+          )}
           handleOpenDoc={handleOpenDoc}
           fetchData={fetchPropertyData}
         />
-        <Modal isOpen={isModalOpen} onClose={closeModal} fileUrl={pdfUrl} />
+        <Modal
+          isOpen={isModalOpen}
+          onClose={closeModal}
+          fileUrl={pdfUrl}
+          fileName={pdfFileName}
+        />
         {property.status === 1 ? null : (
           <>
             <div className='my-6 flex sm:flex-row flex-col items-start justify-between gap-4'>

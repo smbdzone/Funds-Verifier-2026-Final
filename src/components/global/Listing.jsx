@@ -162,9 +162,9 @@ const Listing = ({
       label: 'All Countries',
       isListings: property || car || boat || jewelry,
       handleToggleDropdown: toggleDropdownn,
-      formData: toUnitedArabEmiratesListingCountryName(
-        formData?.country || selectedCountry,
-      ),
+      formData: formData?.country
+        ? toUnitedArabEmiratesListingCountryName(formData.country)
+        : selectedCountry || 'Select Country',
       handleSelectOption: handleCountrySelect,
       dropdowns: isOpen,
       dropdownOptions: filteredCountries,

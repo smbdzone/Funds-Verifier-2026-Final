@@ -41,7 +41,7 @@ export default function FundsTypeSlider() {
     propertyTypeData?.[1]?.products?.[0],
     "/apartment.jpg"
   );
-  const buildingThumbnail = getListingThumbSrc(
+  const townhouseThumbnail = getListingThumbSrc(
     propertyTypeData?.[2]?.products?.[0],
     "/villa.jpg"
   );
@@ -64,14 +64,14 @@ export default function FundsTypeSlider() {
   const slides = [
     {
       slide_title: "Property Types",
-      photos: [villaThumbnail, apartmentThumbnail, buildingThumbnail],
-      context_types: ["Villa", "Apartment", "Building"],
+      photos: [villaThumbnail, apartmentThumbnail, townhouseThumbnail],
+      context_types: ["Villa", "Apartment", "Townhouse"],
       slide_description:
         "Browse evaluator-approved properties and find the right home or investment with confidence.",
       context_descriptions: [
         "Explore verified villas for sale and lease.",
         "Browse approved apartments across the UAE.",
-        "View verified commercial and residential buildings.",
+        "View verified townhouses with evaluator approval.",
       ],
     },
     {

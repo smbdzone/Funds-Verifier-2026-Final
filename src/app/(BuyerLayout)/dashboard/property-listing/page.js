@@ -1,5 +1,5 @@
 'use client'
-import { Suspense, useState, useEffect, useContext } from 'react'
+import { Suspense, useState, useEffect, useContext, useMemo } from 'react'
 import axios from 'axios'
 import 'react-phone-number-input/style.css'
 import { isValidPhoneNumber } from 'libphonenumber-js'
@@ -43,6 +43,7 @@ import {
   useRestorePendingListingDraft,
   useRefetchListingOnReturn,
 } from '@/hooks/useRestorePendingListingDraft'
+import { hasPendingListingDraft } from '@/libs/pendingListingDraft'
 import customAxios from '../../../../utils/apis/apis'
 import {
   applyPremiumServiceRefs,
@@ -180,13 +181,18 @@ const Page = () => {
     handleVideoRemove,
     setModalData,
     resetPremiumPaymentDrafts,
-    // setImages,
-    // setVideo,
+    setImages,
+    setThumbnail,
+    setVideos,
+    setSelectedCountry,
+    setSelectedCity,
+    setSelectedNeighbourhood,
+    setCountryCode,
     resetForm,
   } = useContext(ListingContext)
 
   const initialFormData = {
-    assetType: 'Property For Sale',
+    assetType: 'Select Asset Type',
     country: '',
     city: '',
     phoneNumber: '',
@@ -236,16 +242,52 @@ const Page = () => {
   }
   const assetTypeParam = searchParams.get('assetType')
 
+  const listingDraftRestoreApi = useMemo(
+    () => ({
+      setFormData,
+      setImages,
+      setThumbnail,
+      setVideos,
+      setSelectedCountry,
+      setSelectedCity,
+      setSelectedNeighbourhood,
+      setSelectType,
+      setCountryCode,
+      setPhoneNumber,
+      setTotalPrice,
+    }),
+    [
+      setFormData,
+      setImages,
+      setThumbnail,
+      setVideos,
+      setSelectedCountry,
+      setSelectedCity,
+      setSelectedNeighbourhood,
+      setSelectType,
+      setCountryCode,
+      setPhoneNumber,
+      setTotalPrice,
+    ],
+  )
+
   useEffect(() => {
     if (id) {
       fetchData('property')
       return
     }
+
+    // Cancelled/returning payment: keep draft fields (images + dropdowns).
+    if (hasPendingListingDraft()) {
+      setLoading(false)
+      return
+    }
+
     resetForm()
     handleFormData(
       {
         ...initialFormData,
-        assetType: assetTypeParam || initialFormData.assetType,
+        ...(assetTypeParam ? { assetType: assetTypeParam } : {}),
       },
       dropdownData,
     )
@@ -253,8 +295,8 @@ const Page = () => {
   }, [id, assetTypeParam])
 
   useRefreshListingAfterServicePayment(id, 'property', fetchData)
-  useRestoreListingAfterClozerPayment(setFormData)
-  useRestorePendingListingDraft(id, setFormData)
+  useRestoreListingAfterClozerPayment(listingDraftRestoreApi)
+  useRestorePendingListingDraft(id, listingDraftRestoreApi)
   useRefetchListingOnReturn(id, 'property', fetchData)
 
   const isOffPlan = formData?.assetType === 'Property Off Plan For Sale'

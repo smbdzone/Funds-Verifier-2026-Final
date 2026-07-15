@@ -21,9 +21,13 @@ export function parsePropertySizeInput(rawValue) {
 export function getPropertySizeValue(property, unit) {
   const selectedUnit = unit || property?.sizeUnit || 'SQFT'
   if (selectedUnit === 'SQM') {
-    return property?.sizeSQM ?? ''
+    const sqm = property?.sizeSQM
+    if (sqm !== '' && sqm != null && Number(sqm) > 0) return sqm
+    return property?.sizeSQFT ?? ''
   }
-  return property?.sizeSQFT ?? ''
+  const sqft = property?.sizeSQFT
+  if (sqft !== '' && sqft != null && Number(sqft) > 0) return sqft
+  return property?.sizeSQM ?? ''
 }
 
 /** Label + numeric value for cards and detail views (no unit conversion). */

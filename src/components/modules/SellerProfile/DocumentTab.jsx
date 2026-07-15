@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react'
+import React, { useMemo, useState, useEffect } from 'react'
 import { toast } from 'react-toastify'
 import { handleFileUpload } from '@/libs/uploadAsset'
 import Loader from '../EvaluatorProfile/requestCompoenets/Loader'
 import Modal from '../../documents/modal'
+import EvaluatorDateField from '../EvaluatorProfile/requestCompoenets/EvaluatorDateField'
 import { useProfile } from '../../../context/UserContext'
 import {
   fetchAllDocumentRequests,
@@ -19,6 +20,22 @@ const ALLOWED_TYPES = [
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
 ]
 
+function toDayStart(value) {
+  if (!value) return null
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return null
+  date.setHours(0, 0, 0, 0)
+  return date
+}
+
+function toDayEnd(value) {
+  if (!value) return null
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return null
+  date.setHours(23, 59, 59, 999)
+  return date
+}
+
 export const DocumentTab = () => {
   const [pendingRequests, setPendingRequests] = useState([])
   const [documentHistory, setDocumentHistory] = useState([])
@@ -29,6 +46,10 @@ export const DocumentTab = () => {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [pdfUrl, setPdfUrl] = useState('')
   const [pdfFileName, setPdfFileName] = useState('')
+  const [dateFrom, setDateFrom] = useState('')
+  const [dateTo, setDateTo] = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [statusFilter, setStatusFilter] = useState('all')
   const { user } = useProfile()
 
   const loadPendingRequests = async () => {
@@ -65,6 +86,46 @@ export const DocumentTab = () => {
   useEffect(() => {
     loadDocumentData()
   }, [])
+
+  const filteredHistory = useMemo(() => {
+    const from = toDayStart(dateFrom)
+    const to = toDayEnd(dateTo)
+    const query = searchQuery.trim().toLowerCase()
+
+    return documentHistory.filter((entry) => {
+      if (statusFilter !== 'all' && entry.status !== statusFilter) {
+        return false
+      }
+
+      if (from || to) {
+        const entryDate = toDayStart(entry.date || entry.uploadedAt || entry.requestDate)
+        if (!entryDate) return false
+        if (from && entryDate < from) return false
+        if (to && entryDate > to) return false
+      }
+
+      if (!query) return true
+
+      const haystack = [
+        entry.name,
+        entry.listingTitle,
+        formatDocumentAssetType(entry.assetType),
+        entry.status,
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase()
+
+      return haystack.includes(query)
+    })
+  }, [documentHistory, dateFrom, dateTo, searchQuery, statusFilter])
+
+  const clearFilters = () => {
+    setDateFrom('')
+    setDateTo('')
+    setSearchQuery('')
+    setStatusFilter('all')
+  }
 
   const closeModal = () => {
     setIsModalOpen(false)
@@ -122,7 +183,7 @@ export const DocumentTab = () => {
       console.error(uploadError)
       toast.error(
         uploadError?.response?.data?.message ||
-        'Failed to upload requested document.',
+          'Failed to upload requested document.',
       )
     } finally {
       setUploadingRequestKey(null)
@@ -224,9 +285,74 @@ export const DocumentTab = () => {
           <h2 className='font-medium sm:text-lg text-base lg:text-xl text-prussianBlue mb-2'>
             Document Request History
           </h2>
-          <p className='text-sm text-gray-600 mb-6'>
-            Full history of evaluator document requests for your listings.
+          <p className='text-sm text-gray-600 mb-4'>
+            Full history of all document requests and uploads for your listings.
           </p>
+
+          <div className='mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4'>
+            <EvaluatorDateField
+              id='documentHistoryFrom'
+              label='From'
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+            />
+            <EvaluatorDateField
+              id='documentHistoryTo'
+              label='To'
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+            />
+            <div className='min-w-0'>
+              <label
+                htmlFor='documentHistorySearch'
+                className='mb-2 block text-sm font-medium text-gray-700 sm:text-base'
+              >
+                Search
+              </label>
+              <input
+                id='documentHistorySearch'
+                type='search'
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder='Document, listing, type...'
+                className='block h-[48px] w-full rounded-md border border-[#8d7c3b] bg-white px-3 text-sm text-gray-800 focus:outline-none sm:text-base'
+              />
+            </div>
+            <div className='min-w-0'>
+              <label
+                htmlFor='documentHistoryStatus'
+                className='mb-2 block text-sm font-medium text-gray-700 sm:text-base'
+              >
+                Status
+              </label>
+              <select
+                id='documentHistoryStatus'
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className='block h-[48px] w-full rounded-md border border-[#8d7c3b] bg-white px-3 text-sm text-gray-800 focus:outline-none sm:text-base'
+              >
+                <option value='all'>All</option>
+                <option value='Uploaded'>Uploaded</option>
+                <option value='Pending'>Pending</option>
+              </select>
+            </div>
+          </div>
+
+          <div className='mb-4 flex flex-wrap items-center justify-between gap-2'>
+            <p className='text-xs text-gray-500'>
+              Showing {filteredHistory.length} of {documentHistory.length}{' '}
+              document{documentHistory.length === 1 ? '' : 's'}
+            </p>
+            {(dateFrom || dateTo || searchQuery || statusFilter !== 'all') && (
+              <button
+                type='button'
+                onClick={clearFilters}
+                className='text-sm font-medium text-prussianBlue hover:underline'
+              >
+                Clear filters
+              </button>
+            )}
+          </div>
 
           <div className='custom-shadow rounded w-full max-w-full min-w-0 overflow-hidden'>
             <table className='w-full table-fixed text-xs sm:text-sm bg-white'>
@@ -262,20 +388,24 @@ export const DocumentTab = () => {
                       Loading history...
                     </td>
                   </tr>
-                ) : documentHistory.length === 0 ? (
+                ) : filteredHistory.length === 0 ? (
                   <tr>
                     <td
                       colSpan={6}
                       className='py-6 px-2 text-center text-gray-500'
                     >
-                      No document requests yet.
+                      {documentHistory.length === 0
+                        ? 'No document requests yet.'
+                        : 'No documents match these filters.'}
                     </td>
                   </tr>
                 ) : (
-                  documentHistory.map((entry) => {
+                  filteredHistory.map((entry) => {
                     const historyKey = `${entry.listingId}-${entry.requestIndex}`
                     const isOpening = openingHistoryKey === historyKey
                     const isUploaded = entry.status === 'Uploaded'
+                    const canUploadPending =
+                      !isUploaded && entry.source !== 'upload'
 
                     return (
                       <tr
@@ -307,10 +437,11 @@ export const DocumentTab = () => {
                         </td>
                         <td className='py-2 px-2'>
                           <span
-                            className={`inline-block rounded px-2 py-0.5 text-xs font-medium ${isUploaded
+                            className={`inline-block rounded px-2 py-0.5 text-xs font-medium ${
+                              isUploaded
                                 ? 'bg-green-100 text-green-700'
                                 : 'bg-amber-100 text-amber-700'
-                              }`}
+                            }`}
                           >
                             {entry.status}
                           </span>
@@ -330,7 +461,7 @@ export const DocumentTab = () => {
                               />
                               <span>{isOpening ? 'Opening...' : 'View'}</span>
                             </button>
-                          ) : (
+                          ) : canUploadPending ? (
                             <label className='inline-flex cursor-pointer items-center text-prussianBlue hover:underline'>
                               <input
                                 type='file'
@@ -345,6 +476,8 @@ export const DocumentTab = () => {
                                   : 'Upload'}
                               </span>
                             </label>
+                          ) : (
+                            <span className='text-xs text-gray-400'>—</span>
                           )}
                         </td>
                       </tr>

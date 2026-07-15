@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useContext, useState } from 'react'
 import Link from 'next/link'
 import { toast } from 'react-toastify'
 import {
@@ -11,6 +11,7 @@ import {
   CardCvcElement,
 } from '@stripe/react-stripe-js'
 import { useProfile } from '../../context/UserContext'
+import { ListingContext } from '@/components/ListingContext/ListingsProvider'
 import PaymentChoiceModal from './PaymentChoiceModal'
 import { initiateClozerPayment, getClozerErrorMessage } from '@/libs/initiateClozerPayment'
 import {
@@ -19,6 +20,12 @@ import {
   getFullPayDiscountPercent,
 } from '@/libs/paymentDiscount'
 import { clearAbandonedEvaluationPaymentDraft, clearEvaluationSlotSelection } from '@/libs/evaluationBooking'
+import { savePendingListingDraft } from '@/libs/pendingListingDraft'
+import {
+  handleImageUpload,
+  handleThumbnailUpload,
+  handleVideoUpload,
+} from '@/libs/uploadAsset'
 import { getCsrfHeaders } from '@/utils/csrf'
 import { CloseIcon } from '@/components/Icons'
 
@@ -32,6 +39,7 @@ const PaymentModal = ({
   formData,
 }) => {
   const { user } = useProfile()
+  const listingCtx = useContext(ListingContext) || {}
   const stripe = useStripe()
   const elements = useElements()
   const [loading, setLoading] = useState(false)
@@ -69,10 +77,71 @@ const PaymentModal = ({
         : undefined
 
       if (formData) {
-        localStorage.setItem(
-          'pendingListingDraft',
-          JSON.stringify({ formData, savedAt: Date.now() }),
-        )
+        let draftForm = { ...formData }
+        let draftImages = listingCtx.images || []
+        let draftThumb = listingCtx.thumbnail
+        let draftVideos = listingCtx.videos || []
+
+        // Persist File blobs to the server before leaving the page for Clozer.
+        try {
+          const fileImages = (draftImages || []).filter(
+            (item) => item instanceof File || item instanceof Blob,
+          )
+          if (fileImages.length) {
+            const uploaded = await handleImageUpload(fileImages)
+            if (uploaded) {
+              draftForm = { ...draftForm, pictures: uploaded }
+              draftImages = uploaded?.images || draftImages
+              listingCtx.setImages?.(
+                Array.isArray(uploaded?.images) ? uploaded.images : draftImages,
+              )
+              listingCtx.setFormData?.((prev) => ({
+                ...prev,
+                pictures: uploaded,
+              }))
+            }
+          }
+
+          if (draftThumb instanceof File || draftThumb instanceof Blob) {
+            const uploadedThumb = await handleThumbnailUpload(draftThumb)
+            if (uploadedThumb) {
+              draftForm = { ...draftForm, thumbnailImg: uploadedThumb }
+              draftThumb = uploadedThumb?.images?.[0] || uploadedThumb
+              listingCtx.setThumbnail?.(draftThumb)
+              listingCtx.setFormData?.((prev) => ({
+                ...prev,
+                thumbnailImg: uploadedThumb,
+              }))
+            }
+          }
+
+          const fileVideos = (draftVideos || []).filter(
+            (item) => item instanceof File || item instanceof Blob,
+          )
+          if (fileVideos.length) {
+            const uploadedVideo = await handleVideoUpload(fileVideos)
+            if (uploadedVideo) {
+              draftForm = { ...draftForm, video: uploadedVideo }
+              draftVideos = uploadedVideo?.url
+                ? [uploadedVideo.url]
+                : draftVideos
+              listingCtx.setVideos?.(draftVideos)
+              listingCtx.setFormData?.((prev) => ({
+                ...prev,
+                video: uploadedVideo,
+              }))
+            }
+          }
+        } catch (uploadErr) {
+          console.error('Draft media upload before Clozer:', uploadErr)
+        }
+
+        savePendingListingDraft({
+          formData: draftForm,
+          images: draftImages,
+          thumbnail: draftThumb,
+          videos: draftVideos,
+        })
       }
 
       const data = await initiateClozerPayment({

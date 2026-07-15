@@ -189,9 +189,7 @@ export default function ProductView({ data }) {
               </div>
             </span>
           </div>
-          <p className='leading-relaxed md:text-base text-xs text-black'>
-            {data.description}
-          </p>
+          <Description text={data.description} />
           <div className='mt-3 space-y-3'>
             <h2 className='font-medium md:text-base text-sm mb-2'>Details</h2>
             <div className='flex gap-1 flex-wrap  items-center p-2 shadow rounded mb-2  sm:gap-5'>

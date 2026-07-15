@@ -42,10 +42,12 @@ const OffPlanPaymentPlanDisplay = ({ paymentPlan = [] }) => {
         {paymentPlan.map((step) => {
           const iconKey = inferIconKey(step)
           const Icon = ICON_MAP[iconKey]
+          const milestone = String(step.milestone || '').trim()
+          const displayLabel = milestone || step.paymentLabel || 'Payment Share'
 
           return (
             <div
-              key={`${step.step}-${step.paymentLabel}`}
+              key={`${step.step}-${displayLabel}`}
               className='flex w-[94px] min-w-[94px] flex-none flex-col items-center gap-3'
             >
               <div
@@ -70,8 +72,11 @@ const OffPlanPaymentPlanDisplay = ({ paymentPlan = [] }) => {
                     .trim() || '0'}
                   %
                 </span>
-                <span className='text-center text-base font-medium leading-5 text-prussianBlue'>
-                  {step.paymentLabel}
+                <span
+                  className='line-clamp-2 text-center text-base font-medium leading-5 text-prussianBlue'
+                  title={displayLabel}
+                >
+                  {displayLabel}
                 </span>
               </div>
             </div>

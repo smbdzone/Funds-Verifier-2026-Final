@@ -170,9 +170,7 @@ export default function JewelleryView({ data }) {
               </span>
             </span>
           </div>
-          <p className='leading-relaxed md:text-base text-xs text-black'>
-            {data.description}
-          </p>
+          <Description text={data.description} />
           <div className='mt-3'>
             <h2 className='font-medium md:text-base text-sm mb-2'>Details</h2>
             <div className='flex flex-wrap items-center p-2 shadow rounded mb-5 gap-5'>

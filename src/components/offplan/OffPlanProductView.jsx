@@ -9,7 +9,10 @@ import OffPlanLayoutFloorPlanDisplay from '@/components/offplan/OffPlanLayoutFlo
 import OffPlanPaymentPlanDisplay from '@/components/offplan/OffPlanPaymentPlanDisplay'
 import ListingSocialShare from '@/components/shared/ListingSocialShare'
 import { formatOffPlanPriceRange } from '@/constants/offPlanDummyListings'
-import { formatPropertySizeNumber } from '@/libs/propertySizeUnits'
+import {
+  formatPropertySizeNumber,
+  getPropertySizeValue,
+} from '@/libs/propertySizeUnits'
 import axios from 'axios'
 import Image from 'next/image'
 import React, { useEffect, useMemo, useState } from 'react'
@@ -138,39 +141,38 @@ export default function OffPlanProductView({ data }) {
             </div>
           </div>
 
-          <p className='text-xs leading-relaxed text-black md:text-base'>
-            {data?.description}
-          </p>
+          <Description text={data?.description} />
 
-          <div className='mt-3 space-y-3'>
-            <h2 className='mb-2 text-sm font-medium md:text-base'>Details</h2>
-            <div className='mb-2 flex flex-wrap items-center gap-1 rounded p-2 shadow sm:gap-5'>
+          <div className='mt-5 space-y-4'>
+            <h2 className='text-sm font-medium md:text-base'>Details</h2>
+            <div className='flex flex-wrap items-center gap-x-4 gap-y-3 rounded-md border border-black/5 bg-white p-3 shadow sm:gap-x-6 sm:p-4'>
               <span className='flex flex-row items-center text-[7px] sm:text-xs md:text-sm'>
-                <GoDotFill className='mr-1 flex text-gold-800 sm:mr-2' />
+                <GoDotFill className='mr-1 flex shrink-0 text-gold-800 sm:mr-2' />
                 Developer: {data?.developer}
               </span>
               <span className='flex flex-row items-center text-[7px] sm:text-xs md:text-sm'>
-                <GoDotFill className='mr-2 flex text-gold-800' />
+                <GoDotFill className='mr-2 flex shrink-0 text-gold-800' />
                 Property Type: {data?.propertyType}
               </span>
               <span className='flex flex-row items-center text-[7px] sm:text-xs md:text-sm'>
-                <GoDotFill className='mr-2 flex text-gold-800' />
+                <GoDotFill className='mr-2 flex shrink-0 text-gold-800' />
                 Bedrooms: {String(data?.bedrooms).padStart(2, '0')}
               </span>
               <span className='flex flex-row items-center text-[7px] sm:text-xs md:text-sm'>
-                <GoDotFill className='mr-2 flex text-gold-800' />
+                <GoDotFill className='mr-2 flex shrink-0 text-gold-800' />
                 Bathrooms: {String(data?.bathrooms).padStart(2, '0')}
               </span>
               <span className='flex flex-row items-center text-[7px] sm:text-xs md:text-sm'>
-                <GoDotFill className='mr-2 flex text-gold-800' />
+                <GoDotFill className='mr-2 flex shrink-0 text-gold-800' />
                 {data?.sizeUnit || 'SQFT'}:{' '}
-                {formatPropertySizeNumber(data?.sizeSQFT)}
+                {formatPropertySizeNumber(getPropertySizeValue(data))}
               </span>
             </div>
 
-            <div className='my-2 flex w-full flex-wrap gap-x-4'>
+            <div className='flex w-full flex-col gap-2 pt-1 sm:flex-row sm:flex-wrap sm:gap-x-6 sm:gap-y-2'>
               <p className='text-sm text-reefGold md:text-base'>
-                Price Range: {formatOffPlanPriceRange(data?.priceFrom, data?.priceTo)}
+                Price Range:{' '}
+                {formatOffPlanPriceRange(data?.priceFrom, data?.priceTo)}
               </p>
               <p className='text-sm text-reefGold md:text-base'>
                 Payment Plan: {data?.paymentPlanLabel}
@@ -178,19 +180,19 @@ export default function OffPlanProductView({ data }) {
             </div>
           </div>
 
-          <div className='mb-3 mt-2 flex flex-wrap items-center gap-3'>
+          <div className='mt-5'>
             <button
               type='button'
               onClick={handleDeveloperRequestClick}
-              className='btn-gradient flex flex-grow justify-center rounded border-0 px-2 py-2 text-[10px] font-medium text-white focus:outline-none md:text-sm'
+              className='btn-gradient flex w-full justify-center rounded border-0 px-4 py-2.5 text-[10px] font-medium text-white focus:outline-none sm:w-auto md:text-sm'
             >
               Developer Request
             </button>
           </div>
 
-          <div className='mb-3 mt-2 flex w-full flex-col gap-3 sm:flex-row sm:items-end sm:justify-between'>
+          <div className='mb-4 mt-6 flex w-full flex-col gap-4 sm:flex-row sm:items-center sm:justify-between'>
             <div className='flex items-center gap-3'>
-              <div className='relative h-[70px] w-[78px] overflow-hidden rounded-sm bg-[#D9D9D9]'>
+              <div className='relative h-[70px] w-[78px] shrink-0 overflow-hidden rounded-sm bg-[#D9D9D9]'>
                 <Image
                   src={data?.developerAvatar || '/avatar/Avatars 2.png'}
                   alt={data?.developer || 'Developer'}

@@ -1,6 +1,7 @@
 import customAxios from './apis/apis'
 import { getListingDocumentSrc } from '@/libs/listingCardMedia'
 import { isOffPlanListing } from '@/libs/filterMyListingTab'
+import { fetchAllDashboardProducts } from '@/libs/fetchAllDashboardProducts'
 import {
   formatRequestDocumentDate,
   isRequestDocumentFulfilled,
@@ -17,7 +18,6 @@ const ASSET_ENDPOINTS = {
   Jewellery: '/jewelry',
 }
 
-const ASSET_HOLDER_LISTING_QUERY = { dashboard: true, limit: 200, page: 1 }
 const TRUSTEE_LISTING_QUERY = { limit: 500, page: 1 }
 
 export function resolveListingType(listing) {
@@ -73,19 +73,26 @@ function isActiveListing(item) {
   return item.status === undefined || item.status === 0 || item.status === 1
 }
 
+function docId(value) {
+  if (!value) return ''
+  if (typeof value === 'string') return value
+  return String(value._id || value.id || value.uuid || '')
+}
+
+/** Fetch every dashboard page so no uploaded docs are missed. */
 async function fetchAssetHolderListings() {
-  const [propertyRes, carRes, boatRes, jewelryRes] = await Promise.all([
-    customAxios.get('/property', { params: ASSET_HOLDER_LISTING_QUERY }),
-    customAxios.get('/car', { params: ASSET_HOLDER_LISTING_QUERY }),
-    customAxios.get('/boat', { params: ASSET_HOLDER_LISTING_QUERY }),
-    customAxios.get('/jewelry', { params: ASSET_HOLDER_LISTING_QUERY }),
+  const [properties, cars, boats, jewelry] = await Promise.all([
+    fetchAllDashboardProducts('/property'),
+    fetchAllDashboardProducts('/car'),
+    fetchAllDashboardProducts('/boat'),
+    fetchAllDashboardProducts('/jewelry'),
   ])
 
   return [
-    ...normalizePropertyListings(propertyRes.data),
-    ...normalizeListings(carRes.data, 'Car'),
-    ...normalizeListings(boatRes.data, 'Boats'),
-    ...normalizeListings(jewelryRes.data, 'Jewellery'),
+    ...normalizePropertyListings(properties),
+    ...normalizeListings(cars, 'Car'),
+    ...normalizeListings(boats, 'Boats'),
+    ...normalizeListings(jewelry, 'Jewellery'),
   ]
 }
 
@@ -115,9 +122,49 @@ function mapListingDocumentRequests(listing) {
     assetType: listing.assetType || listing.listingType,
     requestIndex: index,
     name: request.name,
-    date: request.date,
+    date: request.uploadedAt || request.date,
+    requestDate: request.date,
+    uploadedAt: request.uploadedAt,
     document: request.document,
+    source: 'request',
   }))
+}
+
+/** Extra uploads kept on the listing that are not part of a named request. */
+function mapListingUploadDocuments(listing) {
+  const uploads = Array.isArray(listing.uploadDocument)
+    ? listing.uploadDocument
+    : []
+  if (!uploads.length) return []
+
+  const requestDocIds = new Set(
+    normalizeRequestDocuments(listing.requestDocument)
+      .map((entry) => docId(entry.document))
+      .filter(Boolean),
+  )
+
+  return uploads
+    .filter((doc) => {
+      const id = docId(doc)
+      return id && !requestDocIds.has(id)
+    })
+    .map((doc, index) => ({
+      listingId: listing.uuid,
+      listingTitle: listing.title,
+      listingType: listing.listingType,
+      assetType: listing.assetType || listing.listingType,
+      requestIndex: `upload-${index}`,
+      name:
+        doc?.Certificate?.name ||
+        doc?.name ||
+        doc?.title ||
+        'Uploaded Document',
+      date: doc?.uploadedAt || doc?.createdAt || doc?.updatedAt || '',
+      requestDate: '',
+      uploadedAt: doc?.uploadedAt || doc?.createdAt || '',
+      document: doc,
+      source: 'upload',
+    }))
 }
 
 export function formatDocumentAssetType(value) {
@@ -157,18 +204,26 @@ export async function fetchTrusteeAllDocumentRequests() {
 }
 
 function mapAllDocumentRequests(allListings) {
-  return allListings
-    .flatMap(mapListingDocumentRequests)
-    .map((request) => ({
+  const fromRequests = allListings.flatMap(mapListingDocumentRequests).map(
+    (request) => ({
       ...request,
       status: isRequestDocumentFulfilled(request) ? 'Uploaded' : 'Pending',
-    }))
-    .sort((a, b) => {
-      const dateA = new Date(a.date || 0).getTime()
-      const dateB = new Date(b.date || 0).getTime()
-      if (dateB !== dateA) return dateB - dateA
-      return String(a.name || '').localeCompare(String(b.name || ''))
-    })
+    }),
+  )
+
+  const fromUploads = allListings.flatMap(mapListingUploadDocuments).map(
+    (entry) => ({
+      ...entry,
+      status: 'Uploaded',
+    }),
+  )
+
+  return [...fromRequests, ...fromUploads].sort((a, b) => {
+    const dateA = new Date(a.date || a.uploadedAt || 0).getTime()
+    const dateB = new Date(b.date || b.uploadedAt || 0).getTime()
+    if (dateB !== dateA) return dateB - dateA
+    return String(a.name || '').localeCompare(String(b.name || ''))
+  })
 }
 
 export async function fetchListingDocumentRequests(listingType, listingId) {
@@ -204,7 +259,7 @@ export async function resolveRequestDocumentFile(entry) {
     return {
       url: inlineSrc,
       fileName:
-        entry.document?.Certificate?.name || `${entry.name || 'document'}.pdf`,
+        entry.document?.Certificate?.name || entry.name || 'document.pdf',
     }
   }
 
@@ -212,6 +267,24 @@ export async function resolveRequestDocumentFile(entry) {
   if (!endpoint || !entry?.listingId) return null
 
   const res = await customAxios.get(`${endpoint}/${entry.listingId}`)
+
+  if (entry.source === 'upload') {
+    const uploads = Array.isArray(res.data?.uploadDocument)
+      ? res.data.uploadDocument
+      : []
+    const match =
+      uploads.find((doc) => docId(doc) === docId(entry.document)) ||
+      uploads.find((doc) => (doc?.Certificate?.name || doc?.name) === entry.name)
+    if (!match) return null
+    const url = getListingDocumentSrc(match)
+    if (!url) return null
+    return {
+      url,
+      fileName:
+        match?.Certificate?.name || match?.name || entry.name || 'document.pdf',
+    }
+  }
+
   const requests = normalizeRequestDocuments(res.data?.requestDocument)
   const match =
     requests[entry.requestIndex]?.name === entry.name

@@ -43,7 +43,7 @@ const PaymentPlanStepCard = ({
       <div className='flex h-[118px] flex-col items-center justify-center bg-white px-2 py-3 shadow-neons xl:h-[128px]'>
         <div className='flex w-full flex-col items-center gap-2'>
           <span className='line-clamp-2 text-center text-[12px] font-normal leading-[16px] text-black xl:text-[14px] xl:leading-[18px]'>
-            {paymentLabel}
+            {String(milestone || '').trim() || paymentLabel}
           </span>
           <div className='flex w-full max-w-[72px] flex-col items-center gap-1.5 xl:max-w-[80px]'>
             <input

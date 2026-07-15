@@ -16,11 +16,20 @@ async function safeApi(url, fallback = null) {
 
 export default async function ServerComponent({ children }) {
   const villaTypeProperty =
-    (await safeApi('/property?propertyType=Villa&limit=10', [])) || []
+    (await safeApi(
+      '/property?propertyType=Villa&statusFilter=1&limit=10',
+      [],
+    )) || []
   const apartmentTypeProperty =
-    (await safeApi('/property?propertyType=Apartment&limit=10', [])) || []
-  const buildingTypeProperty =
-    (await safeApi('/property?propertyType=Building&limit=10', [])) || []
+    (await safeApi(
+      '/property?propertyType=Apartment&statusFilter=1&limit=10',
+      [],
+    )) || []
+  const townhouseTypeProperty =
+    (await safeApi(
+      '/property?propertyType=Townhouse&statusFilter=1&limit=10',
+      [],
+    )) || []
   const getPropertyPrice = await safeApi('/property/price', EMPTY_PRICE)
   const getCarPrice = await safeApi('/car/price', EMPTY_PRICE)
   const getBoatPrice = await safeApi('/boat/price', EMPTY_PRICE)
@@ -29,7 +38,7 @@ export default async function ServerComponent({ children }) {
   const propertyTypeData = [
     villaTypeProperty,
     apartmentTypeProperty,
-    buildingTypeProperty,
+    townhouseTypeProperty,
   ].flat()
   const propertiesForSale =
     (await safeApi('/property?limit=100&statusFilter=1', EMPTY_LIST, 0)) ||

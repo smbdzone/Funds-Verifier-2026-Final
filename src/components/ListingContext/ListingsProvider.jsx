@@ -260,15 +260,10 @@ const ListingsProvider = ({ children }) => {
         }
         list = filterCountriesToUaeOnly(list)
         setCountries(list)
-        if (list.length === 1) {
-          setSelectedCountry(list[0].country)
-          setCountryCode('AE')
-        }
+        // Keep "Select Country" until the user picks — do not auto-fill UAE.
       } catch (error) {
         console.error('Error fetching countries data:', error)
         setCountries([...DUMMY_FALLBACK_COUNTRIES])
-        setSelectedCountry(LISTING_COUNTRY_UAE_LABEL)
-        setCountryCode('AE')
       }
     }
 
@@ -942,6 +937,10 @@ const ListingsProvider = ({ children }) => {
         setTotalPrice,
         selectedCategory,
         setSelectedCategory,
+        setSelectedCountry,
+        setSelectedCity,
+        setSelectedNeighbourhood,
+        setCountryCode,
       }}
     >
       {children}
