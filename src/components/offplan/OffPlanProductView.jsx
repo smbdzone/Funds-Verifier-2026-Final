@@ -109,16 +109,16 @@ export default function OffPlanProductView({ data }) {
           </div>
         </div>
 
-        <div className='relative mt-6 flex w-full flex-col items-start justify-between space-y-2 sm:mt-0 xl:space-y-0'>
-          <h1 className='mb-1 w-[90%] truncate text-wrap text-xl font-semibold capitalize text-blue md:text-2xl lg:text-3xl'>
-            {data?.title}
-          </h1>
+        <div className='relative mt-6 flex w-full flex-col items-start justify-between gap-5 sm:mt-0'>
+          <div className='flex w-full flex-col gap-2'>
+            <h1 className='w-[90%] truncate text-wrap text-xl font-semibold capitalize text-blue md:text-2xl lg:text-3xl'>
+              {data?.title}
+            </h1>
 
-          <p className='text-[10px] tracking-wide text-black md:text-sm'>
-            Ready: {data?.deliveryLabel}
-          </p>
+            <p className='text-[10px] tracking-wide text-black md:text-sm'>
+              Ready: {data?.deliveryLabel}
+            </p>
 
-          <div className='mb-2 flex'>
             <div className='flex items-center justify-center space-x-2'>
               {Array.from({ length: 5 }, (_, starIndex) => (
                 <div key={starIndex} className='h-4 w-4 md:h-5 md:w-5'>
@@ -132,10 +132,10 @@ export default function OffPlanProductView({ data }) {
                   />
                 </div>
               ))}
-              <span className='ml-3 mt-2 text-xs opacity-50 md:mt-0 md:text-base'>
+              <span className='ml-3 text-xs opacity-50 md:text-base'>
                 {averageRating.toFixed(1)}
               </span>
-              <span className='ml-3 mt-2 text-xs opacity-50 md:mt-0 md:text-base'>
+              <span className='ml-3 text-xs opacity-50 md:text-base'>
                 ({reviewCounts} Reviews)
               </span>
             </div>
@@ -143,33 +143,33 @@ export default function OffPlanProductView({ data }) {
 
           <Description text={data?.description} />
 
-          <div className='mt-5 space-y-4'>
+          <div className='flex w-full flex-col gap-4'>
             <h2 className='text-sm font-medium md:text-base'>Details</h2>
-            <div className='flex flex-wrap items-center gap-x-4 gap-y-3 rounded-md border border-black/5 bg-white p-3 shadow sm:gap-x-6 sm:p-4'>
-              <span className='flex flex-row items-center text-[7px] sm:text-xs md:text-sm'>
-                <GoDotFill className='mr-1 flex shrink-0 text-gold-800 sm:mr-2' />
-                Developer: {data?.developer}
-              </span>
-              <span className='flex flex-row items-center text-[7px] sm:text-xs md:text-sm'>
+            <div className='grid w-full grid-cols-1 gap-3 rounded-md border border-black/10 bg-white p-4 shadow sm:grid-cols-2 sm:gap-4 sm:p-5'>
+              <span className='flex items-center text-xs md:text-sm'>
                 <GoDotFill className='mr-2 flex shrink-0 text-gold-800' />
-                Property Type: {data?.propertyType}
+                Developer: {data?.developer || '—'}
               </span>
-              <span className='flex flex-row items-center text-[7px] sm:text-xs md:text-sm'>
+              <span className='flex items-center text-xs md:text-sm'>
                 <GoDotFill className='mr-2 flex shrink-0 text-gold-800' />
-                Bedrooms: {String(data?.bedrooms).padStart(2, '0')}
+                Property Type: {data?.propertyType || '—'}
               </span>
-              <span className='flex flex-row items-center text-[7px] sm:text-xs md:text-sm'>
+              <span className='flex items-center text-xs md:text-sm'>
                 <GoDotFill className='mr-2 flex shrink-0 text-gold-800' />
-                Bathrooms: {String(data?.bathrooms).padStart(2, '0')}
+                Bedrooms: {String(data?.bedrooms ?? 0).padStart(2, '0')}
               </span>
-              <span className='flex flex-row items-center text-[7px] sm:text-xs md:text-sm'>
+              <span className='flex items-center text-xs md:text-sm'>
+                <GoDotFill className='mr-2 flex shrink-0 text-gold-800' />
+                Bathrooms: {String(data?.bathrooms ?? 0).padStart(2, '0')}
+              </span>
+              <span className='flex items-center text-xs md:text-sm sm:col-span-2'>
                 <GoDotFill className='mr-2 flex shrink-0 text-gold-800' />
                 {data?.sizeUnit || 'SQFT'}:{' '}
-                {formatPropertySizeNumber(getPropertySizeValue(data))}
+                {formatPropertySizeNumber(getPropertySizeValue(data)) || '—'}
               </span>
             </div>
 
-            <div className='flex w-full flex-col gap-2 pt-1 sm:flex-row sm:flex-wrap sm:gap-x-6 sm:gap-y-2'>
+            <div className='flex w-full flex-col gap-2'>
               <p className='text-sm text-reefGold md:text-base'>
                 Price Range:{' '}
                 {formatOffPlanPriceRange(data?.priceFrom, data?.priceTo)}
@@ -180,18 +180,16 @@ export default function OffPlanProductView({ data }) {
             </div>
           </div>
 
-          <div className='mt-5'>
-            <button
-              type='button'
-              onClick={handleDeveloperRequestClick}
-              className='btn-gradient flex w-full justify-center rounded border-0 px-4 py-2.5 text-[10px] font-medium text-white focus:outline-none sm:w-auto md:text-sm'
-            >
-              Developer Request
-            </button>
-          </div>
+          <button
+            type='button'
+            onClick={handleDeveloperRequestClick}
+            className='btn-gradient flex w-full justify-center rounded border-0 px-5 py-3 text-xs font-medium text-white focus:outline-none sm:w-auto md:text-sm'
+          >
+            Developer Request
+          </button>
 
-          <div className='mb-4 mt-6 flex w-full flex-col gap-4 sm:flex-row sm:items-center sm:justify-between'>
-            <div className='flex items-center gap-3'>
+          <div className='flex w-full flex-col gap-4 border-t border-black/10 pt-5 sm:flex-row sm:items-center sm:justify-between'>
+            <div className='flex items-center gap-4'>
               <div className='relative h-[70px] w-[78px] shrink-0 overflow-hidden rounded-sm bg-[#D9D9D9]'>
                 <Image
                   src={data?.developerAvatar || '/avatar/Avatars 2.png'}

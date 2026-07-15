@@ -374,13 +374,22 @@ export const config = {
   matcher: [
     '/login',
     '/user-login',
+    // Exact roots + nested paths (`:path*` alone does not always match the bare URL)
+    '/seller-profile',
     '/seller-profile/:path*',
+    '/dashboard',
     '/dashboard/:path*',
+    '/evaluator-profile',
     '/evaluator-profile/:path*',
+    '/sub-evaluator-profile',
     '/sub-evaluator-profile/:path*',
+    '/profile',
     '/profile/:path*',
+    '/trustee',
     '/trustee/:path*',
+    '/3d-walkthrough',
     '/3d-walkthrough/:path*',
+    '/survey-dashboard',
     '/survey-dashboard/:path*',
   ],
 }
