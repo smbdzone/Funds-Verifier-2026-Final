@@ -161,10 +161,6 @@ export function getListingGalleryImages(listing) {
   return []
 }
 
-/**
- * Best-effort single-image source for a listing card / slider cell.
-
-
 /** First uploaded gallery/thumbnail image for listing cards — never a static asset. */
 export function getListingCardImageSrc(listing) {
   const items = getListingCarouselItems(listing)
@@ -172,6 +168,19 @@ export function getListingCardImageSrc(listing) {
     (item) => item.type === 'image' && !isListingCarouselPlaceholderSlide(item),
   )
   return slide?.src || ''
+}
+
+/**
+ * Best-effort single-image source for a listing card / slider cell.
+ * Returns the listing image when available, otherwise `fallback` or PLACEHOLDER.
+ */
+export function getListingThumbSrc(listing, fallback) {
+  const src = getListingCardImageSrc(listing)
+  if (src) return src
+  if (fallback !== undefined && fallback !== null && fallback !== '') {
+    return fallback
+  }
+  return PLACEHOLDER
 }
 
 function certificatePdfStreamUrl(uuid) {
