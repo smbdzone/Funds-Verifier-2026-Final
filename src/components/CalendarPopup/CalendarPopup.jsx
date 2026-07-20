@@ -168,7 +168,11 @@ const CalendarPopup = ({ onClose, productData }) => {
         `${process.env.NEXT_PUBLIC_BASE_URL}/arrange-view/book`,
         {
           brokerId: `${user?.uuid}`,
-          assetHolderId: `${productData?.userUUID}`,
+          assetHolderId:
+            productData?.userUUID ||
+            productData?.userId ||
+            productData?.assetHolderUUID ||
+            '',
           timeSlotId: activeTimeSlotId,
           productData,
         }

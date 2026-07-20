@@ -295,6 +295,26 @@ const ListingCard = ({
                   </span>
                 </div>
               ) : null}
+              {String(listing?.offPlanApprovalFeeStatus || '') === 'requested' ? (
+                <div className='relative group'>
+                  <span className='inline-flex items-center rounded bg-sky-500 px-2.5 py-1 text-xs font-semibold text-white shadow-sm'>
+                    Approval Fee Due
+                  </span>
+                  <span className='absolute top-full left-1/2 z-50 mt-1 hidden -translate-x-1/2 whitespace-nowrap rounded bg-white px-2 py-1 text-xs text-black shadow-md group-hover:flex'>
+                    Pay the optional off-plan approval fee under Invoices
+                  </span>
+                </div>
+              ) : null}
+              {String(listing?.offPlanApprovalFeeStatus || '') === 'paid' ? (
+                <div className='relative group'>
+                  <span className='inline-flex items-center rounded bg-emerald-600 px-2.5 py-1 text-xs font-semibold text-white shadow-sm'>
+                    Invoice
+                  </span>
+                  <span className='absolute top-full left-1/2 z-50 mt-1 hidden -translate-x-1/2 whitespace-nowrap rounded bg-white px-2 py-1 text-xs text-black shadow-md group-hover:flex'>
+                    Off-plan approval fee paid — view under Invoices
+                  </span>
+                </div>
+              ) : null}
               {/* status */}
               {listing.status === 0 ? (
                 <>
@@ -317,7 +337,7 @@ const ListingCard = ({
                 <button
                   className='border rounded px-2 py-0.5 gradient text-white text-sm'
                 >
-                  {premiumBadge}
+                  {premiumBadge || 'Approved'}
                 </button>
               )}
 

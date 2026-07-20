@@ -95,6 +95,8 @@ export function mapApiListingToOffPlanCard(listing) {
     unitLayout: resolveLayoutImageSrc(listing?.unitLayout),
     floorPlan: resolveLayoutImageSrc(listing?.floorPlan),
     status: listing?.status,
+    userUUID: listing?.userUUID,
+    trusteeUUID: listing?.trusteeUUID,
   }
 }
 

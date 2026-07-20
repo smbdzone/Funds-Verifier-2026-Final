@@ -163,21 +163,7 @@ export function getListingGalleryImages(listing) {
 
 /**
  * Best-effort single-image source for a listing card / slider cell.
- * Prefers the listing Thumbnail, then the first gallery picture,
- * then `fallback` (caller-provided default like '/villa.jpg').
- */
-export function getListingThumbSrc(listing, fallback = PLACEHOLDER) {
-  const thumb =
-    listing?.thumbnailImg?.images?.[0] ||
-    (listing?.thumbnailImg && !listing.thumbnailImg.images
-      ? listing.thumbnailImg
-      : null)
-  const thumbSrc = getListingImageSrc(thumb)
-  if (thumbSrc && thumbSrc !== PLACEHOLDER) return thumbSrc
 
-  const picSrc = getListingImageSrc(listing?.pictures?.images?.[0])
-  return picSrc && picSrc !== PLACEHOLDER ? picSrc : fallback
-}
 
 /** First uploaded gallery/thumbnail image for listing cards — never a static asset. */
 export function getListingCardImageSrc(listing) {

@@ -3,8 +3,19 @@
  * → pay for both → Recommended (blue). Icons use delivered assets only.
  */
 
+function isOffPlanListing(listing) {
+  return String(listing?.assetType || '')
+    .toLowerCase()
+    .includes('off plan')
+}
+
 export function isListingEvaluatorApproved(listing) {
   if (!listing) return false
+  if (Number(listing.status) !== 1) return false
+
+  // Off-plan: Super Admin approval only (no evaluation certificate required).
+  if (isOffPlanListing(listing)) return true
+
   const cert = listing.evaluationCertificate
   const hasCertificate =
     cert != null &&
@@ -12,7 +23,7 @@ export function isListingEvaluatorApproved(listing) {
     (typeof cert === 'object'
       ? Boolean(cert._id || cert.uuid)
       : Boolean(cert))
-  return Number(listing.status) === 1 && hasCertificate
+  return hasCertificate
 }
 
 export function canRequestPremiumServices(listing) {
@@ -159,6 +170,9 @@ export function getListingPremiumDisplay(listing) {
     if (isRecommended) badge = 'Recommended'
     else if (hasFeaturedStyling) badge = 'Featured'
     else badge = 'Approved'
+  } else if (Number(listing?.status) === 1) {
+    // Status approved but certificate missing (legacy) — still show Approved.
+    badge = 'Approved'
   }
 
   return {
