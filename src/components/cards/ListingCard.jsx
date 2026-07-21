@@ -21,6 +21,7 @@ import Open3dModal from '@/components/3dModal/Open3dModal'
 import {
   getListingCarouselItems,
   getListingDocumentSrc,
+  getListingQrScanSrc,
   getTechnicalReportSrc,
   isListingCarouselPlaceholderSlide,
   PLACEHOLDER,
@@ -169,6 +170,7 @@ const ListingCard = ({
   const [walkthroughListingId, setWalkthroughListingId] = useState(null)
   const [walkthroughLink, setWalkthroughLink] = useState('')
   const [modalCardId, setModalCardId] = useState(null)
+  const [analyticsCardId, setAnalyticsCardId] = useState(null)
 
   const getDynamicLink = (assetType, slug) => {
     if (usePendingEvaluation) {
@@ -178,8 +180,11 @@ const ListingCard = ({
       switch (assetType) {
         case 'Property For Lease':
         case 'Property For Sale':
-        case 'Property Off Plan For Sale':
           assetTypeText = 'property'
+          break
+        case 'Property Off Plan For Sale':
+        case 'Property Off Plan':
+          assetTypeText = 'offplan'
           break
         case 'Car For Sale':
           assetTypeText = 'car'
@@ -191,7 +196,11 @@ const ListingCard = ({
           assetTypeText = 'boat'
           break
         default:
-          assetTypeText = assetType.toLowerCase()
+          assetTypeText = String(assetType || '')
+            .toLowerCase()
+            .includes('off plan')
+            ? 'offplan'
+            : String(assetType || 'property').toLowerCase()
       }
       return `/${assetTypeText}/${slug}`
     }
@@ -468,7 +477,17 @@ const ListingCard = ({
                 )}
               >
                 {hasFeaturedStyling ? (
-                  <div className='flex items-center'>
+                  <div className='flex items-center gap-2'>
+                    {getListingQrScanSrc(listing) ? (
+                      <Image
+                        src={getListingQrScanSrc(listing)}
+                        width={40}
+                        height={40}
+                        alt='QR code'
+                        className='h-10 w-10 shrink-0 rounded border border-gray-200 bg-white object-contain'
+                        unoptimized
+                      />
+                    ) : null}
                     <h2 className='text-gradient-custom lg:text-3xl sm:text-xl text-lg font-semibold capitalize'>
                       {getShortTitle(listing.title)}
                     </h2>
@@ -477,9 +496,21 @@ const ListingCard = ({
                     </div>
                   </div>
                 ) : (
-                  <h2 className='lg:text-3xl sm:text-xl text-lg font-semibold capitalize text-blue'>
-                    {getShortTitle(listing.title)}
-                  </h2>
+                  <div className='flex items-center gap-2'>
+                    {getListingQrScanSrc(listing) ? (
+                      <Image
+                        src={getListingQrScanSrc(listing)}
+                        width={40}
+                        height={40}
+                        alt='QR code'
+                        className='h-10 w-10 shrink-0 rounded border border-gray-200 bg-white object-contain'
+                        unoptimized
+                      />
+                    ) : null}
+                    <h2 className='lg:text-3xl sm:text-xl text-lg font-semibold capitalize text-blue'>
+                      {getShortTitle(listing.title)}
+                    </h2>
+                  </div>
                 )}
               </Link>
               <div className='flex flex-wrap items-center space-x-4'>
@@ -624,21 +655,86 @@ const ListingCard = ({
                 </div>
               </div>
 
-              <div className='flex gap-2 items-center'>
-                <Analytics
-                  className={
-                    hasFeaturedStyling ? 'text-light-gold' : 'text-blue'
+              <div className='relative'>
+                <button
+                  type='button'
+                  onClick={() =>
+                    setAnalyticsCardId(
+                      analyticsCardId === listing.uuid ? null : listing.uuid,
+                    )
                   }
-                />
-                <p
-                  className={
-                    hasFeaturedStyling
-                      ? 'text-light-gold lg:text-base text-sm'
-                      : 'text-blue lg:text-base text-sm'
-                  }
+                  className='flex gap-2 items-center cursor-pointer'
                 >
-                  Analytics
-                </p>
+                  <Analytics
+                    className={
+                      hasFeaturedStyling ? 'text-light-gold' : 'text-blue'
+                    }
+                  />
+                  <p
+                    className={
+                      hasFeaturedStyling
+                        ? 'text-light-gold lg:text-base text-sm'
+                        : 'text-blue lg:text-base text-sm'
+                    }
+                  >
+                    Analytics
+                    <span className='ml-1 text-xs opacity-80'>
+                      ({formatNumberWithCommas(
+                        listing?.analytics?.impressions ?? 0,
+                      )}{' '}
+                      views)
+                    </span>
+                  </p>
+                </button>
+                {analyticsCardId === listing.uuid ? (
+                  <>
+                    <div
+                      className='fixed inset-0 z-40'
+                      onClick={() => setAnalyticsCardId(null)}
+                    />
+                    <div className='absolute bottom-[calc(100%+10px)] left-0 z-50 w-[230px] rounded-lg border border-gray-100 bg-white p-4 shadow-lg'>
+                      <div className='mb-3 flex items-center justify-between'>
+                        <span className='text-sm font-semibold text-prussianBlue'>
+                          Listing analytics
+                        </span>
+                        <button
+                          type='button'
+                          onClick={() => setAnalyticsCardId(null)}
+                          className='text-sm font-semibold text-dark-grey/60 hover:text-dark-grey'
+                          aria-label='Close analytics'
+                        >
+                          ✕
+                        </button>
+                      </div>
+                      <div className='space-y-2'>
+                        <div className='flex items-center justify-between'>
+                          <span className='text-sm text-dark-grey/80'>
+                            Impressions
+                          </span>
+                          <span className='text-sm font-semibold text-prussianBlue'>
+                            {formatNumberWithCommas(
+                              listing?.analytics?.impressions ?? 0,
+                            )}
+                          </span>
+                        </div>
+                        <div className='flex items-center justify-between'>
+                          <span className='text-sm text-dark-grey/80'>
+                            Clicks
+                          </span>
+                          <span className='text-sm font-semibold text-prussianBlue'>
+                            {formatNumberWithCommas(
+                              listing?.analytics?.clicks ?? 0,
+                            )}
+                          </span>
+                        </div>
+                      </div>
+                      <p className='mt-3 text-[11px] leading-4 text-dark-grey/60'>
+                        Impressions = times shown to visitors. Clicks = times
+                        the listing was opened.
+                      </p>
+                    </div>
+                  </>
+                ) : null}
               </div>
             </div>
           </div>

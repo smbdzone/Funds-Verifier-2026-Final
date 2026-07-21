@@ -87,6 +87,7 @@ const Page = () => {
   const [totalPriceFrom, setTotalPriceFrom] = useState('')
   const [totalPriceTo, setTotalPriceTo] = useState('')
   const [offPlanMedia, setOffPlanMedia] = useState(emptyOffPlanMedia)
+  const [agencyAgreementFile, setAgencyAgreementFile] = useState(null)
   const { user } = useProfile()
 
   const {
@@ -128,9 +129,12 @@ const Page = () => {
     errors,
     phoneNumber,
     thumbnail,
+    qrScan,
     handleOpenModal,
     handleThumbImageRemove,
     handleThumbImageChange,
+    handleQrScanChange,
+    handleQrScanRemove,
     handleCountryChange,
     selectedCountryPhone,
     maxLength,
@@ -214,6 +218,10 @@ const Page = () => {
     price: formData?.price || '',
     sizeSQFT: '',
     sizeSQM: '',
+    sizeSQFTFrom: '',
+    sizeSQFTTo: '',
+    sizeSQMFrom: '',
+    sizeSQMTo: '',
     sizeUnit: 'SQFT',
     description: '',
     additionalDescription: '',
@@ -228,6 +236,7 @@ const Page = () => {
     priceFrom: '',
     priceTo: '',
     advertisementId: '',
+    dldNumber: '',
     deliveryQuarter: '',
     deliveryYear: '',
     sizeType: '',
@@ -237,6 +246,8 @@ const Page = () => {
     paymentPlan: createDefaultOffPlanPaymentPlan(),
     listings: [],
     facilities: [],
+    qrScan: null,
+    agencyAgreement: null,
     createdAt: new Date(),
     updatedAt: new Date(),
   }
@@ -365,7 +376,26 @@ const Page = () => {
       unitLayout: formData?.unitLayout?.images?.[0] ?? formData?.unitLayout ?? null,
       floorPlan: formData?.floorPlan?.images?.[0] ?? formData?.floorPlan ?? null,
     })
-  }, [id, isOffPlan, formData?.unitLayout, formData?.floorPlan])
+    if (formData?.agencyAgreement && !(agencyAgreementFile instanceof File)) {
+      setAgencyAgreementFile(null)
+    }
+  }, [id, isOffPlan, formData?.unitLayout, formData?.floorPlan, formData?.agencyAgreement, agencyAgreementFile])
+
+  const handleAgencyAgreementChange = (event) => {
+    const selectedFile = event.target.files?.[0]
+    event.target.value = null
+    if (!selectedFile) return
+    if (selectedFile.type !== 'application/pdf') {
+      toast.error('Please upload a PDF file for the agency agreement.')
+      return
+    }
+    setAgencyAgreementFile(selectedFile)
+  }
+
+  const handleAgencyAgreementRemove = () => {
+    setAgencyAgreementFile(null)
+    setFormData((prev) => ({ ...prev, agencyAgreement: null }))
+  }
 
   const handleOffPlanImageChange = (key) => (event) => {
     const selectedFile = event.target.files?.[0]
@@ -632,25 +662,44 @@ const Page = () => {
       let thumbnailID = formData?.thumbnailImg
       let videoID = formData?.video
       let fileID = formData?.evaluationCertificate
+      let qrScanID = formData?.qrScan
+      let agencyAgreementID = formData?.agencyAgreement
 
       // Upload new files only if creating a new property (no id)
       if (!id) {
-        const [uploadedImages, uploadedVideo, uploadedFile, uploadedThumbnail] =
-          await Promise.all([
-            images.length > 0 ? handleImageUpload(images) : imageID,
-            videos.length ? handleVideoUpload(videos) : videoID,
-            file ? handleFileUpload(file) : fileID,
-            thumbnail ? handleThumbnailUpload(thumbnail) : thumbnailID,
-          ])
+        const [
+          uploadedImages,
+          uploadedVideo,
+          uploadedFile,
+          uploadedThumbnail,
+          uploadedQrScan,
+        ] = await Promise.all([
+          images.length > 0 ? handleImageUpload(images) : imageID,
+          videos.length ? handleVideoUpload(videos) : videoID,
+          file ? handleFileUpload(file) : fileID,
+          thumbnail ? handleThumbnailUpload(thumbnail) : thumbnailID,
+          qrScan ? handleImageUpload([qrScan]) : qrScanID,
+        ])
 
         imageID = uploadedImages
         videoID = uploadedVideo
         fileID = uploadedFile
         thumbnailID = uploadedThumbnail
+        qrScanID = uploadedQrScan
+
+        if (agencyAgreementFile instanceof File) {
+          agencyAgreementID = await handleFileUpload(agencyAgreementFile)
+        }
       } else {
         // ✅ For updates: only re-upload video or file if changed
         if (videos.length) videoID = await handleVideoUpload(videos)
         if (file) fileID = await handleFileUpload(file)
+        if (qrScan instanceof File) {
+          qrScanID = await handleImageUpload([qrScan])
+        }
+        if (agencyAgreementFile instanceof File) {
+          agencyAgreementID = await handleFileUpload(agencyAgreementFile)
+        }
         // thumbnail and images will remain unchanged
       }
 
@@ -677,6 +726,16 @@ const Page = () => {
         ...formData,
         sizeSQFT: formData.sizeSQFT ? Number(formData.sizeSQFT) : 0,
         sizeSQM: formData.sizeSQM ? Number(formData.sizeSQM) : 0,
+        sizeSQFTFrom: formData.sizeSQFTFrom
+          ? Number(formData.sizeSQFTFrom)
+          : undefined,
+        sizeSQFTTo: formData.sizeSQFTTo
+          ? Number(formData.sizeSQFTTo)
+          : undefined,
+        sizeSQMFrom: formData.sizeSQMFrom
+          ? Number(formData.sizeSQMFrom)
+          : undefined,
+        sizeSQMTo: formData.sizeSQMTo ? Number(formData.sizeSQMTo) : undefined,
         sizeUnit: formData.sizeType || formData.sizeUnit || 'SQFT',
         priceFrom: formData.priceFrom ? Number(formData.priceFrom) : undefined,
         priceTo: formData.priceTo ? Number(formData.priceTo) : undefined,
@@ -694,6 +753,12 @@ const Page = () => {
         thumbnailImg:
           listingMediaRef(thumbnailID) ??
           listingMediaRef(formData?.thumbnailImg),
+        qrScan:
+          listingMediaRef(qrScanID) ?? listingMediaRef(formData?.qrScan),
+        agencyAgreement: isOffPlan
+          ? listingMediaRef(agencyAgreementID) ??
+          listingMediaRef(formData?.agencyAgreement)
+          : undefined,
         propertyForSale:
           formData.assetType === 'Property For Sale' ||
             formData.assetType === 'Property Off Plan For Sale'
@@ -804,18 +869,40 @@ const Page = () => {
     }
   }
 
-  const handleSizeChange = ({ sizeSQFT, sizeSQM, sizeUnit, sizeType }) => {
-    setFormData((prev) => ({
-      ...prev,
-      ...(sizeSQFT !== undefined ? { sizeSQFT } : {}),
-      ...(sizeSQM !== undefined ? { sizeSQM } : {}),
-      sizeUnit: sizeUnit || prev.sizeUnit || 'SQFT',
-      ...(sizeType !== undefined
-        ? { sizeType }
-        : sizeUnit
-          ? { sizeType: sizeUnit }
-          : {}),
-    }))
+  const handleSizeChange = ({
+    sizeSQFT,
+    sizeSQM,
+    sizeSQFTFrom,
+    sizeSQFTTo,
+    sizeSQMFrom,
+    sizeSQMTo,
+    sizeUnit,
+    sizeType,
+  }) => {
+    setFormData((prev) => {
+      const nextUnit = sizeUnit || prev.sizeUnit || 'SQFT'
+      const next = {
+        ...prev,
+        ...(sizeSQFT !== undefined ? { sizeSQFT } : {}),
+        ...(sizeSQM !== undefined ? { sizeSQM } : {}),
+        ...(sizeSQFTFrom !== undefined ? { sizeSQFTFrom } : {}),
+        ...(sizeSQFTTo !== undefined ? { sizeSQFTTo } : {}),
+        ...(sizeSQMFrom !== undefined ? { sizeSQMFrom } : {}),
+        ...(sizeSQMTo !== undefined ? { sizeSQMTo } : {}),
+        sizeUnit: nextUnit,
+        ...(sizeType !== undefined
+          ? { sizeType }
+          : sizeUnit
+            ? { sizeType: sizeUnit }
+            : {}),
+      }
+
+      // Keep single-size fields in sync with range "from" for filters/search.
+      if (sizeSQFTFrom !== undefined) next.sizeSQFT = sizeSQFTFrom
+      if (sizeSQMFrom !== undefined) next.sizeSQM = sizeSQMFrom
+
+      return next
+    })
   }
 
   const validateForm = (data) => {
@@ -873,11 +960,16 @@ const Page = () => {
       }
     } else {
       const sizeUnit = data.sizeUnit || data.sizeType || 'SQFT'
-      const activeSize =
-        sizeUnit === 'SQM' ? data.sizeSQM : data.sizeSQFT
+      const sizeFrom =
+        sizeUnit === 'SQM' ? data.sizeSQMFrom : data.sizeSQFTFrom
+      const sizeTo = sizeUnit === 'SQM' ? data.sizeSQMTo : data.sizeSQFTTo
 
-      if (!String(activeSize || '').trim()) {
-        errors.sizeSQFT = 'Size is required'
+      if (!String(sizeFrom || '').trim()) {
+        errors.sizeSQFT = 'Size from is required'
+      } else if (!String(sizeTo || '').trim()) {
+        errors.sizeSQFT = 'Size to is required'
+      } else if (Number(sizeTo) < Number(sizeFrom)) {
+        errors.sizeSQFT = 'Size to must be greater than or equal to size from'
       }
     }
 
@@ -1119,9 +1211,12 @@ const Page = () => {
                 dropdown3D={propertyType}
                 phoneNumber={phoneNumber}
                 thumbnail={thumbnail}
+                qrScan={qrScan}
                 handleOpenModal={handleOpenModal}
                 handleThumbImageRemove={handleThumbImageRemove}
                 handleThumbImageChange={handleThumbImageChange}
+                handleQrScanChange={handleQrScanChange}
+                handleQrScanRemove={handleQrScanRemove}
                 handleCountryChange={handleCountryChange}
                 selectedCountryPhone={selectedCountryPhone}
                 maxLength={maxLength}
@@ -1168,6 +1263,9 @@ const Page = () => {
                 onPaymentPlanStepChange={handlePaymentPlanStepChange}
                 onPaymentPlanStepRemove={handlePaymentPlanStepRemove}
                 onPaymentPlanStepAdd={handlePaymentPlanStepAdd}
+                agencyAgreementFile={agencyAgreementFile}
+                onAgencyAgreementChange={handleAgencyAgreementChange}
+                onAgencyAgreementRemove={handleAgencyAgreementRemove}
               />
               {/* input two  */}
               <Facilities

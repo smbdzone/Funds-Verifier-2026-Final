@@ -52,6 +52,9 @@ const BoatListingForm = ({
   maxLength,
   handleThumbImageChange,
   handleThumbImageRemove,
+  qrScan,
+  handleQrScanChange,
+  handleQrScanRemove,
   images,
   videos,
   handleImageRemove,
@@ -251,6 +254,31 @@ const BoatListingForm = ({
               disabled={isEvaluatorApprovedLocked || Boolean(formData?.video?.uuid)}
             />
           </ListingImageUploadLayout>
+          <ListingImageUploadLayout
+            formats={LISTING_IMAGE_FORMATS_LABEL}
+            label='Upload QR Scan'
+          >
+            <ListingsImageComponent
+              image={qrScan}
+              handleThumbImageChange={handleQrScanChange}
+              handleImageRemove={handleQrScanRemove}
+              disabled={isEvaluatorApprovedLocked}
+              inputId='qr-scan-boat'
+              uploadLabel='Upload QR Scan'
+            />
+          </ListingImageUploadLayout>
+          <div className='relative w-full dropdown-container'>
+            <div className='relative-placeholder w-full'>
+              <ListingCustomPlacholderInput
+                value={formData.dldNumber || ''}
+                handleChange={handleChange}
+                name='dldNumber'
+                customPlaceholder='DLD Number'
+                subPlaceholder=' (Optional)'
+                disabled={isEvaluatorApprovedLocked}
+              />
+            </div>
+          </div>
           <div className='relative dropdown-container'>
             <ListingsDropdownInputComponents
               errors={errors.condition && !formData.condition}

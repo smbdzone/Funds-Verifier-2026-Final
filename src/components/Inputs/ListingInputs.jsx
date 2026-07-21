@@ -111,7 +111,7 @@ export const FileUpload = ({
           )}
           <button
             onClick={handleFileRemove}
-            className="absolute top-0 right-0 w-6 flex justify-center items-center h-6 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+            className="absolute top-0 right-0 w-6 flex justify-center items-center h-6 p-1 bg-light-gold text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
             title="Remove file"
           >
             &times;

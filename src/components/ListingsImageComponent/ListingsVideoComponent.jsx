@@ -42,7 +42,7 @@ const ListingsVideoComponent = ({
             <button
               type='button'
               onClick={() => handleVideoRemove(index)}
-              className='absolute h-5 w-5 flex justify-center items-center -top-2 -right-1 p-1 bg-red-500 text-white rounded-full'
+              className='absolute h-5 w-5 flex justify-center items-center -top-2 -right-1 p-1 bg-light-gold text-white rounded-full'
               title='Remove video'
             >
               &times;
@@ -65,9 +65,8 @@ const ListingsVideoComponent = ({
       <div className='absolute right-[20px] h-[20px] xl:top-0 xxs:top-[55px]'>
         <label
           htmlFor={!disabled && canAddMore ? 'video-upload' : undefined}
-          className={`flex flex-col items-center justify-center w-[176px] xl:h-[144px] xxs:h-[110px] shadow-neonsm my-[19px] ${
-            !disabled && canAddMore ? 'cursor-pointer' : 'cursor-not-allowed opacity-60'
-          }`}
+          className={`flex flex-col items-center justify-center w-[176px] xl:h-[144px] xxs:h-[110px] shadow-neonsm my-[19px] ${!disabled && canAddMore ? 'cursor-pointer' : 'cursor-not-allowed opacity-60'
+            }`}
         >
           <div className='h-[20px]'>
             <Image

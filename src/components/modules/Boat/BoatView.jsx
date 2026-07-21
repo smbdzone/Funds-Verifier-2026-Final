@@ -19,8 +19,11 @@ import { formatPriceUS } from '@/utils'
 import {
   getListingDetailMediaItems,
   getListingDocumentSrc,
+  getListingQrScanSrc,
   getTechnicalReportSrc,
 } from '@/libs/listingCardMedia'
+import { getListingRef } from '@/libs/listingRef'
+import ListingQrCodeSection from '@/components/shared/ListingQrCodeSection'
 
 export default function BoatView({ data: boatData }) {
   const data = boatData ?? {}
@@ -298,8 +301,9 @@ export default function BoatView({ data: boatData }) {
             </div>
           </div>
           <span className='font-medium md:text-lg text-base mb-2 block'>
-            Ref: {data?.uuid ? data.uuid.slice(0, 8) : 'N/A'}
+            Ref: {getListingRef(data)}
           </span>
+          <ListingQrCodeSection src={getListingQrScanSrc(data)} />
           <div className='flex w-full justify-between'>
             <ListingSocialShare
               listing={{ ...data, type: 'boat' }}

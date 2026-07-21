@@ -75,6 +75,7 @@ const Page = () => {
   const [confirmationModal, setConfirmationModal] = useState(false)
   const [loading, setLoading] = useState(false)
   const [offPlanMedia, setOffPlanMedia] = useState(createEmptyOffPlanMedia)
+  const [agencyAgreementFile, setAgencyAgreementFile] = useState(null)
   const [totalPriceFrom, setTotalPriceFrom] = useState('')
   const [totalPriceTo, setTotalPriceTo] = useState('')
 
@@ -155,6 +156,7 @@ const Page = () => {
 
   const getFileFormKey = (mediaType) => {
     if (mediaType === 'thumbnail') return 'thumbnailImg'
+    if (mediaType === 'qrScan') return 'qrScan'
     return mediaType
   }
 
@@ -313,6 +315,11 @@ const Page = () => {
         ...prev,
         [getFileFormKey(mediaType)]: processed[0],
       }))
+    } else if (mediaType === 'qrScan') {
+      setFormData((prev) => ({
+        ...prev,
+        qrScan: processed[0],
+      }))
     } else if (mediaType === 'pictures') {
       setFormData((prev) => ({
         ...prev,
@@ -388,7 +395,7 @@ const Page = () => {
       case 'file':
         return (
           <FileUpload
-            key={field.mediaType}
+            key={field.formDataKey || field.mediaType}
             type={field.mediaType}
             label={field.label}
             acceptedFormats={field.acceptedFormats}
@@ -502,11 +509,23 @@ const Page = () => {
         uploadedThumbnailID = await handleThumbnailUpload(thumbnailFile)
       }
 
+      let uploadedQrScanID = null
+      if (formData.qrScan) {
+        uploadedQrScanID = await handleImageUpload(
+          Array.isArray(formData.qrScan) ? formData.qrScan : [formData.qrScan],
+        )
+      }
+
       let uploadedCertificateID = null
       if (formData.evaluationCertificate) {
         uploadedCertificateID = await handleFileUpload(
           formData.evaluationCertificate,
         )
+      }
+
+      let uploadedAgencyAgreementID = null
+      if (isOffPlan && agencyAgreementFile instanceof File) {
+        uploadedAgencyAgreementID = await handleFileUpload(agencyAgreementFile)
       }
 
       const offPlanMediaRefs = {}
@@ -527,15 +546,42 @@ const Page = () => {
         ...(uploadedThumbnailID && {
           thumbnailImg: listingMediaRef(uploadedThumbnailID),
         }),
+        ...(uploadedQrScanID && {
+          qrScan: listingMediaRef(uploadedQrScanID),
+        }),
         ...(uploadedCertificateID && {
           evaluationCertificate: listingMediaRef(uploadedCertificateID),
+        }),
+        ...(uploadedAgencyAgreementID && {
+          agencyAgreement: listingMediaRef(uploadedAgencyAgreementID),
         }),
         ...(isOffPlan && {
           priceFrom: formData.priceFrom ? Number(formData.priceFrom) : undefined,
           priceTo: formData.priceTo ? Number(formData.priceTo) : undefined,
           price: Number(formData.priceFrom || 0),
-          sizeSQFT: formData.sizeSQFT ? Number(formData.sizeSQFT) : 0,
-          sizeUnit: formData.sizeType || 'SQFT',
+          sizeSQFT: formData.sizeSQFTFrom
+            ? Number(formData.sizeSQFTFrom)
+            : formData.sizeSQFT
+              ? Number(formData.sizeSQFT)
+              : 0,
+          sizeSQM: formData.sizeSQMFrom
+            ? Number(formData.sizeSQMFrom)
+            : formData.sizeSQM
+              ? Number(formData.sizeSQM)
+              : 0,
+          sizeSQFTFrom: formData.sizeSQFTFrom
+            ? Number(formData.sizeSQFTFrom)
+            : undefined,
+          sizeSQFTTo: formData.sizeSQFTTo
+            ? Number(formData.sizeSQFTTo)
+            : undefined,
+          sizeSQMFrom: formData.sizeSQMFrom
+            ? Number(formData.sizeSQMFrom)
+            : undefined,
+          sizeSQMTo: formData.sizeSQMTo
+            ? Number(formData.sizeSQMTo)
+            : undefined,
+          sizeUnit: formData.sizeUnit || formData.sizeType || 'SQFT',
           propertyForSale: 'Yes',
           paymentPlan: reindexOffPlanPaymentPlan(
             Array.isArray(formData.paymentPlan) ? formData.paymentPlan : [],
@@ -616,6 +662,21 @@ const Page = () => {
                 onPaymentPlanStepChange={handlePaymentPlanStepChange}
                 onPaymentPlanStepRemove={handlePaymentPlanStepRemove}
                 onPaymentPlanStepAdd={handlePaymentPlanStepAdd}
+                agencyAgreementFile={agencyAgreementFile}
+                onAgencyAgreementChange={(e) => {
+                  const selected = e.target.files?.[0]
+                  e.target.value = null
+                  if (!selected) return
+                  if (selected.type !== 'application/pdf') {
+                    toast.error('Please upload a PDF file for the agency agreement.')
+                    return
+                  }
+                  setAgencyAgreementFile(selected)
+                }}
+                onAgencyAgreementRemove={() => {
+                  setAgencyAgreementFile(null)
+                  setFormData((prev) => ({ ...prev, agencyAgreement: null }))
+                }}
               />
             )}
 

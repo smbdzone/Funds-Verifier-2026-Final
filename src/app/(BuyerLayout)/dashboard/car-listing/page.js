@@ -83,6 +83,7 @@ const initialFormData = {
   pictures: null,
   video: null,
   thumbnailImg: null,
+  qrScan: null,
   VIN: '',
   exteriorColor: [String],
   interiorColor: [String],
@@ -157,9 +158,12 @@ function Page() {
     errors,
     phoneNumber,
     thumbnail,
+    qrScan,
     handleOpenModal,
     handleThumbImageRemove,
     handleThumbImageChange,
+    handleQrScanChange,
+    handleQrScanRemove,
     handleCountryChange,
     selectedCountryPhone,
     maxLength,
@@ -439,24 +443,35 @@ function Page() {
       let thumbnailID = formData?.thumbnailImg
       let videoID = formData?.video
       let fileID = formData?.evaluationCertificate
+      let qrScanID = formData?.qrScan
       // Upload new files only if creating a new property (no id)
       if (!id) {
-        const [uploadedImages, uploadedVideo, uploadedFile, uploadedThumbnail] =
-          await Promise.all([
-            images.length > 0 ? handleImageUpload(images) : imageID,
-            videos.length ? handleVideoUpload(videos) : videoID,
-            file ? handleFileUpload(file) : fileID,
-            thumbnail ? handleThumbnailUpload(thumbnail) : thumbnailID,
-          ])
+        const [
+          uploadedImages,
+          uploadedVideo,
+          uploadedFile,
+          uploadedThumbnail,
+          uploadedQrScan,
+        ] = await Promise.all([
+          images.length > 0 ? handleImageUpload(images) : imageID,
+          videos.length ? handleVideoUpload(videos) : videoID,
+          file ? handleFileUpload(file) : fileID,
+          thumbnail ? handleThumbnailUpload(thumbnail) : thumbnailID,
+          qrScan ? handleImageUpload([qrScan]) : qrScanID,
+        ])
 
         imageID = uploadedImages
         videoID = uploadedVideo
         fileID = uploadedFile
         thumbnailID = uploadedThumbnail
+        qrScanID = uploadedQrScan
       } else {
         // ✅ For updates: only re-upload video or file if changed
         if (videos.length) videoID = await handleVideoUpload(videos)
         if (file) fileID = await handleFileUpload(file)
+        if (qrScan instanceof File) {
+          qrScanID = await handleImageUpload([qrScan])
+        }
         // thumbnail and images will remain unchanged
       }
 
@@ -473,6 +488,7 @@ function Page() {
         thumbnailImg:
           listingMediaRef(thumbnailID) ??
           listingMediaRef(formData?.thumbnailImg),
+        qrScan: listingMediaRef(qrScanID) ?? listingMediaRef(formData?.qrScan),
         feedback: 'feedback',
       }
 
@@ -764,12 +780,15 @@ function Page() {
                 flags={flags}
                 phoneNumber={phoneNumber}
                 thumbnail={thumbnail}
+                qrScan={qrScan}
                 handlePhoneNumberChange={handlePhoneNumberChange}
                 handleCountryChange={handleCountryChange}
                 selectedCountryPhone={selectedCountryPhone}
                 maxLength={maxLength}
                 handleThumbImageChange={handleThumbImageChange}
                 handleThumbImageRemove={handleThumbImageRemove}
+                handleQrScanChange={handleQrScanChange}
+                handleQrScanRemove={handleQrScanRemove}
                 images={images}
                 videos={videos}
                 type={'Car For Sale'}

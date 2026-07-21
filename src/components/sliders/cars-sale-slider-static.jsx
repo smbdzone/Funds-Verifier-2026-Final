@@ -12,17 +12,15 @@ import { FaStar } from 'react-icons/fa'
 import { formatPriceUS } from '@/utils'
 import {
   getListingCardImageSrc,
+  getListingQrScanSrc,
   PLACEHOLDER,
 } from '@/libs/listingCardMedia'
+import { getListingRef } from '@/libs/listingRef'
 import location from '@/assets/vector2.svg'
-import avator1 from '@/assets/avators/Avatars 1.png'
-import avator2 from '@/assets/avators/Avatars 2.png'
-import avator3 from '@/assets/avators/Avatars 3.png'
 import arrow_right from '@/assets/vector1.svg'
+import { getProfileImageSrc } from '@/utils/global-functions/global'
 import { HomeListingSliderSkeleton } from '@/components/home/HomeSectionSkeletons'
 import { publicApiFetch } from '@/libs/publicApiClient'
-
-const avatars = [avator1, avator2, avator3]
 
 const APPROVED_CARS_URL = '/car?statusFilter=1&limit=100&sort=-createdAt'
 
@@ -284,8 +282,18 @@ export default function CarSaleSliderStatic() {
                         </div>
                         <Link
                           href={`/car/${carForSale.slug || carForSale.uuid}`}
-                          className='flex truncate text-[#002D4F] capitalize md:text-xl text-sm font-medium w-full text-left'
+                          className='flex items-center gap-2 truncate text-[#002D4F] capitalize md:text-xl text-sm font-medium w-full text-left'
                         >
+                          {getListingQrScanSrc(carForSale) ? (
+                            <Image
+                              src={getListingQrScanSrc(carForSale)}
+                              width={36}
+                              height={36}
+                              alt='QR code'
+                              className='h-9 w-9 shrink-0 rounded border border-gray-200 bg-white object-contain'
+                              unoptimized
+                            />
+                          ) : null}
                           {truncateTitle(carForSale.title)}
                         </Link>
                         <div className='text-[#002D4F] flex flex-row space-x-2 w-full text-base items-end'>
@@ -311,19 +319,15 @@ export default function CarSaleSliderStatic() {
                               height={50}
                               className='object-cover'
                               alt=''
-                              src={
-                                avatars[
-                                (carForSale.uuid?.length || 0) %
-                                avatars.length
-                                ]
-                              }
+                              src={getProfileImageSrc(
+                                carForSale?.sellerAvatar ||
+                                carForSale?.userId?.profileImage,
+                              )}
+                              unoptimized
                             />
                           </div>
                           <div className='md:text-sm lg:text-base text-xs font-medium text-[#000000]'>
-                            Ref:{' '}
-                            {carForSale?.uuid
-                              ? carForSale.uuid.slice(0, 8)
-                              : 'N/A'}
+                            Ref: {getListingRef(carForSale)}
                           </div>
                         </div>
                         <div className='lg:text-lg md:text-sm text-xs font-semibold text-[#000000]'>

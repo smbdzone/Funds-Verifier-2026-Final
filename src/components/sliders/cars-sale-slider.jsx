@@ -4,8 +4,10 @@ import { useAppContext } from '@/context/AppContext'
 import { formatPriceUS, ucFirst } from '@/utils'
 import {
   getListingCardImageSrc,
+  getListingQrScanSrc,
   PLACEHOLDER,
 } from '@/libs/listingCardMedia'
+import { getListingRef } from '@/libs/listingRef'
 import { Swiper, SwiperSlide } from 'swiper/react'
 import 'swiper/css'
 import 'swiper/css/pagination'
@@ -14,15 +16,11 @@ import { Pagination, Autoplay } from 'swiper/modules' // Import Autoplay module
 import axios from 'axios'
 import star from '@/assets/star-6.svg'
 import location from '@/assets/vector2.svg'
-import avatar1 from '@/assets/avators/Avatars 1.png'
-import avatar2 from '@/assets/avators/Avatars 2.png'
-import avatar3 from '@/assets/avators/Avatars 3.png'
+import { getProfileImageSrc } from '@/utils/global-functions/global'
 import arrow_right from '@/assets/vector1.svg'
 import Image from 'next/image'
 import Link from 'next/link'
 import { swiperCanLoop } from '@/utils/swiperLoop'
-
-const avatars = [avatar1, avatar2, avatar3]
 
 // Utility function to shuffle an array
 const shuffleArray = (array) => {
@@ -198,8 +196,18 @@ export default function CarForSale() {
                       </div>
                       <Link
                         href={`/car/${car.slug || car.uuid}`}
-                        className='flex text-[#002D4F] text-xl font-medium w-full text-left'
+                        className='flex items-center gap-2 text-[#002D4F] text-xl font-medium w-full text-left'
                       >
+                        {getListingQrScanSrc(car) ? (
+                          <Image
+                            src={getListingQrScanSrc(car)}
+                            width={36}
+                            height={36}
+                            alt='QR code'
+                            className='h-9 w-9 shrink-0 rounded border border-gray-200 bg-white object-contain'
+                            unoptimized
+                          />
+                        ) : null}
                         {ucFirst(car.carType)}
                       </Link>
                       <div className='text-[#002D4F] flex flex-row space-x-2 w-full text-base items-start'>
@@ -225,11 +233,14 @@ export default function CarForSale() {
                             height={50}
                             className='object-cover'
                             alt=''
-                            src={avatars[index % avatars.length]}
+                            src={getProfileImageSrc(
+                              car?.sellerAvatar || car?.userId?.profileImage,
+                            )}
+                            unoptimized
                           />
                         </div>
                         <div className='text-base font-medium text-[#000000]'>
-                          Ref: {car?.uuid ? car.uuid.slice(0, 8) : 'N/A'}
+                          Ref: {getListingRef(car)}
                         </div>
                       </div>
                       <div className='text-lg font-semibold text-[#000000]'>

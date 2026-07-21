@@ -1,8 +1,6 @@
-import React, { useState } from "react";
+import React from "react";
 import Image from "next/image";
 import { CloseIcon } from "@/components/Icons";
-import axios from "axios";
-import { Button } from "@mui/material";
 import "./style.css";
 
 const Modal = ({ show, onClose, selectedImage, setSelectedImage }) => {
@@ -45,9 +43,13 @@ const Modal = ({ show, onClose, selectedImage, setSelectedImage }) => {
               <CloseIcon />
             </span>
           </div>
-          <h2 className="text-black lg:text-2xl sm:text-lg text-base font-bold text-center pt-2 mb-2">
-            Choose Avatar
+          <h2 className="text-black lg:text-2xl sm:text-lg text-base font-bold text-center pt-2 mb-4">
+            Profile Picture
           </h2>
+
+          <h3 className="text-black sm:text-base text-sm font-semibold mb-3">
+            Choose an Avatar
+          </h3>
           <div className="grid grid-cols-4 gap-3">
             {images.map((image, index) => (
               <div key={index} className="relative overflow-hidden rounded-lg">

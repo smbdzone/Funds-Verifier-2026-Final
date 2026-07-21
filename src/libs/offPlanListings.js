@@ -2,8 +2,10 @@ import { isOffPlanListing } from '@/libs/filterMyListingTab'
 import {
   getListingCarouselItems,
   getListingImageSrc,
+  getListingQrScanSrc,
 } from '@/libs/listingCardMedia'
 import { getListingDetailId } from '@/libs/listingSlug'
+import { getListingRef } from '@/libs/listingRef'
 import { publicApiFetch } from '@/libs/publicApiClient'
 
 const OFF_PLAN_PLACEHOLDER = '/offplan/image1.svg'
@@ -74,13 +76,16 @@ export function mapApiListingToOffPlanCard(listing) {
     paymentPlanLabel: getOffPlanPaymentPlanLabel(listing?.paymentPlan),
     rating: 0,
     reviewCount: Array.isArray(listing?.reviews) ? listing.reviews.length : 0,
-    ref: listing?.uuid
-      ? String(listing.uuid).slice(0, 8)
-      : listing?.ref || '—',
+    dldNumber: listing?.dldNumber || '',
+    qrScanSrc: getListingQrScanSrc(listing),
+    ref: getListingRef(listing),
     priceFrom: listing?.priceFrom ?? listing?.price,
     priceTo: listing?.priceTo ?? listing?.price,
     images: getOffPlanImageUrls(listing),
-    developerAvatar: '/avatar/Avatars 2.png',
+    developerAvatar:
+      listing?.sellerAvatar ||
+      listing?.userId?.profileImage ||
+      '/avatar/Avatars 2.png',
     developer: listing?.developer,
     propertyType: listing?.propertyType,
     bedrooms: listing?.bedrooms,
@@ -88,6 +93,10 @@ export function mapApiListingToOffPlanCard(listing) {
     sizeUnit: listing?.sizeUnit || listing?.sizeType || 'SQFT',
     sizeSQFT: listing?.sizeSQFT,
     sizeSQM: listing?.sizeSQM,
+    sizeSQFTFrom: listing?.sizeSQFTFrom ?? listing?.sizeSQFT,
+    sizeSQFTTo: listing?.sizeSQFTTo ?? listing?.sizeSQFT,
+    sizeSQMFrom: listing?.sizeSQMFrom ?? listing?.sizeSQM,
+    sizeSQMTo: listing?.sizeSQMTo ?? listing?.sizeSQM,
     description: listing?.description,
     additionalDescription: listing?.additionalDescription,
     facilities: listing?.facilities || [],

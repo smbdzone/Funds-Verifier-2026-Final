@@ -31,6 +31,8 @@ const ListingsImageComponent = ({
   handleImageRemove,
   handleThumbImageChange,
   disabled,
+  inputId = 'thumbnail',
+  uploadLabel = 'Upload Thumbnail',
 }) => {
   const [objectUrl, setObjectUrl] = useState(null)
 
@@ -73,7 +75,7 @@ const ListingsImageComponent = ({
               <button
                 type='button'
                 onClick={() => handleImageRemove(image?.public_id)}
-                className='absolute top-0 right-0 w-6 flex justify-center items-center h-6 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity'
+                className='absolute top-0 right-0 w-6 flex justify-center items-center h-6 p-1 bg-light-gold text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity'
                 title='Remove image'
               >
                 &times;
@@ -85,7 +87,7 @@ const ListingsImageComponent = ({
 
       <input
         type='file'
-        id='thumbnail'
+        id={inputId}
         className='opacity-0 absolute w-0 h-0'
         accept='image/*'
         disabled={disabled}
@@ -94,10 +96,10 @@ const ListingsImageComponent = ({
 
       <div className='absolute right-[20px] xl:top-0 xxs:top-[55px]'>
         <label
-          htmlFor={!disabled ? 'thumbnail' : undefined}
+          htmlFor={!disabled ? inputId : undefined}
           className={`flex flex-col items-center justify-center w-[176px] xl:h-[154px] xxs:h-[110px] shadow-neonsm my-[19px] ${disabled
-              ? 'cursor-not-allowed opacity-50 pointer-events-none'
-              : 'cursor-pointer'
+            ? 'cursor-not-allowed opacity-50 pointer-events-none'
+            : 'cursor-pointer'
             }`}
         >
           <Image
@@ -107,7 +109,7 @@ const ListingsImageComponent = ({
             alt='Upload Image'
           />
           <span className='text-[17px] text-dark-grey font-normal pt-[18px]'>
-            Add Thumbnail
+            {uploadLabel}
           </span>
         </label>
       </div>

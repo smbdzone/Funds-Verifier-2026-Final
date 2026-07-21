@@ -89,6 +89,7 @@ const ListingsProvider = ({ children }) => {
   const [file, setFile] = useState(null)
   const [images, setImages] = useState([])
   const [thumbnail, setThumbnail] = useState(null)
+  const [qrScan, setQrScan] = useState(null)
   const [isCity, setIsCity] = useState('')
   const [confirmationModal, setConfirmationModal] = useState(false)
   const [land, setLand] = useState(false)
@@ -176,7 +177,13 @@ const ListingsProvider = ({ children }) => {
           country: countryNorm,
           priceFrom: d.priceFrom ?? '',
           priceTo: d.priceTo ?? '',
+          sizeSQFTFrom: d.sizeSQFTFrom ?? '',
+          sizeSQFTTo: d.sizeSQFTTo ?? '',
+          sizeSQMFrom: d.sizeSQMFrom ?? '',
+          sizeSQMTo: d.sizeSQMTo ?? '',
+          agencyAgreement: d.agencyAgreement || null,
           advertisementId: d.advertisementId || '',
+          dldNumber: d.dldNumber || '',
           deliveryQuarter: d.deliveryQuarter || '',
           deliveryYear: d.deliveryYear || '',
           sizeType: d.sizeType || d.sizeUnit || '',
@@ -203,6 +210,7 @@ const ListingsProvider = ({ children }) => {
         setTotalPrice(d.price != null ? String(d.price) : null)
         setPhoneNumber(d.phoneNumber ? `${d.phoneNumber}` : '')
         setThumbnail(d?.thumbnailImg?.images?.[0] ?? null)
+        setQrScan(d?.qrScan?.images?.[0] ?? d?.qrScan ?? null)
         setImages(Array.isArray(d?.pictures?.images) ? d.pictures.images : [])
         if (d?.video?.url) {
           setVideos([d.video.url])
@@ -680,6 +688,41 @@ const ListingsProvider = ({ children }) => {
     } else setThumbnail(null)
   }
 
+  const handleQrScanChange = async (event) => {
+    let selectedFile = event.target.files[0]
+    if (selectedFile) {
+      if (selectedFile.size > LISTING_IMAGE_MAX_BYTES) {
+        if (!isCompressionConfigured()) {
+          toast.error(
+            `The file ${selectedFile.name} exceeds the ${LISTING_IMAGE_MAX_MB}MB size limit`,
+          )
+          event.target.value = null
+          return
+        }
+        setIsCompressing(true)
+        try {
+          selectedFile = await ensureWithinSize(
+            selectedFile,
+            LISTING_IMAGE_MAX_BYTES,
+          )
+        } catch (err) {
+          toast.error(
+            `Could not compress ${selectedFile.name}: ${err?.message || 'try again'}`,
+          )
+          event.target.value = null
+          return
+        } finally {
+          setIsCompressing(false)
+        }
+      }
+      setQrScan(selectedFile)
+    }
+  }
+
+  const handleQrScanRemove = () => {
+    setQrScan(null)
+  }
+
   /** True when the user actually requested 3D or technical report (has a fee). */
   const isValidState = (state) => {
     if (!state || typeof state !== 'object') return false
@@ -790,6 +833,7 @@ const ListingsProvider = ({ children }) => {
 
   const resetForm = () => {
     setThumbnail(null)
+    setQrScan(null)
     setErrors({})
     setVideos([])
     setImages([])
@@ -872,12 +916,16 @@ const ListingsProvider = ({ children }) => {
         selectType,
         handleMouseLeave,
         setThumbnail,
+        setQrScan,
         setLand,
         phoneNumber,
         thumbnail,
+        qrScan,
         handleOpenModal,
         handleThumbImageRemove,
         handleThumbImageChange,
+        handleQrScanChange,
+        handleQrScanRemove,
         handleCountryChange,
         isValidState,
         selectedCountryPhone,

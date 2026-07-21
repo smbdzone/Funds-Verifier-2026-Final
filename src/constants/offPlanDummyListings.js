@@ -296,3 +296,21 @@ export function formatOffPlanPriceRange(priceFrom, priceTo) {
 
   return `AED ${formatPart(priceFrom)}-${formatPart(priceTo)}`
 }
+
+export function formatOffPlanSizeRange(sizeFrom, sizeTo, sizeUnit = 'SQFT') {
+  const formatPart = (value) => {
+    const amount = Number(value)
+    if (!Number.isFinite(amount) || amount <= 0) return '0'
+    return Number.isInteger(amount)
+      ? String(amount)
+      : String(Number(amount.toFixed(2)))
+  }
+
+  const unit = sizeUnit === 'SQM' ? 'SQM' : 'SQFT'
+  const from = formatPart(sizeFrom)
+  const to = formatPart(sizeTo)
+
+  if (from === '0' && to === '0') return `— ${unit}`
+  if (!sizeTo || from === to || to === '0') return `${from} ${unit}`
+  return `${from}-${to} ${unit}`
+}

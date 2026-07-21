@@ -1,7 +1,7 @@
 const ASSET_TYPE_ROUTE = {
   'property for sale': 'property',
   'property for lease': 'property',
-  'property off plan for sale': 'property',
+  'property off plan for sale': 'offplan',
   'car for sale': 'car',
   'boats for sale': 'boat',
   'jewellery for sale': 'jewelry',

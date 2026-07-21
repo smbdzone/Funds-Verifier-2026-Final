@@ -21,6 +21,7 @@ import { formatNumberWithCommas } from '@/utils/global-functions/global'
 import {
   getListingCarouselItems,
   getListingDocumentSrc,
+  getListingQrScanSrc,
   getTechnicalReportSrc,
   isListingCarouselPlaceholderSlide,
   PLACEHOLDER,
@@ -163,7 +164,17 @@ const ProductCard = ({
         className={`w-full text-base text-reef-gold`}
       >
         <div className='flex justify-between gap-2 w-full'>
-          <Link href={listingHref}>
+          <Link href={listingHref} className='flex items-center gap-2'>
+            {getListingQrScanSrc(item) ? (
+              <Image
+                src={getListingQrScanSrc(item)}
+                width={36}
+                height={36}
+                alt='QR code'
+                className='h-9 w-9 shrink-0 rounded border border-gray-200 bg-white object-contain'
+                unoptimized
+              />
+            ) : null}
             <h2
               className='xl:text-xl md:text-lg text-base font-semibold capitalize text-black'
             >

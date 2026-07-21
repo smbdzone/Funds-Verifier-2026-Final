@@ -11,19 +11,17 @@ import Link from 'next/link'
 import { formatPriceUS, ucFirst } from '@/utils'
 import {
   getListingCardImageSrc,
+  getListingQrScanSrc,
   PLACEHOLDER,
 } from '@/libs/listingCardMedia'
+import { getListingRef } from '@/libs/listingRef'
 import { getListingDetailId } from '@/libs/listingSlug'
 import { FaStar } from 'react-icons/fa'
 import location from '@/assets/vector2.svg'
-import avatar1 from '@/assets/avators/Avatars 1.png'
-import avatar2 from '@/assets/avators/Avatars 2.png'
-import avatar3 from '@/assets/avators/Avatars 3.png'
 import arrow_right from '@/assets/vector1.svg'
+import { getProfileImageSrc } from '@/utils/global-functions/global'
 import { HomeListingSliderSkeleton } from '@/components/home/HomeSectionSkeletons'
 import { publicApiFetch } from '@/libs/publicApiClient'
-
-const avatars = [avatar1, avatar2, avatar3]
 
 const APPROVED_JEWELRY_URL = '/jewelry?statusFilter=1&limit=100&sort=-createdAt'
 
@@ -284,8 +282,18 @@ export default function JewelrySaleSlider() {
                         </div>
                         <Link
                           href={`/jewelry/${getListingDetailId(item)}`}
-                          className='flex text-[#002D4F] md:text-xl text-sm font-medium w-full text-left capitalize'
+                          className='flex items-center gap-2 text-[#002D4F] md:text-xl text-sm font-medium w-full text-left capitalize'
                         >
+                          {getListingQrScanSrc(item) ? (
+                            <Image
+                              src={getListingQrScanSrc(item)}
+                              width={36}
+                              height={36}
+                              alt='QR code'
+                              className='h-9 w-9 shrink-0 rounded border border-gray-200 bg-white object-contain'
+                              unoptimized
+                            />
+                          ) : null}
                           {truncateTitle(item.title)}
                         </Link>
                         {item.category ? (
@@ -316,16 +324,15 @@ export default function JewelrySaleSlider() {
                               height={50}
                               className='object-cover'
                               alt=''
-                              src={
-                                avatars[
-                                (item.uuid?.length || 0) % avatars.length
-                                ]
-                              }
+                              src={getProfileImageSrc(
+                                item?.sellerAvatar ||
+                                item?.userId?.profileImage,
+                              )}
+                              unoptimized
                             />
                           </div>
                           <div className='md:text-sm lg:text-base text-xs font-medium text-[#000000]'>
-                            Ref:{' '}
-                            {item?.uuid ? item.uuid.slice(0, 8) : 'N/A'}
+                            Ref: {getListingRef(item)}
                           </div>
                         </div>
                         <div className='lg:text-lg md:text-sm text-xs font-semibold text-[#000000]'>

@@ -53,7 +53,7 @@ const OffPlanSingleImageUpload = ({
               <button
                 type='button'
                 onClick={onRemove}
-                className='absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs text-white'
+                className='absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-light-gold text-xs text-white'
                 title='Remove image'
               >
                 &times;
@@ -64,11 +64,10 @@ const OffPlanSingleImageUpload = ({
 
         <label
           htmlFor={!disabled ? inputId : undefined}
-          className={`flex flex-col items-center justify-center text-center ${
-            disabled
+          className={`flex flex-col items-center justify-center text-center ${disabled
               ? 'cursor-not-allowed opacity-50 pointer-events-none'
               : 'cursor-pointer'
-          }`}
+            }`}
         >
           {!image ? (
             <Image
@@ -108,7 +107,7 @@ const OffPlanSingleImageUpload = ({
             <button
               type='button'
               onClick={onRemove}
-              className='absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs text-white'
+              className='absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-light-gold text-xs text-white'
               title='Remove image'
             >
               &times;
@@ -128,11 +127,10 @@ const OffPlanSingleImageUpload = ({
 
       <label
         htmlFor={!disabled ? inputId : undefined}
-        className={`flex h-[130px] w-[176px] shrink-0 flex-col items-center justify-center shadow-neonsm ${
-          disabled
+        className={`flex h-[130px] w-[176px] shrink-0 flex-col items-center justify-center shadow-neonsm ${disabled
             ? 'cursor-not-allowed opacity-50 pointer-events-none'
             : 'cursor-pointer'
-        }`}
+          }`}
       >
         <Image width={45} height={45} src='/listing/camera.svg' alt='Upload' />
         <span className='max-w-[150px] px-2 pt-3 text-center text-[17px] font-normal leading-[21px] text-dark-grey'>

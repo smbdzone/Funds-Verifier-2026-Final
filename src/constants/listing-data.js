@@ -10,6 +10,8 @@ export const globalFormInput = {
   pictures: null,
   video: null,
   thumbnailImg: null,
+  qrScan: null,
+  agencyAgreement: null,
   evaluationCertificate: null,
   video3DWalkthrough: "",
   technicalReport: "",
@@ -23,9 +25,15 @@ export const globalFormInput = {
   bathrooms: "",
   developer: "",
   advertisementId: "",
+  dldNumber: "",
   sizeSQFT: "",
   sizeSQM: "",
+  sizeSQFTFrom: "",
+  sizeSQFTTo: "",
+  sizeSQMFrom: "",
+  sizeSQMTo: "",
   sizeType: "SQFT",
+  qrScan: null,
   deliveryQuarter: "",
   deliveryYear: "",
   layout: "",
@@ -85,6 +93,26 @@ export const globalFormInputFields = [
     formDataKey: "video",
     multiple: true,
     errorKey: "video",
+    required: false,
+  },
+  {
+    type: "file",
+    mediaType: "qrScan",
+    name: "qrScan",
+    label: "QR Scan",
+    acceptedFormats: "JPG, PNG, GIF",
+    maxSize: "2MB",
+    files: [],
+    formDataKey: "qrScan",
+    multiple: false,
+    errorKey: "qrScan",
+    required: false,
+  },
+  {
+    type: "text",
+    label: "DLD Number",
+    placeholder: "DLD Number (issued by the Dubai Land Department)",
+    name: "dldNumber",
     required: false,
   },
   {
@@ -186,6 +214,26 @@ export const offPlanGlobalFormInputFields = [
     formDataKey: "video",
     multiple: true,
     errorKey: "video",
+    required: false,
+  },
+  {
+    type: "file",
+    mediaType: "qrScan",
+    name: "qrScan",
+    label: "QR Scan",
+    acceptedFormats: "JPG, PNG, GIF",
+    maxSize: "2MB",
+    files: [],
+    formDataKey: "qrScan",
+    multiple: false,
+    errorKey: "qrScan",
+    required: false,
+  },
+  {
+    type: "text",
+    label: "DLD Number",
+    placeholder: "DLD Number (issued by the Dubai Land Department)",
+    name: "dldNumber",
     required: false,
   },
   {
@@ -1398,8 +1446,9 @@ export const OFF_PLAN_PAYMENT_STEP_META = [
   { stepLabel: "5: Fifth Step", paymentLabel: "Final Payment" },
 ];
 
-export const MAX_OFF_PLAN_PAYMENT_STEPS = 5;
+export const MAX_OFF_PLAN_PAYMENT_STEPS = 10;
 export const MIN_OFF_PLAN_PAYMENT_STEPS = 1;
+export const DEFAULT_OFF_PLAN_PAYMENT_STEPS = 5;
 
 const OFF_PLAN_STEP_ORDINALS = [
   "First",
@@ -1407,6 +1456,11 @@ const OFF_PLAN_STEP_ORDINALS = [
   "Third",
   "Fourth",
   "Fifth",
+  "Sixth",
+  "Seventh",
+  "Eighth",
+  "Ninth",
+  "Tenth",
 ];
 
 export const getOffPlanPaymentLabel = (index, total) => {
@@ -1419,14 +1473,21 @@ export const reindexOffPlanPaymentPlan = (steps = []) =>
   steps.map((step, index) => ({
     ...step,
     step: index + 1,
-    stepLabel: `${index + 1}: ${OFF_PLAN_STEP_ORDINALS[index]} Step`,
+    stepLabel: `${index + 1}: ${OFF_PLAN_STEP_ORDINALS[index] || `${index + 1}th`} Step`,
     paymentLabel: getOffPlanPaymentLabel(index, steps.length),
   }));
 
-export const createDefaultOffPlanPaymentPlan = (count = MAX_OFF_PLAN_PAYMENT_STEPS) =>
+export const createDefaultOffPlanPaymentPlan = (
+  count = DEFAULT_OFF_PLAN_PAYMENT_STEPS,
+) =>
   reindexOffPlanPaymentPlan(
     Array.from(
-      { length: Math.min(Math.max(count, MIN_OFF_PLAN_PAYMENT_STEPS), MAX_OFF_PLAN_PAYMENT_STEPS) },
+      {
+        length: Math.min(
+          Math.max(count, MIN_OFF_PLAN_PAYMENT_STEPS),
+          MAX_OFF_PLAN_PAYMENT_STEPS,
+        ),
+      },
       () => ({
         sharePercent: "",
         milestone: "",

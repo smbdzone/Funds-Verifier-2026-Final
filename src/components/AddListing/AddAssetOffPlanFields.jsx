@@ -4,9 +4,11 @@ import React from 'react'
 import TextInput from '@/components/AddListing/TextInput'
 import DropdownInput from '@/components/AddListing/DropdownInput'
 import OffPlanPriceRange from '@/components/property-listing/OffPlanPriceRange'
+import OffPlanSizeRange from '@/components/property-listing/OffPlanSizeRange'
 import DeliveryTimeField from '@/components/property-listing/DeliveryTimeField'
 import OffPlanLayoutFloorPlan from '@/components/property-listing/OffPlanLayoutFloorPlan'
 import OffPlanPaymentPlan from '@/components/property-listing/OffPlanPaymentPlan'
+import OffPlanAgencyAgreementUpload from '@/components/property-listing/OffPlanAgencyAgreementUpload'
 import {
   bathroomsOptions,
   bedroomsOptions,
@@ -29,6 +31,9 @@ const AddAssetOffPlanFields = ({
   onPaymentPlanStepChange,
   onPaymentPlanStepRemove,
   onPaymentPlanStepAdd,
+  agencyAgreementFile,
+  onAgencyAgreementChange,
+  onAgencyAgreementRemove,
 }) => {
   const dropdowns = {
     layout: dropdownOpen === 'layout',
@@ -102,15 +107,32 @@ const AddAssetOffPlanFields = ({
         errors={errors}
       />
 
-      <TextInput
-        type='number'
-        name='sizeSQFT'
-        placeholder='Size in SQFT'
-        value={formData.sizeSQFT || ''}
-        onChange={(e) => onInputChange('sizeSQFT', e.target.value)}
-        unit='SQFT'
-        required
-        errors={errors}
+      <OffPlanSizeRange
+        label='Property size'
+        sizeSQFTFrom={formData.sizeSQFTFrom}
+        sizeSQFTTo={formData.sizeSQFTTo}
+        sizeSQMFrom={formData.sizeSQMFrom}
+        sizeSQMTo={formData.sizeSQMTo}
+        sizeUnit={formData.sizeUnit || formData.sizeType || 'SQFT'}
+        errors={errors.sizeSQFT}
+        errorsMessage={errors.sizeSQFT}
+        onSizeChange={({
+          sizeSQFTFrom,
+          sizeSQFTTo,
+          sizeSQMFrom,
+          sizeSQMTo,
+          sizeUnit,
+          sizeType,
+        }) => {
+          if (sizeSQFTFrom !== undefined) onInputChange('sizeSQFTFrom', sizeSQFTFrom)
+          if (sizeSQFTTo !== undefined) onInputChange('sizeSQFTTo', sizeSQFTTo)
+          if (sizeSQMFrom !== undefined) onInputChange('sizeSQMFrom', sizeSQMFrom)
+          if (sizeSQMTo !== undefined) onInputChange('sizeSQMTo', sizeSQMTo)
+          if (sizeUnit !== undefined) onInputChange('sizeUnit', sizeUnit)
+          if (sizeType !== undefined) onInputChange('sizeType', sizeType)
+          if (sizeSQFTFrom !== undefined) onInputChange('sizeSQFT', sizeSQFTFrom)
+          if (sizeSQMFrom !== undefined) onInputChange('sizeSQM', sizeSQMFrom)
+        }}
       />
 
       <div className='col-span-2'>
@@ -166,6 +188,15 @@ const AddAssetOffPlanFields = ({
           onStepChange={onPaymentPlanStepChange}
           onStepRemove={onPaymentPlanStepRemove}
           onStepAdd={onPaymentPlanStepAdd}
+        />
+      </div>
+
+      <div className='col-span-2'>
+        <OffPlanAgencyAgreementUpload
+          file={agencyAgreementFile}
+          existingDoc={agencyAgreementFile ? null : formData?.agencyAgreement}
+          onChange={onAgencyAgreementChange}
+          onRemove={onAgencyAgreementRemove}
         />
       </div>
     </>

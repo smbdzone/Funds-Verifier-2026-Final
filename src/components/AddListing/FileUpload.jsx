@@ -14,11 +14,9 @@ const FileUpload = ({
 
   return (
     <div
-      className={`${
-        errors[type] ? "border-red-500 border" : "shadow-neons"
-      } h-[191px] relative px-[20px] pt-[13px] overflow-hidden ${
-        type === "video" ? "row-span-2" : ""
-      }`}
+      className={`${errors[type] ? "border-red-500 border" : "shadow-neons"
+        } h-[191px] relative px-[20px] pt-[13px] overflow-hidden ${type === "video" ? "row-span-2" : ""
+        }`}
     >
       <h2 className="text-dark-grey text-[15px] font-normal leading-[26px]">
         Accepted formats:
@@ -44,7 +42,7 @@ const FileUpload = ({
                   />
                   <button
                     onClick={() => onFileRemove(type, index)}
-                    className="absolute top-0 right-0 w-6 flex justify-center items-center h-6 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="absolute top-0 right-0 w-6 flex justify-center items-center h-6 p-1 bg-light-gold text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
                     title="Remove"
                     type="button"
                   >
@@ -74,7 +72,7 @@ const FileUpload = ({
               <button
                 onClick={() => onFileRemove(type)}
                 type="button"
-                className="absolute top-0 right-0 w-6 flex justify-center items-center h-6 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                className="absolute top-0 right-0 w-6 flex justify-center items-center h-6 p-1 bg-light-gold text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
                 title="Remove"
               >
                 &times;

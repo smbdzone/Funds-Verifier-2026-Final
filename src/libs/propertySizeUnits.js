@@ -30,11 +30,43 @@ export function getPropertySizeValue(property, unit) {
   return property?.sizeSQM ?? ''
 }
 
-/** Label + numeric value for cards and detail views (no unit conversion). */
+/**
+ * From/To values for the selected unit (off-plan listings store a size range).
+ * Falls back to the single size value when no range was entered.
+ */
+export function getPropertySizeRange(property, unit) {
+  const selectedUnit = unit || property?.sizeUnit || 'SQFT'
+  const from =
+    selectedUnit === 'SQM'
+      ? property?.sizeSQMFrom ?? property?.sizeSQM
+      : property?.sizeSQFTFrom ?? property?.sizeSQFT
+  const to =
+    selectedUnit === 'SQM' ? property?.sizeSQMTo : property?.sizeSQFTTo
+  return { from, to, unit: selectedUnit }
+}
+
+/**
+ * Label + numeric value for cards and detail views (no unit conversion).
+ * Shows "from-to UNIT" when a size range was entered (off-plan), otherwise
+ * the single value as before.
+ */
 export function formatPropertySizeDisplay(property) {
   const unit = property?.sizeUnit || 'SQFT'
+  const { from, to } = getPropertySizeRange(property, unit)
+  const fromFormatted = formatPropertySizeNumber(from)
+  const toFormatted = formatPropertySizeNumber(to)
+  if (fromFormatted && toFormatted && fromFormatted !== toFormatted) {
+    return `${fromFormatted}-${toFormatted} ${unit}`
+  }
   const value = getPropertySizeValue(property, unit)
-  const formatted = formatPropertySizeNumber(value)
+  const formatted = formatPropertySizeNumber(value) || fromFormatted || toFormatted
   if (!formatted) return ''
   return `${formatted} ${unit}`
+}
+
+/** Numeric part only (e.g. "1,200-1,500" or "1,200") for labels that add their own unit. */
+export function formatPropertySizeValueDisplay(property) {
+  const display = formatPropertySizeDisplay(property)
+  if (!display) return ''
+  return display.replace(/ (SQFT|SQM)$/, '')
 }

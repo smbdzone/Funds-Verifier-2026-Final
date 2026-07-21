@@ -8,11 +8,9 @@ import ImageSlider from '@/components/modules/Jewelry/ImageSlider'
 import OffPlanLayoutFloorPlanDisplay from '@/components/offplan/OffPlanLayoutFloorPlanDisplay'
 import OffPlanPaymentPlanDisplay from '@/components/offplan/OffPlanPaymentPlanDisplay'
 import ListingSocialShare from '@/components/shared/ListingSocialShare'
-import { formatOffPlanPriceRange } from '@/constants/offPlanDummyListings'
-import {
-  formatPropertySizeNumber,
-  getPropertySizeValue,
-} from '@/libs/propertySizeUnits'
+import ListingQrCodeSection from '@/components/shared/ListingQrCodeSection'
+import { formatOffPlanPriceRange, formatOffPlanSizeRange } from '@/constants/offPlanDummyListings'
+import { getProfileImageSrc } from '@/utils/global-functions/global'
 import axios from 'axios'
 import Image from 'next/image'
 import React, { useEffect, useMemo, useState } from 'react'
@@ -164,8 +162,16 @@ export default function OffPlanProductView({ data }) {
               </span>
               <span className='flex items-center text-xs md:text-sm sm:col-span-2'>
                 <GoDotFill className='mr-2 flex shrink-0 text-gold-800' />
-                {data?.sizeUnit || 'SQFT'}:{' '}
-                {formatPropertySizeNumber(getPropertySizeValue(data)) || '—'}
+                Size:{' '}
+                {formatOffPlanSizeRange(
+                  (data?.sizeUnit || 'SQFT') === 'SQM'
+                    ? data?.sizeSQMFrom ?? data?.sizeSQM
+                    : data?.sizeSQFTFrom ?? data?.sizeSQFT,
+                  (data?.sizeUnit || 'SQFT') === 'SQM'
+                    ? data?.sizeSQMTo ?? data?.sizeSQM
+                    : data?.sizeSQFTTo ?? data?.sizeSQFT,
+                  data?.sizeUnit || 'SQFT',
+                )}
               </span>
             </div>
 
@@ -192,8 +198,8 @@ export default function OffPlanProductView({ data }) {
             <div className='flex items-center gap-4'>
               <div className='relative h-[70px] w-[78px] shrink-0 overflow-hidden rounded-sm bg-[#D9D9D9]'>
                 <Image
-                  src={data?.developerAvatar || '/avatar/Avatars 2.png'}
-                  alt={data?.developer || 'Developer'}
+                  src={getProfileImageSrc(data?.developerAvatar)}
+                  alt={data?.developer || 'Seller'}
                   width={78}
                   height={70}
                   className='h-[70px] w-[78px] object-cover'
@@ -208,6 +214,8 @@ export default function OffPlanProductView({ data }) {
               linkedinIcon='white'
             />
           </div>
+
+          <ListingQrCodeSection src={data?.qrScanSrc} />
         </div>
       </div>
 

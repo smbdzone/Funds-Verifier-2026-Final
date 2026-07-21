@@ -5,9 +5,11 @@ import Link from 'next/link'
 import React, { useMemo, useState } from 'react'
 import { FaStar } from 'react-icons/fa'
 import { formatOffPlanPriceRange } from '@/constants/offPlanDummyListings'
+import { getProfileImageSrc } from '@/utils/global-functions/global'
 
 const OffPlanPropertyCard = ({
   title,
+  qrScanSrc,
   location,
   deliveryLabel,
   paymentPlanLabel,
@@ -130,7 +132,17 @@ const OffPlanPropertyCard = ({
             </div>
 
             <div className='flex flex-col gap-2'>
-              <h3 className='text-[18px] font-medium leading-[26px] text-prussianBlue sm:text-xl sm:leading-6'>
+              <h3 className='flex items-center gap-2 text-[18px] font-medium leading-[26px] text-prussianBlue sm:text-xl sm:leading-6'>
+                {qrScanSrc ? (
+                  <Image
+                    src={qrScanSrc}
+                    width={36}
+                    height={36}
+                    alt='QR code'
+                    className='h-9 w-9 shrink-0 rounded border border-gray-200 bg-white object-contain'
+                    unoptimized
+                  />
+                ) : null}
                 {title}
               </h3>
 
@@ -153,11 +165,12 @@ const OffPlanPropertyCard = ({
             <div className='flex min-w-0 items-center gap-3'>
               <div className='relative h-[70px] w-[78px] shrink-0 overflow-hidden'>
                 <Image
-                  src={developerAvatar}
-                  alt='Developer'
+                  src={getProfileImageSrc(developerAvatar)}
+                  alt='Seller'
                   width={78}
                   height={70}
                   className='h-[70px] w-[78px] object-cover'
+                  unoptimized
                 />
               </div>
               <span className='text-[18px] font-medium leading-[24px] text-black sm:text-lg sm:leading-[22px]'>

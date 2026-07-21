@@ -75,6 +75,7 @@ export default async function OffPlanDetailPage({ params }) {
                   rating={item.rating}
                   reviewCount={item.reviewCount}
                   listingRef={item.ref}
+                  qrScanSrc={item.qrScanSrc}
                   priceFrom={item.priceFrom}
                   priceTo={item.priceTo}
                   images={item.images}

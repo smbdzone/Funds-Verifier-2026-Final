@@ -20,8 +20,11 @@ import { IoCheckmarkSharp } from 'react-icons/io5'
 import {
   getListingDetailMediaItems,
   getListingDocumentSrc,
+  getListingQrScanSrc,
   getTechnicalReportSrc,
 } from '@/libs/listingCardMedia'
+import { getListingRef } from '@/libs/listingRef'
+import ListingQrCodeSection from '@/components/shared/ListingQrCodeSection'
 
 export default function JewelleryView({ data }) {
   const combinedMedia = getListingDetailMediaItems(data)
@@ -295,8 +298,9 @@ export default function JewelleryView({ data }) {
             </div>
           </div>
           <span className='font-medium md:text-lg text-base mb-2 block'>
-            Ref: {data?.uuid ? data.uuid.slice(0, 8) : 'N/A'}
+            Ref: {getListingRef(data)}
           </span>
+          <ListingQrCodeSection src={getListingQrScanSrc(data)} />
           <div className='flex justify-between w-full items-end'>
             <ListingSocialShare
               listing={{ ...data, type: 'jewelry' }}

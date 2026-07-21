@@ -19,8 +19,11 @@ import { formatNumberWithCommas, formatColorList } from '../../utils/global-func
 import {
   getListingDetailMediaItems,
   getListingDocumentSrc,
+  getListingQrScanSrc,
   getTechnicalReportSrc,
 } from '@/libs/listingCardMedia'
+import { getListingRef } from '@/libs/listingRef'
+import ListingQrCodeSection from '@/components/shared/ListingQrCodeSection'
 
 export default function ProductView({ data }) {
   const combinedMedia = getListingDetailMediaItems(data)
@@ -290,8 +293,9 @@ export default function ProductView({ data }) {
           <div className='w-full flex justify-between items-end'>
             <div>
               <span className='font-medium md:text-lg text-base mb-2 block'>
-                Ref: {data?.uuid ? data.uuid.slice(0, 8) : 'N/A'}
+                Ref: {getListingRef(data)}
               </span>
+              <ListingQrCodeSection src={getListingQrScanSrc(data)} />
               <div className='flex gap-5 font-medium text-lg items-center'>
                 <ListingSocialShare
                   listing={{ ...data, type: 'car' }}

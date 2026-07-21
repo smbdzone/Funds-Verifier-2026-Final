@@ -23,6 +23,7 @@ import {
 } from '@/components/global/ListingEmptyState'
 import customAxios from '@/utils/apis/apis'
 import { isOffPlanListing } from '@/libs/filterMyListingTab'
+import { formatPropertySizeDisplay } from '@/libs/propertySizeUnits'
 
 const PROPERTY_UI_ONLY_PARAMS = new Set(['assetType'])
 
@@ -260,7 +261,8 @@ export const AuctionData = () => {
               attributes={[
                 item.bedrooms + ' Beds',
                 item.bathrooms + ' Baths',
-                formatNumberWithCommas(item.sizeSQFT) + ' Sqft',
+                formatPropertySizeDisplay(item) ||
+                  formatNumberWithCommas(item.sizeSQFT) + ' Sqft',
               ]}
               handlePrevSlide={handlePrevSlide}
               handleNextSlide={handleNextSlide}

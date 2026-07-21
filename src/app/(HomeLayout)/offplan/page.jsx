@@ -153,6 +153,7 @@ export default function OffPlanPage() {
                     rating={listing.rating}
                     reviewCount={listing.reviewCount}
                     listingRef={listing.ref}
+                    qrScanSrc={listing.qrScanSrc}
                     priceFrom={listing.priceFrom}
                     priceTo={listing.priceTo}
                     images={listing.images}
@@ -208,6 +209,7 @@ export default function OffPlanPage() {
                       rating={mobileVisibleCard.rating}
                       reviewCount={mobileVisibleCard.reviewCount}
                       listingRef={mobileVisibleCard.ref}
+                      qrScanSrc={mobileVisibleCard.qrScanSrc}
                       priceFrom={mobileVisibleCard.priceFrom}
                       priceTo={mobileVisibleCard.priceTo}
                       images={mobileVisibleCard.images}

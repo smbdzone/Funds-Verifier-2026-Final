@@ -9,6 +9,7 @@ import {
   getListingImageSrc,
   getListingVideoSrc,
 } from '@/libs/listingCardMedia'
+import { getListingRef } from '@/libs/listingRef'
 import ListingSocialShare from '@/components/shared/ListingSocialShare'
 import { formatPriceUS } from '@/utils'
 import { formatNumberWithCommas } from '../../utils/global-functions/global'
@@ -110,7 +111,7 @@ export default function CheckoutView({
             </div>
             <div className='relative flex lg:h-[450px] items-start flex-col lg:space-y-0 space-y-5 lg:justify-between mt-6 sm:mt-0'>
               <span className='font-medium lg:text-[18px] sm:text-base text-sm block'>
-                Ref: {data?.uuid ? data.uuid.slice(0, 8) : 'N/A'}
+                Ref: {getListingRef(data)}
               </span>
               <h1 className='text-wrap text-blue capitalize lg:text-4xl sm:text-2xl text-lg font-semibold mb-1'>
                 {data?.title}

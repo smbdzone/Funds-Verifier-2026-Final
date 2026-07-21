@@ -16,15 +16,17 @@ import Open3dModal from '../3dModal/Open3dModal'
 import ListingSocialShare from '@/components/shared/ListingSocialShare'
 import { formatNumberWithCommas } from '../../utils/global-functions/global'
 import {
-  formatPropertySizeNumber,
-  getPropertySizeValue,
+  formatPropertySizeValueDisplay,
 } from '@/libs/propertySizeUnits'
 import ImageSlider from '../modules/Jewelry/ImageSlider'
 import {
   getListingDetailMediaItems,
   getListingDocumentSrc,
+  getListingQrScanSrc,
   getTechnicalReportSrc,
 } from '@/libs/listingCardMedia'
+import { getListingRef } from '@/libs/listingRef'
+import ListingQrCodeSection from '@/components/shared/ListingQrCodeSection'
 
 export default function ProductView({ data }) {
   const combinedMedia = getListingDetailMediaItems(data)
@@ -225,7 +227,7 @@ export default function ProductView({ data }) {
               <span className='flex flex-row items-center text-[7px] sm:text-xs md:text-sm'>
                 <GoDotFill className='flex mr-2 text-gold-800' />{' '}
                 {data?.sizeUnit || 'SQFT'} :
-                {formatPropertySizeNumber(getPropertySizeValue(data))}
+                {formatPropertySizeValueDisplay(data)}
               </span>
             </div>
 
@@ -325,8 +327,9 @@ export default function ProductView({ data }) {
             </div>
           </div>
           <span className='font-medium md:text-lg text-base mb-2 block'>
-            Ref: {data?.uuid ? data.uuid.slice(0, 8) : 'N/A'}
+            Ref: {getListingRef(data)}
           </span>
+          <ListingQrCodeSection src={getListingQrScanSrc(data)} />
           <div className='flex justify-between w-full items-end'>
             <ListingSocialShare
               listing={data}

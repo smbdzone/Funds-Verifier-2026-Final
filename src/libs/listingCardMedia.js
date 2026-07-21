@@ -183,6 +183,22 @@ export function getListingThumbSrc(listing, fallback) {
   return PLACEHOLDER
 }
 
+/**
+ * Uploaded QR scan preview for listing cards. The backend populates `qrScan`
+ * as an ImageAsset ({ images: [{ signedUrl, url }] }). Returns '' when the
+ * listing has no QR scan so cards can skip rendering it.
+ */
+export function getListingQrScanSrc(listing) {
+  const qr = listing?.qrScan
+  if (!qr || typeof qr !== 'object') return ''
+  const imgs = Array.isArray(qr.images) ? qr.images : [qr]
+  for (const img of imgs) {
+    const src = getListingImageSrc(img)
+    if (src && src !== PLACEHOLDER) return src
+  }
+  return ''
+}
+
 function certificatePdfStreamUrl(uuid) {
   const certUuid = typeof uuid === 'string' ? uuid.trim() : ''
   if (!certUuid) return ''

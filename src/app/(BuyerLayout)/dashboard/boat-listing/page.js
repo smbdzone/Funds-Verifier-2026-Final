@@ -139,9 +139,12 @@ function Page() {
     errors,
     phoneNumber,
     thumbnail,
+    qrScan,
     handleOpenModal,
     handleThumbImageRemove,
     handleThumbImageChange,
+    handleQrScanChange,
+    handleQrScanRemove,
     handleCountryChange,
     selectedCountryPhone,
     maxLength,
@@ -599,21 +602,26 @@ function Page() {
       let imageID = formData?.pictures
       let thumbnailID = formData?.thumbnailImg
       let videoID = formData?.video
+      let qrScanID = formData?.qrScan
       // let fileID = formData?.evaluationCertificate
       // Upload new files only if creating a new property (no id)
       if (!id) {
-        const [uploadedImages, uploadedVideo, uploadedThumbnail] =
+        const [uploadedImages, uploadedVideo, uploadedThumbnail, uploadedQrScan] =
           await Promise.all([
             images.length > 0 ? handleImageUpload(images) : imageID,
             videos.length ? handleVideoUpload(videos) : videoID,
             // file ? handleFileUpload(file) : fileID,
             thumbnail ? handleThumbnailUpload(thumbnail) : thumbnailID,
+            qrScan ? handleImageUpload([qrScan]) : qrScanID,
           ])
 
         imageID = uploadedImages
         videoID = uploadedVideo
         // fileID = uploadedFile
         thumbnailID = uploadedThumbnail
+        qrScanID = uploadedQrScan
+      } else if (qrScan instanceof File) {
+        qrScanID = await handleImageUpload([qrScan])
       }
 
       const updatedFormData = {
@@ -626,6 +634,7 @@ function Page() {
         thumbnailImg:
           listingMediaRef(thumbnailID) ??
           listingMediaRef(formData?.thumbnailImg),
+        qrScan: listingMediaRef(qrScanID) ?? listingMediaRef(formData?.qrScan),
         feedback: 'feedback',
       }
 
@@ -860,12 +869,15 @@ function Page() {
                   flags={flags}
                   phoneNumber={phoneNumber}
                   thumbnail={thumbnail}
+                  qrScan={qrScan}
                   handlePhoneNumberChange={handlePhoneNumberChange}
                   handleCountryChange={handleCountryChange}
                   selectedCountryPhone={selectedCountryPhone}
                   maxLength={maxLength}
                   handleThumbImageChange={handleThumbImageChange}
                   handleThumbImageRemove={handleThumbImageRemove}
+                  handleQrScanChange={handleQrScanChange}
+                  handleQrScanRemove={handleQrScanRemove}
                   images={images}
                   videos={videos}
                   handleImageRemove={handleImageRemove}

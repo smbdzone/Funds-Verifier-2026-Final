@@ -30,9 +30,11 @@ import {
 import ListingApprovedEditNotice from '@/components/ListingsForm/ListingApprovedEditNotice'
 import PropertySizeField from '@/components/property-listing/PropertySizeField'
 import OffPlanPriceRange from '@/components/property-listing/OffPlanPriceRange'
+import OffPlanSizeRange from '@/components/property-listing/OffPlanSizeRange'
 import DeliveryTimeField from '@/components/property-listing/DeliveryTimeField'
 import OffPlanLayoutFloorPlan from '@/components/property-listing/OffPlanLayoutFloorPlan'
 import OffPlanPaymentPlan from '@/components/property-listing/OffPlanPaymentPlan'
+import OffPlanAgencyAgreementUpload from '@/components/property-listing/OffPlanAgencyAgreementUpload'
 import {
   deliveryQuarterOptions,
   deliveryYearOptions,
@@ -53,6 +55,9 @@ export const ImageUploadComponent = React.memo(
     handleOpenModal,
     handleThumbImageRemove,
     handleThumbImageChange,
+    qrScan,
+    handleQrScanChange,
+    handleQrScanRemove,
     handlePhoneNumberChange,
     handleCountryChange,
     selectedCountryPhone,
@@ -99,6 +104,9 @@ export const ImageUploadComponent = React.memo(
     onPaymentPlanStepChange,
     onPaymentPlanStepRemove,
     onPaymentPlanStepAdd,
+    agencyAgreementFile,
+    onAgencyAgreementChange,
+    onAgencyAgreementRemove,
   }) => {
     const [data, setData] = useState()
     const [data2, setData2] = useState()
@@ -270,6 +278,19 @@ export const ImageUploadComponent = React.memo(
                 disabled={isEvaluatorApprovedLocked}
               />
             </ListingImageUploadLayout>
+            <ListingImageUploadLayout
+              formats={LISTING_IMAGE_FORMATS_LABEL}
+              label='Upload QR Scan'
+            >
+              <ListingsImageComponent
+                image={qrScan}
+                handleThumbImageChange={handleQrScanChange}
+                handleImageRemove={handleQrScanRemove}
+                disabled={isEvaluatorApprovedLocked}
+                inputId='qr-scan-offplan'
+                uploadLabel='Upload QR Scan'
+              />
+            </ListingImageUploadLayout>
             <div className='relative w-full dropdown-container space-y-6'>
               <ListingTextareaComponent
                 errors={
@@ -344,6 +365,20 @@ export const ImageUploadComponent = React.memo(
               />
             </div>
             <div className='relative w-full dropdown-container'>
+              <ListingFormInput
+                errors={errors.dldNumber && !formData.dldNumber}
+                value={formData.dldNumber || ''}
+                handleChange={handleChange}
+                handleBlur={handleBlur}
+                placeholder='DLD Number'
+                fieldLabel='DLD Number'
+                errorsMessage={errors.dldNumber}
+                name='dldNumber'
+                type='text'
+                disabled={isEvaluatorApprovedLocked}
+              />
+            </div>
+            <div className='relative w-full dropdown-container'>
               <ListingsDropdownInputComponents
                 errors={errors.bedrooms && !formData.bedrooms}
                 errorMessage={errors.bedrooms}
@@ -382,19 +417,14 @@ export const ImageUploadComponent = React.memo(
               />
             </div>
             <div className='relative flex w-full flex-col justify-start'>
-              <PropertySizeField
+              <OffPlanSizeRange
                 label='Select Size Type'
-                sizeSQFT={formData.sizeSQFT}
-                sizeSQM={formData.sizeSQM}
+                sizeSQFTFrom={formData.sizeSQFTFrom}
+                sizeSQFTTo={formData.sizeSQFTTo}
+                sizeSQMFrom={formData.sizeSQMFrom}
+                sizeSQMTo={formData.sizeSQMTo}
                 sizeUnit={formData.sizeUnit || formData.sizeType || 'SQFT'}
-                errors={
-                  errors.sizeSQFT &&
-                  !String(
-                    (formData.sizeUnit || formData.sizeType || 'SQFT') === 'SQM'
-                      ? formData.sizeSQM
-                      : formData.sizeSQFT || '',
-                  ).trim()
-                }
+                errors={errors.sizeSQFT}
                 errorsMessage={errors.sizeSQFT}
                 disabled={isEvaluatorApprovedLocked}
                 onSizeChange={handleSizeChange}
@@ -439,6 +469,17 @@ export const ImageUploadComponent = React.memo(
               onStepRemove={onPaymentPlanStepRemove}
               onStepAdd={onPaymentPlanStepAdd}
             />
+            <div className='col-span-2'>
+              <OffPlanAgencyAgreementUpload
+                file={agencyAgreementFile}
+                existingDoc={
+                  agencyAgreementFile ? null : formData?.agencyAgreement
+                }
+                onChange={onAgencyAgreementChange}
+                onRemove={onAgencyAgreementRemove}
+                disabled={isEvaluatorApprovedLocked}
+              />
+            </div>
           </div>
         ) : (
           <div className='md:grid gap-6 md:space-y-0 space-y-5 md:grid-cols-2'>
@@ -510,6 +551,19 @@ export const ImageUploadComponent = React.memo(
                 fileInputRef={fileInputRef}
                 handleVideoChange={handleVideoChange}
                 disabled={isEvaluatorApprovedLocked}
+              />
+            </ListingImageUploadLayout>
+            <ListingImageUploadLayout
+              formats={LISTING_IMAGE_FORMATS_LABEL}
+              label='Upload QR Scan'
+            >
+              <ListingsImageComponent
+                image={qrScan}
+                handleThumbImageChange={handleQrScanChange}
+                handleImageRemove={handleQrScanRemove}
+                disabled={isEvaluatorApprovedLocked}
+                inputId='qr-scan-property'
+                uploadLabel='Upload QR Scan'
               />
             </ListingImageUploadLayout>
             <div className='relative w-full dropdown-container space-y-6'>
@@ -792,6 +846,18 @@ export const ImageUploadComponent = React.memo(
                   handleChange={handleChange}
                   name='developer'
                   customPlaceholder='Developer'
+                  subPlaceholder=' (Optional)'
+                  disabled={isEvaluatorApprovedLocked}
+                />
+              </div>
+            </div>
+            <div className='relative w-full dropdown-container'>
+              <div className='relative-placeholder w-full'>
+                <ListingCustomPlacholderInput
+                  value={formData.dldNumber || ''}
+                  handleChange={handleChange}
+                  name='dldNumber'
+                  customPlaceholder='DLD Number'
                   subPlaceholder=' (Optional)'
                   disabled={isEvaluatorApprovedLocked}
                 />
