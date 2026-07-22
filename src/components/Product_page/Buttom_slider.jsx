@@ -8,7 +8,7 @@ import 'swiper/css/pagination'
 import { Pagination } from 'swiper/modules'
 import { Swiper, SwiperSlide } from 'swiper/react'
 import { useRouter } from 'next/navigation'
-import { formatPriceUS } from '@/utils'
+import { formatCardPrice } from '@/libs/listingPriceDisplay'
 import axios from 'axios'
 import { IoIosArrowDown, IoIosArrowUp } from 'react-icons/io'
 import {
@@ -193,7 +193,7 @@ const ButtomSlider = ({ data }) => {
                     </div>
                     <div className='md:pt-2'>
                       <span className='font-medium lg:text-xl md:text-base text-sm'>
-                        AED {formatPriceUS(property.price || 0)}
+                        AED {formatCardPrice(property.price || 0)}
                       </span>
                     </div>
                   </div>

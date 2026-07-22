@@ -1,7 +1,8 @@
 'use client'
 import React, { useRef, useEffect, useState } from 'react'
 import { useAppContext } from '@/context/AppContext'
-import { formatPriceUS, ucFirst } from '@/utils'
+import { formatCardPrice } from '@/libs/listingPriceDisplay'
+import { ucFirst } from '@/utils'
 import {
   getListingCardImageSrc,
   getListingQrScanSrc,
@@ -120,15 +121,15 @@ export default function CarForSale() {
           slidesPerView={1}
           spaceBetween={10}
           breakpoints={{
-              700: {
-                slidesPerView: 2,
-                spaceBetween: 14,
-              },
-              1024: {
-                slidesPerView: 3,
-                spaceBetween: 16,
-              },
-            }}
+            700: {
+              slidesPerView: 2,
+              spaceBetween: 14,
+            },
+            1024: {
+              slidesPerView: 3,
+              spaceBetween: 16,
+            },
+          }}
           hashNavigation={{
             watchState: true,
           }}
@@ -168,7 +169,7 @@ export default function CarForSale() {
                     )}
                   </figure>
                   <div className='listing-card-body w-full'>
-                      <div className='flex flex-1 flex-col space-y-3 px-4 py-2'>
+                    <div className='flex flex-1 flex-col space-y-3 px-4 py-2'>
                       <div className='flex flex-row items-center'>
                         {/* Render Stars and Rating */}
                         <div className='rating-container mr-3'>
@@ -240,30 +241,30 @@ export default function CarForSale() {
                     </div>
                     <div className='listing-card-footer'>
                       <div className='box-border my-3 w-full h-0.5 border-t-[2px] border-solid border-[#969696]' />
-                    <div className='flex flex-row items-center justify-between pb-4 px-5'>
-                      <div className='flex flex-row gap-4 items-center'>
-                        <div className='flex w-[50px] h-[50px]'>
-                          <Image
-                            width={50}
-                            height={50}
-                            className='object-cover'
-                            alt=''
-                            src={getProfileImageSrc(
-                              car?.sellerAvatar || car?.userId?.profileImage,
-                            )}
-                            unoptimized
-                          />
+                      <div className='flex flex-row items-center justify-between pb-4 px-5'>
+                        <div className='flex flex-row gap-4 items-center'>
+                          <div className='flex w-[50px] h-[50px]'>
+                            <Image
+                              width={50}
+                              height={50}
+                              className='object-cover'
+                              alt=''
+                              src={getProfileImageSrc(
+                                car?.sellerAvatar || car?.userId?.profileImage,
+                              )}
+                              unoptimized
+                            />
+                          </div>
+                          <div className='text-base font-medium text-[#000000]'>
+                            Ref: {getListingRef(car)}
+                          </div>
                         </div>
-                        <div className='text-base font-medium text-[#000000]'>
-                          Ref: {getListingRef(car)}
+                        <div className='text-lg font-semibold text-[#000000]'>
+                          AED {formatCardPrice(car.price)}
                         </div>
-                      </div>
-                      <div className='text-lg font-semibold text-[#000000]'>
-                        AED {formatPriceUS(car.price)}
                       </div>
                     </div>
-                  </div>
-                </div></div>
+                  </div></div>
               </SwiperSlide>
             )
           })}

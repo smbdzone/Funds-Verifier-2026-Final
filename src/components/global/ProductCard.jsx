@@ -14,7 +14,7 @@ import 'swiper/css'
 import 'swiper/css/navigation'
 import 'swiper/css/pagination'
 import '@/components/modules/style.css'
-import { formatPriceUS } from '@/utils'
+import { formatCardPrice, formatListingCardPrice } from '@/libs/listingPriceDisplay'
 import { swiperCanLoop } from '@/utils/swiperLoop'
 import Open3dModal from '../3dModal/Open3dModal'
 import { formatNumberWithCommas } from '@/utils/global-functions/global'
@@ -189,12 +189,12 @@ const ProductCard = ({
           <p
             className={`lg:text-base md:text-sm text-xs text-reef-gold`}
           >
-            Selling Price: AED {formatPriceUS(price)}
+            Selling Price: AED {formatListingCardPrice(item)}
           </p>
           <p
             className={`lg:text-base md:text-sm text-xs text-reef-gold`}
           >
-            Market Price: AED {formatNumberWithCommas(evaluationPrices)}
+            Market Price: AED {formatCardPrice(evaluationPrices)}
           </p>
           {showROI && (
             <p

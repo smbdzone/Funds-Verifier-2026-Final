@@ -9,7 +9,7 @@ import { Pagination, Autoplay } from 'swiper/modules'
 import Image from 'next/image'
 import Link from 'next/link'
 import { FaStar } from 'react-icons/fa'
-import { formatPriceUS } from '@/utils'
+import { formatCardPrice } from '@/libs/listingPriceDisplay'
 import {
   getListingCardImageSrc,
   getListingQrScanSrc,
@@ -308,32 +308,32 @@ export default function CarSaleSliderStatic() {
                         </div>
                       </div>
                       <div className='listing-card-footer'>
-                      <div className='w-full box-border my-3 h-0.5 border-t-[2px] border-solid border-[#969696]' />
-                      <div className='flex flex-row items-center justify-between pb-4 px-5'>
-                        <div className='flex flex-row gap-4 items-center'>
-                          <div className='flex w-[50px] h-[50px]'>
-                            <Image
-                              width={50}
-                              height={50}
-                              className='object-cover'
-                              alt=''
-                              src={getProfileImageSrc(
-                                carForSale?.sellerAvatar ||
-                                carForSale?.userId?.profileImage,
-                              )}
-                              unoptimized
-                            />
+                        <div className='w-full box-border my-3 h-0.5 border-t-[2px] border-solid border-[#969696]' />
+                        <div className='flex flex-row items-center justify-between pb-4 px-5'>
+                          <div className='flex flex-row gap-4 items-center'>
+                            <div className='flex w-[50px] h-[50px]'>
+                              <Image
+                                width={50}
+                                height={50}
+                                className='object-cover'
+                                alt=''
+                                src={getProfileImageSrc(
+                                  carForSale?.sellerAvatar ||
+                                  carForSale?.userId?.profileImage,
+                                )}
+                                unoptimized
+                              />
+                            </div>
+                            <div className='md:text-sm lg:text-base text-xs font-medium text-[#000000]'>
+                              Ref: {getListingRef(carForSale)}
+                            </div>
                           </div>
-                          <div className='md:text-sm lg:text-base text-xs font-medium text-[#000000]'>
-                            Ref: {getListingRef(carForSale)}
+                          <div className='lg:text-lg md:text-sm text-xs font-semibold text-[#000000]'>
+                            AED {formatCardPrice(carForSale.price)}
                           </div>
-                        </div>
-                        <div className='lg:text-lg md:text-sm text-xs font-semibold text-[#000000]'>
-                          AED {formatPriceUS(carForSale.price)}
                         </div>
                       </div>
-                    </div>
-                  </div></div>
+                    </div></div>
                 </SwiperSlide>
               )
             })}

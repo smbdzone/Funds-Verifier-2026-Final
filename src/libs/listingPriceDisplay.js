@@ -54,3 +54,22 @@ export function formatListingPriceDisplay(listing) {
 
   return formatCompactPriceAmount(listing?.price)
 }
+
+/** Single price on public listing cards (sliders, product cards). Uses k/M when large. */
+export function formatCardPrice(price) {
+  return formatCompactPriceAmount(price, { abbreviateThousands: true }) || '0'
+}
+
+/** Public card price — off-plan range or single compact price. */
+export function formatListingCardPrice(listing) {
+  if (isOffPlanListing(listing)) {
+    const range = formatOffPlanPriceRangeDisplay(
+      listing?.priceFrom,
+      listing?.priceTo,
+      { abbreviateThousands: true },
+    )
+    return range || formatCardPrice(listing?.price)
+  }
+
+  return formatCardPrice(listing?.price)
+}

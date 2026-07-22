@@ -18,6 +18,7 @@ import {
   isListingCarouselPlaceholderSlide,
   PLACEHOLDER,
 } from '@/libs/listingCardMedia'
+import { formatCardPrice, formatListingCardPrice } from '@/libs/listingPriceDisplay'
 import { getListingSharePath } from '@/libs/listingSocialShare'
 
 const ProductCard = ({
@@ -170,13 +171,13 @@ const ProductCard = ({
             className={`text-base ${hasAdditionalContent ? 'text-white' : 'text-reef-gold'
               }`}
           >
-            Selling Price: AED {formatPriceUS(price)}
+            Selling Price: AED {formatListingCardPrice(item)}
           </p>
           <p
             className={`text-base ${hasAdditionalContent ? 'text-white' : 'text-reef-gold'
               }`}
           >
-            Market Price: AED {formatPriceUS(evaluationPrices)}
+            Market Price: AED {formatCardPrice(evaluationPrices)}
           </p>
           {showROI && (
             <p

@@ -2,7 +2,8 @@
 import React, { useRef } from 'react'
 import { swiperCanLoop } from '@/utils/swiperLoop'
 import { useAppContext } from '@/context/AppContext'
-import { formatPriceUS, ucFirst } from '@/utils'
+import { formatCardPrice } from '@/libs/listingPriceDisplay'
+import { ucFirst } from '@/utils'
 import {
   getListingCardImageSrc,
   getListingQrScanSrc,
@@ -131,15 +132,15 @@ export default function PropertyLeaseSlider() {
             disableOnInteraction: false,
           }}
           breakpoints={{
-              700: {
-                slidesPerView: 2,
-                spaceBetween: 14,
-              },
-              1024: {
-                slidesPerView: 3,
-                spaceBetween: 16,
-              },
-            }}
+            700: {
+              slidesPerView: 2,
+              spaceBetween: 14,
+            },
+            1024: {
+              slidesPerView: 3,
+              spaceBetween: 16,
+            },
+          }}
           ref={swiperRef}
         >
           {propertiesForLease?.products?.map((propertyForLease, index) => (
@@ -172,7 +173,7 @@ export default function PropertyLeaseSlider() {
                   )
                 })()}
                 <div className='listing-card-body w-full'>
-                      <div className='flex flex-1 flex-col space-y-3 px-4 py-2'>
+                  <div className='flex flex-1 flex-col space-y-3 px-4 py-2'>
                     <div className='flex flex-row items-center'>
                       <div className='rating-container mr-3'>
                         <div className='flex flex-row items-end'>
@@ -266,7 +267,7 @@ export default function PropertyLeaseSlider() {
                         </div>
                       </div>
                       <div className='lg:text-lg md:text-sm text-xs font-semibold text-[#000000]'>
-                        AED {formatPriceUS(propertyForLease.price)}
+                        AED {formatCardPrice(propertyForLease.price)}
                       </div>
                     </div>
                   </div>

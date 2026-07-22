@@ -8,7 +8,8 @@ import 'swiper/css/navigation'
 import { Pagination, Autoplay } from 'swiper/modules'
 import Image from 'next/image'
 import Link from 'next/link'
-import { formatPriceUS, ucFirst } from '@/utils'
+import { formatCardPrice } from '@/libs/listingPriceDisplay'
+import { ucFirst } from '@/utils'
 import {
   getListingCardImageSrc,
   getListingQrScanSrc,
@@ -308,32 +309,32 @@ export default function JewelrySaleSlider() {
                         </div>
                       </div>
                       <div className='listing-card-footer'>
-                      <div className='box-border my-3 w-full h-0.5 border-t-[2px] border-solid border-[#969696]' />
-                      <div className='flex flex-row items-center justify-between pb-4 px-5'>
-                        <div className='flex flex-row gap-4 items-center'>
-                          <div className='flex w-[50px] h-[50px]'>
-                            <Image
-                              width={50}
-                              height={50}
-                              className='object-cover'
-                              alt=''
-                              src={getProfileImageSrc(
-                                item?.sellerAvatar ||
-                                item?.userId?.profileImage,
-                              )}
-                              unoptimized
-                            />
+                        <div className='box-border my-3 w-full h-0.5 border-t-[2px] border-solid border-[#969696]' />
+                        <div className='flex flex-row items-center justify-between pb-4 px-5'>
+                          <div className='flex flex-row gap-4 items-center'>
+                            <div className='flex w-[50px] h-[50px]'>
+                              <Image
+                                width={50}
+                                height={50}
+                                className='object-cover'
+                                alt=''
+                                src={getProfileImageSrc(
+                                  item?.sellerAvatar ||
+                                  item?.userId?.profileImage,
+                                )}
+                                unoptimized
+                              />
+                            </div>
+                            <div className='md:text-sm lg:text-base text-xs font-medium text-[#000000]'>
+                              Ref: {getListingRef(item)}
+                            </div>
                           </div>
-                          <div className='md:text-sm lg:text-base text-xs font-medium text-[#000000]'>
-                            Ref: {getListingRef(item)}
+                          <div className='lg:text-lg md:text-sm text-xs font-semibold text-[#000000]'>
+                            AED {formatCardPrice(item.price)}
                           </div>
-                        </div>
-                        <div className='lg:text-lg md:text-sm text-xs font-semibold text-[#000000]'>
-                          AED {formatPriceUS(item.price)}
                         </div>
                       </div>
-                    </div>
-                  </div></div>
+                    </div></div>
                 </SwiperSlide>
               )
             })}
