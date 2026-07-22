@@ -12,6 +12,7 @@ import {
   applyPremiumServiceRefs,
   listingMediaRef,
   premiumServiceRequestId,
+  stripEmptyObjectIdRefs,
 } from '@/libs/listingMediaRef'
 import {
   hasConfirmedEvaluationPayment,
@@ -40,7 +41,11 @@ import {
   useRefetchListingOnReturn,
 } from '@/hooks/useRestorePendingListingDraft'
 import { useAutoFinalizeAfterEvaluationPayment } from '@/hooks/useAutoFinalizeAfterEvaluationPayment'
-import { hasPendingListingDraft } from '@/libs/pendingListingDraft'
+import {
+  clearListingWorkspaceStorage,
+  hasPendingListingDraft,
+  isPendingDraftForListingRoute,
+} from '@/libs/pendingListingDraft'
 
 function Page() {
   const [neighbourhood, setNeighbourhood] = useState('Select Neighbourhood')
@@ -96,9 +101,9 @@ function Page() {
     description: '',
     age: '',
     usage: '',
-    pictures: '',
-    video: '',
-    thumbnailImg: '',
+    pictures: null,
+    video: null,
+    thumbnailImg: null,
     evaluationCertificate: null,
     evaluationCompanies: '',
     jewelryStyles: '',
@@ -109,9 +114,10 @@ function Page() {
     totalrating: '',
     warrenty: '',
     lengthh: '',
-    technicalReport: '',
+    technicalReport: null,
     evaluationDateTime: '',
     video3DWalkthrough: null,
+    qrScan: null,
   }
   const dropdownData = {
     country: false,
@@ -216,6 +222,7 @@ function Page() {
     setImages,
     setThumbnail,
     setVideos,
+    setQrScan,
     setSelectedCountry,
     setSelectedCity,
     setSelectedNeighbourhood,
@@ -228,6 +235,7 @@ function Page() {
       setImages,
       setThumbnail,
       setVideos,
+      setQrScan,
       setSelectedCountry,
       setSelectedCity,
       setSelectedNeighbourhood,
@@ -242,6 +250,7 @@ function Page() {
       setImages,
       setThumbnail,
       setVideos,
+      setQrScan,
       setSelectedCountry,
       setSelectedCity,
       setSelectedNeighbourhood,
@@ -259,9 +268,14 @@ function Page() {
       return
     }
 
-    if (hasPendingListingDraft()) {
+    // Keep draft only when it belongs to jewelry listing (not property/car/boat).
+    if (hasPendingListingDraft() && isPendingDraftForListingRoute('jewelry')) {
       setLoading(false)
       return
+    }
+
+    if (hasPendingListingDraft()) {
+      clearListingWorkspaceStorage()
     }
 
     resetForm()
@@ -280,7 +294,7 @@ function Page() {
 
   useRefreshListingAfterServicePayment(id, 'jewelry', fetchData)
   useRestoreListingAfterClozerPayment(listingDraftRestoreApi)
-  useRestorePendingListingDraft(id, listingDraftRestoreApi)
+  useRestorePendingListingDraft(id, listingDraftRestoreApi, 'jewelry')
   useRefetchListingOnReturn(id, 'jewelry', fetchData)
 
   const handleTechnicalModal = () => {
@@ -673,7 +687,9 @@ function Page() {
       if (Object.keys(validationErrors).length === 0) {
         setFormData(updatedFormData)
 
-        const listingPayload = stripEvaluationBookingMeta(updatedFormData)
+        const listingPayload = stripEmptyObjectIdRefs(
+          stripEvaluationBookingMeta(updatedFormData),
+        )
 
         if (!id) {
           await bookEvaluationTimeslotFromFormData(formData)

@@ -470,49 +470,42 @@ const ListingCard = ({
                   : `${assetTypeText} for Sale`}
               </span>
 
-              <Link
-                href={getDynamicLink(
-                  listing?.assetType,
-                  getListingDetailId(listing),
-                )}
-              >
-                {hasFeaturedStyling ? (
-                  <div className='flex items-center gap-2'>
-                    {getListingQrScanSrc(listing) ? (
-                      <Image
-                        src={getListingQrScanSrc(listing)}
-                        width={40}
-                        height={40}
-                        alt='QR code'
-                        className='h-10 w-10 shrink-0 rounded border border-gray-200 bg-white object-contain'
-                        unoptimized
-                      />
-                    ) : null}
-                    <h2 className='text-gradient-custom lg:text-3xl sm:text-xl text-lg font-semibold capitalize'>
-                      {getShortTitle(listing.title)}
-                    </h2>
-                    <div className='ml-2 text-gradient-custom'>
-                      <BlueTickIcon className='text-light-gold' />
-                    </div>
-                  </div>
-                ) : (
-                  <div className='flex items-center gap-2'>
-                    {getListingQrScanSrc(listing) ? (
-                      <Image
-                        src={getListingQrScanSrc(listing)}
-                        width={40}
-                        height={40}
-                        alt='QR code'
-                        className='h-10 w-10 shrink-0 rounded border border-gray-200 bg-white object-contain'
-                        unoptimized
-                      />
-                    ) : null}
-                    <h2 className='lg:text-3xl sm:text-xl text-lg font-semibold capitalize text-blue'>
-                      {getShortTitle(listing.title)}
-                    </h2>
-                  </div>
-                )}
-              </Link>
+              <div className='listing-card-meta flex w-full items-start justify-between gap-3'>
+                <div className='min-w-0 flex-1 break-words text-left'>
+                  <Link
+                    href={getDynamicLink(
+                      listing?.assetType,
+                      getListingDetailId(listing),
+                    )}
+                    className='listing-card-title block w-full break-words text-left'
+                  >
+                    {hasFeaturedStyling ? (
+                      <div className='flex flex-wrap items-start gap-2'>
+                        <h2 className='min-w-0 flex-1 break-words text-gradient-custom lg:text-3xl sm:text-xl text-lg font-semibold capitalize'>
+                          {listing.title}
+                        </h2>
+                        <div className='shrink-0 text-gradient-custom'>
+                          <BlueTickIcon className='text-light-gold' />
+                        </div>
+                      </div>
+                    ) : (
+                      <h2 className='break-words lg:text-3xl sm:text-xl text-lg font-semibold capitalize text-blue'>
+                        {listing.title}
+                      </h2>
+                    )}
+                  </Link>
+                </div>
+                {getListingQrScanSrc(listing) ? (
+                  <Image
+                    src={getListingQrScanSrc(listing)}
+                    width={72}
+                    height={72}
+                    alt='QR code'
+                    className='listing-qr-thumb ml-auto h-[72px] w-[72px] shrink-0 rounded border border-gray-200 bg-white object-contain'
+                    unoptimized
+                  />
+                ) : null}
+              </div>
               <div className='flex flex-wrap items-center space-x-4'>
                 <p
                   className={`text-prussianBlue mb-2 lg:text-base text-sm font-medium ${hasFeaturedStyling ? 'text-gradient-custom' : 'text-blue'

@@ -1,6 +1,7 @@
-"use client";
-import Image from "next/image";
-import React from "react";
+'use client'
+import Image from 'next/image'
+import React from 'react'
+import ListingFieldLabel from '@/components/ListingsForm/ListingFieldLabel'
 
 const ListingCustomPlaceholderDropdown = ({
   value,
@@ -15,63 +16,71 @@ const ListingCustomPlaceholderDropdown = ({
   dropdownType,
   handleSelectOption,
 }) => {
+  const safeValue = value ?? ''
+  const label = String(customPlaceholder || '').trim()
+  const isOptional = String(subPlaceholder || '')
+    .toLowerCase()
+    .includes('optional')
+
   return (
-    <>
-      <div className="relative-placeholder w-full">
+    <div className='custom-container-dev'>
+      {label ? <ListingFieldLabel label={label} /> : null}
+      <div className='relative w-full'>
         <input
-          type="text"
-          className="input-with-placeholder form-input
-            shadow-neons w-full h-[50px] pl-5 pr-14 
-            placeholder:text-dark-grey outline-with-opacity placeholder:text-[15px] placeholder:font-normal card-number-input                 "
+          type='text'
+          className='w-full shadow-neons h-[50px] pl-5 pr-14 placeholder:text-dark-grey outline-with-opacity placeholder:text-[15px] placeholder:font-normal'
           name={name}
-          value={value}
+          value={safeValue}
           readOnly={readOnly}
           disabled={disabled}
           onClick={disabled ? undefined : handleToggleDropdown}
+          placeholder={
+            safeValue
+              ? ''
+              : isOptional
+                ? `Select ${label || 'option'} (Optional)`
+                : `Select ${label || 'option'}`
+          }
         />
-        <div className="absolute inset-y-0 right-0 top-[16px] flex flex-col gap-2 items-center pr-[15px] cursor-pointer dropdown-toggle">
+        <button
+          type='button'
+          aria-label={`Toggle ${label || name} dropdown`}
+          className='absolute right-3 top-1/2 flex -translate-y-1/2 flex-col items-center justify-center gap-0.5 cursor-pointer dropdown-toggle disabled:cursor-not-allowed'
+          onClick={disabled ? undefined : handleToggleDropdown}
+          disabled={disabled}
+        >
           <Image
             width={12}
             height={12}
-            src="/listing/Vector.svg"
-            alt="Dropdown"
-            className="toggle-icon"
-            onClick={handleToggleDropdown}
+            src='/listing/Vector.svg'
+            alt=''
+            className='toggle-icon pointer-events-none'
           />
           <Image
             width={12}
             height={12}
-            src="/listing/vector1.svg"
-            alt="Dropdown"
-            className="toggle-icon rotate-180"
-            onClick={handleToggleDropdown}
+            src='/listing/vector1.svg'
+            alt=''
+            className='toggle-icon rotate-180 pointer-events-none'
           />
-        </div>
-        {dropdown && !disabled && (
-          <div className="absolute z-10 inset-y-0 right-0 w-full h-80 overflow-auto bg-white border border-gray-2 rounded-md shadow-md top-[60px] flex flex-col cursor-pointer dropdown-toggle">
-            {dropdownOptions.map((option, index) => (
+        </button>
+
+        {dropdown && !disabled ? (
+          <div className='absolute left-0 right-0 top-[calc(100%+4px)] z-10 flex max-h-80 flex-col gap-2 overflow-auto rounded-md border border-gray-200 bg-white shadow-md cursor-pointer dropdown-toggle'>
+            {(dropdownOptions || []).map((option, index) => (
               <div
                 key={index}
-                className="hover:bg-offwhite hover:text-reefGold p-3"
+                className='hover:bg-offwhite hover:text-reefGold p-3'
                 onClick={() => handleSelectOption(dropdownType, option)}
               >
                 {option}
               </div>
             ))}
           </div>
-        )}
-
-        {value === "" && (
-          <div className="custom-placeholder text-sm absolute left-5 top-1/2 transform -translate-y-1/2 pointer-events-none transition-all duration-200 ease-in-out">
-            <span className="text-gray-400">{customPlaceholder} </span>
-            <span className="optional text-xs text-yellow-600">
-              {subPlaceholder}
-            </span>
-          </div>
-        )}
+        ) : null}
       </div>
-    </>
-  );
-};
+    </div>
+  )
+}
 
-export default ListingCustomPlaceholderDropdown;
+export default ListingCustomPlaceholderDropdown

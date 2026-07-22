@@ -97,11 +97,8 @@ export default function CarForSale() {
   }, [carsForSale])
 
   const truncateTitle = (title) => {
-    const words = title.split(' ')
-    if (words.length > 3) {
-      return words.slice(0, 3).join(' ') + '...'
-    }
-    return title
+    if (!title) return ''
+    return String(title)
   }
 
   return (
@@ -119,9 +116,19 @@ export default function CarForSale() {
             />
           </div>
         </div>
-        <Swiper
-          slidesPerView={3}
-          spaceBetween={20}
+        <Swiper className='listing-cards-swiper w-full'
+          slidesPerView={1}
+          spaceBetween={10}
+          breakpoints={{
+              700: {
+                slidesPerView: 2,
+                spaceBetween: 14,
+              },
+              1024: {
+                slidesPerView: 3,
+                spaceBetween: 16,
+              },
+            }}
           hashNavigation={{
             watchState: true,
           }}
@@ -137,8 +144,8 @@ export default function CarForSale() {
             const imageSrc = getListingCardImageSrc(car)
 
             return (
-              <SwiperSlide key={car.uuid || index}>
-                <div className='mx-2 mb-2 shadow-[0px_0px_8px_rgba(0,_0,_0,_0.15)] rounded-md bg-white'>
+              <SwiperSlide className='listing-card-slide !h-auto' key={car.uuid || index}>
+                <div className='listing-card mx-1 my-1 h-full w-full rounded-md bg-white'>
                   <figure className=''>
                     {imageSrc ? (
                       <Image
@@ -160,8 +167,8 @@ export default function CarForSale() {
                       </div>
                     )}
                   </figure>
-                  <div className='flex flex-col'>
-                    <div className='flex flex-col px-4 py-2 space-y-3'>
+                  <div className='listing-card-body w-full'>
+                      <div className='flex flex-1 flex-col space-y-3 px-4 py-2'>
                       <div className='flex flex-row items-center'>
                         {/* Render Stars and Rating */}
                         <div className='rating-container mr-3'>
@@ -194,37 +201,45 @@ export default function CarForSale() {
                             : `(0 Review)`}
                         </div>
                       </div>
-                      <Link
-                        href={`/car/${car.slug || car.uuid}`}
-                        className='flex items-center gap-2 text-[#002D4F] text-xl font-medium w-full text-left'
-                      >
+                      <div className='listing-card-meta flex w-full items-start justify-between gap-3'>
+                        <div className='flex min-w-0 flex-1 flex-col items-start gap-1 text-left'>
+                          <Link
+                            href={`/car/${car.slug || car.uuid}`}
+                            className='listing-card-title block w-full break-words text-left text-[#002D4F] text-xl font-medium'
+                          >
+                            {truncateTitle(car.title) || ucFirst(car.carType)}
+                          </Link>
+                          <p className='listing-card-type w-full text-left text-[#002D4F] opacity-70 md:text-sm text-xs capitalize'>
+                            {car.carType ? ucFirst(car.carType) : 'Car For Sale'}
+                          </p>
+                          <div className='flex w-full flex-row items-start justify-start space-x-2 text-base text-[#002D4F]'>
+                            <div className='inline-block w-3.5 shrink-0'>
+                              <Image
+                                width={20}
+                                height={20}
+                                alt=''
+                                src={location.src}
+                              />
+                            </div>
+                            <div className='listing-card-location min-w-0 break-words'>
+                              {truncateTitle(car.neighbourhood)}
+                            </div>
+                          </div>
+                        </div>
                         {getListingQrScanSrc(car) ? (
                           <Image
                             src={getListingQrScanSrc(car)}
-                            width={36}
-                            height={36}
+                            width={72}
+                            height={72}
                             alt='QR code'
-                            className='h-9 w-9 shrink-0 rounded border border-gray-200 bg-white object-contain'
+                            className='listing-qr-thumb ml-auto h-[72px] w-[72px] shrink-0 rounded border border-gray-200 bg-white object-contain'
                             unoptimized
                           />
                         ) : null}
-                        {ucFirst(car.carType)}
-                      </Link>
-                      <div className='text-[#002D4F] flex flex-row space-x-2 w-full text-base items-start'>
-                        <div className='inline-block w-3.5'>
-                          <Image
-                            width={20}
-                            height={20}
-                            alt=''
-                            src={location.src}
-                          />
-                        </div>
-                        <div className='truncate overflow-ellipsis'>
-                          {truncateTitle(car.neighbourhood)}
-                        </div>
                       </div>
                     </div>
-                    <div className='box-border my-3 w-full h-0.5 border-t-[2px] border-solid border-[#969696]' />
+                    <div className='listing-card-footer'>
+                      <div className='box-border my-3 w-full h-0.5 border-t-[2px] border-solid border-[#969696]' />
                     <div className='flex flex-row items-center justify-between pb-4 px-5'>
                       <div className='flex flex-row gap-4 items-center'>
                         <div className='flex w-[50px] h-[50px]'>
@@ -248,7 +263,7 @@ export default function CarForSale() {
                       </div>
                     </div>
                   </div>
-                </div>
+                </div></div>
               </SwiperSlide>
             )
           })}

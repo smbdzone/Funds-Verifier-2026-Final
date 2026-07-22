@@ -32,7 +32,18 @@ export function getListingImageSrc(image) {
  * Same precedence for video assets: fresh `signedUrl` first, stored `url` fallback.
  */
 export function getListingVideoSrc(video) {
-  if (!video || typeof video !== 'object') return ''
+  if (!video) return ''
+  if (typeof video === 'string') {
+    if (
+      video.startsWith('http') ||
+      video.startsWith('blob:') ||
+      video.startsWith('data:')
+    ) {
+      return video
+    }
+    return ''
+  }
+  if (typeof video !== 'object') return ''
   const signed = video.signedUrl
   if (typeof signed === 'string' && signed.startsWith('http')) return signed
   const url = video.url

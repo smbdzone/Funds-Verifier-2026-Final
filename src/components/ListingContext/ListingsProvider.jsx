@@ -209,11 +209,45 @@ const ListingsProvider = ({ children }) => {
         if (d.propertyType) setSelectType(d.propertyType)
         setTotalPrice(d.price != null ? String(d.price) : null)
         setPhoneNumber(d.phoneNumber ? `${d.phoneNumber}` : '')
-        setThumbnail(d?.thumbnailImg?.images?.[0] ?? null)
+        {
+          const thumbAsset = d?.thumbnailImg
+          const firstThumb = Array.isArray(thumbAsset?.images)
+            ? thumbAsset.images[0]
+            : null
+          setThumbnail(
+            firstThumb
+              ? {
+                ...firstThumb,
+                signedUrl:
+                  firstThumb.signedUrl ||
+                  thumbAsset?.signedUrl ||
+                  firstThumb.url,
+                url:
+                  firstThumb.url ||
+                  thumbAsset?.signedUrl ||
+                  firstThumb.signedUrl,
+              }
+              : thumbAsset || null,
+          )
+        }
         setQrScan(d?.qrScan?.images?.[0] ?? d?.qrScan ?? null)
         setImages(Array.isArray(d?.pictures?.images) ? d.pictures.images : [])
-        if (d?.video?.url) {
-          setVideos([d.video.url])
+        if (Array.isArray(d?.video?.videos) && d.video.videos.length) {
+          setVideos(
+            d.video.videos.map((v) => ({
+              ...v,
+              signedUrl: v?.signedUrl || d.video.signedUrl || v?.url,
+              url: v?.url || v?.signedUrl || d.video.signedUrl,
+            })),
+          )
+        } else if (d?.video?.signedUrl || d?.video?.url) {
+          setVideos([
+            {
+              url: d.video.url || d.video.signedUrl,
+              signedUrl: d.video.signedUrl || d.video.url,
+              _id: d.video._id,
+            },
+          ])
         } else if (Array.isArray(d?.video)) {
           setVideos(d.video)
         } else {
@@ -837,6 +871,7 @@ const ListingsProvider = ({ children }) => {
     setErrors({})
     setVideos([])
     setImages([])
+    setFile(null)
     setPhoneNumber('')
     setTotalSize('Size in')
     setTotalPrice(null)
@@ -845,6 +880,11 @@ const ListingsProvider = ({ children }) => {
     setSelectedModel('All')
     setSelectedNeighbourhood('Select Neighbourhood')
     setSelectedCategory('Any')
+    setSelectType('Select Property Type')
+    setCountryCode('')
+    setSelectedCountryPhone('US')
+    setIsValid(true)
+    setFormData({})
     setTechnicalModalData({
       name: '',
       email: '',

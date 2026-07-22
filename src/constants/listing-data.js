@@ -1446,7 +1446,7 @@ export const OFF_PLAN_PAYMENT_STEP_META = [
   { stepLabel: "5: Fifth Step", paymentLabel: "Final Payment" },
 ];
 
-export const MAX_OFF_PLAN_PAYMENT_STEPS = 10;
+export const MAX_OFF_PLAN_PAYMENT_STEPS = 30;
 export const MIN_OFF_PLAN_PAYMENT_STEPS = 1;
 export const DEFAULT_OFF_PLAN_PAYMENT_STEPS = 5;
 
@@ -1461,6 +1461,26 @@ const OFF_PLAN_STEP_ORDINALS = [
   "Eighth",
   "Ninth",
   "Tenth",
+  "Eleventh",
+  "Twelfth",
+  "Thirteenth",
+  "Fourteenth",
+  "Fifteenth",
+  "Sixteenth",
+  "Seventeenth",
+  "Eighteenth",
+  "Nineteenth",
+  "Twentieth",
+  "Twenty-first",
+  "Twenty-second",
+  "Twenty-third",
+  "Twenty-fourth",
+  "Twenty-fifth",
+  "Twenty-sixth",
+  "Twenty-seventh",
+  "Twenty-eighth",
+  "Twenty-ninth",
+  "Thirtieth",
 ];
 
 export const getOffPlanPaymentLabel = (index, total) => {

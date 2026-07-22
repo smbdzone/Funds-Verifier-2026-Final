@@ -32,11 +32,7 @@ function filterApprovedJewelry(products) {
 
 function truncateTitle(title) {
   if (!title) return 'Jewellery'
-  const words = String(title).split(' ')
-  if (words.length > 4) {
-    return `${words.slice(0, 4).join(' ')}...`
-  }
-  return title
+  return String(title)
 }
 
 function getJewelryCardImageSrc(jewelry) {
@@ -203,32 +199,24 @@ export default function JewelrySaleSlider() {
               disableOnInteraction: false,
             }}
             breakpoints={{
-              376: {
-                slidesPerView: 1,
-                spaceBetween: 10,
-              },
-              768: {
-                slidesPerView: 1,
-                spaceBetween: 15,
+              700: {
+                slidesPerView: 2,
+                spaceBetween: 14,
               },
               1024: {
-                slidesPerView: 2,
-                spaceBetween: 15,
-              },
-              1440: {
                 slidesPerView: 3,
-                spaceBetween: 15,
+                spaceBetween: 16,
               },
             }}
             ref={swiperRef}
-            className='w-full'
+            className='listing-cards-swiper w-full'
           >
             {approvedJewelry.map((item) => {
               const imageSrc = getListingCardImageSrc(item)
 
               return (
-                <SwiperSlide className='w-full' key={item.uuid}>
-                  <div className='overflow-hidden w-full mx-2 mb-2 shadow-[0px_0px_8px_rgba(0,_0,_0,_0.15)] rounded-md bg-white'>
+                <SwiperSlide className='listing-card-slide !h-auto w-full' key={item.uuid}>
+                  <div className='listing-card mx-1 my-1 h-full w-full rounded-md bg-white'>
                     {imageSrc ? (
                       <Image
                         width={414}
@@ -249,8 +237,8 @@ export default function JewelrySaleSlider() {
                       </div>
                     )}
 
-                    <div className='flex flex-col'>
-                      <div className='flex flex-col px-4 py-2 space-y-3'>
+                    <div className='listing-card-body w-full'>
+                      <div className='flex flex-1 flex-col space-y-3 px-4 py-2'>
                         <div className='flex flex-row items-center'>
                           <div className='rating-container mr-3'>
                             <div className='flex flex-row items-center'>
@@ -280,41 +268,46 @@ export default function JewelrySaleSlider() {
                               : `(${item.reviewCount || 0} Review)`}
                           </div>
                         </div>
-                        <Link
-                          href={`/jewelry/${getListingDetailId(item)}`}
-                          className='flex items-center gap-2 text-[#002D4F] md:text-xl text-sm font-medium w-full text-left capitalize'
-                        >
+                        <div className='listing-card-meta flex w-full items-start justify-between gap-3'>
+                          <div className='flex min-w-0 flex-1 flex-col items-start gap-1 text-left'>
+                            <Link
+                              href={`/jewelry/${getListingDetailId(item)}`}
+                              className='listing-card-title block w-full break-words text-left text-[#002D4F] md:text-xl text-sm font-medium capitalize'
+                            >
+                              {truncateTitle(item.title)}
+                            </Link>
+                            {item.category ? (
+                              <p className='listing-card-type w-full text-left text-[#002D4F] opacity-70 md:text-sm text-xs capitalize'>
+                                {ucFirst(item.category)}
+                              </p>
+                            ) : null}
+                            <div className='flex w-full flex-row items-start justify-start space-x-2 text-base text-[#002D4F]'>
+                              <div className='inline-block w-3.5 shrink-0'>
+                                <Image
+                                  width={20}
+                                  height={20}
+                                  alt=''
+                                  src={location.src}
+                                />
+                              </div>
+                              <div className='listing-card-location min-w-0 break-words md:text-base text-xs'>
+                                {item.neighbourhood || item.city}
+                              </div>
+                            </div>
+                          </div>
                           {getListingQrScanSrc(item) ? (
                             <Image
                               src={getListingQrScanSrc(item)}
-                              width={36}
-                              height={36}
+                              width={72}
+                              height={72}
                               alt='QR code'
-                              className='h-9 w-9 shrink-0 rounded border border-gray-200 bg-white object-contain'
+                              className='listing-qr-thumb ml-auto h-[72px] w-[72px] shrink-0 rounded border border-gray-200 bg-white object-contain'
                               unoptimized
                             />
                           ) : null}
-                          {truncateTitle(item.title)}
-                        </Link>
-                        {item.category ? (
-                          <p className='text-[#002D4F] opacity-70 md:text-sm text-xs -mt-1 capitalize'>
-                            {ucFirst(item.category)}
-                          </p>
-                        ) : null}
-                        <div className='text-[#002D4F] flex flex-row space-x-2 w-full text-base items-start'>
-                          <div className='inline-block w-3.5'>
-                            <Image
-                              width={20}
-                              height={20}
-                              alt=''
-                              src={location.src}
-                            />
-                          </div>
-                          <div className='flex md:text-base text-xs truncate overflow-ellipsis'>
-                            {item.neighbourhood || item.city}
-                          </div>
                         </div>
                       </div>
+                      <div className='listing-card-footer'>
                       <div className='box-border my-3 w-full h-0.5 border-t-[2px] border-solid border-[#969696]' />
                       <div className='flex flex-row items-center justify-between pb-4 px-5'>
                         <div className='flex flex-row gap-4 items-center'>
@@ -340,7 +333,7 @@ export default function JewelrySaleSlider() {
                         </div>
                       </div>
                     </div>
-                  </div>
+                  </div></div>
                 </SwiperSlide>
               )
             })}

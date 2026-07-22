@@ -12,6 +12,8 @@ const ListingMultipleImageComponent = ({
   errors,
   errorMessage,
   disabled,
+  inputId = 'additional-pictures',
+  uploadLabel = 'Add Pictures',
 }) => {
   const imagePreviews = useMemo(() => {
     if (!images || !Array.isArray(images)) {
@@ -19,7 +21,7 @@ const ListingMultipleImageComponent = ({
     }
 
     return images
-      .filter((image) => image) // Filter out null or undefined
+      .filter((image) => image)
       .map((image) => {
         if (
           typeof image?.signedUrl === 'string' &&
@@ -36,87 +38,87 @@ const ListingMultipleImageComponent = ({
             preview: image?.url,
           }
         } else if (image instanceof File) {
-          // Uploaded image file
           return {
-            file: image, // For uploaded images, pass the File object
+            file: image,
             preview: URL.createObjectURL(image),
           }
-        } else {
-          return null // Handle any unexpected data types
         }
+        return null
       })
-      .filter((preview) => preview !== null) // Filter out invalid entries
+      .filter((preview) => preview !== null)
   }, [images])
 
   const atImageLimit = images?.length >= LISTING_IMAGE_MAX_COUNT
 
   return (
     <>
-      <div className='flex flex-wrap mt-2 w-[80%]'>
-        {imagePreviews?.length > 0 &&
-          imagePreviews?.map((imageData, index) => (
-            <div key={index} className='w-1/5 h-16 p-2 relative group'>
-              <Image
-                width={50}
-                height={50}
-                src={imageData.preview}
-                alt={`upload-${index}`}
-                className='w-full h-full object-cover'
-              />
-              {!disabled && (
-                <button
-                  onClick={() => {
-                    // Only revoke URL for uploaded files
-                    if (imageData.file instanceof File) {
-                      URL.revokeObjectURL(imageData.preview)
-                    }
-                    handleImageRemove(index, imageData?.file)
-                    // handleClick(imageData.file);
-                  }}
-                  className='absolute top-0 right-0 w-6 flex justify-center items-center h-6 p-1 bg-light-gold text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity'
-                  title='Remove image'
-                // type="button"
-                >
-                  &times;
-                </button>
-              )}
-            </div>
-          ))}
-      </div>
+      <div className='flex h-full min-h-0 items-stretch gap-3'>
+        <div className='min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden pr-1'>
+          <div className='flex flex-wrap content-start gap-2'>
+            {imagePreviews.map((imageData, index) => (
+              <div
+                key={index}
+                className='group relative h-[52px] w-[52px] shrink-0 overflow-hidden rounded-sm border border-dark-grey/15 bg-offwhite'
+              >
+                <Image
+                  width={52}
+                  height={52}
+                  src={imageData.preview}
+                  alt={`upload-${index}`}
+                  className='h-full w-full object-cover'
+                />
+                {!disabled && (
+                  <button
+                    type='button'
+                    onClick={() => {
+                      if (imageData.file instanceof File) {
+                        URL.revokeObjectURL(imageData.preview)
+                      }
+                      handleImageRemove(index, imageData?.file)
+                    }}
+                    className='absolute right-0.5 top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-light-gold text-[10px] leading-none text-white opacity-0 transition-opacity group-hover:opacity-100'
+                    title='Remove image'
+                  >
+                    &times;
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
 
-      <input
-        type='file'
-        id='image'
-        className='opacity-0 absolute w-0 h-0'
-        accept='image/*'
-        multiple
-        disabled={disabled || atImageLimit}
-        onChange={(e) => {
-          handleImageChange(e)
-          e.target.value = ''
-        }}
-      />
+        <input
+          type='file'
+          id={inputId}
+          className='pointer-events-none absolute h-0 w-0 opacity-0'
+          accept='image/*'
+          multiple
+          disabled={disabled || atImageLimit}
+          onChange={(e) => {
+            handleImageChange(e)
+            e.target.value = ''
+          }}
+        />
 
-      <div className='absolute right-[20px] xl:top-0 xxs:top-[55px]'>
         <label
-          // htmlFor='image'
-          htmlFor={!disabled && !atImageLimit ? 'image' : undefined}
-          className={`flex flex-col items-center justify-center w-[176px] xl:h-[154px] xxs:h-[110px] shadow-neonsm my-[19px] ${atImageLimit ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
+          htmlFor={!disabled && !atImageLimit ? inputId : undefined}
+          className={`flex h-[88px] w-[120px] shrink-0 flex-col items-center justify-center shadow-neonsm ${atImageLimit ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
             }`}
         >
           <Image
-            width={45}
-            height={45}
+            width={32}
+            height={32}
             src='/listing/camera.svg'
             alt='Upload Image'
           />
-          <span className='text-[17px] text-dark-grey font-normal pt-[18px]'>
-            Add Pictures
+          <span className='pt-2 text-center text-[13px] font-normal text-dark-grey'>
+            {uploadLabel}
           </span>
         </label>
       </div>
+
       {errors && (
-        <span className='text-red-500 lg:text-sm text-xs left-0 font-medium absolute top-[99%]'>
+        <span className='absolute left-0 top-[99%] text-xs font-medium text-red-500 lg:text-sm'>
           **{errorMessage}
         </span>
       )}

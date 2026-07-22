@@ -1,8 +1,14 @@
 'use client'
 import Image from 'next/image'
 import Link from 'next/link'
+import { useContext } from 'react'
 import { usePathname } from 'next/navigation'
 import { toUnitedArabEmiratesListingCountryName } from '@/libs/dummyLocationData'
+import {
+  clearListingWorkspaceStorage,
+  getListingRouteForAssetType,
+} from '@/libs/pendingListingDraft'
+import { ListingContext } from '@/components/ListingContext/ListingsProvider'
 
 const DropdownComponent = ({
   isListings,
@@ -24,6 +30,27 @@ const DropdownComponent = ({
   required = false,
 }) => {
   const pathname = usePathname()
+  const listingCtx = useContext(ListingContext) || {}
+
+  const switchToAssetType = (optionValue) => {
+    const currentRoute = getListingRouteForAssetType(
+      listingCtx.formData?.assetType || formData,
+    )
+    const nextRoute = getListingRouteForAssetType(optionValue)
+    // Leaving property → boat (etc.): wipe media, form, and payment drafts.
+    if (currentRoute && nextRoute && currentRoute !== nextRoute) {
+      clearListingWorkspaceStorage()
+      listingCtx.resetForm?.()
+    } else if (
+      listingCtx.formData?.assetType &&
+      listingCtx.formData.assetType !== optionValue
+    ) {
+      // Same route but different asset (e.g. For Sale → Off Plan): clear fields.
+      clearListingWorkspaceStorage()
+      listingCtx.resetForm?.()
+    }
+    handleSelectOption?.('assetType', optionValue)
+  }
 
   const renderLabelContent = () => (
     <button
@@ -83,7 +110,7 @@ const DropdownComponent = ({
               className={optionClassName}
               onClick={
                 !option.disabled
-                  ? () => handleSelectOption('assetType', option.value)
+                  ? () => switchToAssetType(option.value)
                   : undefined
               }
             >
@@ -98,7 +125,7 @@ const DropdownComponent = ({
               className={optionClassName}
               onClick={
                 !option.disabled
-                  ? () => handleSelectOption('assetType', option.value)
+                  ? () => switchToAssetType(option.value)
                   : undefined
               }
             >

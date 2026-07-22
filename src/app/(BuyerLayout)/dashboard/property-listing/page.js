@@ -43,12 +43,17 @@ import {
   useRestorePendingListingDraft,
   useRefetchListingOnReturn,
 } from '@/hooks/useRestorePendingListingDraft'
-import { hasPendingListingDraft } from '@/libs/pendingListingDraft'
+import {
+  clearListingWorkspaceStorage,
+  hasPendingListingDraft,
+  isPendingDraftForListingRoute,
+} from '@/libs/pendingListingDraft'
 import customAxios from '../../../../utils/apis/apis'
 import {
   applyPremiumServiceRefs,
   listingMediaRef,
   premiumServiceRequestId,
+  stripEmptyObjectIdRefs,
 } from '@/libs/listingMediaRef'
 import {
   hasConfirmedEvaluationPayment,
@@ -188,6 +193,7 @@ const Page = () => {
     setImages,
     setThumbnail,
     setVideos,
+    setQrScan,
     setSelectedCountry,
     setSelectedCity,
     setSelectedNeighbourhood,
@@ -259,6 +265,7 @@ const Page = () => {
       setImages,
       setThumbnail,
       setVideos,
+      setQrScan,
       setSelectedCountry,
       setSelectedCity,
       setSelectedNeighbourhood,
@@ -272,6 +279,7 @@ const Page = () => {
       setImages,
       setThumbnail,
       setVideos,
+      setQrScan,
       setSelectedCountry,
       setSelectedCity,
       setSelectedNeighbourhood,
@@ -288,10 +296,14 @@ const Page = () => {
       return
     }
 
-    // Cancelled/returning payment: keep draft fields (images + dropdowns).
-    if (hasPendingListingDraft()) {
+    // Keep draft only when it belongs to property listing (not car/boat/jewelry).
+    if (hasPendingListingDraft() && isPendingDraftForListingRoute('property')) {
       setLoading(false)
       return
+    }
+
+    if (hasPendingListingDraft()) {
+      clearListingWorkspaceStorage()
     }
 
     resetForm()
@@ -307,7 +319,7 @@ const Page = () => {
 
   useRefreshListingAfterServicePayment(id, 'property', fetchData)
   useRestoreListingAfterClozerPayment(listingDraftRestoreApi)
-  useRestorePendingListingDraft(id, listingDraftRestoreApi)
+  useRestorePendingListingDraft(id, listingDraftRestoreApi, 'property')
   useRefetchListingOnReturn(id, 'property', fetchData)
 
   const isOffPlan = formData?.assetType === 'Property Off Plan For Sale'
@@ -793,7 +805,9 @@ const Page = () => {
           await bookEvaluationTimeslotFromFormData(formData)
         }
 
-        const listingPayload = stripEvaluationBookingMeta(updatedFormData)
+        const listingPayload = stripEmptyObjectIdRefs(
+          stripEvaluationBookingMeta(updatedFormData),
+        )
 
         if (id) {
           requests.push(

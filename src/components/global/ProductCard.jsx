@@ -163,24 +163,27 @@ const ProductCard = ({
       <div
         className={`w-full text-base text-reef-gold`}
       >
-        <div className='flex justify-between gap-2 w-full'>
-          <Link href={listingHref} className='flex items-center gap-2'>
-            {getListingQrScanSrc(item) ? (
-              <Image
-                src={getListingQrScanSrc(item)}
-                width={36}
-                height={36}
-                alt='QR code'
-                className='h-9 w-9 shrink-0 rounded border border-gray-200 bg-white object-contain'
-                unoptimized
-              />
-            ) : null}
-            <h2
-              className='xl:text-xl md:text-lg text-base font-semibold capitalize text-black'
+        <div className='listing-card-meta flex w-full items-start justify-between gap-3'>
+          <div className='min-w-0 flex-1 break-words text-left'>
+            <Link
+              href={listingHref}
+              className='listing-card-title block w-full break-words text-left'
             >
-              {getShortTitle(title)}
-            </h2>
-          </Link>
+              <h2 className='break-words xl:text-xl md:text-lg text-base font-semibold capitalize text-black'>
+                {title}
+              </h2>
+            </Link>
+          </div>
+          {getListingQrScanSrc(item) ? (
+            <Image
+              src={getListingQrScanSrc(item)}
+              width={72}
+              height={72}
+              alt='QR code'
+              className='listing-qr-thumb ml-auto h-[72px] w-[72px] shrink-0 rounded border border-gray-200 bg-white object-contain'
+              unoptimized
+            />
+          ) : null}
         </div>
         <div className='w-full flex flex-wrap gap-x-2 my-2'>
           <p

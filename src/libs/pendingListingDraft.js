@@ -4,6 +4,61 @@ import { clearEvaluationSlotFields } from '@/libs/evaluationBooking'
 
 export const PENDING_LISTING_DRAFT_KEY = 'pendingListingDraft'
 
+/** Which dashboard listing route an asset type belongs to. */
+export const LISTING_ROUTE_ASSET_TYPES = {
+  property: [
+    'Property For Sale',
+    'Property For Lease',
+    'Property Off Plan For Sale',
+  ],
+  car: ['Car For Sale'],
+  boat: ['Boats For Sale'],
+  jewelry: ['Jewellery For Sale'],
+}
+
+export function getListingRouteForAssetType(assetType) {
+  const value = String(assetType || '').trim()
+  if (!value || value === 'Select Asset Type') return null
+  for (const [route, types] of Object.entries(LISTING_ROUTE_ASSET_TYPES)) {
+    if (types.includes(value)) return route
+  }
+  return null
+}
+
+export function getPendingDraftAssetType(draft = readPendingListingDraft()) {
+  if (!draft) return ''
+  return (
+    draft.formData?.assetType ||
+    draft.ui?.assetType ||
+    ''
+  )
+}
+
+/** True when local draft belongs to this listing route (property/car/boat/jewelry). */
+export function isPendingDraftForListingRoute(routeKey) {
+  const draft = readPendingListingDraft()
+  if (!draft) return false
+  const assetType = getPendingDraftAssetType(draft)
+  const allowed = LISTING_ROUTE_ASSET_TYPES[routeKey] || []
+  return allowed.includes(assetType)
+}
+
+/** Drop draft + checkout leftovers when leaving one listing type for another. */
+export function clearListingWorkspaceStorage() {
+  clearPendingListingDraft()
+  if (typeof window === 'undefined') return
+  try {
+    localStorage.removeItem('checkoutSession')
+    localStorage.removeItem('checkoutSessionId')
+    localStorage.removeItem('clozerTransactionId')
+    localStorage.removeItem('clozerReturnUrl')
+    localStorage.removeItem('FormPayment')
+    sessionStorage.removeItem('fv.autoFinalizeEvaluationPayment')
+  } catch {
+    /* ignore */
+  }
+}
+
 function isUsableImageSrc(src) {
   return (
     typeof src === 'string' &&
@@ -13,8 +68,74 @@ function isUsableImageSrc(src) {
   )
 }
 
+function isUsableVideoSrc(src) {
+  return (
+    typeof src === 'string' &&
+    (src.startsWith('http') || src.startsWith('blob:') || src.startsWith('data:'))
+  )
+}
+
+function normalizeThumbForDraft(thumbnail, parentSignedUrl) {
+  if (!thumbnail || thumbnail instanceof File || thumbnail instanceof Blob) {
+    return null
+  }
+  if (typeof thumbnail === 'string' && isUsableImageSrc(thumbnail)) {
+    return { url: thumbnail, signedUrl: thumbnail }
+  }
+  if (typeof thumbnail === 'object') {
+    const src =
+      getListingImageSrc(thumbnail) ||
+      parentSignedUrl ||
+      thumbnail.signedUrl ||
+      thumbnail.url
+    if (!isUsableImageSrc(src) && !thumbnail?._id) return null
+    return {
+      ...thumbnail,
+      url: thumbnail.url || src,
+      signedUrl: thumbnail.signedUrl || parentSignedUrl || src,
+    }
+  }
+  return null
+}
+
+function normalizeVideoForDraft(item) {
+  if (!item || item instanceof File || item instanceof Blob) return null
+  if (typeof item === 'string') {
+    return isUsableVideoSrc(item) ? { url: item, signedUrl: item } : null
+  }
+  const src = item.signedUrl || item.url
+  if (!isUsableVideoSrc(src) && !item?._id) return null
+  return {
+    ...item,
+    url: item.url || src,
+    signedUrl: item.signedUrl || src,
+  }
+}
+
+function normalizeQrForDraft(qrScan) {
+  if (!qrScan || qrScan instanceof File || qrScan instanceof Blob) return null
+  if (typeof qrScan === 'string' && isUsableImageSrc(qrScan)) {
+    return { url: qrScan, signedUrl: qrScan }
+  }
+  if (typeof qrScan === 'object') {
+    const src = getListingImageSrc(qrScan)
+    if (!isUsableImageSrc(src) && !qrScan?._id) return null
+    return {
+      ...qrScan,
+      url: qrScan.url || src,
+      signedUrl: qrScan.signedUrl || src,
+    }
+  }
+  return null
+}
+
 /** Prefer uploaded/persisted media objects over File blobs for localStorage. */
-export function serializeListingMediaForDraft(images = [], thumbnail = null, videos = []) {
+export function serializeListingMediaForDraft(
+  images = [],
+  thumbnail = null,
+  videos = [],
+  qrScan = null,
+) {
   const fromPics = (Array.isArray(images) ? images : [])
     .map((item) => {
       if (!item || item instanceof File || item instanceof Blob) return null
@@ -31,31 +152,13 @@ export function serializeListingMediaForDraft(images = [], thumbnail = null, vid
     })
     .filter(Boolean)
 
-  let thumb = null
-  if (thumbnail && !(thumbnail instanceof File) && !(thumbnail instanceof Blob)) {
-    if (typeof thumbnail === 'string' && isUsableImageSrc(thumbnail)) {
-      thumb = { url: thumbnail, signedUrl: thumbnail }
-    } else if (typeof thumbnail === 'object') {
-      const src = getListingImageSrc(thumbnail)
-      if (isUsableImageSrc(src) || thumbnail?._id) {
-        thumb = {
-          ...thumbnail,
-          url: thumbnail.url || src,
-          signedUrl: thumbnail.signedUrl || src,
-        }
-      }
-    }
-  }
-
+  const thumb = normalizeThumbForDraft(thumbnail)
   const vids = (Array.isArray(videos) ? videos : [])
-    .map((item) => {
-      if (!item || item instanceof File || item instanceof Blob) return null
-      if (typeof item === 'string') return item
-      return item?.url || item?.signedUrl || null
-    })
+    .map(normalizeVideoForDraft)
     .filter(Boolean)
+  const qr = normalizeQrForDraft(qrScan)
 
-  return { images: fromPics, thumbnail: thumb, videos: vids }
+  return { images: fromPics, thumbnail: thumb, videos: vids, qrScan: qr }
 }
 
 function mediaFromFormData(formData) {
@@ -66,22 +169,43 @@ function mediaFromFormData(formData) {
       ? pictures
       : []
 
-  const thumb =
-    formData?.thumbnailImg?.images?.[0] ||
-    formData?.thumbnailImg ||
-    null
+  const thumbAsset = formData?.thumbnailImg
+  const thumbImage = Array.isArray(thumbAsset?.images)
+    ? thumbAsset.images[0]
+    : thumbAsset?.images && typeof thumbAsset.images === 'object'
+      ? Object.values(thumbAsset.images)[0]
+      : null
+  const thumb = normalizeThumbForDraft(
+    thumbImage || thumbAsset,
+    thumbAsset?.signedUrl,
+  )
 
   let videos = []
-  if (formData?.video?.url) videos = [formData.video.url]
-  else if (Array.isArray(formData?.video?.videos)) {
-    videos = formData.video.videos
-      .map((v) => v?.url || v?.signedUrl)
-      .filter(Boolean)
+  if (Array.isArray(formData?.video?.videos) && formData.video.videos.length) {
+    videos = formData.video.videos.map((v) =>
+      normalizeVideoForDraft({
+        ...v,
+        signedUrl: v?.signedUrl || formData.video.signedUrl || v?.url,
+        url: v?.url || v?.signedUrl || formData.video.signedUrl,
+      }),
+    )
+  } else if (formData?.video?.signedUrl || formData?.video?.url) {
+    videos = [
+      normalizeVideoForDraft({
+        url: formData.video.url || formData.video.signedUrl,
+        signedUrl: formData.video.signedUrl || formData.video.url,
+        _id: formData.video._id,
+      }),
+    ]
   } else if (typeof formData?.video === 'string') {
-    videos = [formData.video]
+    videos = [normalizeVideoForDraft(formData.video)]
   }
+  videos = videos.filter(Boolean)
 
-  return serializeListingMediaForDraft(pictureImages, thumb, videos)
+  const qrRaw = formData?.qrScan?.images?.[0] || formData?.qrScan || null
+  const qrScan = normalizeQrForDraft(qrRaw)
+
+  return serializeListingMediaForDraft(pictureImages, thumb, videos, qrScan)
 }
 
 export function savePendingListingDraft({
@@ -89,15 +213,22 @@ export function savePendingListingDraft({
   images = [],
   thumbnail = null,
   videos = [],
+  qrScan = null,
 } = {}) {
   if (!formData || typeof window === 'undefined') return false
 
-  const fromState = serializeListingMediaForDraft(images, thumbnail, videos)
+  const fromState = serializeListingMediaForDraft(
+    images,
+    thumbnail,
+    videos,
+    qrScan,
+  )
   const fromForm = mediaFromFormData(formData)
   const media = {
     images: fromState.images.length ? fromState.images : fromForm.images,
     thumbnail: fromState.thumbnail || fromForm.thumbnail,
     videos: fromState.videos.length ? fromState.videos : fromForm.videos,
+    qrScan: fromState.qrScan || fromForm.qrScan,
   }
 
   try {
@@ -164,6 +295,7 @@ export function applyPendingListingDraft(draft, api = {}) {
     setImages,
     setThumbnail,
     setVideos,
+    setQrScan,
     setSelectedCountry,
     setSelectedCity,
     setSelectedNeighbourhood,
@@ -197,6 +329,9 @@ export function applyPendingListingDraft(draft, api = {}) {
   }
   if (typeof setVideos === 'function' && media.videos?.length) {
     setVideos(media.videos)
+  }
+  if (typeof setQrScan === 'function' && media.qrScan) {
+    setQrScan(media.qrScan)
   }
 
   const country = nextForm.country || draft.ui?.country || ''

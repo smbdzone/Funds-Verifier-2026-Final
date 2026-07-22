@@ -4,14 +4,21 @@ import { useEffect } from 'react'
 import { hasConfirmedEvaluationPayment } from '@/libs/evaluationBooking'
 import {
   applyPendingListingDraft,
+  clearListingWorkspaceStorage,
+  isPendingDraftForListingRoute,
   readPendingListingDraft,
 } from '@/libs/pendingListingDraft'
 
 /**
  * Restore in-progress listing form after abandoning Clozer/Stripe (no listing id yet).
  * Restores form fields, media previews, and top dropdown selections.
+ * Only restores when the draft matches this listing route (property/car/boat/jewelry).
  */
-export function useRestorePendingListingDraft(listingId, restoreApi) {
+export function useRestorePendingListingDraft(
+  listingId,
+  restoreApi,
+  listingRoute = null,
+) {
   useEffect(() => {
     if (listingId) return
 
@@ -30,6 +37,14 @@ export function useRestorePendingListingDraft(listingId, restoreApi) {
       const draft = readPendingListingDraft()
       if (!draft) return
 
+      if (
+        listingRoute &&
+        !isPendingDraftForListingRoute(listingRoute)
+      ) {
+        clearListingWorkspaceStorage()
+        return
+      }
+
       applyPendingListingDraft(draft, {
         ...api,
         clearEvalSlots: true,
@@ -37,7 +52,7 @@ export function useRestorePendingListingDraft(listingId, restoreApi) {
     } catch {
       /* ignore corrupt storage */
     }
-  }, [listingId, restoreApi])
+  }, [listingId, restoreApi, listingRoute])
 }
 
 /** Refetch saved listing when user returns from Clozer/Stripe (edit flow with id). */

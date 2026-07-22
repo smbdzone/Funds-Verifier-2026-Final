@@ -118,7 +118,7 @@ export default function PropertyLeaseSlider() {
             </div>
           </div>
         </div>
-        <Swiper
+        <Swiper className='listing-cards-swiper w-full'
           slidesPerView={1} // 👈 Default for screens < 375px
           spaceBetween={10}
           hashNavigation={{
@@ -131,32 +131,24 @@ export default function PropertyLeaseSlider() {
             disableOnInteraction: false,
           }}
           breakpoints={{
-            376: {
-              slidesPerView: 1,
-              spaceBetween: 10,
-            },
-            768: {
-              slidesPerView: 1,
-              spaceBetween: 15,
-            },
-            1024: {
-              slidesPerView: 2,
-              spaceBetween: 15,
-            },
-            1440: {
-              slidesPerView: 3,
-              spaceBetween: 15,
-            },
-          }}
+              700: {
+                slidesPerView: 2,
+                spaceBetween: 14,
+              },
+              1024: {
+                slidesPerView: 3,
+                spaceBetween: 16,
+              },
+            }}
           ref={swiperRef}
         >
           {propertiesForLease?.products?.map((propertyForLease, index) => (
             <SwiperSlide
               style={{ width: '100% !important' }}
-              className='shrink-0 w-full'
+              className='listing-card-slide !h-auto shrink-0 w-full'
               key={index}
             >
-              <div className='mx-2 mb-2 w-full shadow-[0px_0px_8px_rgba(0,_0,_0,_0.15)] rounded-md bg-white'>
+              <div className='listing-card mx-1 my-1 h-full w-full rounded-md bg-white'>
                 {(() => {
                   const imageSrc = getListingCardImageSrc(propertyForLease)
                   return imageSrc ? (
@@ -179,8 +171,8 @@ export default function PropertyLeaseSlider() {
                     </div>
                   )
                 })()}
-                <div className='flex flex-col'>
-                  <div className='flex flex-col px-4 py-2 space-y-3'>
+                <div className='listing-card-body w-full'>
+                      <div className='flex flex-1 flex-col space-y-3 px-4 py-2'>
                     <div className='flex flex-row items-center'>
                       <div className='rating-container mr-3'>
                         <div className='flex flex-row items-end'>
@@ -212,58 +204,70 @@ export default function PropertyLeaseSlider() {
                           : `(${propertyForLease.reviewCount} Review)`}
                       </div>
                     </div>
-                    <Link
-                      href={`/property/${propertyForLease.slug || propertyForLease.uuid}`}
-                      className='flex items-center gap-2 text-[#002D4F] md:text-xl text-sm font-medium w-full text-left'
-                    >
+                    <div className='listing-card-meta flex w-full items-start justify-between gap-3'>
+                      <div className='flex min-w-0 flex-1 flex-col items-start gap-1 text-left'>
+                        <Link
+                          href={`/property/${propertyForLease.slug || propertyForLease.uuid}`}
+                          className='listing-card-title block w-full break-words text-left text-[#002D4F] md:text-xl text-sm font-medium capitalize'
+                        >
+                          {propertyForLease.title ||
+                            `${ucFirst(propertyForLease.propertyType)} For Lease`}
+                        </Link>
+                        {propertyForLease.propertyType ? (
+                          <p className='listing-card-type w-full text-left text-[#002D4F] opacity-70 md:text-sm text-xs capitalize'>
+                            {ucFirst(propertyForLease.propertyType)} For Lease
+                          </p>
+                        ) : null}
+                        <div className='flex w-full flex-row items-start justify-start space-x-2 text-base text-[#002D4F]'>
+                          <div className='inline-block w-3.5 shrink-0'>
+                            <Image
+                              width={20}
+                              height={20}
+                              alt=''
+                              src={location.src}
+                            />
+                          </div>
+                          <div className='listing-card-location min-w-0 break-words md:text-base text-xs'>
+                            {propertyForLease.neighbourhood}
+                          </div>
+                        </div>
+                      </div>
                       {getListingQrScanSrc(propertyForLease) ? (
                         <Image
                           src={getListingQrScanSrc(propertyForLease)}
-                          width={36}
-                          height={36}
+                          width={72}
+                          height={72}
                           alt='QR code'
-                          className='h-9 w-9 shrink-0 rounded border border-gray-200 bg-white object-contain'
+                          className='listing-qr-thumb ml-auto h-[72px] w-[72px] shrink-0 rounded border border-gray-200 bg-white object-contain'
                           unoptimized
                         />
                       ) : null}
-                      {ucFirst(propertyForLease.propertyType)} For Lease
-                    </Link>
-                    <div className='text-[#002D4F] flex flex-row space-x-2 w-full text-base items-end'>
-                      <div className='inline-block w-3.5'>
-                        <Image
-                          width={20}
-                          height={20}
-                          alt=''
-                          src={location.src}
-                        />
-                      </div>
-                      <div className='flex md:text-base text-xs truncate overflow-ellipsis'>
-                        {propertyForLease.neighbourhood}
-                      </div>
                     </div>
                   </div>
-                  <div className=' box-border my-3 w-full h-0.5 border-t-[2px] border-solid border-[#969696]' />
-                  <div className='flex flex-row items-center justify-between pb-4 px-5'>
-                    <div className='flex flex-row gap-4 items-center'>
-                      <div className='flex w-[50px] h-[50px]'>
-                        <Image
-                          width={50}
-                          height={50}
-                          className='object-cover'
-                          alt=''
-                          src={getProfileImageSrc(
-                            propertyForLease.sellerAvatar ||
-                            propertyForLease.userId?.profileImage,
-                          )}
-                          unoptimized
-                        />
+                  <div className='listing-card-footer'>
+                    <div className='box-border my-3 w-full h-0.5 border-t-[2px] border-solid border-[#969696]' />
+                    <div className='flex flex-row items-center justify-between pb-4 px-5'>
+                      <div className='flex flex-row gap-4 items-center'>
+                        <div className='flex w-[50px] h-[50px]'>
+                          <Image
+                            width={50}
+                            height={50}
+                            className='object-cover'
+                            alt=''
+                            src={getProfileImageSrc(
+                              propertyForLease.sellerAvatar ||
+                              propertyForLease.userId?.profileImage,
+                            )}
+                            unoptimized
+                          />
+                        </div>
+                        <div className='md:text-sm lg:text-base text-xs font-medium text-[#000000]'>
+                          Ref: {getListingRef(propertyForLease)}
+                        </div>
                       </div>
-                      <div className='md:text-sm lg:text-base text-xs font-medium text-[#000000]'>
-                        Ref: {getListingRef(propertyForLease)}
+                      <div className='lg:text-lg md:text-sm text-xs font-semibold text-[#000000]'>
+                        AED {formatPriceUS(propertyForLease.price)}
                       </div>
-                    </div>
-                    <div className='g:text-lg md:text-sm text-xs  font-semibold text-[#000000]'>
-                      AED {formatPriceUS(propertyForLease.price)}
                     </div>
                   </div>
                 </div>

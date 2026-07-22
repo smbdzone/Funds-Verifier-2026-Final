@@ -1,14 +1,18 @@
 /**
  * Listing APIs expect Mongo ObjectIds for populated media fields;
  * upload handlers return full documents with `_id`.
+ * Empty strings must not be sent — Mongoose rejects Cast to ObjectId for "".
  */
 export function listingMediaRef(uploadOrExisting) {
-  if (uploadOrExisting == null) return uploadOrExisting
+  if (uploadOrExisting == null || uploadOrExisting === '') return undefined
   if (
     typeof uploadOrExisting === 'object' &&
     uploadOrExisting._id != null
   ) {
     return uploadOrExisting._id
+  }
+  if (typeof uploadOrExisting === 'string' && !uploadOrExisting.trim()) {
+    return undefined
   }
   return uploadOrExisting
 }
@@ -35,13 +39,18 @@ export function mergePremiumServiceRef(newRequestId, existingValue) {
   return existing
 }
 
-/** Remove empty premium refs so MongoDB does not cast "" to ObjectId. */
-export function stripEmptyPremiumRefs(body) {
+/** Remove empty ObjectId refs so MongoDB does not cast "" to ObjectId. */
+export function stripEmptyObjectIdRefs(body) {
   if (!body || typeof body !== 'object') return body
   for (const key of [
     'technicalReport',
     'video3DWalkthrough',
     'evaluationCertificate',
+    'video',
+    'qrScan',
+    'pictures',
+    'thumbnailImg',
+    'agencyAgreement',
   ]) {
     const value = body[key]
     if (value === null || value === '' || value === undefined) {
@@ -49,6 +58,11 @@ export function stripEmptyPremiumRefs(body) {
     }
   }
   return body
+}
+
+/** @deprecated Use stripEmptyObjectIdRefs */
+export function stripEmptyPremiumRefs(body) {
+  return stripEmptyObjectIdRefs(body)
 }
 
 export function applyPremiumServiceRefs(target, formData, ids) {
@@ -62,5 +76,5 @@ export function applyPremiumServiceRefs(target, formData, ids) {
   )
   if (video3D !== undefined) target.video3DWalkthrough = video3D
   if (technical !== undefined) target.technicalReport = technical
-  return stripEmptyPremiumRefs(target)
+  return stripEmptyObjectIdRefs(target)
 }

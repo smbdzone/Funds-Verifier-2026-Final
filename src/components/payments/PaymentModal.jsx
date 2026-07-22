@@ -53,8 +53,16 @@ const PaymentModal = ({
       images: listingCtx.images || [],
       thumbnail: listingCtx.thumbnail,
       videos: listingCtx.videos || [],
+      qrScan: listingCtx.qrScan,
     })
-  }, [show, formData, listingCtx.images, listingCtx.thumbnail, listingCtx.videos])
+  }, [
+    show,
+    formData,
+    listingCtx.images,
+    listingCtx.thumbnail,
+    listingCtx.videos,
+    listingCtx.qrScan,
+  ])
 
   if (!show) return null
 
@@ -91,6 +99,7 @@ const PaymentModal = ({
         let draftImages = listingCtx.images || []
         let draftThumb = listingCtx.thumbnail
         let draftVideos = listingCtx.videos || []
+        let draftQr = listingCtx.qrScan
 
         // Persist File blobs to the server before leaving the page for Clozer.
         try {
@@ -116,7 +125,28 @@ const PaymentModal = ({
             const uploadedThumb = await handleThumbnailUpload(draftThumb)
             if (uploadedThumb) {
               draftForm = { ...draftForm, thumbnailImg: uploadedThumb }
-              draftThumb = uploadedThumb?.images?.[0] || uploadedThumb
+              const firstImage = Array.isArray(uploadedThumb?.images)
+                ? uploadedThumb.images[0]
+                : uploadedThumb?.images && typeof uploadedThumb.images === 'object'
+                  ? Object.values(uploadedThumb.images)[0]
+                  : null
+              draftThumb = firstImage
+                ? {
+                  ...firstImage,
+                  signedUrl:
+                    firstImage.signedUrl ||
+                    uploadedThumb.signedUrl ||
+                    firstImage.url,
+                  url:
+                    firstImage.url ||
+                    uploadedThumb.signedUrl ||
+                    firstImage.signedUrl,
+                }
+                : {
+                  ...uploadedThumb,
+                  signedUrl: uploadedThumb.signedUrl || uploadedThumb.url,
+                  url: uploadedThumb.url || uploadedThumb.signedUrl,
+                }
               listingCtx.setThumbnail?.(draftThumb)
               listingCtx.setFormData?.((prev) => ({
                 ...prev,
@@ -132,13 +162,54 @@ const PaymentModal = ({
             const uploadedVideo = await handleVideoUpload(fileVideos)
             if (uploadedVideo) {
               draftForm = { ...draftForm, video: uploadedVideo }
-              draftVideos = uploadedVideo?.url
-                ? [uploadedVideo.url]
-                : draftVideos
+              if (
+                Array.isArray(uploadedVideo?.videos) &&
+                uploadedVideo.videos.length
+              ) {
+                draftVideos = uploadedVideo.videos.map((v) => ({
+                  ...v,
+                  signedUrl:
+                    v?.signedUrl || uploadedVideo.signedUrl || v?.url,
+                  url: v?.url || v?.signedUrl || uploadedVideo.signedUrl,
+                }))
+              } else if (uploadedVideo?.signedUrl || uploadedVideo?.url) {
+                draftVideos = [
+                  {
+                    url: uploadedVideo.url || uploadedVideo.signedUrl,
+                    signedUrl: uploadedVideo.signedUrl || uploadedVideo.url,
+                    _id: uploadedVideo._id,
+                  },
+                ]
+              }
               listingCtx.setVideos?.(draftVideos)
               listingCtx.setFormData?.((prev) => ({
                 ...prev,
                 video: uploadedVideo,
+              }))
+            }
+          }
+
+          if (draftQr instanceof File || draftQr instanceof Blob) {
+            const uploadedQr = await handleImageUpload([draftQr])
+            if (uploadedQr) {
+              draftForm = { ...draftForm, qrScan: uploadedQr }
+              draftQr = uploadedQr?.images?.[0]
+                ? {
+                  ...uploadedQr.images[0],
+                  signedUrl:
+                    uploadedQr.images[0].signedUrl ||
+                    uploadedQr.signedUrl ||
+                    uploadedQr.images[0].url,
+                  url:
+                    uploadedQr.images[0].url ||
+                    uploadedQr.signedUrl ||
+                    uploadedQr.images[0].signedUrl,
+                }
+                : uploadedQr
+              listingCtx.setQrScan?.(draftQr)
+              listingCtx.setFormData?.((prev) => ({
+                ...prev,
+                qrScan: uploadedQr,
               }))
             }
           }
@@ -151,6 +222,7 @@ const PaymentModal = ({
           images: draftImages,
           thumbnail: draftThumb,
           videos: draftVideos,
+          qrScan: draftQr,
         })
       }
 
@@ -260,6 +332,7 @@ const PaymentModal = ({
         images: listingCtx.images || [],
         thumbnail: listingCtx.thumbnail,
         videos: listingCtx.videos || [],
+        qrScan: listingCtx.qrScan,
       })
     }
     setPaymentStep('choice')
@@ -278,6 +351,7 @@ const PaymentModal = ({
         images: listingCtx.images || [],
         thumbnail: listingCtx.thumbnail,
         videos: listingCtx.videos || [],
+        qrScan: listingCtx.qrScan,
       })
     }
     if (typeof next === 'function') next()

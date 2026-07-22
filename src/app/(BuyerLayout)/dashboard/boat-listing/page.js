@@ -10,6 +10,7 @@ import {
   applyPremiumServiceRefs,
   listingMediaRef,
   premiumServiceRequestId,
+  stripEmptyObjectIdRefs,
 } from '@/libs/listingMediaRef'
 import {
   hasConfirmedEvaluationPayment,
@@ -38,7 +39,11 @@ import {
   useRefetchListingOnReturn,
 } from '@/hooks/useRestorePendingListingDraft'
 import { useAutoFinalizeAfterEvaluationPayment } from '@/hooks/useAutoFinalizeAfterEvaluationPayment'
-import { hasPendingListingDraft } from '@/libs/pendingListingDraft'
+import {
+  clearListingWorkspaceStorage,
+  hasPendingListingDraft,
+  isPendingDraftForListingRoute,
+} from '@/libs/pendingListingDraft'
 import customAxios from '../../../../utils/apis/apis'
 
 function Page() {
@@ -76,9 +81,10 @@ function Page() {
     sportsOutdoorPrice: '',
     warrenty: '',
     seats: '',
-    pictures: '',
+    pictures: null,
     video: null,
-    thumbnailImg: '',
+    thumbnailImg: null,
+    qrScan: null,
     evaluationCertificate: null,
     evaludationComponents: '',
     sportsOutdoorPrice: '',
@@ -87,7 +93,8 @@ function Page() {
     extras: [],
     category: '',
     model: '',
-    technicalReport: '',
+    technicalReport: null,
+    video3DWalkthrough: null,
     evaluationDateTime: '',
   }
 
@@ -188,6 +195,7 @@ function Page() {
     setImages,
     setThumbnail,
     setVideos,
+    setQrScan,
     setSelectedCountry,
     setSelectedCity,
     setSelectedNeighbourhood,
@@ -201,6 +209,7 @@ function Page() {
       setImages,
       setThumbnail,
       setVideos,
+      setQrScan,
       setSelectedCountry,
       setSelectedCity,
       setSelectedNeighbourhood,
@@ -215,6 +224,7 @@ function Page() {
       setImages,
       setThumbnail,
       setVideos,
+      setQrScan,
       setSelectedCountry,
       setSelectedCity,
       setSelectedNeighbourhood,
@@ -231,9 +241,14 @@ function Page() {
       return
     }
 
-    if (hasPendingListingDraft()) {
+    // Keep draft only when it belongs to boat listing (not property/car/jewelry).
+    if (hasPendingListingDraft() && isPendingDraftForListingRoute('boat')) {
       setLoading(false)
       return
+    }
+
+    if (hasPendingListingDraft()) {
+      clearListingWorkspaceStorage()
     }
 
     resetForm()
@@ -243,7 +258,7 @@ function Page() {
 
   useRefreshListingAfterServicePayment(id, 'boat', fetchData)
   useRestoreListingAfterClozerPayment(listingDraftRestoreApi)
-  useRestorePendingListingDraft(id, listingDraftRestoreApi)
+  useRestorePendingListingDraft(id, listingDraftRestoreApi, 'boat')
   useRefetchListingOnReturn(id, 'boat', fetchData)
 
   const handleTechnicalModal = () => {
@@ -643,7 +658,9 @@ function Page() {
         technicalReportID,
       })
 
-      const listingPayload = stripEvaluationBookingMeta(updatedFormData)
+      const listingPayload = stripEmptyObjectIdRefs(
+        stripEvaluationBookingMeta(updatedFormData),
+      )
 
       if (!id) {
         await bookEvaluationTimeslotFromFormData(formData)

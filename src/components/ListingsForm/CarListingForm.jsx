@@ -16,6 +16,7 @@ import EvaluationModal from '@/components/Evaluation/evaluationmodal.jsx'
 import {
   LISTING_IMAGE_FORMATS_LABEL,
   LISTING_QR_SCAN_FORMATS_LABEL,
+  LISTING_THUMBNAIL_FORMATS_LABEL,
   LISTING_VIDEO_FORMATS_LABEL,
 } from '@/constants/listingUploadLimits'
 import {
@@ -223,7 +224,7 @@ const CarListingForm = ({
           </div>
           <ListingImageUploadLayout
             errors={errors.thumbnail && !thumbnail}
-            formats={LISTING_IMAGE_FORMATS_LABEL}
+            formats={LISTING_THUMBNAIL_FORMATS_LABEL}
             label='Thumbnail'
             required
           >
@@ -234,6 +235,7 @@ const CarListingForm = ({
               handleThumbImageChange={handleThumbImageChange}
               handleImageRemove={handleThumbImageRemove}
               disabled={isEvaluatorApprovedLocked}
+              inputId='car-thumbnail'
             />
           </ListingImageUploadLayout>
           <ListingImageUploadLayout
@@ -249,6 +251,7 @@ const CarListingForm = ({
               errors={errors.pictures && images.length === 0}
               errorMessage={errors.pictures}
               disabled={isEvaluatorApprovedLocked}
+              inputId='car-additional-pictures'
             />
           </ListingImageUploadLayout>
           <ListingImageUploadLayout

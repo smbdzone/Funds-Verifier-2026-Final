@@ -23,6 +23,7 @@ import EvaluationModal from '@/components/Evaluation/evaluationmodal.jsx'
 import {
   LISTING_IMAGE_FORMATS_LABEL,
   LISTING_QR_SCAN_FORMATS_LABEL,
+  LISTING_THUMBNAIL_FORMATS_LABEL,
   LISTING_VIDEO_FORMATS_LABEL,
 } from '@/constants/listingUploadLimits'
 import customAxios from '../../utils/apis/apis'
@@ -214,6 +215,22 @@ const BoatListingForm = ({
             />
           </div>
           <ListingImageUploadLayout
+            errors={errors.thumbnail && !thumbnail}
+            formats={LISTING_THUMBNAIL_FORMATS_LABEL}
+            label='Thumbnail'
+            required
+          >
+            <ListingsImageComponent
+              errors={errors.thumbnail && !thumbnail}
+              image={thumbnail}
+              errorMessage={errors.thumbnail}
+              handleThumbImageChange={handleThumbImageChange}
+              handleImageRemove={handleThumbImageRemove}
+              disabled={isEvaluatorApprovedLocked}
+              inputId='boat-thumbnail'
+            />
+          </ListingImageUploadLayout>
+          <ListingImageUploadLayout
             errors={errors.pictures && images.length === 0}
             formats={LISTING_IMAGE_FORMATS_LABEL}
             label='Additional pictures'
@@ -226,21 +243,7 @@ const BoatListingForm = ({
               errors={errors.pictures && images.length === 0}
               errorMessage={errors.pictures}
               disabled={isEvaluatorApprovedLocked}
-            />
-          </ListingImageUploadLayout>
-          <ListingImageUploadLayout
-            errors={errors.thumbnail && !thumbnail}
-            formats={LISTING_IMAGE_FORMATS_LABEL}
-            label='Thumbnail'
-            required
-          >
-            <ListingsImageComponent
-              errors={errors.thumbnail && !thumbnail}
-              image={thumbnail}
-              errorMessage={errors.thumbnail}
-              handleThumbImageChange={handleThumbImageChange}
-              handleImageRemove={handleThumbImageRemove}
-              disabled={isEvaluatorApprovedLocked}
+              inputId='boat-additional-pictures'
             />
           </ListingImageUploadLayout>
           <ListingImageUploadLayout

@@ -25,6 +25,7 @@ function buildListingMediaItems(property = {}) {
     if (!src || src === '/listing/camera.svg') return
     items.push({
       type: 'image',
+      id: image?.public_id || image?.s3Key || image?.originalName || `image-${index}`,
       src,
       filename:
         image?.name ||
@@ -39,6 +40,7 @@ function buildListingMediaItems(property = {}) {
       if (!src) return
       items.push({
         type: 'video',
+        id: video?.public_id || video?.s3Key || video?.originalName || `video-${index}`,
         src,
         filename:
           video?.name ||
@@ -211,7 +213,7 @@ export default function EvaluatorListingMedia({
             <div className='flex w-full flex-wrap gap-2'>
               {mediaItems.map((media) => (
                 <div
-                  key={`${media.type}-${media.src}`}
+                  key={`${media.type}-${media.id}`}
                   className='relative h-28 w-28 overflow-hidden rounded-sm'
                 >
                   <button

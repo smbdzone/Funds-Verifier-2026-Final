@@ -10,6 +10,7 @@ import {
   applyPremiumServiceRefs,
   listingMediaRef,
   premiumServiceRequestId,
+  stripEmptyObjectIdRefs,
 } from '@/libs/listingMediaRef'
 import {
   hasConfirmedEvaluationPayment,
@@ -46,7 +47,11 @@ import {
   useRefetchListingOnReturn,
 } from '@/hooks/useRestorePendingListingDraft'
 import { useAutoFinalizeAfterEvaluationPayment } from '@/hooks/useAutoFinalizeAfterEvaluationPayment'
-import { hasPendingListingDraft } from '@/libs/pendingListingDraft'
+import {
+  clearListingWorkspaceStorage,
+  hasPendingListingDraft,
+  isPendingDraftForListingRoute,
+} from '@/libs/pendingListingDraft'
 import customAxios from '../../../../utils/apis/apis'
 
 const initialFormData = {
@@ -206,6 +211,7 @@ function Page() {
     setImages,
     setThumbnail,
     setVideos,
+    setQrScan,
     setSelectedCountry,
     setSelectedCity,
     setSelectedNeighbourhood,
@@ -220,6 +226,7 @@ function Page() {
       setImages,
       setThumbnail,
       setVideos,
+      setQrScan,
       setSelectedCountry,
       setSelectedCity,
       setSelectedNeighbourhood,
@@ -234,6 +241,7 @@ function Page() {
       setImages,
       setThumbnail,
       setVideos,
+      setQrScan,
       setSelectedCountry,
       setSelectedCity,
       setSelectedNeighbourhood,
@@ -250,9 +258,14 @@ function Page() {
       return
     }
 
-    if (hasPendingListingDraft()) {
+    // Keep draft only when it belongs to car listing (not property/boat/jewelry).
+    if (hasPendingListingDraft() && isPendingDraftForListingRoute('car')) {
       setLoading(false)
       return
+    }
+
+    if (hasPendingListingDraft()) {
+      clearListingWorkspaceStorage()
     }
 
     resetForm()
@@ -269,7 +282,7 @@ function Page() {
 
   useRefreshListingAfterServicePayment(id, 'car', fetchData)
   useRestoreListingAfterClozerPayment(listingDraftRestoreApi)
-  useRestorePendingListingDraft(id, listingDraftRestoreApi)
+  useRestorePendingListingDraft(id, listingDraftRestoreApi, 'car')
   useRefetchListingOnReturn(id, 'car', fetchData)
 
   const handleTechnicalModal = () => {
@@ -507,7 +520,9 @@ function Page() {
       }
 
       // Submit data
-      const listingPayload = stripEvaluationBookingMeta(updatedFormData)
+      const listingPayload = stripEmptyObjectIdRefs(
+        stripEvaluationBookingMeta(updatedFormData),
+      )
 
       if (id) {
         await customAxios.put(

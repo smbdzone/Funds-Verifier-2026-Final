@@ -25,6 +25,8 @@ const DocumentSection = ({
   fetchDataRef.current = fetchData
 
   // Keep request status in sync when asset holder uploads (Pending → Uploaded).
+  // Do NOT use window `focus` — clicking price/ROI inputs (and DevTools) fires
+  // focus and was re-running a full property reload that wiped form state.
   useEffect(() => {
     if (title !== 'Request documents') return undefined
     if (typeof fetchDataRef.current !== 'function') return undefined
@@ -42,21 +44,24 @@ const DocumentSection = ({
     }
 
     document.addEventListener('visibilitychange', onVisible)
-    window.addEventListener('focus', refresh)
-    const interval = window.setInterval(refresh, 15000)
+    const interval = window.setInterval(refresh, 30000)
 
     return () => {
       document.removeEventListener('visibilitychange', onVisible)
-      window.removeEventListener('focus', refresh)
       window.clearInterval(interval)
     }
   }, [title])
 
   const openDoc = (doc, displayName) => {
-    if (typeof handleOpenDoc !== 'function') return
     const url = getListingDocumentSrc(doc)
     if (!url) return
-    handleOpenDoc(url, displayName || doc?.Certificate?.name || 'document.pdf')
+    const name =
+      displayName || doc?.Certificate?.name || doc?.name || 'document.pdf'
+    if (typeof handleOpenDoc === 'function') {
+      handleOpenDoc(url, name)
+      return
+    }
+    window.open(url, '_blank', 'noopener,noreferrer')
   }
 
   return (
@@ -136,12 +141,35 @@ const DocumentSection = ({
                               {formatRequestDocumentDate(doc.date)}
                             </span>
                           ) : null}
+                          {isRequestDocumentFulfilled(doc) &&
+                          doc.document?.Certificate?.name ? (
+                            <span className='text-xs text-gray-500 truncate'>
+                              File: {doc.document.Certificate.name}
+                            </span>
+                          ) : null}
                         </div>
                         <div className='flex gap-2 items-center'>
                           {isRequestDocumentFulfilled(doc) ? (
-                            <span className='inline-block rounded px-2 py-0.5 text-xs font-medium bg-green-100 text-green-700'>
-                              Uploaded
-                            </span>
+                            <>
+                              <span className='inline-block rounded px-2 py-0.5 text-xs font-medium bg-green-100 text-green-700'>
+                                Uploaded
+                              </span>
+                              <button
+                                type='button'
+                                className='w-8 h-8'
+                                title='View / download'
+                                onClick={() =>
+                                  openDoc(
+                                    doc.document,
+                                    getRequestDocumentName(doc) ||
+                                      doc.document?.Certificate?.name ||
+                                      'document.pdf',
+                                  )
+                                }
+                              >
+                                <img src='/icons/view.png' alt='View' />
+                              </button>
+                            </>
                           ) : (
                             <span className='inline-block rounded px-2 py-0.5 text-xs font-medium bg-amber-100 text-amber-700'>
                               Pending

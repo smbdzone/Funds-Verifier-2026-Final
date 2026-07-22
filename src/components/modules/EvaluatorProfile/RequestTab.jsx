@@ -6,7 +6,6 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { toast, ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
-import Modal from '../../documents/modal'
 import DocumentSection from './requestCompoenets/DocumentSection'
 import InputField from './requestCompoenets/InputField'
 import EvaluatorEditableFields from './requestCompoenets/EvaluatorEditableFields'
@@ -30,6 +29,7 @@ import {
   formatDateForInput,
   getRequestDocumentName,
   normalizeRequestDocuments,
+  openListingDocumentInNewTab,
   requestDocumentsMissingDate,
   serializeRequestDocuments,
 } from '@/utils/requestDocumentUtils'
@@ -137,6 +137,21 @@ export const RequestTab = () => {
       }
     } catch (error) {
       console.error('Error fetching property data:', error)
+    }
+  }
+
+  /** Poll only request-document status — do not reset price/ROI/media. */
+  const refreshRequestDocuments = async () => {
+    if (!propertyId) return
+    try {
+      const response = await customAxios.get(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/property/${propertyId}`,
+      )
+      setRequestDocument(
+        normalizeRequestDocuments(response.data?.requestDocument),
+      )
+    } catch (error) {
+      console.error('Error refreshing request documents:', error)
     }
   }
 
@@ -319,20 +334,8 @@ export const RequestTab = () => {
     return <div>Loading...</div>
   }
 
-  const [isModalOpen, setIsModalOpen] = useState(false)
-  const [pdfUrl, setPdfUrl] = useState('')
-  const [pdfFileName, setPdfFileName] = useState('')
-
   const handleOpenDoc = (url, fileName = 'document.pdf') => {
-    setPdfUrl(url)
-    setPdfFileName(fileName)
-    setIsModalOpen(true)
-  }
-
-  const closeModal = () => {
-    setIsModalOpen(false)
-    setPdfUrl('')
-    setPdfFileName('')
+    openListingDocumentInNewTab(url, fileName)
   }
 
   const [evaluationPrice, setEvaluationPrice] = useState('')
@@ -505,7 +508,7 @@ export const RequestTab = () => {
               title='Request documents'
               documents={requestDocument}
               handleOpenDoc={handleOpenDoc}
-              fetchData={fetchPropertyData}
+              fetchData={refreshRequestDocuments}
               setEditText={setEditText}
               handleEdit={handleEdit}
               handleSaveEdit={handleSaveEdit}
@@ -535,12 +538,6 @@ export const RequestTab = () => {
           )}
           handleOpenDoc={handleOpenDoc}
           fetchData={fetchPropertyData}
-        />
-        <Modal
-          isOpen={isModalOpen}
-          onClose={closeModal}
-          fileUrl={pdfUrl}
-          fileName={pdfFileName}
         />
 
         {property.status === 1 ? null : (

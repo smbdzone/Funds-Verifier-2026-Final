@@ -21,6 +21,7 @@ import EvaluationModal from '@/components/Evaluation/evaluationmodal.jsx'
 import {
   LISTING_IMAGE_FORMATS_LABEL,
   LISTING_QR_SCAN_FORMATS_LABEL,
+  LISTING_THUMBNAIL_FORMATS_LABEL,
   LISTING_VIDEO_FORMATS_LABEL,
 } from '@/constants/listingUploadLimits'
 import { jewelryForSale } from '../../constants/sidebar'
@@ -212,6 +213,22 @@ const JewelryListingForm = ({
             />
           </div>
           <ListingImageUploadLayout
+            errors={errors.thumbnail && !thumbnail}
+            formats={LISTING_THUMBNAIL_FORMATS_LABEL}
+            label='Thumbnail'
+            required
+          >
+            <ListingsImageComponent
+              errors={errors.thumbnail && !thumbnail}
+              image={thumbnail}
+              errorMessage={errors.thumbnail}
+              handleThumbImageChange={handleThumbImageChange}
+              handleImageRemove={handleThumbImageRemove}
+              disabled={isEvaluatorApprovedLocked}
+              inputId='jewelry-thumbnail'
+            />
+          </ListingImageUploadLayout>
+          <ListingImageUploadLayout
             errors={errors.pictures && images.length === 0}
             formats={LISTING_IMAGE_FORMATS_LABEL}
             label='Additional pictures'
@@ -224,21 +241,7 @@ const JewelryListingForm = ({
               errors={errors.pictures && images.length === 0}
               errorMessage={errors.pictures}
               disabled={isEvaluatorApprovedLocked}
-            />
-          </ListingImageUploadLayout>
-          <ListingImageUploadLayout
-            errors={errors.thumbnail && !thumbnail}
-            formats={LISTING_IMAGE_FORMATS_LABEL}
-            label='Thumbnail'
-            required
-          >
-            <ListingsImageComponent
-              errors={errors.thumbnail && !thumbnail}
-              image={thumbnail}
-              errorMessage={errors.thumbnail}
-              handleThumbImageChange={handleThumbImageChange}
-              handleImageRemove={handleThumbImageRemove}
-              disabled={isEvaluatorApprovedLocked}
+              inputId='jewelry-additional-pictures'
             />
           </ListingImageUploadLayout>
           <ListingImageUploadLayout

@@ -32,6 +32,7 @@ import {
   formatDateForInput,
   getRequestDocumentName,
   normalizeRequestDocuments,
+  openListingDocumentInNewTab,
   requestDocumentsMissingDate,
   serializeRequestDocuments,
 } from '@/utils/requestDocumentUtils'
@@ -134,6 +135,20 @@ export const RequestTab2 = () => {
       console.error('Error fetching boat data:', error)
     }
   }
+
+  /** Poll only request-document status — do not reset price/ROI/media. */
+  const refreshRequestDocuments = async () => {
+    if (!propertyId) return
+    try {
+      const response = await customAxios.get(`/boat/${propertyId}`)
+      setRequestDocument(
+        normalizeRequestDocuments(response.data?.requestDocument),
+      )
+    } catch (error) {
+      console.error('Error refreshing request documents:', error)
+    }
+  }
+
   const [requestDocument, setRequestDocument] = useState([])
   const [newDocument, setNewDocument] = useState('')
   const [newDocumentDate, setNewDocumentDate] = useState('')
@@ -319,9 +334,7 @@ export const RequestTab2 = () => {
   const [pdfFileName, setPdfFileName] = useState('')
 
   const handleOpenDoc = (url, fileName = 'document.pdf') => {
-    setPdfUrl(url)
-    setPdfFileName(fileName)
-    setIsModalOpen(true)
+    openListingDocumentInNewTab(url, fileName)
   }
 
   const closeModal = () => {
@@ -483,7 +496,7 @@ export const RequestTab2 = () => {
               title='Request documents'
               documents={requestDocument}
               handleOpenDoc={handleOpenDoc}
-              fetchData={fetchPropertyData}
+              fetchData={refreshRequestDocuments}
               setEditText={setEditText}
               handleEdit={handleEdit}
               handleSaveEdit={handleSaveEdit}

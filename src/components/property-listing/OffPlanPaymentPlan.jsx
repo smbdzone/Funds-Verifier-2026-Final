@@ -24,7 +24,7 @@ const PaymentPlanStepCard = ({
   milestoneError,
 }) => {
   return (
-    <div className='flex w-full min-w-0 flex-1 flex-col gap-1'>
+    <div className='flex w-full min-w-0 flex-col gap-1'>
       <div className='flex items-center justify-between gap-1 px-0.5'>
         <span className='truncate text-[11px] leading-[14px] text-black xl:text-[12px] xl:leading-[15px]'>
           {stepLabel}
@@ -111,7 +111,7 @@ const OffPlanPaymentPlan = ({
           **{errors.paymentPlan}
         </span>
       ) : null}
-      <div className='flex w-full items-start gap-2 xl:gap-3'>
+      <div className='grid w-full grid-cols-2 items-start gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:gap-4'>
         {steps.map((step, index) => (
           <PaymentPlanStepCard
             key={`payment-step-${index}`}
@@ -142,7 +142,7 @@ const OffPlanPaymentPlan = ({
             disabled={disabled}
             onClick={onStepAdd}
             aria-label='Add payment step'
-            className='flex min-h-[178px] min-w-[64px] flex-1 flex-col items-center justify-center gap-2 border border-dashed border-light-gold/60 bg-white text-light-gold shadow-neons transition-colors hover:bg-offwhite disabled:cursor-not-allowed disabled:opacity-50 xl:min-h-[188px]'
+            className='flex min-h-[178px] w-full flex-col items-center justify-center gap-2 border border-dashed border-light-gold/60 bg-white text-light-gold shadow-neons transition-colors hover:bg-offwhite disabled:cursor-not-allowed disabled:opacity-50 xl:min-h-[188px]'
           >
             <Plus className='h-7 w-7' strokeWidth={1.75} />
             <span className='text-[11px] font-normal text-dark-grey xl:text-[12px]'>

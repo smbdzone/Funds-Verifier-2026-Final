@@ -20,6 +20,7 @@ import EvaluationModal from '@/components/Evaluation/evaluationmodal.jsx'
 import {
   LISTING_IMAGE_FORMATS_LABEL,
   LISTING_QR_SCAN_FORMATS_LABEL,
+  LISTING_THUMBNAIL_FORMATS_LABEL,
   LISTING_VIDEO_FORMATS_LABEL,
 } from '@/constants/listingUploadLimits'
 import { XIcon } from 'lucide-react'
@@ -238,7 +239,7 @@ export const ImageUploadComponent = React.memo(
             </div>
             <ListingImageUploadLayout
               errors={errors.thumbnail && !thumbnail}
-              formats={LISTING_IMAGE_FORMATS_LABEL}
+              formats={LISTING_THUMBNAIL_FORMATS_LABEL}
               label='Thumbnail'
               required
             >
@@ -249,6 +250,7 @@ export const ImageUploadComponent = React.memo(
                 handleThumbImageChange={handleThumbImageChange}
                 handleImageRemove={handleThumbImageRemove}
                 disabled={isEvaluatorApprovedLocked}
+                inputId='offplan-thumbnail'
               />
             </ListingImageUploadLayout>
             <ListingImageUploadLayout
@@ -264,6 +266,7 @@ export const ImageUploadComponent = React.memo(
                 errors={errors.pictures && images.length === 0}
                 errorMessage={errors.pictures}
                 disabled={isEvaluatorApprovedLocked}
+                inputId='offplan-additional-pictures'
               />
             </ListingImageUploadLayout>
             <ListingImageUploadLayout
@@ -513,7 +516,7 @@ export const ImageUploadComponent = React.memo(
             </div>
             <ListingImageUploadLayout
               errors={errors.thumbnail && !thumbnail}
-              formats={LISTING_IMAGE_FORMATS_LABEL}
+              formats={LISTING_THUMBNAIL_FORMATS_LABEL}
               label='Thumbnail'
               required
             >
@@ -524,6 +527,7 @@ export const ImageUploadComponent = React.memo(
                 handleThumbImageChange={handleThumbImageChange}
                 handleImageRemove={handleThumbImageRemove}
                 disabled={isEvaluatorApprovedLocked}
+                inputId='property-thumbnail'
               />
             </ListingImageUploadLayout>
             <ListingImageUploadLayout
@@ -539,6 +543,7 @@ export const ImageUploadComponent = React.memo(
                 errors={errors.pictures && images.length === 0}
                 errorMessage={errors.pictures}
                 disabled={isEvaluatorApprovedLocked}
+                inputId='property-additional-pictures'
               />
             </ListingImageUploadLayout>
             <ListingImageUploadLayout

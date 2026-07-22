@@ -21,6 +21,7 @@ import location from '@/assets/vector2.svg'
 import arrow_right from '@/assets/vector1.svg'
 import { HomeListingSliderSkeleton } from '@/components/home/HomeSectionSkeletons'
 import { publicApiFetch } from '@/libs/publicApiClient'
+import { isOffPlanListing } from '@/libs/filterMyListingTab'
 
 const APPROVED_PROPERTIES_URL =
   '/property?statusFilter=1&limit=100&sort=-createdAt'
@@ -35,14 +36,16 @@ function filterApprovedForSale(products) {
   if (!Array.isArray(products)) return []
   return products.filter((item) => {
     if (Number(item?.status) !== 1) return false
+    // Off-plan listings belong on /offplan only — never on home verified properties.
+    if (isOffPlanListing(item)) return false
 
     const assetType = String(item?.assetType || '').toLowerCase()
     const forSale =
-      isYes(item?.propertyForSale) ||
-      assetType.includes('for sale') ||
-      assetType.includes('off plan')
+      isYes(item?.propertyForSale) || assetType.includes('for sale')
     const leaseOnly =
-      isYes(item?.propertyForLease) && !forSale && assetType.includes('for lease')
+      isYes(item?.propertyForLease) &&
+      !forSale &&
+      assetType.includes('for lease')
 
     return forSale && !leaseOnly
   })
@@ -50,11 +53,7 @@ function filterApprovedForSale(products) {
 
 function truncateTitle(title) {
   if (!title) return 'Property'
-  const words = String(title).split(' ')
-  if (words.length > 4) {
-    return `${words.slice(0, 4).join(' ')}...`
-  }
-  return title
+  return String(title)
 }
 
 function getPropertyCardImageSrc(property) {
@@ -179,7 +178,7 @@ export default function PropertySaleSlider() {
       ) : null}
 
       {!isLoading && hasListings ? (
-        <div className='flex md:flex-row flex-col items-center relative'>
+        <div className='flex md:flex-row flex-col items-center relative overflow-visible'>
           <div className='hidden md:block space-x-5 pb-5'>
             <div
               onClick={handlePrevSlide}
@@ -221,42 +220,34 @@ export default function PropertySaleSlider() {
               disableOnInteraction: false,
             }}
             breakpoints={{
-              375: {
-                slidesPerView: 1,
-                spaceBetween: 10,
-              },
-              768: {
-                slidesPerView: 1,
-                spaceBetween: 15,
+              700: {
+                slidesPerView: 2,
+                spaceBetween: 14,
               },
               1024: {
-                slidesPerView: 2,
-                spaceBetween: 15,
-              },
-              1440: {
                 slidesPerView: 3,
-                spaceBetween: 15,
+                spaceBetween: 16,
               },
             }}
-            className='w-full'
+            className='listing-cards-swiper w-full'
             ref={swiperRef}
           >
             {approvedProperties.map((propertyForSale) => {
               const imageSrc = getListingCardImageSrc(propertyForSale)
 
               return (
-                <SwiperSlide className='w-full' key={propertyForSale.uuid}>
-                  <div className='mx-2 w-full mb-2 shadow-[0px_0px_8px_rgba(0,_0,_0,_0.15)] rounded-md bg-white'>
+                <SwiperSlide className='listing-card-slide !h-auto w-full' key={propertyForSale.uuid}>
+                  <div className='listing-card mx-1 my-1 h-full w-full rounded-md bg-white'>
                     {imageSrc ? (
                       <Image
-                        className='rounded-md object-cover !h-[275px] w-full'
+                        className='shrink-0 rounded-md object-cover !h-[275px] w-full'
                         alt={propertyForSale.title || 'Property'}
                         src={imageSrc}
                         width={414}
                         height={275}
                       />
                     ) : (
-                      <div className='flex justify-center items-center rounded-md bg-[#f0f4f8] !h-[275px] w-full'>
+                      <div className='flex shrink-0 justify-center items-center rounded-md bg-[#f0f4f8] !h-[275px] w-full'>
                         <Image
                           width={64}
                           height={64}
@@ -266,8 +257,8 @@ export default function PropertySaleSlider() {
                         />
                       </div>
                     )}
-                    <div className='flex w-full flex-col'>
-                      <div className='flex flex-col px-4 py-2 space-y-3'>
+                    <div className='listing-card-body w-full'>
+                      <div className='flex flex-1 flex-col space-y-3 px-4 py-2'>
                         <div className='flex flex-row items-center'>
                           <div className='rating-container mr-3'>
                             <div className='flex flex-row justify-between items-end'>
@@ -299,63 +290,69 @@ export default function PropertySaleSlider() {
                               : `(${propertyForSale.reviewCount || 0} Review)`}
                           </div>
                         </div>
-                        <Link
-                          href={`/property/${propertyForSale.slug || propertyForSale.uuid}`}
-                          className='flex items-center gap-2 text-[#002D4F] md:text-xl text-sm font-medium w-full text-left capitalize'
-                        >
+                        <div className='listing-card-meta flex w-full items-start justify-between gap-3'>
+                          <div className='flex min-w-0 flex-1 flex-col items-start gap-1 text-left'>
+                            <Link
+                              href={`/property/${propertyForSale.slug || propertyForSale.uuid}`}
+                              className='listing-card-title block w-full break-words text-left text-[#002D4F] md:text-xl text-sm font-medium capitalize'
+                            >
+                              {truncateTitle(propertyForSale.title)}
+                            </Link>
+                            {propertyForSale.propertyType ? (
+                              <p className='listing-card-type w-full text-left text-[#002D4F] opacity-70 md:text-sm text-xs capitalize'>
+                                {ucFirst(propertyForSale.propertyType)} For Sale
+                              </p>
+                            ) : null}
+                            <div className='flex w-full flex-row items-start justify-start space-x-2 text-base text-[#002D4F]'>
+                              <div className='inline-block w-3.5 shrink-0'>
+                                <Image
+                                  width={20}
+                                  height={20}
+                                  alt=''
+                                  src={location.src}
+                                />
+                              </div>
+                              <div className='listing-card-location min-w-0 break-words md:text-base text-xs'>
+                                {propertyForSale.neighbourhood}
+                              </div>
+                            </div>
+                          </div>
                           {getListingQrScanSrc(propertyForSale) ? (
                             <Image
                               src={getListingQrScanSrc(propertyForSale)}
-                              width={36}
-                              height={36}
+                              width={72}
+                              height={72}
                               alt='QR code'
-                              className='h-9 w-9 shrink-0 rounded border border-gray-200 bg-white object-contain'
+                              className='listing-qr-thumb ml-auto h-[72px] w-[72px] shrink-0 rounded border border-gray-200 bg-white object-contain'
                               unoptimized
                             />
                           ) : null}
-                          {truncateTitle(propertyForSale.title)}
-                        </Link>
-                        {propertyForSale.propertyType ? (
-                          <p className='text-[#002D4F] opacity-70 md:text-sm text-xs px-0 -mt-1 capitalize'>
-                            {ucFirst(propertyForSale.propertyType)} For Sale
-                          </p>
-                        ) : null}
-                        <div className='text-[#002D4F] flex flex-row space-x-2 w-full text-base items-start'>
-                          <div className='inline-block w-3.5'>
-                            <Image
-                              width={20}
-                              height={20}
-                              alt=''
-                              src={location.src}
-                            />
-                          </div>
-                          <div className='truncate md:text-base text-xs overflow-ellipsis'>
-                            {propertyForSale.neighbourhood}
-                          </div>
                         </div>
                       </div>
-                      <div className='w-full box-border my-3 h-0.5 border-t-[2px] border-solid border-[#969696]' />
-                      <div className='flex flex-row items-center justify-between pb-4 px-5'>
-                        <div className='flex flex-row gap-4 items-center'>
-                          <div className='flex w-[50px] h-[50px]'>
-                            <Image
-                              width={50}
-                              height={50}
-                              className='object-cover'
-                              alt=''
-                              src={getProfileImageSrc(
-                                propertyForSale.sellerAvatar ||
-                                propertyForSale.userId?.profileImage,
-                              )}
-                              unoptimized
-                            />
+                      <div className='listing-card-footer'>
+                        <div className='box-border my-3 h-0.5 w-full border-t-[2px] border-solid border-[#969696]' />
+                        <div className='flex flex-row items-center justify-between px-5 pb-4'>
+                          <div className='flex flex-row items-center gap-4'>
+                            <div className='flex h-[50px] w-[50px]'>
+                              <Image
+                                width={50}
+                                height={50}
+                                className='object-cover'
+                                alt=''
+                                src={getProfileImageSrc(
+                                  propertyForSale.sellerAvatar ||
+                                  propertyForSale.userId?.profileImage,
+                                )}
+                                unoptimized
+                              />
+                            </div>
+                            <div className='text-xs font-medium text-[#000000] md:text-sm lg:text-base'>
+                              Ref: {getListingRef(propertyForSale)}
+                            </div>
                           </div>
-                          <div className='md:text-sm lg:text-base text-xs font-medium text-[#000000]'>
-                            Ref: {getListingRef(propertyForSale)}
+                          <div className='text-xs font-semibold text-[#000000] md:text-sm lg:text-lg'>
+                            AED {formatPriceUS(propertyForSale.price)}
                           </div>
-                        </div>
-                        <div className='g:text-lg md:text-sm text-xs font-semibold text-[#000000]'>
-                          AED {formatPriceUS(propertyForSale.price)}
                         </div>
                       </div>
                     </div>

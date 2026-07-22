@@ -54,10 +54,10 @@ const OffPlanPropertyCard = ({
 
   const card = (
     <article
-      className={`mx-auto flex w-full max-w-[404px] flex-col items-stretch self-stretch rounded-[5px] bg-white pb-4 shadow-[0px_0px_8px_rgba(0,0,0,0.15)] ${className}`}
+      className={`listing-card mx-auto flex h-full w-full max-w-[404px] flex-col items-stretch self-stretch overflow-visible rounded-[5px] bg-white pb-4 ${className}`}
     >
-      <div className='flex w-full flex-col gap-3'>
-        <div className='relative h-[275px] w-full overflow-hidden rounded-t-[5px]'>
+      <div className='listing-card-body flex w-full flex-col gap-3'>
+        <div className='relative h-[275px] w-full shrink-0 overflow-hidden rounded-t-[5px]'>
           <Image
             src={imageList[activeImageIndex]}
             alt={title}
@@ -131,56 +131,62 @@ const OffPlanPropertyCard = ({
               </span>
             </div>
 
-            <div className='flex flex-col gap-2'>
-              <h3 className='flex items-center gap-2 text-[18px] font-medium leading-[26px] text-prussianBlue sm:text-xl sm:leading-6'>
-                {qrScanSrc ? (
-                  <Image
-                    src={qrScanSrc}
-                    width={36}
-                    height={36}
-                    alt='QR code'
-                    className='h-9 w-9 shrink-0 rounded border border-gray-200 bg-white object-contain'
-                    unoptimized
-                  />
-                ) : null}
-                {title}
-              </h3>
+            <div className='listing-card-meta flex w-full min-h-[88px] items-start justify-between gap-3'>
+              <div className='flex min-w-0 flex-1 flex-col items-start gap-2 text-left break-words'>
+                <h3 className='listing-card-title w-full break-words text-left text-[18px] font-medium leading-[26px] text-prussianBlue sm:text-xl sm:leading-6'>
+                  {title}
+                </h3>
 
-              <p className='text-[18px] leading-[26px] text-prussianBlue sm:text-base sm:leading-5'>{location}</p>
+                <p className='listing-card-location w-full break-words text-left text-[18px] leading-[26px] text-prussianBlue sm:text-base sm:leading-5'>
+                  {location}
+                </p>
 
-              <div className='flex items-center gap-2'>
-                <span className='text-[18px] font-medium capitalize leading-[26px] text-prussianBlue sm:text-xl sm:leading-6'>
-                  Ready:
-                </span>
-                <span className='text-[18px] font-medium leading-[26px] text-prussianBlue sm:text-xl sm:leading-6'>
-                  {deliveryLabel}
-                </span>
+                <div className='flex w-full items-center justify-start gap-2'>
+                  <span className='text-[18px] font-medium capitalize leading-[26px] text-prussianBlue sm:text-xl sm:leading-6'>
+                    Ready:
+                  </span>
+                  <span className='text-[18px] font-medium leading-[26px] text-prussianBlue sm:text-xl sm:leading-6'>
+                    {deliveryLabel}
+                  </span>
+                </div>
               </div>
+              {qrScanSrc ? (
+                <Image
+                  src={qrScanSrc}
+                  width={72}
+                  height={72}
+                  alt='QR code'
+                  className='listing-qr-thumb ml-auto h-[72px] w-[72px] shrink-0 rounded border border-gray-200 bg-white object-contain'
+                  unoptimized
+                />
+              ) : null}
             </div>
           </div>
 
-          <div className='h-0 w-full border-t-2 border-[#969696]' />
+          <div className='listing-card-footer mt-auto flex flex-col gap-5'>
+            <div className='h-0 w-full border-t-2 border-[#969696]' />
 
-          <div className='flex flex-col gap-3 px-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4'>
-            <div className='flex min-w-0 items-center gap-3'>
-              <div className='relative h-[70px] w-[78px] shrink-0 overflow-hidden'>
-                <Image
-                  src={getProfileImageSrc(developerAvatar)}
-                  alt='Seller'
-                  width={78}
-                  height={70}
-                  className='h-[70px] w-[78px] object-cover'
-                  unoptimized
-                />
+            <div className='flex flex-col gap-3 px-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4'>
+              <div className='flex min-w-0 items-center gap-3'>
+                <div className='relative h-[70px] w-[78px] shrink-0 overflow-hidden'>
+                  <Image
+                    src={getProfileImageSrc(developerAvatar)}
+                    alt='Seller'
+                    width={78}
+                    height={70}
+                    className='h-[70px] w-[78px] object-cover'
+                    unoptimized
+                  />
+                </div>
+                <span className='text-[18px] font-medium leading-[24px] text-black sm:text-lg sm:leading-[22px]'>
+                  Ref: {listingRef}
+                </span>
               </div>
-              <span className='text-[18px] font-medium leading-[24px] text-black sm:text-lg sm:leading-[22px]'>
-                Ref: {listingRef}
+
+              <span className='text-right text-[18px] font-medium leading-[24px] text-black sm:shrink-0 sm:text-lg sm:leading-[22px]'>
+                {displayPrice}
               </span>
             </div>
-
-            <span className='text-right text-[18px] font-medium leading-[24px] text-black sm:shrink-0 sm:text-lg sm:leading-[22px]'>
-              {displayPrice}
-            </span>
           </div>
         </div>
       </div>
@@ -189,7 +195,7 @@ const OffPlanPropertyCard = ({
 
   if (href) {
     return (
-      <Link href={href} className='block transition-opacity hover:opacity-95'>
+      <Link href={href} className='block h-full transition-opacity hover:opacity-95'>
         {card}
       </Link>
     )

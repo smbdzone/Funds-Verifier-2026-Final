@@ -119,3 +119,24 @@ export function buildEvaluatorUploadedDocuments(
 export function requestDocumentsMissingDate(docs) {
   return normalizeRequestDocuments(docs).some((doc) => !doc.date)
 }
+
+/** Open a document URL in a new tab; fall back to download if popup blocked. */
+export function openListingDocumentInNewTab(url, fileName = 'document.pdf') {
+  if (!url) return false
+  const opened = window.open(url, '_blank', 'noopener,noreferrer')
+  if (opened) return true
+
+  try {
+    const link = document.createElement('a')
+    link.href = url
+    link.download = fileName
+    link.target = '_blank'
+    link.rel = 'noopener noreferrer'
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    return true
+  } catch {
+    return false
+  }
+}

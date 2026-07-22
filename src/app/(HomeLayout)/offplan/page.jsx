@@ -141,7 +141,7 @@ export default function OffPlanPage() {
             </p>
           ) : (
             <>
-              <div className='hidden sm:grid grid-cols-1 justify-items-center gap-6 sm:grid-cols-2 xl:grid-cols-3'>
+              <div className='hidden sm:grid grid-cols-1 items-stretch justify-items-center gap-6 sm:grid-cols-2 xl:grid-cols-3'>
                 {paginatedListings.map((listing) => (
                   <OffPlanPropertyCard
                     key={listing.id}
