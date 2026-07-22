@@ -724,8 +724,16 @@ const Page = () => {
 
       const updatedFormData = {
         ...formData,
-        sizeSQFT: formData.sizeSQFT ? Number(formData.sizeSQFT) : 0,
-        sizeSQM: formData.sizeSQM ? Number(formData.sizeSQM) : 0,
+        sizeSQFT: formData.sizeSQFTFrom
+          ? Number(formData.sizeSQFTFrom)
+          : formData.sizeSQFT
+            ? Number(formData.sizeSQFT)
+            : 0,
+        sizeSQM: formData.sizeSQMFrom
+          ? Number(formData.sizeSQMFrom)
+          : formData.sizeSQM
+            ? Number(formData.sizeSQM)
+            : 0,
         sizeSQFTFrom: formData.sizeSQFTFrom
           ? Number(formData.sizeSQFTFrom)
           : undefined,
@@ -950,27 +958,20 @@ const Page = () => {
       errors.neighbourhood = 'Neighbourhood is required'
     }
 
-    if (!offPlan) {
-      const sizeUnit = data.sizeUnit || 'SQFT'
-      const activeSize =
-        sizeUnit === 'SQM' ? data.sizeSQM : data.sizeSQFT
+    const sizeUnit = data.sizeUnit || data.sizeType || 'SQFT'
+    const sizeFrom =
+      sizeUnit === 'SQM'
+        ? data.sizeSQMFrom || data.sizeSQM
+        : data.sizeSQFTFrom || data.sizeSQFT
+    const sizeTo = sizeUnit === 'SQM' ? data.sizeSQMTo : data.sizeSQFTTo
 
-      if (!String(activeSize || '').trim()) {
-        errors.sizeSQFT = 'Size is required'
-      }
-    } else {
-      const sizeUnit = data.sizeUnit || data.sizeType || 'SQFT'
-      const sizeFrom =
-        sizeUnit === 'SQM' ? data.sizeSQMFrom : data.sizeSQFTFrom
-      const sizeTo = sizeUnit === 'SQM' ? data.sizeSQMTo : data.sizeSQFTTo
-
-      if (!String(sizeFrom || '').trim()) {
-        errors.sizeSQFT = 'Size from is required'
-      } else if (!String(sizeTo || '').trim()) {
-        errors.sizeSQFT = 'Size to is required'
-      } else if (Number(sizeTo) < Number(sizeFrom)) {
-        errors.sizeSQFT = 'Size to must be greater than or equal to size from'
-      }
+    if (!String(sizeFrom || '').trim()) {
+      errors.sizeSQFT = 'Size from is required'
+    } else if (
+      String(sizeTo || '').trim() &&
+      Number(sizeTo) < Number(sizeFrom)
+    ) {
+      errors.sizeSQFT = 'Size to must be greater than or equal to size from'
     }
 
     if (!String(data.title || '').trim()) {

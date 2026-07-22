@@ -91,8 +91,11 @@ export const validateOffPlanAsset = (formData, formFields) => {
     errors.bathrooms = "Bathrooms is required";
   }
 
-  if (!safeTrim(formData.sizeSQFT)) {
-    errors.sizeSQFT = "Size is required";
+  if (
+    !safeTrim(formData.sizeSQFTFrom || formData.sizeSQFT) &&
+    !safeTrim(formData.sizeSQMFrom || formData.sizeSQM)
+  ) {
+    errors.sizeSQFT = "Size from is required";
   }
 
   const thumbnail =

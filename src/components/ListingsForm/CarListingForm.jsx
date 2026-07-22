@@ -15,6 +15,7 @@ import Modal2 from '@/components/3dModal/Modal'
 import EvaluationModal from '@/components/Evaluation/evaluationmodal.jsx'
 import {
   LISTING_IMAGE_FORMATS_LABEL,
+  LISTING_QR_SCAN_FORMATS_LABEL,
   LISTING_VIDEO_FORMATS_LABEL,
 } from '@/constants/listingUploadLimits'
 import {
@@ -263,8 +264,8 @@ const CarListingForm = ({
             />
           </ListingImageUploadLayout>
           <ListingImageUploadLayout
-            formats={LISTING_IMAGE_FORMATS_LABEL}
-            label='Upload QR Scan'
+            formats={LISTING_QR_SCAN_FORMATS_LABEL}
+            label='Upload QR Scan (optional)'
           >
             <ListingsImageComponent
               image={qrScan}

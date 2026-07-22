@@ -312,5 +312,5 @@ export function formatOffPlanSizeRange(sizeFrom, sizeTo, sizeUnit = 'SQFT') {
 
   if (from === '0' && to === '0') return `— ${unit}`
   if (!sizeTo || from === to || to === '0') return `${from} ${unit}`
-  return `${from}-${to} ${unit}`
+  return `${from} - ${to} ${unit}`
 }

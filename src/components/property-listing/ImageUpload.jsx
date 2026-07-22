@@ -19,6 +19,7 @@ import { toast } from 'react-toastify'
 import EvaluationModal from '@/components/Evaluation/evaluationmodal.jsx'
 import {
   LISTING_IMAGE_FORMATS_LABEL,
+  LISTING_QR_SCAN_FORMATS_LABEL,
   LISTING_VIDEO_FORMATS_LABEL,
 } from '@/constants/listingUploadLimits'
 import { XIcon } from 'lucide-react'
@@ -28,7 +29,6 @@ import {
   isListingPriceLocked,
 } from '@/libs/listingEditLock'
 import ListingApprovedEditNotice from '@/components/ListingsForm/ListingApprovedEditNotice'
-import PropertySizeField from '@/components/property-listing/PropertySizeField'
 import OffPlanPriceRange from '@/components/property-listing/OffPlanPriceRange'
 import OffPlanSizeRange from '@/components/property-listing/OffPlanSizeRange'
 import DeliveryTimeField from '@/components/property-listing/DeliveryTimeField'
@@ -279,8 +279,8 @@ export const ImageUploadComponent = React.memo(
               />
             </ListingImageUploadLayout>
             <ListingImageUploadLayout
-              formats={LISTING_IMAGE_FORMATS_LABEL}
-              label='Upload QR Scan'
+              formats={LISTING_QR_SCAN_FORMATS_LABEL}
+              label='Upload QR Scan (optional)'
             >
               <ListingsImageComponent
                 image={qrScan}
@@ -554,8 +554,8 @@ export const ImageUploadComponent = React.memo(
               />
             </ListingImageUploadLayout>
             <ListingImageUploadLayout
-              formats={LISTING_IMAGE_FORMATS_LABEL}
-              label='Upload QR Scan'
+              formats={LISTING_QR_SCAN_FORMATS_LABEL}
+              label='Upload QR Scan (optional)'
             >
               <ListingsImageComponent
                 image={qrScan}
@@ -666,18 +666,14 @@ export const ImageUploadComponent = React.memo(
               />
             </div>
             <div className='relative flex flex-col justify-start space-y-5'>
-              <PropertySizeField
-                sizeSQFT={formData.sizeSQFT}
-                sizeSQM={formData.sizeSQM}
-                sizeUnit={formData.sizeUnit || 'SQFT'}
-                errors={
-                  errors.sizeSQFT &&
-                  !String(
-                    (formData.sizeUnit || 'SQFT') === 'SQM'
-                      ? formData.sizeSQM
-                      : formData.sizeSQFT || '',
-                  ).trim()
-                }
+              <OffPlanSizeRange
+                label='Select Size Type'
+                sizeSQFTFrom={formData.sizeSQFTFrom}
+                sizeSQFTTo={formData.sizeSQFTTo}
+                sizeSQMFrom={formData.sizeSQMFrom}
+                sizeSQMTo={formData.sizeSQMTo}
+                sizeUnit={formData.sizeUnit || formData.sizeType || 'SQFT'}
+                errors={errors.sizeSQFT}
                 errorsMessage={errors.sizeSQFT}
                 disabled={isEvaluatorApprovedLocked}
                 onSizeChange={handleSizeChange}

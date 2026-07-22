@@ -47,8 +47,7 @@ export function getPropertySizeRange(property, unit) {
 
 /**
  * Label + numeric value for cards and detail views (no unit conversion).
- * Shows "from-to UNIT" when a size range was entered (off-plan), otherwise
- * the single value as before.
+ * From only → "50,000 SQFT"; from + to → "50,000 - 60,000 SQFT".
  */
 export function formatPropertySizeDisplay(property) {
   const unit = property?.sizeUnit || 'SQFT'
@@ -56,7 +55,7 @@ export function formatPropertySizeDisplay(property) {
   const fromFormatted = formatPropertySizeNumber(from)
   const toFormatted = formatPropertySizeNumber(to)
   if (fromFormatted && toFormatted && fromFormatted !== toFormatted) {
-    return `${fromFormatted}-${toFormatted} ${unit}`
+    return `${fromFormatted} - ${toFormatted} ${unit}`
   }
   const value = getPropertySizeValue(property, unit)
   const formatted = formatPropertySizeNumber(value) || fromFormatted || toFormatted
