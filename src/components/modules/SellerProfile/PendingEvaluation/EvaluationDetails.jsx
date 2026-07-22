@@ -3,6 +3,7 @@ import { useSearchParams, usePathname } from 'next/navigation'
 import ViewModal from '@/components/Modals/ViewModal'
 import { handleFileUpload } from '@/libs/uploadAsset'
 import { formatNumberWithCommas } from '@/utils/global-functions/global'
+import { formatListingPriceDisplay } from '@/libs/listingPriceDisplay'
 import { formatPropertySizeDisplay } from '@/libs/propertySizeUnits'
 import { toast } from 'react-toastify'
 import Loader from '../../EvaluatorProfile/requestCompoenets/Loader'
@@ -99,7 +100,7 @@ const EvaluationDetails = () => {
   const commonFields = [
     { label: 'Title', value: selectedProperty?.title },
     { label: 'Phone Number', value: selectedProperty?.phoneNumber },
-    { label: 'Price', value: formatNumberWithCommas(selectedProperty?.price) },
+    { label: 'Price', value: formatListingPriceDisplay(selectedProperty) },
     {
       label: '3D embedded link',
       value: selectedProperty?.video3DWalkthrough?.link,

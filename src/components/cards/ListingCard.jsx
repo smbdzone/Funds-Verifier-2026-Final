@@ -16,6 +16,7 @@ import Link from 'next/link'
 import Modal2 from '../product-modal/modal2'
 import Image from 'next/image'
 import { formatNumberWithCommas } from '@/utils/global-functions/global'
+import { formatListingPriceDisplay } from '@/libs/listingPriceDisplay'
 import { formatPropertySizeDisplay } from '@/libs/propertySizeUnits'
 import Open3dModal from '@/components/3dModal/Open3dModal'
 import {
@@ -511,7 +512,7 @@ const ListingCard = ({
                   className={`text-prussianBlue mb-2 lg:text-base text-sm font-medium ${hasFeaturedStyling ? 'text-gradient-custom' : 'text-blue'
                     }`}
                 >
-                  Price: {formatNumberWithCommas(listing.price)}
+                  Price: {formatListingPriceDisplay(listing)}
                 </p>
                 <p
                   className={`mb-2 lg:text-base text-sm font-medium ${hasFeaturedStyling
