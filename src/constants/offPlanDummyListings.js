@@ -1,3 +1,5 @@
+import { formatOffPlanPriceRangeDisplay } from '@/libs/listingPriceDisplay'
+
 const OFF_PLAN_IMAGE = '/offplan/image1.svg'
 
 const basePaymentPlan = (steps) =>
@@ -277,24 +279,10 @@ export function getOffPlanListingBySlug(slug) {
 }
 
 export function formatOffPlanPriceRange(priceFrom, priceTo) {
-  const formatPart = (value) => {
-    const amount = Number(value)
-    if (!Number.isFinite(amount) || amount <= 0) return '0'
-
-    if (amount >= 1_000_000) {
-      const millions = amount / 1_000_000
-      return millions % 1 === 0 ? `${millions}M` : `${millions.toFixed(1)}M`
-    }
-
-    if (amount >= 1_000) {
-      const thousands = amount / 1_000
-      return thousands % 1 === 0 ? `${thousands}k` : `${thousands.toFixed(0)}k`
-    }
-
-    return String(amount)
-  }
-
-  return `AED ${formatPart(priceFrom)}-${formatPart(priceTo)}`
+  const range = formatOffPlanPriceRangeDisplay(priceFrom, priceTo, {
+    abbreviateThousands: true,
+  })
+  return range ? `AED ${range.replace(' - ', '-')}` : 'AED 0'
 }
 
 export function formatOffPlanSizeRange(sizeFrom, sizeTo, sizeUnit = 'SQFT') {
