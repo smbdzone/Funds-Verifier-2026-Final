@@ -1494,7 +1494,6 @@ function Page() {
                         name='video3DWalkthrough'
                         value={formData.video3DWalkthrough}
                         onChange={handleChange}
-                        required
                       />
 
                       {formData.video3DWalkthrough === '' && (
@@ -1504,10 +1503,7 @@ function Page() {
                       `}
                         >
                           <span className='text-gray-400'>
-                            3D Walkthrough Embedded Link{' '}
-                          </span>
-                          <span className='optional text-xs text-yellow-600'>
-                            (Optional)
+                            3D Walkthrough Embedded Link
                           </span>
                         </div>
                       )}
@@ -1906,15 +1902,11 @@ function Page() {
                         name='developer'
                         value={formData.developer}
                         onChange={handleChange}
-                        required
                       />
 
                       {formData.developer === '' && (
                         <div className='custom-placeholder text-sm text-gray-400'>
                           Developer
-                          <span className='optional text-xs text-yellow-600'>
-                            (cc) (Optional)
-                          </span>
                         </div>
                       )}
                     </div>
@@ -1939,9 +1931,6 @@ function Page() {
                       {formData.isFurnished === '' && (
                         <div className='custom-placeholder text-sm text-gray-400'>
                           Is it furnished?
-                          <span className='optional text-xs text-yellow-600'>
-                            (Optional)
-                          </span>
                         </div>
                       )}
 
@@ -1991,15 +1980,11 @@ function Page() {
                         name='buyerTransferFee'
                         value={formData.buyerTransferFee}
                         onChange={handleChange}
-                        required
                       />
 
                       {formData.buyerTransferFee === '' && (
                         <div className='custom-placeholder text-sm text-gray-400'>
                           Buyer Transfer Fee
-                          <span className='optional text-xs text-yellow-600'>
-                            (cc) (Optional)
-                          </span>
                         </div>
                       )}
                     </div>
@@ -2016,15 +2001,11 @@ function Page() {
                         name='sellerTransferFee'
                         value={formData.sellerTransferFee}
                         onChange={handleChange}
-                        required
                       />
 
                       {formData.sellerTransferFee === '' && (
                         <div className='custom-placeholder text-sm text-gray-400'>
                           Seller Transfer Fee
-                          <span className='optional text-xs text-yellow-600'>
-                            (cc) (Optional)
-                          </span>
                         </div>
                       )}
                     </div>

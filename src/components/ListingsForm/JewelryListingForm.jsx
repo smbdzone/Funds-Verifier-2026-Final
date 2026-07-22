@@ -276,7 +276,6 @@ const JewelryListingForm = ({
                 handleChange={handleChange}
                 name='dldNumber'
                 customPlaceholder='DLD Number'
-                subPlaceholder=' (Optional)'
                 disabled={isEvaluatorApprovedLocked}
               />
             </div>
@@ -353,7 +352,6 @@ const JewelryListingForm = ({
                 technicalModalData.dateTime
               }
               handleChange={handleChange}
-              required={true}
               errors={errors.technicalReport && !formData.technicalReport}
               errorMessage={errors.technicalReport}
               handleOpenModal={
@@ -368,7 +366,6 @@ const JewelryListingForm = ({
               }
               dateTime={technicalModalData.dateTime !== ''}
               customPlaceholder='Request Technical Report'
-              subPlaceholder=' (Optional)'
               icon='/icons/card2.png'
             />
             <TechnicalReport
@@ -395,7 +392,6 @@ const JewelryListingForm = ({
                 !canRequestPremium || !formData?.uuid || blocks3DWalkthrough
               }
               handleChange={handleChange}
-              required={true}
               errors={errors.video3DWalkthrough}
               errorMessage={errors.video3DWalkthrough}
               dateTime={modalData?.dateTime !== ''}
@@ -410,7 +406,6 @@ const JewelryListingForm = ({
                     }
               }
               customPlaceholder='3D Walkthrough Embedded Link'
-              subPlaceholder=' (Optional)'
               icon='/icons/3dicon.png'
             />
             <Modal2
@@ -452,9 +447,7 @@ const JewelryListingForm = ({
                 disabled={isEvaluatorApprovedLocked}
                 name='locateJewelry'
                 customPlaceholder='Locate Your Jewelry'
-                subPlaceholder=' (Optional)'
                 maxLength={50}
-                required={true}
               />
             </div>
             <div className='relative dropdown-container'>
@@ -483,9 +476,7 @@ const JewelryListingForm = ({
                 handleChange={handleChange}
                 name='lengthh'
                 customPlaceholder='Length'
-                subPlaceholder=' (Optional)'
                 maxLength={50}
-                required={true}
               />
             </div>
             <div className='relative dropdown-container'>
@@ -547,9 +538,7 @@ const JewelryListingForm = ({
                 disabled={isEvaluatorApprovedLocked}
                 name='jewelryStyles'
                 customPlaceholder='Jewelry Styles'
-                subPlaceholder=' (Optional)'
                 maxLength={50}
-                required={true}
               />
             </div>
           </div>
@@ -562,8 +551,6 @@ const JewelryListingForm = ({
                 disabled={isEvaluatorApprovedLocked}
                 name='jewelryMetal'
                 customPlaceholder='Jewelry'
-                subPlaceholder=' (Optional)'
-                required={true}
               />
             </div>
           </div>

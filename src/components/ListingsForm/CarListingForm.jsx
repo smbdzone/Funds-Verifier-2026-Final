@@ -286,7 +286,6 @@ const CarListingForm = ({
                 handleChange={handleChange}
                 name='dldNumber'
                 customPlaceholder='DLD Number'
-                subPlaceholder=' (Optional)'
                 disabled={isEvaluatorApprovedLocked}
               />
             </div>
@@ -367,7 +366,6 @@ const CarListingForm = ({
                   technicalModalData.dateTime
                 }
                 handleChange={handleChange}
-                required={true}
                 errors={errors.technicalReport && !formData.technicalReport}
                 errorMessage={errors.technicalReport}
                 handleOpenModal={
@@ -382,7 +380,6 @@ const CarListingForm = ({
                 }
                 dateTime={technicalModalData.dateTime !== ''}
                 customPlaceholder='Request Technical Report'
-                subPlaceholder=' (Optional)'
                 icon='/icons/card2.png'
               />
 
@@ -428,7 +425,6 @@ const CarListingForm = ({
                   modalData.dateTime
                 }
                 handleChange={handleChange}
-                required={true}
                 errors={errors.video3DWalkthrough}
                 errorMessage={errors.video3DWalkthrough}
                 dateTime={modalData.dateTime !== ''}
@@ -443,7 +439,6 @@ const CarListingForm = ({
                       }
                 }
                 customPlaceholder='3D Walkthrough Embedded Link'
-                subPlaceholder=' (Optional)'
                 icon='/icons/3dicon.png'
               />
               <request3d onClick={handleOpenModal} />
@@ -584,7 +579,6 @@ const CarListingForm = ({
                 disabled={isEvaluatorApprovedLocked}
                 name='capacityWeight'
                 customPlaceholder='Capacity/Weight'
-                subPlaceholder=' (Optional)'
               />
             </div>
           </div>
@@ -596,7 +590,6 @@ const CarListingForm = ({
                 disabled={isEvaluatorApprovedLocked}
                 name='mechanicalCondition'
                 customPlaceholder='Mechanical condition'
-                subPlaceholder=' (cc) (Optional)'
               />
             </div>
           </div>
@@ -667,7 +660,6 @@ const CarListingForm = ({
               }
               readOnly={true}
               customPlaceholder='Horsepower '
-              subPlaceholder='(cc) (Optional)'
             />
           </div>
           <div className='relative w-full dropdown-container'>
@@ -739,7 +731,6 @@ const CarListingForm = ({
               }
               readOnly={true}
               customPlaceholder='Engine Capacity '
-              subPlaceholder=' (cc) (Optional)'
             />
           </div>
         </div>

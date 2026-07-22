@@ -653,7 +653,6 @@ export const ImageUploadComponent = React.memo(
                       }
                 }
                 customPlaceholder='3D Walkthrough Embedded Link'
-                subPlaceholder=' (Optional)'
                 icon='/icons/3dicon.png'
               />
               <Modal2
@@ -765,7 +764,6 @@ export const ImageUploadComponent = React.memo(
                 }
                 dateTime={technicalModalData.dateTime !== ''}
                 customPlaceholder='Request Technical Report'
-                subPlaceholder=' (Optional)'
                 icon='/icons/card2.png'
               />
               <TechnicalReport
@@ -847,7 +845,6 @@ export const ImageUploadComponent = React.memo(
                   handleChange={handleChange}
                   name='developer'
                   customPlaceholder='Developer'
-                  subPlaceholder=' (Optional)'
                   disabled={isEvaluatorApprovedLocked}
                 />
               </div>
@@ -859,7 +856,6 @@ export const ImageUploadComponent = React.memo(
                   handleChange={handleChange}
                   name='dldNumber'
                   customPlaceholder='DLD Number'
-                  subPlaceholder=' (Optional)'
                   disabled={isEvaluatorApprovedLocked}
                 />
               </div>
@@ -879,7 +875,6 @@ export const ImageUploadComponent = React.memo(
                   disabled={isEvaluatorApprovedLocked}
                   readOnly={isEvaluatorApprovedLocked}
                   customPlaceholder='Is it furnished? '
-                  subPlaceholder='(Optional)'
                 />
               </div>
             </div>

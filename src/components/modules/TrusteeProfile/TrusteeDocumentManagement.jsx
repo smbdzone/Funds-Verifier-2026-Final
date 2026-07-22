@@ -567,6 +567,10 @@ export const TrusteeDocumentManagement = () => {
                   title='Request documents'
                   documents={requestDocument}
                   handleOpenDoc={handleOpenDoc}
+                  listingContext={{
+                    listingType: selectedListing.listingType,
+                    listingId: selectedListing.uuid,
+                  }}
                   setEditText={setEditText}
                   handleEdit={handleEdit}
                   handleSaveEdit={handleSaveEdit}

@@ -665,17 +665,36 @@ const ListingsProvider = ({ children }) => {
     setVideos((prev) => prev.filter((_, i) => i !== index))
   }
 
+  const validateImageFile = (file) =>
+    new Promise((resolve) => {
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        const img = new window.Image()
+        img.onload = () => resolve(true)
+        img.onerror = () => {
+          toast.error(`The file ${file.name} could not be loaded as an image`)
+          resolve(false)
+        }
+        img.src = e.target.result
+      }
+      reader.onerror = () => {
+        toast.error(`The file ${file.name} could not be read`)
+        resolve(false)
+      }
+      reader.readAsDataURL(file)
+    })
+
   const handleThumbImageChange = async (event) => {
-    let selectedFile = event.target.files[0]
-    if (selectedFile) {
-      // Oversized thumbnails are compressed via the API before proceeding;
-      // otherwise keep the original reject behaviour until the API is set.
+    const input = event.target
+    let selectedFile = input.files?.[0]
+    if (!selectedFile) return
+
+    try {
       if (selectedFile.size > LISTING_IMAGE_MAX_BYTES) {
         if (!isCompressionConfigured()) {
           toast.error(
             `The file ${selectedFile.name} exceeds the ${LISTING_IMAGE_MAX_MB}MB size limit`,
           )
-          event.target.value = null
           return
         }
         setIsCompressing(true)
@@ -686,40 +705,32 @@ const ListingsProvider = ({ children }) => {
           )
         } catch (err) {
           toast.error(
-            `Could not compress ${selectedFile.name}: ${err?.message || 'try again'
-            }`,
+            `Could not compress ${selectedFile.name}: ${err?.message || 'try again'}`,
           )
-          event.target.value = null
           return
         } finally {
           setIsCompressing(false)
         }
       }
-      const finalFile = selectedFile
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        const img = new window.Image()
-        img.onload = () => {
-          setThumbnail(finalFile)
-        }
-        img.onerror = () => {
-          toast.error(
-            `The file ${finalFile.name} could not be loaded as an image`,
-          )
-        }
-        img.src = e.target.result
-      }
-      reader.onerror = () => {
-        toast.error(`The file ${finalFile.name} could not be read`)
-      }
-      reader.readAsDataURL(finalFile)
+
+      const isValid = await validateImageFile(selectedFile)
+      if (!isValid) return
+
+      setThumbnail(selectedFile)
+    } finally {
+      input.value = ''
     }
   }
 
   const handleThumbImageRemove = (id) => {
     if (id) {
       handleDeleteImg(id)
-    } else setThumbnail(null)
+    }
+    setThumbnail(null)
+    setFormData((prevFormData) => ({
+      ...prevFormData,
+      thumbnailImg: null,
+    }))
   }
 
   const handleQrScanChange = async (event) => {

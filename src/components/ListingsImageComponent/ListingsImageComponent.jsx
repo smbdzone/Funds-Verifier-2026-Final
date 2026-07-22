@@ -1,5 +1,5 @@
 import Image from 'next/image'
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { getListingImageSrc } from '@/libs/listingCardMedia'
 
 const PLACEHOLDER = '/listing/camera.svg'
@@ -34,38 +34,41 @@ const ListingsImageComponent = ({
   inputId = 'thumbnail',
   uploadLabel = 'Upload Thumbnail',
 }) => {
-  const [objectUrl, setObjectUrl] = useState(null)
-
-  const imageUrl = useMemo(() => {
-    if (!image) return null
-    if (image instanceof File || image instanceof Blob) {
-      return objectUrl
-    }
-    return resolveThumbnailPreview(image)
-  }, [image, objectUrl])
+  const [previewUrl, setPreviewUrl] = useState(null)
 
   useEffect(() => {
-    if (!(image instanceof File || image instanceof Blob)) {
-      setObjectUrl(null)
+    if (!image) {
+      setPreviewUrl(null)
       return undefined
     }
-    const url = URL.createObjectURL(image)
-    setObjectUrl(url)
-    return () => {
-      URL.revokeObjectURL(url)
+
+    if (image instanceof File || image instanceof Blob) {
+      const url = URL.createObjectURL(image)
+      setPreviewUrl(url)
+      return () => {
+        URL.revokeObjectURL(url)
+      }
     }
+
+    setPreviewUrl(resolveThumbnailPreview(image))
+    return undefined
   }, [image])
+
+  const handleInputChange = (event) => {
+    handleThumbImageChange?.(event)
+    event.target.value = ''
+  }
 
   return (
     <>
       <div className='flex h-full min-h-0 items-stretch gap-3'>
         <div className='min-w-0 flex-1 overflow-hidden'>
-          {image && imageUrl ? (
+          {previewUrl ? (
             <div className='group relative h-[88px] w-[88px] overflow-hidden rounded-sm border border-dark-grey/15 bg-offwhite'>
               <Image
                 width={88}
                 height={88}
-                src={imageUrl}
+                src={previewUrl}
                 alt='Uploaded thumbnail'
                 unoptimized
                 className='h-full w-full object-cover'
@@ -73,7 +76,9 @@ const ListingsImageComponent = ({
               {!disabled && (
                 <button
                   type='button'
-                  onClick={() => handleImageRemove(image?.public_id)}
+                  onClick={() =>
+                    handleImageRemove?.(image?.public_id || image?.s3Key)
+                  }
                   className='absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-light-gold text-xs text-white opacity-0 transition-opacity group-hover:opacity-100'
                   title='Remove image'
                 >
@@ -90,7 +95,7 @@ const ListingsImageComponent = ({
           className='pointer-events-none absolute h-0 w-0 opacity-0'
           accept='image/*'
           disabled={disabled}
-          onChange={handleThumbImageChange}
+          onChange={handleInputChange}
         />
 
         <label

@@ -1,9 +1,11 @@
 import customAxios from './apis/apis'
 import { getListingDocumentSrc } from '@/libs/listingCardMedia'
+import { fetchCertificateUrlByPublicId } from '@/libs/uploadAsset'
 import { isOffPlanListing } from '@/libs/filterMyListingTab'
 import { fetchAllDashboardProducts } from '@/libs/fetchAllDashboardProducts'
 import {
   formatRequestDocumentDate,
+  getDocumentRefId,
   isRequestDocumentFulfilled,
   normalizeRequestDocuments,
   requestDocumentsMissingDate,
@@ -300,6 +302,114 @@ export async function resolveRequestDocumentFile(entry) {
     url,
     fileName: match.document?.Certificate?.name || `${entry.name}.pdf`,
   }
+}
+
+/** Resolve a listing document URL for evaluator/trustee document viewers. */
+export async function resolveEvaluatorListingDocument(
+  doc,
+  { listingType, listingId } = {},
+) {
+  const direct = getListingDocumentSrc(doc)
+  if (direct) {
+    return {
+      url: direct,
+      fileName:
+        (typeof doc === 'object' && doc?.Certificate?.name) || 'document.pdf',
+    }
+  }
+
+  const targetId = getDocumentRefId(doc)
+  const publicId =
+    typeof doc === 'object'
+      ? doc?.Certificate?.public_id || doc?.public_id || ''
+      : ''
+
+  if (publicId) {
+    const url = await fetchCertificateUrlByPublicId(publicId)
+    if (url) {
+      return {
+        url,
+        fileName:
+          (typeof doc === 'object' && doc?.Certificate?.name) || 'document.pdf',
+      }
+    }
+  }
+
+  if (!listingType || !listingId) return null
+
+  const endpoint =
+    ASSET_ENDPOINTS[listingType] ||
+    ASSET_ENDPOINTS[resolveListingType({ assetType: listingType })]
+  if (!endpoint) return null
+
+  try {
+    const res = await customAxios.get(`${endpoint}/${listingId}`)
+    const uploads = Array.isArray(res.data?.uploadDocument)
+      ? res.data.uploadDocument
+      : []
+    const requests = normalizeRequestDocuments(res.data?.requestDocument)
+
+    const matchUpload = uploads.find(
+      (item) => getDocumentRefId(item) === targetId,
+    )
+    if (matchUpload) {
+      const url = getListingDocumentSrc(matchUpload)
+      if (url) {
+        return {
+          url,
+          fileName: matchUpload?.Certificate?.name || 'document.pdf',
+        }
+      }
+    }
+
+    for (const req of requests) {
+      if (!isRequestDocumentFulfilled(req)) continue
+
+      const refId = getDocumentRefId(req.document)
+      if (targetId && refId && refId !== targetId) continue
+
+      if (typeof req.document === 'object' && req.document) {
+        const url = getListingDocumentSrc(req.document)
+        if (url) {
+          return {
+            url,
+            fileName:
+              req.name || req.document?.Certificate?.name || 'document.pdf',
+          }
+        }
+
+        const nestedPublicId =
+          req.document?.Certificate?.public_id || req.document?.public_id
+        if (nestedPublicId) {
+          const url = await fetchCertificateUrlByPublicId(nestedPublicId)
+          if (url) {
+            return {
+              url,
+              fileName: req.name || 'document.pdf',
+            }
+          }
+        }
+      }
+    }
+
+    const docName =
+      typeof doc === 'object' ? doc?.Certificate?.name || doc?.name : ''
+    if (docName) {
+      const byName = uploads.find(
+        (item) => (item?.Certificate?.name || item?.name) === docName,
+      )
+      if (byName) {
+        const url = getListingDocumentSrc(byName)
+        if (url) {
+          return { url, fileName: docName }
+        }
+      }
+    }
+  } catch (error) {
+    console.error('resolveEvaluatorListingDocument:', error)
+  }
+
+  return null
 }
 
 export { formatRequestDocumentDate }

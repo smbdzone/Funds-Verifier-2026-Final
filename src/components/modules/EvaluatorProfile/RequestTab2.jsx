@@ -496,6 +496,7 @@ export const RequestTab2 = () => {
               title='Request documents'
               documents={requestDocument}
               handleOpenDoc={handleOpenDoc}
+              listingContext={{ listingType: 'Boats', listingId: propertyId }}
               fetchData={refreshRequestDocuments}
               setEditText={setEditText}
               handleEdit={handleEdit}
@@ -525,6 +526,7 @@ export const RequestTab2 = () => {
             property.uploadDocument,
           )}
           handleOpenDoc={handleOpenDoc}
+          listingContext={{ listingType: 'Boats', listingId: propertyId }}
           fetchData={fetchPropertyData}
         />
         <Modal

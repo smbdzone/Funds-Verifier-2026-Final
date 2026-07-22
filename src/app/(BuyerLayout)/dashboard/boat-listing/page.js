@@ -404,11 +404,6 @@ function Page() {
       //     error = "Evaluation is required";
       //   }
       //   break;
-      case 'brands':
-        if (!value.trim()) {
-          error = 'Brands is required'
-        }
-        break
       case 'age':
         if (!value.trim()) {
           error = 'Age is required'
@@ -417,11 +412,6 @@ function Page() {
       case 'usage':
         if (!value.trim()) {
           error = 'usage is required'
-        }
-        break
-      case 'sportsOutdoorPrice':
-        if (!value.trim()) {
-          error = 'Sports Outdoor Price is required'
         }
         break
       case 'warrenty':
@@ -626,7 +616,9 @@ function Page() {
             images.length > 0 ? handleImageUpload(images) : imageID,
             videos.length ? handleVideoUpload(videos) : videoID,
             // file ? handleFileUpload(file) : fileID,
-            thumbnail ? handleThumbnailUpload(thumbnail) : thumbnailID,
+            thumbnail instanceof File
+              ? handleThumbnailUpload(thumbnail)
+              : thumbnailID,
             qrScan ? handleImageUpload([qrScan]) : qrScanID,
           ])
 
@@ -635,8 +627,13 @@ function Page() {
         // fileID = uploadedFile
         thumbnailID = uploadedThumbnail
         qrScanID = uploadedQrScan
-      } else if (qrScan instanceof File) {
-        qrScanID = await handleImageUpload([qrScan])
+      } else {
+        if (thumbnail instanceof File) {
+          thumbnailID = await handleThumbnailUpload(thumbnail)
+        }
+        if (qrScan instanceof File) {
+          qrScanID = await handleImageUpload([qrScan])
+        }
       }
 
       const updatedFormData = {

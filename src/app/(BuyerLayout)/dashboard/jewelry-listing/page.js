@@ -446,22 +446,11 @@ function Page() {
         }
         break
 
-      case 'locateJewelry':
-        if (!value.trim()) {
-          error = 'locateJewelry is required'
-        }
-        break
       case 'warrenty':
         if (!value.trim()) {
           error = 'warrenty is required'
         }
         break
-      case 'jewelryMetal':
-        if (!value.trim()) {
-          error = 'jewelryMetal is required'
-        }
-        break
-
       default:
         break
     }
@@ -651,7 +640,9 @@ function Page() {
             images.length > 0 ? handleImageUpload(images) : imageID,
             videos.length ? handleVideoUpload(videos) : videoID,
             // file ? handleFileUpload(file) : fileID,
-            thumbnail ? handleThumbnailUpload(thumbnail) : thumbnailID,
+            thumbnail instanceof File
+              ? handleThumbnailUpload(thumbnail)
+              : thumbnailID,
             qrScan ? handleImageUpload([qrScan]) : qrScanID,
           ])
 
@@ -660,8 +651,13 @@ function Page() {
         // fileID = uploadedFile
         thumbnailID = uploadedThumbnail
         qrScanID = uploadedQrScan
-      } else if (qrScan instanceof File) {
-        qrScanID = await handleImageUpload([qrScan])
+      } else {
+        if (thumbnail instanceof File) {
+          thumbnailID = await handleThumbnailUpload(thumbnail)
+        }
+        if (qrScan instanceof File) {
+          qrScanID = await handleImageUpload([qrScan])
+        }
       }
 
       const updatedFormData = {

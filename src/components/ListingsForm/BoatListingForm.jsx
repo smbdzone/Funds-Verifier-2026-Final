@@ -278,7 +278,6 @@ const BoatListingForm = ({
                 handleChange={handleChange}
                 name='dldNumber'
                 customPlaceholder='DLD Number'
-                subPlaceholder=' (Optional)'
                 disabled={isEvaluatorApprovedLocked}
               />
             </div>
@@ -329,7 +328,6 @@ const BoatListingForm = ({
                   technicalModalData.dateTime
                 }
                 handleChange={handleChange}
-                required={true}
                 errors={errors.technicalReport && !formData.technicalReport}
                 errorMessage={errors.technicalReport}
                 handleOpenModal={
@@ -344,7 +342,6 @@ const BoatListingForm = ({
                 }
                 dateTime={technicalModalData.dateTime !== ''}
                 customPlaceholder='Request Technical Report'
-                subPlaceholder=' (Optional)'
                 icon='/icons/card2.png'
               />
               <TechnicalReport
@@ -395,7 +392,6 @@ const BoatListingForm = ({
                 !canRequestPremium || !formData?.uuid || blocks3DWalkthrough
               }
               handleChange={handleChange}
-              required={true}
               errors={errors.video3DWalkthrough}
               errorMessage={errors.video3DWalkthrough}
               dateTime={modalData.dateTime !== ''}
@@ -410,7 +406,6 @@ const BoatListingForm = ({
                     }
               }
               customPlaceholder='3D Walkthrough Embedded Link'
-              subPlaceholder=' (Optional)'
               icon='/icons/3dicon.png'
             />
             <request3d onClick={handleOpenModal} />
@@ -471,9 +466,7 @@ const BoatListingForm = ({
                 disabled={isEvaluatorApprovedLocked}
                 name='brands'
                 customPlaceholder='Brands'
-                subPlaceholder=' (Optional)'
                 maxLength={50}
-                required={true}
               />
             </div>
           </div>
@@ -485,9 +478,7 @@ const BoatListingForm = ({
                 handleChange={handleChange}
                 name='locateBoat'
                 customPlaceholder='Locate Your Boat'
-                subPlaceholder=' (Optional)'
                 maxLength={50}
-                required={true}
               />
             </div>
           </div>
@@ -538,9 +529,7 @@ const BoatListingForm = ({
                 disabled={isEvaluatorApprovedLocked}
                 name='sportsOutdoorPrice'
                 customPlaceholder='Sports & Outdoor Price'
-                subPlaceholder=' (Optional)'
                 maxLength={50}
-                required={true}
               />
             </div>
           </div>

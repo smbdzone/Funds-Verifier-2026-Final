@@ -143,26 +143,42 @@ const handleDeleteImg = async (id) => {
 }
 
 const handleDownload = async (public_id) => {
-  const token = getTokenFromCookie()
-
-  const res = await fetch(
-    `${BASE_URL}/get-certificate-url?public_id=${public_id}`,
-    {
-      headers: { Authorization: `Bearer ${token}` },
-    }
-  )
-
-  const data = await res.json()
-
-  if (data?.url) {
-    window.open(data.url, '_blank')
+  const url = await fetchCertificateUrlByPublicId(public_id)
+  if (url) {
+    window.open(url, '_blank')
   }
 }
+
+const fetchCertificateUrlByPublicId = async (publicId) => {
+  if (!publicId) return ''
+
+  const token = getTokenFromCookie()
+  const base = (process.env.NEXT_PUBLIC_BASE_URL || '').trim().replace(/\/$/, '')
+  if (!base) return ''
+
+  try {
+    const res = await fetch(
+      `${base}/get-certificate-url?public_id=${encodeURIComponent(publicId)}`,
+      {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      },
+    )
+    const data = await res.json()
+    return typeof data?.url === 'string' && data.url.startsWith('http')
+      ? data.url.trim()
+      : ''
+  } catch (error) {
+    console.error('Error fetching certificate URL:', error)
+    return ''
+  }
+}
+
 export {
   handleImageUpload,
   handleVideoUpload,
   handleFileUpload,
   resolveCertificateUploadUrl,
+  fetchCertificateUrlByPublicId,
   handleThumbnailUpload,
   handleVerificationUpload,
   handleDeleteImg,

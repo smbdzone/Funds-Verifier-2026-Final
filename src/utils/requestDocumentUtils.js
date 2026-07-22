@@ -81,6 +81,15 @@ export function hasPendingDocumentRequests(listingOrDocs) {
  * Evaluator "Uploaded documents" list: fulfilled request docs first,
  * then other uploadDocument files not already represented.
  */
+export function getDocumentRefId(value) {
+  if (!value) return ''
+  if (typeof value === 'string') return value
+  if (typeof value === 'object') {
+    return String(value._id || value.id || value.uuid || '')
+  }
+  return ''
+}
+
 export function buildEvaluatorUploadedDocuments(
   requestDocument = [],
   uploadDocument = [],
@@ -88,8 +97,18 @@ export function buildEvaluatorUploadedDocuments(
   const fromRequests = normalizeRequestDocuments(requestDocument)
     .filter(isRequestDocumentFulfilled)
     .map((req) => {
-      const doc =
-        req.document && typeof req.document === 'object' ? req.document : {}
+      const rawDoc = req.document
+      if (typeof rawDoc === 'string' && rawDoc) {
+        return {
+          _id: rawDoc,
+          Certificate: {
+            name: req.name || 'Document',
+          },
+          uploadedAt: req.uploadedAt || req.date,
+        }
+      }
+
+      const doc = rawDoc && typeof rawDoc === 'object' ? rawDoc : {}
       return {
         ...doc,
         Certificate: {

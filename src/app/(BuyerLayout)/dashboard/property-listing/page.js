@@ -689,7 +689,9 @@ const Page = () => {
           images.length > 0 ? handleImageUpload(images) : imageID,
           videos.length ? handleVideoUpload(videos) : videoID,
           file ? handleFileUpload(file) : fileID,
-          thumbnail ? handleThumbnailUpload(thumbnail) : thumbnailID,
+          thumbnail instanceof File
+            ? handleThumbnailUpload(thumbnail)
+            : thumbnailID,
           qrScan ? handleImageUpload([qrScan]) : qrScanID,
         ])
 
@@ -703,16 +705,18 @@ const Page = () => {
           agencyAgreementID = await handleFileUpload(agencyAgreementFile)
         }
       } else {
-        // ✅ For updates: only re-upload video or file if changed
+        // For updates: only re-upload media that changed
         if (videos.length) videoID = await handleVideoUpload(videos)
         if (file) fileID = await handleFileUpload(file)
+        if (thumbnail instanceof File) {
+          thumbnailID = await handleThumbnailUpload(thumbnail)
+        }
         if (qrScan instanceof File) {
           qrScanID = await handleImageUpload([qrScan])
         }
         if (agencyAgreementFile instanceof File) {
           agencyAgreementID = await handleFileUpload(agencyAgreementFile)
         }
-        // thumbnail and images will remain unchanged
       }
 
       const offPlanMediaRefs = {}
