@@ -1,6 +1,7 @@
 import {
   LISTING_COUNTRY_UAE_LABEL,
   toUnitedArabEmiratesListingCountryName,
+  formatCityLabel,
 } from '@/libs/dummyLocationData'
 
 export function normalizeListingCountryKey(country) {
@@ -20,7 +21,7 @@ export function buildCountryToCitiesMap(products) {
 
     ; (products || []).forEach((item) => {
       const countryKey = normalizeListingCountryKey(item.country)
-      const city = String(item.city || '').trim()
+      const city = formatCityLabel(item.city)
 
       if (!countryKey || !city) return
 
@@ -44,7 +45,7 @@ export function buildCountryCityNeighbourhoodMap(products) {
 
     ; (products || []).forEach((item) => {
       const countryKey = normalizeListingCountryKey(item.country)
-      const city = String(item.city || '').trim()
+      const city = formatCityLabel(item.city)
       const neighbourhood = String(item.neighbourhood || '').trim()
 
       if (!countryKey || !city) return
@@ -81,4 +82,22 @@ export function getListingCitiesForCountry(countryCityMap, country) {
   return countryCityMap[countryKey] || []
 }
 
+/** Human-readable location: neighbourhood, city, country. */
+export function formatListingLocation(listing) {
+  if (!listing || typeof listing !== 'object') return ''
+
+  if (typeof listing.location === 'string' && listing.location.trim()) {
+    return listing.location.trim()
+  }
+
+  const neighbourhood = String(listing.neighbourhood || '').trim()
+  const city = formatCityLabel(listing.city)
+  const country =
+    toUnitedArabEmiratesListingCountryName(listing.country) ||
+    String(listing.country || '').trim()
+
+  return [neighbourhood, city, country].filter(Boolean).join(', ')
+}
+
 export const UAE_ONLY_COUNTRY_OPTIONS = [LISTING_COUNTRY_UAE_LABEL]
+

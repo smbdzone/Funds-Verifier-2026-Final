@@ -16,7 +16,8 @@ import Link from 'next/link'
 import Modal2 from '../product-modal/modal2'
 import Image from 'next/image'
 import { formatNumberWithCommas } from '@/utils/global-functions/global'
-import { formatListingPriceDisplay } from '@/libs/listingPriceDisplay'
+import { formatCardPrice, formatListingCardPrice } from '@/libs/listingPriceDisplay'
+import { isOffPlanListing } from '@/libs/filterMyListingTab'
 import { formatPropertySizeDisplay } from '@/libs/propertySizeUnits'
 import Open3dModal from '@/components/3dModal/Open3dModal'
 import {
@@ -283,6 +284,8 @@ const ListingCard = ({
         listing?.technicalReport?.reportFile?.Certificate?.name ||
         'technical-report.pdf'
 
+      const isOffPlan = isOffPlanListing(listing)
+
       return (
         <>
           <div
@@ -512,18 +515,21 @@ const ListingCard = ({
                   className={`text-prussianBlue mb-2 lg:text-base text-sm font-medium ${hasFeaturedStyling ? 'text-gradient-custom' : 'text-blue'
                     }`}
                 >
-                  Price: {formatListingPriceDisplay(listing)}
+                  {isOffPlan ? 'Price Range:' : 'Price:'}{' '}
+                  {formatListingCardPrice(listing)}
                 </p>
-                <p
-                  className={`mb-2 lg:text-base text-sm font-medium ${hasFeaturedStyling
-                    ? 'text-gradient-custom'
-                    : 'text-prussianBlue'
-                    }`}
-                >
-                  Market Price:
-                  {formatNumberWithCommas(listing.evaluationPrices)}
-                </p>
-                {assetTypeText === 'property' && (
+                {!isOffPlan ? (
+                  <p
+                    className={`mb-2 lg:text-base text-sm font-medium ${hasFeaturedStyling
+                      ? 'text-gradient-custom'
+                      : 'text-prussianBlue'
+                      }`}
+                  >
+                    Market Price:
+                    {formatCardPrice(listing.evaluationPrices)}
+                  </p>
+                ) : null}
+                {assetTypeText === 'property' && !isOffPlan && (
                   <p
                     className={`mb-2 lg:text-base text-sm font-medium ${hasFeaturedStyling
                       ? 'text-gradient-custom'

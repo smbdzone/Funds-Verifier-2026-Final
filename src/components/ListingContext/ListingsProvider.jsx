@@ -16,15 +16,16 @@ import {
 import { normalizeListingPremiumRefs, isPremiumServicePaid } from '@/libs/listingPremiumStatus'
 import { clearServiceSlotFields } from '@/libs/slotBooking'
 import {
-  DUMMY_DUBAI_NEIGHBOURHOODS,
   DUMMY_FALLBACK_COUNTRIES,
   DUMMY_UAE_CITY_PREDICTIONS,
   filterDummyCitiesByQuery,
+  getDummyNeighbourhoodsForCity,
+  hasDummyNeighbourhoodsForCity,
   isDummyUaeLocationsEnabled,
-  isDubaiCitySelection,
   LISTING_COUNTRY_UAE_LABEL,
   toUnitedArabEmiratesListingCountryName,
   filterCountriesToUaeOnly,
+  formatCityLabel,
 } from '@/libs/dummyLocationData'
 import {
   LISTING_IMAGE_MAX_BYTES,
@@ -34,7 +35,7 @@ import {
   LISTING_IMAGE_MAX_COUNT,
   LISTING_VIDEO_MAX_COUNT,
 } from '@/constants/listingUploadLimits'
-import { createDefaultOffPlanPaymentPlan, reindexOffPlanPaymentPlan } from '@/constants/listing-data'
+import { createDefaultOffPlanPaymentPlan, sanitizeOffPlanPaymentPlan } from '@/constants/listing-data'
 import {
   ensureWithinSize,
   isCompressionConfigured,
@@ -184,16 +185,23 @@ const ListingsProvider = ({ children }) => {
           agencyAgreement: d.agencyAgreement || null,
           advertisementId: d.advertisementId || '',
           dldNumber: d.dldNumber || '',
+          mapUrl: d.mapUrl || '',
           deliveryQuarter: d.deliveryQuarter || '',
           deliveryYear: d.deliveryYear || '',
+          paymentPlanType: d.paymentPlanType || '',
           sizeType: d.sizeType || d.sizeUnit || '',
           layout: d.layout || '',
           numberOfFloors: d.numberOfFloors || '',
           availableApartment: d.availableApartment || '',
-          paymentPlan:
-            Array.isArray(d.paymentPlan) && d.paymentPlan.length
-              ? reindexOffPlanPaymentPlan(d.paymentPlan)
-              : createDefaultOffPlanPaymentPlan(),
+          facilities: Array.isArray(d.facilities)
+            ? d.facilities.filter(Boolean)
+            : [],
+          paymentPlan: (() => {
+            const cleaned = sanitizeOffPlanPaymentPlan(d.paymentPlan)
+            return cleaned.length
+              ? cleaned
+              : createDefaultOffPlanPaymentPlan()
+          })(),
         }
         setFormData(normalized)
         restorePendingPremiumModals(normalized)
@@ -373,12 +381,8 @@ const ListingsProvider = ({ children }) => {
   const fetchNeighbourhoods = async () => {
     if (!isCity) return
 
-    const applyDummyDubaiNeighbourhoods = () => {
-      setNeighbourhoods([...DUMMY_DUBAI_NEIGHBOURHOODS])
-    }
-
-    if (isDummyUaeLocationsEnabled && isDubaiCitySelection(isCity)) {
-      applyDummyDubaiNeighbourhoods()
+    if (hasDummyNeighbourhoodsForCity(isCity)) {
+      setNeighbourhoods(getDummyNeighbourhoodsForCity(isCity))
       setLoading(false)
       return
     }
@@ -392,18 +396,11 @@ const ListingsProvider = ({ children }) => {
         throw new Error('Failed to fetch neighbourhoods')
       }
       const data = await response.json()
-      let places = Array.isArray(data?.places) ? data.places : []
-      if (isDubaiCitySelection(isCity) && places.length === 0) {
-        places = [...DUMMY_DUBAI_NEIGHBOURHOODS]
-      }
+      const places = Array.isArray(data?.places) ? data.places : []
       setNeighbourhoods(places)
     } catch (error) {
       console.error('Error fetching neighbourhoods:', error)
-      if (isDubaiCitySelection(isCity)) {
-        applyDummyDubaiNeighbourhoods()
-      } else {
-        setNeighbourhoods([])
-      }
+      setNeighbourhoods([])
     } finally {
       setLoading(false)
     }
@@ -425,13 +422,14 @@ const ListingsProvider = ({ children }) => {
   }
 
   const handleCitySelect = (city) => {
-    setSelectedCity(city)
-    setIsCity(city)
+    const cityName = formatCityLabel(city)
+    setSelectedCity(cityName)
+    setIsCity(cityName)
     setNeighbourhoods([])
-    fetchNeighbourhoods(city)
+    fetchNeighbourhoods(cityName)
     setFormData((prevFormData) => ({
       ...prevFormData,
-      city: city,
+      city: cityName,
     }))
     setIsCityDropdownOpen(false)
   }
@@ -777,13 +775,15 @@ const ListingsProvider = ({ children }) => {
 
   const handleCheckboxChange = (e, key) => {
     const { checked, value } = e.target
-    const updatedData = { ...formData }
-    if (checked) {
-      updatedData[key] = [...updatedData[key], value]
-    } else {
-      updatedData[key] = updatedData[key].filter((item) => item !== value)
-    }
-    setFormData(updatedData)
+    setFormData((prev) => {
+      const current = Array.isArray(prev[key]) ? prev[key] : []
+      return {
+        ...prev,
+        [key]: checked
+          ? [...current, value]
+          : current.filter((item) => item !== value),
+      }
+    })
   }
 
   const handlePhoneNumberChange = (value) => {

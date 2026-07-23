@@ -1,5 +1,7 @@
 import { React, useRef } from "react";
 import Image from "next/image";
+import ListingFieldLabel from "@/components/ListingsForm/ListingFieldLabel";
+
 const FileUpload = ({
   type,
   label,
@@ -9,6 +11,7 @@ const FileUpload = ({
   errors,
   onFileChange,
   onFileRemove,
+  required = false,
 }) => {
   const fileInputRef = useRef(null);
 
@@ -18,6 +21,9 @@ const FileUpload = ({
         } h-[191px] relative px-[20px] pt-[13px] overflow-hidden ${type === "video" ? "row-span-2" : ""
         }`}
     >
+      {label ? (
+        <ListingFieldLabel label={label} required={required} className="mb-1" />
+      ) : null}
       <h2 className="text-dark-grey text-[15px] font-normal leading-[26px]">
         Accepted formats:
       </h2>

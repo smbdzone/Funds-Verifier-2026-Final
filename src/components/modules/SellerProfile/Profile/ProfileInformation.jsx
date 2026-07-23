@@ -142,6 +142,26 @@ const PersonalInfoForm = ({ user, setUser, fetchData }) => {
               />
             </div>
 
+            {/* ID Number — first 8 of uuid, display only */}
+            <div>
+              <label className='block text-sm font-medium mb-1 text-white'>
+                ID Number
+              </label>
+              <input
+                type='text'
+                value={
+                  typeof user?.uuid === 'string' && user.uuid
+                    ? user.uuid.slice(0, 8).toUpperCase()
+                    : ''
+                }
+                readOnly
+                disabled
+                placeholder='ID Number'
+                aria-label='ID Number'
+                className='shadow-neons rounded w-full h-[48px] pl-5 placeholder:text-dark-grey outline-with-opacity sm:placeholder:text-[15px] placeholder:text-xs sm:text-base text-sm placeholder:font-normal card-number-input cursor-not-allowed opacity-80'
+              />
+            </div>
+
             {/* Marital Status (react-select) */}
             <div className='shadow-neons rounded card-number-input'>
               <Select

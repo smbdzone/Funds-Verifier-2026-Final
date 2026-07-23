@@ -3,7 +3,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import React, { useMemo, useState } from 'react'
-import { FaStar } from 'react-icons/fa'
+import { FaMapMarkerAlt, FaStar } from 'react-icons/fa'
 import { formatOffPlanPriceRange } from '@/constants/offPlanDummyListings'
 import { getProfileImageSrc } from '@/utils/global-functions/global'
 
@@ -66,10 +66,10 @@ const OffPlanPropertyCard = ({
             className='h-[275px] w-full object-cover'
           />
 
-          {paymentPlanLabel ? (
+          {String(paymentPlanLabel || '').trim() ? (
             <div className='absolute right-[10px] top-[10px] rounded-[2px] px-2 py-1 shadow-[0px_0px_8px_rgba(0,0,0,0.15)] [background:linear-gradient(90deg,#A2913E_0%,#D7C590_35.28%,#A2913E_68.99%,#D7C58F_100%)]'>
               <span className='text-[10px] font-medium leading-3 text-prussianBlue'>
-                {paymentPlanLabel}
+                {String(paymentPlanLabel).trim()}
               </span>
             </div>
           ) : null}
@@ -137,18 +137,27 @@ const OffPlanPropertyCard = ({
                   {title}
                 </h3>
 
-                <p className='listing-card-location w-full break-words text-left text-[18px] leading-[26px] text-prussianBlue sm:text-base sm:leading-5'>
-                  {location}
-                </p>
+                {location ? (
+                  <p className='listing-card-location flex w-full items-start gap-1.5 break-words text-left text-[18px] leading-[26px] text-prussianBlue sm:text-base sm:leading-5'>
+                    <FaMapMarkerAlt
+                      className='mt-1 shrink-0 text-reefGold'
+                      size={16}
+                      aria-hidden
+                    />
+                    <span className='min-w-0 break-words'>{location}</span>
+                  </p>
+                ) : null}
 
-                <div className='flex w-full items-center justify-start gap-2'>
-                  <span className='text-[18px] font-medium capitalize leading-[26px] text-prussianBlue sm:text-xl sm:leading-6'>
-                    Ready:
-                  </span>
-                  <span className='text-[18px] font-medium leading-[26px] text-prussianBlue sm:text-xl sm:leading-6'>
-                    {deliveryLabel}
-                  </span>
-                </div>
+                {deliveryLabel ? (
+                  <div className='flex w-full items-center justify-start gap-2'>
+                    <span className='text-[18px] font-medium capitalize leading-[26px] text-prussianBlue sm:text-xl sm:leading-6'>
+                      Ready:
+                    </span>
+                    <span className='text-[18px] font-medium leading-[26px] text-prussianBlue sm:text-xl sm:leading-6'>
+                      {deliveryLabel}
+                    </span>
+                  </div>
+                ) : null}
               </div>
               {qrScanSrc ? (
                 <Image

@@ -30,8 +30,10 @@ import {
   addOffPlanPaymentStep,
   removeOffPlanPaymentStep,
   reindexOffPlanPaymentPlan,
+  sanitizeOffPlanPaymentPlan,
 } from '@/constants/listing-data'
 import { LISTING_IMAGE_MAX_BYTES, LISTING_IMAGE_MAX_MB } from '@/constants/listingUploadLimits'
+import { autoCapitalizeField } from '@/libs/autoCapitalizeText'
 import { ListingContext } from '@/components/ListingContext/ListingsProvider'
 import { propertyType } from '../../../../constants/listing-data'
 import PayModal from '../../../../components/Modals/PayModal'
@@ -71,6 +73,7 @@ const dropdownData = {
   sizeType: false,
   deliveryQuarter: false,
   deliveryYear: false,
+  paymentPlanType: false,
   layout: false,
   numberOfFloors: false,
 }
@@ -243,8 +246,10 @@ const Page = () => {
     priceTo: '',
     advertisementId: '',
     dldNumber: '',
+    mapUrl: '',
     deliveryQuarter: '',
     deliveryYear: '',
+    paymentPlanType: '',
     sizeType: '',
     layout: '',
     numberOfFloors: '',
@@ -791,9 +796,12 @@ const Page = () => {
         propertyForLease:
           formData.assetType === 'Property For Lease' ? 'Yes' : '',
         ...(isOffPlan ? offPlanMediaRefs : {}),
-        paymentPlan: reindexOffPlanPaymentPlan(
+        paymentPlan: sanitizeOffPlanPaymentPlan(
           Array.isArray(formData.paymentPlan) ? formData.paymentPlan : [],
         ),
+        facilities: Array.isArray(formData.facilities)
+          ? formData.facilities.filter(Boolean)
+          : [],
       }
 
       applyPremiumServiceRefs(updatedFormData, formData, {
@@ -871,7 +879,7 @@ const Page = () => {
     const { name, value } = e.target
 
     if (name === 'price' || name === 'priceFrom' || name === 'priceTo') {
-      const rawValue = value.replace(/[^\d]/g, '')
+      const rawValue = value.replace(/[^\d]/g, '').slice(0, 9)
 
       if (/^\d*$/.test(rawValue)) {
         setFormData((prevFormData) => ({
@@ -891,7 +899,10 @@ const Page = () => {
     } else if (name === 'sizeSQFT' || name === 'sizeSQM') {
       // Handled by PropertySizeField via handleSizeChange
     } else {
-      setFormData({ ...formData, [name]: value })
+      setFormData({
+        ...formData,
+        [name]: autoCapitalizeField(name, value),
+      })
     }
   }
 
@@ -963,6 +974,9 @@ const Page = () => {
     if (!thumbnail) {
       errors.thumbnail = 'Thumbnail is required'
     }
+    if (!qrScan) {
+      errors.qrScan = 'QR Scan is required'
+    }
 
     if (!String(data.country || '').trim()) {
       errors.country = 'Country is required'
@@ -1022,11 +1036,16 @@ const Page = () => {
       }
 
       const plan = Array.isArray(data.paymentPlan) ? data.paymentPlan : []
-      const downPayment = plan[0]?.sharePercent
+      const filledPlan = plan.filter(
+        (step) =>
+          String(step?.sharePercent ?? '').trim() !== '' ||
+          String(step?.milestone ?? '').trim() !== '',
+      )
+      const downPayment = filledPlan[0]?.sharePercent
       if (!String(downPayment || '').trim()) {
         errors.paymentPlan = 'Down payment share is required'
       } else {
-        const totalShare = plan.reduce(
+        const totalShare = filledPlan.reduce(
           (sum, step) => sum + Number(step?.sharePercent || 0),
           0,
         )
@@ -1292,6 +1311,7 @@ const Page = () => {
                 listings={listings}
                 handleRadioChange={handleRadioChange}
                 handleCheckboxChange={handleCheckboxChange}
+                handleChange={handleChange}
                 handleSubmit={handleSubmit}
                 loading={loading}
                 facilities={facilities}

@@ -6,7 +6,10 @@ import {
   Commercial,
   Residential,
 } from '@/constants/listing-data'
-import { toUnitedArabEmiratesListingCountryName } from '@/libs/dummyLocationData'
+import {
+  formatCityLabel,
+  toUnitedArabEmiratesListingCountryName,
+} from '@/libs/dummyLocationData'
 import { isListingEvaluatorApprovedLocked } from '@/libs/listingEditLock'
 import DropdownComponent from '../../components/DropdownComponent/DropdownComponent'
 
@@ -78,7 +81,9 @@ const Listing = ({
     setFilteredCities(
       (cities ?? [])
         .map((item) =>
-          typeof item === 'string' ? item : item?.description,
+          formatCityLabel(
+            typeof item === 'string' ? item : item?.description,
+          ),
         )
         .filter(Boolean),
     )
@@ -180,7 +185,7 @@ const Listing = ({
       label: 'City',
       isListings: property || car || boat || jewelry,
       handleToggleDropdown: toggleCityDropdown,
-      formData: formData?.city || selectedCity,
+      formData: formatCityLabel(formData?.city || selectedCity) || formData?.city || selectedCity,
       handleSelectOption: handleCitySelect,
       dropdowns: isCityDropdownOpen,
       dropdownOptions: filteredCities,

@@ -13,6 +13,7 @@ import { getListingRef } from '@/libs/listingRef'
 import ListingSocialShare from '@/components/shared/ListingSocialShare'
 import { formatPriceUS } from '@/utils'
 import { formatNumberWithCommas } from '../../utils/global-functions/global'
+import { getListingAmenities } from '@/libs/listingAmenities'
 
 export default function CheckoutView({
   data,
@@ -230,10 +231,10 @@ export default function CheckoutView({
             </button>
 
             <>
-              {data.facilities && data.facilities.length !== 0 ? (
+              {getListingAmenities(data).length ? (
                 <div className='grid shadow rounded mt-5 sm:grid-cols-2 grid-cols-1 lg:grid-cols-4'>
-                  {data.facilities.map((item, columnIndex) => (
-                    <div key={columnIndex} className='col-span-1'>
+                  {getListingAmenities(data).map((item, columnIndex) => (
+                    <div key={`${item}-${columnIndex}`} className='col-span-1'>
                       <div className='sm:flex flex-wrap font-normal'>
                         <div className='flex lg:text-base sm:text-sm text-xs flex-row items-start lg:items-center p-2 space-x-2'>
                           <IoCheckmarkSharp

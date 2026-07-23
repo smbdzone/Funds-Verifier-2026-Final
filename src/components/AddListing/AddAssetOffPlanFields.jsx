@@ -14,6 +14,7 @@ import {
   bedroomsOptions,
   deliveryQuarterOptions,
   deliveryYearOptions,
+  paymentPlanTypeOptions,
 } from '@/constants/listing-data'
 
 const AddAssetOffPlanFields = ({
@@ -151,6 +152,18 @@ const AddAssetOffPlanFields = ({
           errorsMessage={errors.deliveryTime}
         />
       </div>
+
+      <DropdownInput
+        name='paymentPlanType'
+        placeholder='Payment Plan'
+        value={formData.paymentPlanType || ''}
+        options={paymentPlanTypeOptions}
+        onSelect={(value) => onSelectOption('paymentPlanType', value)}
+        dropdownOpen={dropdownOpen}
+        onDropdownOpen={onDropdownOpen}
+        required={false}
+        errors={errors}
+      />
 
       <div className='col-span-2'>
         <TextInput

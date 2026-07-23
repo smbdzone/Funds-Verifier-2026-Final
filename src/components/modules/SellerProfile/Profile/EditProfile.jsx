@@ -160,6 +160,24 @@ function EditProfile({ countries }) {
                 </div>
 
                 <div className='flex'>
+                  <label className='w-[30%]'>ID Number</label>
+                  <div className='w-full flex-col flex'>
+                    <input
+                      type='text'
+                      value={
+                        typeof user?.uuid === 'string' && user.uuid
+                          ? user.uuid.slice(0, 8).toUpperCase()
+                          : ''
+                      }
+                      readOnly
+                      disabled
+                      placeholder='ID Number'
+                      className='shadow-neons rounded resize-none w-full h-[48px] px-5 placeholder:text-dark-grey outline-with-opacity placeholder:text-[15px] placeholder:font-normal card-number-input cursor-not-allowed opacity-80'
+                    />
+                  </div>
+                </div>
+
+                <div className='flex'>
                   <label className='w-[30%]'>Country</label>
                   <div className='w-full'>
                     <DropdownInput

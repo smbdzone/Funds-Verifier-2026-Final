@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import axios from 'axios'
 import { routes } from '@/libs/api'
+import { autoCapitalizeField } from '@/libs/autoCapitalizeText'
 import Image from 'next/image'
 import { toast, ToastContainer } from 'react-toastify'
 import NewListing from '@/components/global/NewListing'
@@ -24,6 +25,7 @@ import {
   createEmptyOffPlanMedia,
   OFF_PLAN_MEDIA_KEYS,
   reindexOffPlanPaymentPlan,
+  sanitizeOffPlanPaymentPlan,
   addOffPlanPaymentStep,
   removeOffPlanPaymentStep,
 } from '@/constants/listing-data'
@@ -34,6 +36,7 @@ import PhoneInputField from '@/components/AddListing/PhoneInputField'
 import CheckboxInput from '@/components/AddListing/CheckboxInput'
 import BookingField from '@/components/AddListing/BookingField'
 import ConfirmationModal from '@/components/AddListing/ConfirmationModal'
+import ListingMapSection from '@/components/ListingsForm/ListingMapSection'
 import { IoReload } from 'react-icons/io5'
 import propertyAd from '@/assets/images/advertisement.png'
 import { validateAsset, validateOffPlanAsset } from '../../../../utils/validateForms'
@@ -163,7 +166,7 @@ const Page = () => {
   // General input change handler
   const handleInputChange = (name, value) => {
     if (name === 'price' || name === 'priceFrom' || name === 'priceTo') {
-      const rawValue = value.replace(/[^\d]/g, '')
+      const rawValue = value.replace(/[^\d]/g, '').slice(0, 9)
       if (/^\d*$/.test(rawValue)) {
         setFormData((prevFormData) => ({
           ...prevFormData,
@@ -174,7 +177,7 @@ const Page = () => {
       const numericValue = value.replace(/\D/g, '')
       setFormData({ ...formData, [name]: numericValue })
     } else {
-      setFormData({ ...formData, [name]: value })
+      setFormData({ ...formData, [name]: autoCapitalizeField(name, value) })
     }
   }
 
@@ -400,6 +403,7 @@ const Page = () => {
             label={field.label}
             acceptedFormats={field.acceptedFormats}
             maxSize={field.maxSize}
+            required={field.required}
             files={
               formData[field.formDataKey || getFileFormKey(field.mediaType)] ||
               (field.mediaType === 'pictures' ? [] : null)
@@ -583,7 +587,10 @@ const Page = () => {
             : undefined,
           sizeUnit: formData.sizeUnit || formData.sizeType || 'SQFT',
           propertyForSale: 'Yes',
-          paymentPlan: reindexOffPlanPaymentPlan(
+          facilities: Array.isArray(formData.facilities)
+            ? formData.facilities.filter(Boolean)
+            : [],
+          paymentPlan: sanitizeOffPlanPaymentPlan(
             Array.isArray(formData.paymentPlan) ? formData.paymentPlan : [],
           ),
           ...offPlanMediaRefs,
@@ -720,16 +727,45 @@ const Page = () => {
                 </>
               )}
             {isOffPlan && (
-              <div className='grid col-span-2 place-items-center mt-[49px]'>
-                <Image
-                  width={1500}
-                  quality={90}
-                  className='w-[98%]'
-                  height={700}
-                  src={propertyAd}
-                  alt='off-plan property'
-                />
-              </div>
+              <>
+                {propertyCheckBoxFields
+                  .filter((field) => field.name === 'facilities')
+                  .map((field) => (
+                    <div
+                      className='w-full p-4 col-span-2 space-y-4'
+                      key={field.id}
+                    >
+                      <h2 className='text-dark-black text-xl font-medium'>
+                        {field.heading}
+                      </h2>
+                      <div className='grid grid-cols-2 gap-3 w-full sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6'>
+                        {field?.checkboxes?.map((opt, index) => (
+                          <CheckboxInput
+                            key={index}
+                            label={opt}
+                            value={opt}
+                            checked={
+                              formData[field.name]?.includes(opt) || false
+                            }
+                            onChange={(e) =>
+                              handleCheckboxChange(e, field.name)
+                            }
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                <div className='grid col-span-2 place-items-center mt-[49px]'>
+                  <Image
+                    width={1500}
+                    quality={90}
+                    className='w-[98%]'
+                    height={700}
+                    src={propertyAd}
+                    alt='off-plan property'
+                  />
+                </div>
+              </>
             )}
             {formData.assetType === 'Car For Sale' && (
               <>
@@ -842,15 +878,14 @@ const Page = () => {
           </form>
 
           {/* map  */}
-          <div className=' mt-[20px]'>
-            <iframe
-              className='max-w-[1064px] w-full mx-auto h-[351px] rounded-[5px] shadow-neons'
-              src='https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d231280.4131872353!2d55.06267954491565!3d25.0762424478002!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3e5f43496ad9c645%3A0xbde66e5084295162!2sDubai%20-%20United%20Arab%20Emirates!5e0!3m2!1sen!2s!4v1716351024030!5m2!1sen!2s'
-              allowFullScreen
-              loading='lazy'
-              referrerPolicy='no-referrer-when-downgrade'
-            />
-          </div>
+          <ListingMapSection
+            mapUrl={formData.mapUrl}
+            handleChange={(e) =>
+              handleInputChange(e.target.name, e.target.value)
+            }
+            iframeClassName='max-w-[1064px] w-full mx-auto h-[351px] rounded-[5px] shadow-neons'
+            className='mt-[20px]'
+          />
 
           <div className='grid place-items-center mt-[30px] pb-[65px]'>
             <button

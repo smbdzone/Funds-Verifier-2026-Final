@@ -9,13 +9,14 @@ import OffPlanLayoutFloorPlanDisplay from '@/components/offplan/OffPlanLayoutFlo
 import OffPlanPaymentPlanDisplay from '@/components/offplan/OffPlanPaymentPlanDisplay'
 import ListingSocialShare from '@/components/shared/ListingSocialShare'
 import ListingQrCodeSection from '@/components/shared/ListingQrCodeSection'
+import ListingMapSection from '@/components/ListingsForm/ListingMapSection'
+import ListingDetailsGrid from '@/components/shared/ListingDetailsGrid'
 import { formatOffPlanPriceRange, formatOffPlanSizeRange } from '@/constants/offPlanDummyListings'
+import { getListingAmenities } from '@/libs/listingAmenities'
+import { formatListingLocation } from '@/libs/listingLocationUtils'
 import { getProfileImageSrc } from '@/utils/global-functions/global'
-import axios from 'axios'
 import Image from 'next/image'
-import React, { useEffect, useMemo, useState } from 'react'
-import { FaStar } from 'react-icons/fa'
-import { GoDotFill } from 'react-icons/go'
+import React, { useMemo, useState } from 'react'
 import { IoCheckmarkSharp } from 'react-icons/io5'
 
 const TABS = [
@@ -29,8 +30,6 @@ const TABS = [
 export default function OffPlanProductView({ data }) {
   const [activeTab, setActiveTab] = useState('Description')
   const [previewSrc, setPreviewSrc] = useState(data?.images?.[0] || '/offplan/image1.svg')
-  const [reviewCounts, setReviewCounts] = useState(0)
-  const [averageRating, setAverageRating] = useState(0)
   const [showCalendarPopup, setShowCalendarPopup] = useState(false)
 
   const bookingProductData = useMemo(
@@ -41,24 +40,47 @@ export default function OffPlanProductView({ data }) {
     [data],
   )
 
-  useEffect(() => {
-    const fetchReviewData = async () => {
-      try {
-        const response = await axios.post(
-          `${process.env.NEXT_PUBLIC_BASE_URL}/reviews/count`,
-          { productId: data?.uuid },
-        )
-        setReviewCounts(response.data.count || 0)
-        setAverageRating(Number(response.data.averageRating) || 0)
-      } catch (error) {
-        console.error('Failed to fetch review data:', error)
-      }
+  const detailRows = useMemo(() => {
+    const sizeLabel = formatOffPlanSizeRange(
+      (data?.sizeUnit || 'SQFT') === 'SQM'
+        ? data?.sizeSQMFrom ?? data?.sizeSQM
+        : data?.sizeSQFTFrom ?? data?.sizeSQFT,
+      (data?.sizeUnit || 'SQFT') === 'SQM'
+        ? data?.sizeSQMTo ?? data?.sizeSQM
+        : data?.sizeSQFTTo ?? data?.sizeSQFT,
+      data?.sizeUnit || 'SQFT',
+    )
+
+    const pad = (value) => {
+      if (value == null || value === '') return ''
+      const num = Number(value)
+      if (Number.isFinite(num)) return String(num).padStart(2, '0')
+      return String(value)
     }
 
-    if (data?.uuid) {
-      fetchReviewData()
-    }
-  }, [data?.uuid])
+    return [
+      { label: 'Location', value: formatListingLocation(data), fullWidth: true },
+      { label: 'Developer', value: data?.developer },
+      { label: 'Property Type', value: data?.propertyType },
+      { label: 'Bedrooms', value: pad(data?.bedrooms) },
+      { label: 'Bathrooms', value: pad(data?.bathrooms) },
+      { label: 'Size', value: sizeLabel, fullWidth: true },
+      {
+        label: 'Payment Plan',
+        value: data?.paymentPlanLabel || data?.paymentPlanType,
+      },
+      { label: 'Layout', value: data?.layout },
+      { label: 'Number of Floors', value: data?.numberOfFloors },
+      { label: 'Available Apartments', value: data?.availableApartment },
+      { label: 'Advertisement ID', value: data?.advertisementId },
+      { label: 'DLD Number', value: data?.dldNumber },
+      {
+        label: 'Price Range',
+        value: formatOffPlanPriceRange(data?.priceFrom, data?.priceTo),
+        fullWidth: true,
+      },
+    ]
+  }, [data])
 
   const media = useMemo(
     () =>
@@ -68,6 +90,8 @@ export default function OffPlanProductView({ data }) {
       })),
     [data?.images],
   )
+
+  const amenities = useMemo(() => getListingAmenities(data), [data])
 
   const tabButtonClass = (tab) =>
     `flex-grow md:text-base text-xs flex justify-center py-1 ${activeTab === tab
@@ -95,96 +119,49 @@ export default function OffPlanProductView({ data }) {
           </div>
           <div className='block w-full shrink-0 sm:hidden md:hidden'>
             <ImageSlider media={media} />
+            <ListingMapSection
+              mapUrl={data?.mapUrl}
+              showInput={false}
+              title='Location'
+              showEmptyPlaceholder
+              className='mt-4 w-full'
+              iframeClassName='h-[240px] w-full rounded-[5px]'
+            />
           </div>
-          <div className='hidden md:block'>
-            <div className='h-[560px] w-full xl:w-[580px]'>
+          <div className='hidden w-full flex-col gap-4 md:flex xl:w-[580px]'>
+            <div className='h-[560px] w-full'>
               <img
                 alt={data?.title || 'Off-plan property'}
                 className='h-full w-full rounded-lg object-cover'
                 src={previewSrc}
               />
             </div>
+            <ListingMapSection
+              mapUrl={data?.mapUrl}
+              showInput={false}
+              title='Location'
+              showEmptyPlaceholder
+              className='w-full'
+              iframeClassName='h-[280px] w-full rounded-[5px] sm:h-[320px]'
+            />
           </div>
         </div>
 
-        <div className='relative mt-6 flex w-full flex-col items-start justify-between gap-5 sm:mt-0'>
-          <div className='flex w-full flex-col gap-2'>
-            <h1 className='w-[90%] truncate text-wrap text-xl font-semibold capitalize text-blue md:text-2xl lg:text-3xl'>
-              {data?.title}
-            </h1>
+        <div className='relative mt-6 flex w-full flex-col items-start gap-5 sm:mt-0'>
+          <h1 className='w-[90%] truncate text-wrap text-xl font-semibold capitalize text-blue md:text-2xl lg:text-3xl'>
+            {data?.title}
+          </h1>
 
-            <p className='text-[10px] tracking-wide text-black md:text-sm'>
-              Ready: {data?.deliveryLabel}
-            </p>
-
-            <div className='flex items-center justify-center space-x-2'>
-              {Array.from({ length: 5 }, (_, starIndex) => (
-                <div key={starIndex} className='h-4 w-4 md:h-5 md:w-5'>
-                  <FaStar
-                    size={20}
-                    color={
-                      starIndex < Math.round(averageRating)
-                        ? '#FFD700'
-                        : '#D3D3D3'
-                    }
-                  />
-                </div>
-              ))}
-              <span className='ml-3 text-xs opacity-50 md:text-base'>
-                {averageRating.toFixed(1)}
-              </span>
-              <span className='ml-3 text-xs opacity-50 md:text-base'>
-                ({reviewCounts} Reviews)
-              </span>
-            </div>
-          </div>
-
-          <Description text={data?.description} />
-
-          <div className='flex w-full flex-col gap-4'>
+          <div className='flex w-full flex-col gap-3'>
             <h2 className='text-sm font-medium md:text-base'>Details</h2>
-            <div className='grid w-full grid-cols-1 gap-3 rounded-md border border-black/10 bg-white p-4 shadow sm:grid-cols-2 sm:gap-4 sm:p-5'>
-              <span className='flex items-center text-xs md:text-sm'>
-                <GoDotFill className='mr-2 flex shrink-0 text-gold-800' />
-                Developer: {data?.developer || '—'}
-              </span>
-              <span className='flex items-center text-xs md:text-sm'>
-                <GoDotFill className='mr-2 flex shrink-0 text-gold-800' />
-                Property Type: {data?.propertyType || '—'}
-              </span>
-              <span className='flex items-center text-xs md:text-sm'>
-                <GoDotFill className='mr-2 flex shrink-0 text-gold-800' />
-                Bedrooms: {String(data?.bedrooms ?? 0).padStart(2, '0')}
-              </span>
-              <span className='flex items-center text-xs md:text-sm'>
-                <GoDotFill className='mr-2 flex shrink-0 text-gold-800' />
-                Bathrooms: {String(data?.bathrooms ?? 0).padStart(2, '0')}
-              </span>
-              <span className='flex items-center text-xs md:text-sm sm:col-span-2'>
-                <GoDotFill className='mr-2 flex shrink-0 text-gold-800' />
-                Size:{' '}
-                {formatOffPlanSizeRange(
-                  (data?.sizeUnit || 'SQFT') === 'SQM'
-                    ? data?.sizeSQMFrom ?? data?.sizeSQM
-                    : data?.sizeSQFTFrom ?? data?.sizeSQFT,
-                  (data?.sizeUnit || 'SQFT') === 'SQM'
-                    ? data?.sizeSQMTo ?? data?.sizeSQM
-                    : data?.sizeSQFTTo ?? data?.sizeSQFT,
-                  data?.sizeUnit || 'SQFT',
-                )}
-              </span>
-            </div>
-
-            <div className='flex w-full flex-col gap-2'>
-              <p className='text-sm text-reefGold md:text-base'>
-                Price Range:{' '}
-                {formatOffPlanPriceRange(data?.priceFrom, data?.priceTo)}
-              </p>
-              <p className='text-sm text-reefGold md:text-base'>
-                Payment Plan: {data?.paymentPlanLabel}
-              </p>
-            </div>
+            <ListingDetailsGrid rows={detailRows} />
           </div>
+
+          {data?.deliveryLabel ? (
+            <p className='text-sm tracking-wide text-black md:text-base'>
+              Ready: {data.deliveryLabel}
+            </p>
+          ) : null}
 
           <button
             type='button'
@@ -194,28 +171,27 @@ export default function OffPlanProductView({ data }) {
             Developer Request
           </button>
 
-          <div className='flex w-full flex-col gap-4 border-t border-black/10 pt-5 sm:flex-row sm:items-center sm:justify-between'>
-            <div className='flex items-center gap-4'>
-              <div className='relative h-[70px] w-[78px] shrink-0 overflow-hidden rounded-sm bg-[#D9D9D9]'>
-                <Image
-                  src={getProfileImageSrc(data?.developerAvatar)}
-                  alt={data?.developer || 'Seller'}
-                  width={78}
-                  height={70}
-                  className='h-[70px] w-[78px] object-cover'
-                />
+          <div className='flex w-full flex-col gap-4 border-t border-black/10 pt-5'>
+            <div className='flex w-full flex-col gap-4 sm:flex-row sm:items-center sm:justify-between'>
+              <div className='flex items-center gap-4'>
+                <div className='relative h-[70px] w-[78px] shrink-0 overflow-hidden rounded-sm bg-[#D9D9D9]'>
+                  <Image
+                    src={getProfileImageSrc(data?.developerAvatar)}
+                    alt={data?.developer || 'Seller'}
+                    width={78}
+                    height={70}
+                    className='h-[70px] w-[78px] object-cover'
+                  />
+                </div>
+                <span className='text-base font-medium text-black md:text-lg'>
+                  Ref: {data?.ref}
+                </span>
               </div>
-              <span className='text-base font-medium text-black md:text-lg'>
-                Ref: {data?.ref}
-              </span>
+              <ListingSocialShare listing={data} linkedinIcon='white' />
             </div>
-            <ListingSocialShare
-              listing={data}
-              linkedinIcon='white'
-            />
-          </div>
 
-          <ListingQrCodeSection src={data?.qrScanSrc} />
+            <ListingQrCodeSection src={data?.qrScanSrc} />
+          </div>
         </div>
       </div>
 
@@ -234,33 +210,48 @@ export default function OffPlanProductView({ data }) {
         </div>
 
         {activeTab === 'Description' ? (
-          <Description text={data?.additionalDescription || data?.description} />
+          <div className='space-y-4'>
+            {data?.description ? <Description text={data.description} /> : null}
+            {data?.additionalDescription &&
+              data.additionalDescription !== data?.description ? (
+              <Description text={data.additionalDescription} />
+            ) : null}
+            {!data?.description && !data?.additionalDescription ? (
+              <p className='px-4 py-6 text-sm text-black/60'>
+                No description available.
+              </p>
+            ) : null}
+          </div>
         ) : null}
 
         {activeTab === 'Reviews' ? <Review productdata={data} /> : null}
 
         {activeTab === 'Additional' ? (
-          <>
-            {data?.facilities?.length ? (
-              <div className='flex flex-wrap md:grid md:grid-cols-3'>
-                {data.facilities.map((item) => (
-                  <div key={item} className='col-span-1'>
-                    <div className='flex flex-row flex-wrap items-center space-x-2 p-2 text-base font-normal'>
-                      <IoCheckmarkSharp
-                        className='border border-reefGold md:mr-4'
-                        color='#A2913E'
-                      />
-                      <span className='text-xs md:text-base'>{item}</span>
-                    </div>
+          amenities.length ? (
+            <div className='px-2 sm:px-4'>
+              <h3 className='mb-3 text-sm font-medium text-prussianBlue md:text-base'>
+                Amenities
+              </h3>
+              <div className='grid grid-cols-1 gap-1 sm:grid-cols-2 md:grid-cols-3'>
+                {amenities.map((item) => (
+                  <div
+                    key={item}
+                    className='flex items-center gap-2 p-2 text-base font-normal'
+                  >
+                    <IoCheckmarkSharp
+                      className='shrink-0 border border-reefGold'
+                      color='#A2913E'
+                    />
+                    <span className='text-xs md:text-base'>{item}</span>
                   </div>
                 ))}
               </div>
-            ) : (
-              <p className='px-4 py-6 text-sm text-black/60'>
-                No additional facilities listed.
-              </p>
-            )}
-          </>
+            </div>
+          ) : (
+            <p className='px-4 py-6 text-sm text-black/60'>
+              No amenities listed for this property.
+            </p>
+          )
         ) : null}
 
         {activeTab === 'Payment Plan' ? (

@@ -109,17 +109,26 @@ export const validateOffPlanAsset = (formData, formFields) => {
     errors.pictures = "At least one picture is required";
   }
 
+  if (!formData.qrScan) {
+    errors.qrScan = "QR Scan is required";
+  }
+
   if (formData.additionalDescription?.length > 1000) {
     errors.additionalDescription =
       "Additional description must be less than 1000 characters";
   }
 
   const plan = Array.isArray(formData.paymentPlan) ? formData.paymentPlan : [];
-  const downPayment = plan[0]?.sharePercent;
+  const filledPlan = plan.filter(
+    (step) =>
+      String(step?.sharePercent ?? "").trim() !== "" ||
+      String(step?.milestone ?? "").trim() !== "",
+  );
+  const downPayment = filledPlan[0]?.sharePercent;
   if (!safeTrim(downPayment)) {
     errors.paymentPlan = "Down payment share is required";
   } else {
-    const totalShare = plan.reduce(
+    const totalShare = filledPlan.reduce(
       (sum, step) => sum + Number(step?.sharePercent || 0),
       0,
     );

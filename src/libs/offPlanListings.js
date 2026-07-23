@@ -7,6 +7,8 @@ import {
 import { getListingDetailId } from '@/libs/listingSlug'
 import { getListingRef } from '@/libs/listingRef'
 import { publicApiFetch } from '@/libs/publicApiClient'
+import { sanitizeOffPlanPaymentPlan } from '@/constants/listing-data'
+import { formatListingLocation } from '@/libs/listingLocationUtils'
 
 const OFF_PLAN_PLACEHOLDER = '/offplan/image1.svg'
 const OFF_PLAN_ASSET_TYPE = 'Property Off Plan For Sale'
@@ -34,18 +36,30 @@ function getOffPlanImageUrls(listing) {
   return slides.length ? slides : [OFF_PLAN_PLACEHOLDER]
 }
 
-export function getOffPlanPaymentPlanLabel(paymentPlan) {
-  const plan = Array.isArray(paymentPlan) ? paymentPlan : []
+export function getOffPlanPaymentPlanLabel(paymentPlanOrType, paymentPlanSteps) {
+  // Only show a badge when an explicit dropdown value was saved
+  if (typeof paymentPlanOrType === 'string' && paymentPlanOrType.trim()) {
+    const type = paymentPlanOrType.trim()
+    return type.toLowerCase().includes('payment plan')
+      ? type
+      : `${type} Payment Plan`
+  }
+
+  // No paymentPlanType set → do not invent a label from steps
+  if (!Array.isArray(paymentPlanOrType)) {
+    return ''
+  }
+
+  // Legacy: only used if first arg is the steps array
+  const plan = sanitizeOffPlanPaymentPlan(paymentPlanOrType)
   const down = Number(plan[0]?.sharePercent)
-  if (!Number.isFinite(down) || down <= 0) return 'Flexible Payment Plan'
+  if (!Number.isFinite(down) || down <= 0) return ''
   const remainder = Math.max(0, 100 - down)
   return `${down}/${remainder} Payment Plan`
 }
 
 function buildLocation(listing) {
-  return [listing?.neighbourhood, listing?.city, listing?.country]
-    .filter(Boolean)
-    .join(', ')
+  return formatListingLocation(listing)
 }
 
 function buildDeliveryLabel(listing) {
@@ -59,6 +73,8 @@ function buildDeliveryLabel(listing) {
 export function mapApiListingToOffPlanCard(listing) {
   const id = listing?.uuid || listing?._id || listing?.slug
   const slug = getListingDetailId(listing)
+  const paymentPlan = sanitizeOffPlanPaymentPlan(listing?.paymentPlan)
+  const paymentPlanType = String(listing?.paymentPlanType || '').trim()
 
   return {
     id,
@@ -73,7 +89,10 @@ export function mapApiListingToOffPlanCard(listing) {
     deliveryLabel: buildDeliveryLabel(listing),
     deliveryQuarter: listing?.deliveryQuarter,
     deliveryYear: listing?.deliveryYear,
-    paymentPlanLabel: getOffPlanPaymentPlanLabel(listing?.paymentPlan),
+    paymentPlanType,
+    paymentPlanLabel: paymentPlanType
+      ? getOffPlanPaymentPlanLabel(paymentPlanType)
+      : '',
     rating: 0,
     reviewCount: Array.isArray(listing?.reviews) ? listing.reviews.length : 0,
     dldNumber: listing?.dldNumber || '',
@@ -99,8 +118,14 @@ export function mapApiListingToOffPlanCard(listing) {
     sizeSQMTo: listing?.sizeSQMTo ?? listing?.sizeSQM,
     description: listing?.description,
     additionalDescription: listing?.additionalDescription,
-    facilities: listing?.facilities || [],
-    paymentPlan: listing?.paymentPlan || [],
+    facilities: listing?.facilities ?? [],
+    amenities: listing?.amenities ?? [],
+    paymentPlan,
+    layout: listing?.layout || '',
+    numberOfFloors: listing?.numberOfFloors || '',
+    availableApartment: listing?.availableApartment || '',
+    advertisementId: listing?.advertisementId || '',
+    mapUrl: listing?.mapUrl || '',
     unitLayout: resolveLayoutImageSrc(listing?.unitLayout),
     floorPlan: resolveLayoutImageSrc(listing?.floorPlan),
     status: listing?.status,

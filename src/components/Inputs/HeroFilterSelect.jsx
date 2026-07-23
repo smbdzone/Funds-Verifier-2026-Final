@@ -3,12 +3,9 @@
 import { useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
 import vectorArrow from '@/assets/images/vector5.svg'
+import { formatCityLabel } from '@/libs/dummyLocationData'
 
-export function formatCityLabel(city) {
-  if (!city) return ''
-  const main = String(city).split(',')[0]?.trim()
-  return main || String(city).trim()
-}
+export { formatCityLabel }
 
 export default function HeroFilterSelect({
   value,

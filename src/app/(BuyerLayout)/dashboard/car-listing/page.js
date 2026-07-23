@@ -6,6 +6,7 @@ import {
   handleThumbnailUpload,
   handleVideoUpload,
 } from '@/libs/uploadAsset'
+import { autoCapitalizeField } from '@/libs/autoCapitalizeText'
 import {
   applyPremiumServiceRefs,
   listingMediaRef,
@@ -96,6 +97,7 @@ const initialFormData = {
   extras: [String],
   technicalReport: '',
   evaluationDateTime: '',
+  mapUrl: '',
 }
 const dropdownData = {
   warranty: false,
@@ -584,7 +586,7 @@ function Page() {
         setTotalPrice(formattedValue) // This will format the displayed price
       }
     } else {
-      setFormData({ ...formData, [name]: value })
+      setFormData({ ...formData, [name]: autoCapitalizeField(name, value) })
     }
   }
 
@@ -595,6 +597,7 @@ function Page() {
     //   errors.evaluationDateTime = "Please select a date and time.";
     // }
     if (!thumbnail) errors.thumbnail = 'Thumbnail are Required'
+    if (!qrScan) errors.qrScan = 'QR Scan is required'
     if (!data?.assetType || data?.assetType === 'Select Asset Type')
       errors.assetType = 'Asset Type is required'
     if (!data?.country) errors.country = 'Country is required'
@@ -857,6 +860,9 @@ function Page() {
                   handleSubmit={handleSubmit}
                   setConfirmationModal={setConfirmationModal}
                   id={id}
+                  formData={formData}
+                  handleChange={handleChange}
+                  mapUrl={formData.mapUrl}
                 />
               </div>
               {!id && (

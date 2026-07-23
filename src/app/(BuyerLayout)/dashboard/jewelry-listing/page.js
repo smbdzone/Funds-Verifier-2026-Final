@@ -8,6 +8,7 @@ import {
   handleFileUpload,
   handleThumbnailUpload,
 } from '@/libs/uploadAsset'
+import { autoCapitalizeField } from '@/libs/autoCapitalizeText'
 import {
   applyPremiumServiceRefs,
   listingMediaRef,
@@ -118,6 +119,7 @@ function Page() {
     evaluationDateTime: '',
     video3DWalkthrough: null,
     qrScan: null,
+    mapUrl: '',
   }
   const dropdownData = {
     country: false,
@@ -339,6 +341,7 @@ function Page() {
     }
     if (images.length === 0) errors.pictures = 'Pictures are Required'
     if (!thumbnail) errors.thumbnail = 'Thumbnail is Required'
+    if (!qrScan) errors.qrScan = 'QR Scan is required'
     if (!safeTrim(data.assetType) || data.assetType === 'Select Asset Type')
       errors.assetType = 'Asset Type is required'
     if (!safeTrim(data.country)) errors.country = 'Country is required'
@@ -791,7 +794,7 @@ function Page() {
       setTotalSize(numericValue)
       setFormData({ ...formData, [name]: numericValue })
     } else {
-      setFormData({ ...formData, [name]: value })
+      setFormData({ ...formData, [name]: autoCapitalizeField(name, value) })
       setErrors({ ...errors, [name]: '' })
     }
   }
@@ -964,6 +967,9 @@ function Page() {
                   handleSubmit={handleSubmit}
                   setConfirmationModal={setConfirmationModal}
                   id={id}
+                  formData={formData}
+                  handleChange={handleChange}
+                  mapUrl={formData.mapUrl}
                 />
               </div>
               {!id && (

@@ -3,7 +3,8 @@ import { useSearchParams, usePathname } from 'next/navigation'
 import ViewModal from '@/components/Modals/ViewModal'
 import { handleFileUpload } from '@/libs/uploadAsset'
 import { formatNumberWithCommas } from '@/utils/global-functions/global'
-import { formatListingPriceDisplay } from '@/libs/listingPriceDisplay'
+import { formatListingCardPrice, formatListingPriceDisplay } from '@/libs/listingPriceDisplay'
+import { isOffPlanListing } from '@/libs/filterMyListingTab'
 import { formatPropertySizeDisplay } from '@/libs/propertySizeUnits'
 import { toast } from 'react-toastify'
 import Loader from '../../EvaluatorProfile/requestCompoenets/Loader'
@@ -97,10 +98,17 @@ const EvaluationDetails = () => {
     }
   }
 
+  const isOffPlan = isOffPlanListing(selectedProperty)
+
   const commonFields = [
     { label: 'Title', value: selectedProperty?.title },
     { label: 'Phone Number', value: selectedProperty?.phoneNumber },
-    { label: 'Price', value: formatListingPriceDisplay(selectedProperty) },
+    {
+      label: isOffPlan ? 'Price Range' : 'Price',
+      value: isOffPlan
+        ? formatListingCardPrice(selectedProperty)
+        : formatListingPriceDisplay(selectedProperty),
+    },
     {
       label: '3D embedded link',
       value: selectedProperty?.video3DWalkthrough?.link,

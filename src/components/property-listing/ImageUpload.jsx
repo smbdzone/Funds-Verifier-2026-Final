@@ -39,6 +39,7 @@ import OffPlanAgencyAgreementUpload from '@/components/property-listing/OffPlanA
 import {
   deliveryQuarterOptions,
   deliveryYearOptions,
+  paymentPlanTypeOptions,
 } from '@/constants/listing-data'
 import {
   blocksPremiumServiceRequest,
@@ -283,7 +284,9 @@ export const ImageUploadComponent = React.memo(
             </ListingImageUploadLayout>
             <ListingImageUploadLayout
               formats={LISTING_QR_SCAN_FORMATS_LABEL}
-              label='Upload QR Scan (optional)'
+              label='Upload QR Scan'
+              required
+              errors={errors.qrScan && !qrScan}
             >
               <ListingsImageComponent
                 image={qrScan}
@@ -292,6 +295,8 @@ export const ImageUploadComponent = React.memo(
                 disabled={isEvaluatorApprovedLocked}
                 inputId='qr-scan-offplan'
                 uploadLabel='Upload QR Scan'
+                errors={errors.qrScan && !qrScan}
+                errorMessage={errors.qrScan}
               />
             </ListingImageUploadLayout>
             <div className='relative w-full dropdown-container space-y-6'>
@@ -305,7 +310,8 @@ export const ImageUploadComponent = React.memo(
                 name='description'
                 handleChange={handleChange}
                 handleBlur={handleBlur}
-                placeholder='Tell us about your property (max. 300 characters)'
+                fieldLabel='Short description'
+                placeholder='Short description (max. 300 characters)'
                 errorsMessage={errors.description}
                 maxLength={300}
                 required
@@ -331,7 +337,8 @@ export const ImageUploadComponent = React.memo(
                 name='additionalDescription'
                 handleChange={handleChange}
                 handleBlur={handleBlur}
-                placeholder='Additional Properties'
+                fieldLabel='Long description'
+                placeholder='Long description (max. 1000 characters)'
                 errorsMessage={errors.additionalDescription}
                 maxLength={1000}
                 required={false}
@@ -453,6 +460,27 @@ export const ImageUploadComponent = React.memo(
               errors={errors.deliveryTime}
               errorsMessage={errors.deliveryTime}
             />
+            <div className='relative w-full dropdown-container'>
+              <ListingsDropdownInputComponents
+                errors={errors.paymentPlanType && !formData.paymentPlanType}
+                errorMessage={errors.paymentPlanType}
+                value={formData.paymentPlanType || ''}
+                placeholder='Payment Plan'
+                name='paymentPlanType'
+                handleToggleDropdown={() =>
+                  handleToggleDropdown('paymentPlanType')
+                }
+                dropdown={dropdowns.paymentPlanType}
+                dropdownType='paymentPlanType'
+                dropdownOptions={paymentPlanTypeOptions}
+                handleSelectOption={(_, option) =>
+                  handleSelectOption('paymentPlanType', option)
+                }
+                readOnly={isEvaluatorApprovedLocked}
+                disabled={isEvaluatorApprovedLocked}
+                required={false}
+              />
+            </div>
             <OffPlanLayoutFloorPlan
               formData={formData}
               errors={errors}
@@ -560,7 +588,9 @@ export const ImageUploadComponent = React.memo(
             </ListingImageUploadLayout>
             <ListingImageUploadLayout
               formats={LISTING_QR_SCAN_FORMATS_LABEL}
-              label='Upload QR Scan (optional)'
+              label='Upload QR Scan'
+              required
+              errors={errors.qrScan && !qrScan}
             >
               <ListingsImageComponent
                 image={qrScan}
@@ -569,6 +599,8 @@ export const ImageUploadComponent = React.memo(
                 disabled={isEvaluatorApprovedLocked}
                 inputId='qr-scan-property'
                 uploadLabel='Upload QR Scan'
+                errors={errors.qrScan && !qrScan}
+                errorMessage={errors.qrScan}
               />
             </ListingImageUploadLayout>
             <div className='relative w-full dropdown-container space-y-6'>
@@ -582,7 +614,8 @@ export const ImageUploadComponent = React.memo(
                 name='description'
                 handleChange={handleChange}
                 handleBlur={handleBlur}
-                placeholder='Tell us about your Property (max. 300 characters)'
+                fieldLabel='Short description'
+                placeholder='Short description (max. 300 characters)'
                 errorsMessage={errors.description}
                 maxLength={300}
                 required
@@ -617,7 +650,8 @@ export const ImageUploadComponent = React.memo(
                   name='additionalDescription'
                   handleChange={handleChange}
                   handleBlur={handleBlur}
-                  placeholder='Additional Description'
+                  fieldLabel='Long description'
+                  placeholder='Long description (max. 1000 characters)'
                   errorsMessage={errors.additionalDescription}
                   maxLength={1000}
                   required

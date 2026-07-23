@@ -1,22 +1,15 @@
 'use client'
-import React, { useState } from 'react'
-import LeftSlider from '@/components/Product_page/Left_slider'
-import Image from 'next/image'
-import { GoDotFill } from 'react-icons/go'
-import { Rating } from '@mui/material'
-import Link from 'next/link'
+
+import React, { useMemo, useState } from 'react'
 import Description from '@/components/Product_page/Description'
 import Review from '@/components/Product_page/Review'
 import CalendarPopup from '@/components/CalendarPopup/CalendarPopup'
 import { formatPriceUS } from '@/utils'
-
 import Open3dModal from '@/components/3dModal/Open3dModal'
 import ListingSocialShare from '@/components/shared/ListingSocialShare'
 import Modal2 from '@/components/product-modal/modal2'
 import Modal from '@/components/product-modal/modal'
-import ImageSlider from './ImageSlider'
 import { formatNumberWithCommas } from '../../../utils/global-functions/global'
-import { IoCheckmarkSharp } from 'react-icons/io5'
 import {
   getListingDetailMediaItems,
   getListingDocumentSrc,
@@ -25,369 +18,211 @@ import {
 } from '@/libs/listingCardMedia'
 import { getListingRef } from '@/libs/listingRef'
 import ListingQrCodeSection from '@/components/shared/ListingQrCodeSection'
+import ListingDetailsGrid from '@/components/shared/ListingDetailsGrid'
+import ListingDetailMediaColumn from '@/components/shared/ListingDetailMediaColumn'
+import ListingAmenitiesPanel from '@/components/shared/ListingAmenitiesPanel'
+import { getListingAmenities } from '@/libs/listingAmenities'
+import { formatListingLocation } from '@/libs/listingLocationUtils'
+
+const TABS = ['Description', 'Reviews', 'Additional']
 
 export default function JewelleryView({ data }) {
   const combinedMedia = getListingDetailMediaItems(data)
   const [previewMedia, setPreviewMedia] = useState(
     () => combinedMedia[0] || null,
   )
+  const [activeTab, setActiveTab] = useState('Description')
   const [showCalendarPopup, setShowCalendarPopup] = useState(false)
-  const [openDiscription, setOpenDiscription] = useState(true)
-  const [openReview, setOpenReview] = useState(false)
-  const [openAdditional_info, setOpenAdditional_info] = useState(false)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isModal2Open, setIsModal2Open] = useState(false)
   const [selectedMedia, setSelectedMedia] = useState(false)
 
-  const handleOpenValues = (value) => {
-    if (value === 'Description') {
-      setOpenAdditional_info(false)
-      setOpenReview(false)
-      setOpenDiscription(true)
-    } else if (value === 'Reviews') {
-      setOpenDiscription(false)
-      setOpenAdditional_info(false)
-      setOpenReview(true)
-    } else if (value === 'Additional') {
-      setOpenDiscription(false)
-      setOpenReview(false)
-      setOpenAdditional_info(true)
-    }
-  }
+  const detailRows = useMemo(
+    () => [
+      { label: 'Location', value: formatListingLocation(data), fullWidth: true },
+      { label: 'Grams', value: data?.grams },
+      { label: 'Age', value: data?.age },
+      { label: 'Category', value: data?.model },
+      {
+        label: 'Materials',
+        value: Array.isArray(data?.materials)
+          ? data.materials.filter(Boolean).join(', ')
+          : '',
+        fullWidth: true,
+      },
+      { label: 'Quantity', value: '01' },
+      { label: 'DLD Number', value: data?.dldNumber },
+    ],
+    [data],
+  )
 
-  const truncateTitle = (title) => {
-    const words = title.split(' ')
-    if (words.length > 3) {
-      return words.slice(0, 3).join(' ') + '...'
-    }
-    return title
-  }
-
-  const handleArrangeViewingClick = () => {
-    setShowCalendarPopup(true)
-  }
-
-  const handleCloseCalendarPopup = () => {
-    setShowCalendarPopup(false)
-  }
-
-  const closeModal = () => {
-    setIsModalOpen(false)
-  }
-
-  const closeModal2 = () => {
-    setIsModal2Open(false)
-  }
-
+  const amenities = useMemo(() => getListingAmenities(data), [data])
   const technicalReportSrc = getTechnicalReportSrc(data?.technicalReport)
   const evaluationCertificateSrc = getListingDocumentSrc(
     data?.evaluationCertificate,
   )
-  const [technicalRep, setTechnicalRep] = useState(() => technicalReportSrc)
-  const [certificateRep, setcertificateRep] = useState(
-    () => evaluationCertificateSrc,
-  )
 
-  const openTechnicalReport = () => {
-    if (technicalRep) {
-      setIsModalOpen(true)
-    } else {
-      console.error('No valid report URL available.')
-    }
-  }
-  const openEvaluationCertificate = () => {
-    if (certificateRep) {
-      setIsModal2Open(true)
-    } else {
-      console.error('No valid certificate URL available.')
-    }
-  }
+  const tabButtonClass = (tab) =>
+    `flex-grow md:text-base text-xs flex justify-center py-1 ${
+      activeTab === tab
+        ? 'text-lightBlue bg-gradient-to-r text-white sm:text-black from-[#a2913e] via-[#d7c590] to-[#a2913e] md:bg-none md:border-b-2 md:border-gold-800'
+        : 'text-black'
+    }`
 
   return (
     <div className='theme-container'>
-      <div className='sm:flex xl:flex-nowrap flex-wrap gap-6 lg:gap-12 pt-10 lg:pt-24 pb-5'>
-        <div className='flex items-stretch sm:flex-row flex-col gap-4'>
-          <div className='w-full md:block hidden sm:w-[160px] shrink-0'>
-            <LeftSlider
-              setPreviewMedia={setPreviewMedia}
-              media={combinedMedia}
-            />
-          </div>
+      <div className='flex flex-wrap gap-6 pb-5 pt-4 sm:pt-10 lg:flex-nowrap lg:gap-12 lg:pt-24'>
+        <ListingDetailMediaColumn
+          media={combinedMedia}
+          previewMedia={previewMedia}
+          setPreviewMedia={setPreviewMedia}
+          mapUrl={data?.mapUrl}
+          imageAlt={data?.title || 'Jewellery'}
+        />
 
-          <div className='w-fullblock md:hidden sm:w-[160px] shrink-0'>
-            <ImageSlider media={combinedMedia} />
-          </div>
-          <div className='md:block hidden'>
-            {previewMedia?.type === 'video' ? (
-              <video
-                controls
-                height={580}
-                width={580}
-                className='sm:w-[70%] lg:min-w-[580px] lg:min-h-[560px] object-cover rounded-lg'
-                src={previewMedia.src}
-              >
-                Your browser does not support the video tag.
-              </video>
-            ) : previewMedia?.type === 'walkthrough' ? (
-              <iframe
-                src={previewMedia.src}
-                height={580}
-                width={580}
-                className='sm:w-[70%] lg:min-w-[580px] lg:min-h-[560px] object-cover rounded-lg'
-                frameBorder='0'
-                allowFullScreen
-                title='3D Walkthrough'
-              />
-            ) : (
-              <div className='xl:w-[580px] w-full md:h-[560px]'>
-                <Image
-                  alt='preview'
-                  quality={100}
-                  height={580}
-                  width={580}
-                  className='h-full object-cover rounded-lg'
-                  src={previewMedia?.src || '/assets/images/room.jpg'}
-                />
-              </div>
-            )}
-          </div>
-        </div>
-        <div className='relative flex items-start flex-col justify-between mt-6 sm:mt-0'>
-          <h1 className='text-wrap text-blue capitalize lg:text-3xl md:text-2xl text-xl truncate w-[90%] font-semibold mb-1'>
+        <div className='relative mt-6 flex w-full flex-col items-start gap-5 sm:mt-0'>
+          <h1 className='w-[90%] truncate text-wrap text-xl font-semibold capitalize text-blue md:text-2xl lg:text-3xl'>
             {data?.title}
           </h1>
-          <h2 className='md:text-sm text-[10px] text-black tracking-wide'>
-            Availability: {data?.dealClosed ? 'Sold' : 'In Stock'}
-          </h2>
-          <div className='flex mb-2'>
-            <span className='flex items-center'>
-              <Rating
-                className='md:text-base text-xs'
-                name='half-rating-read'
-                defaultValue={data?.totalRating || 0}
-                precision={0.5}
-                readOnly
-              />
-              <span className='text-gray-600 md:text-base text-xs ml-3'>
-                {data?.totalRating} Reviews
-              </span>
-            </span>
-          </div>
-          <Description text={data.description} />
-          <div className='mt-3'>
-            <h2 className='font-medium md:text-base text-sm mb-2'>Details</h2>
-            <div className='flex flex-wrap items-center p-2 shadow rounded mb-5 gap-5'>
-              <span className='flex flex-row items-center text-xs md:text-sm'>
-                <GoDotFill className='flex mr-2 text-gold-800' /> Grams:&nbsp;
-                {data.grams}
-              </span>
-              <span className='flex flex-row items-center text-xs md:text-sm'>
-                <GoDotFill className='flex mr-2 text-gold-800' /> Age :{' '}
-                {data.age}
-              </span>
 
-              <span className='flex flex-row items-center text-xs md:text-sm'>
-                <GoDotFill className='flex mr-2 text-gold-800' /> Category :{' '}
-                {data.model}
-              </span>
-
-              <span className='flex flex-row flex-wrap items-center text-xs md:text-sm'>
-                <GoDotFill className='flex mr-2 text-gold-800' /> Materials :
-                {data?.materials?.map((col, i) => (
-                  <span key={col + i} className='mx-1'>
-                    {col}
-                  </span>
-                ))}
-              </span>
-            </div>
-            <h2 className='font-medium mb-2 md:text-base text-sm'>Quantity</h2>
-            <div className='grid grid-cols-2 gap-5 mb-7 items-center'>
-              <div className='custom-shadow rounded md:text-base text-sm md:px-5 px-3 py-2 md:py-3'>
-                01
-              </div>
-            </div>
+          <div className='flex w-full flex-col gap-3'>
+            <h2 className='text-sm font-medium md:text-base'>Details</h2>
+            <ListingDetailsGrid rows={detailRows} />
           </div>
-          <div className='w-full flex flex-wrap gap-x-4 my-2'>
-            <p className='text-reefGold md:text-base text-sm'>
+
+          <div className='flex w-full flex-wrap gap-x-4 gap-y-1'>
+            <p className='text-sm text-reefGold md:text-base'>
               Selling Price: AED {formatPriceUS(data?.price)}
             </p>
-            <p className='text-reefGold md:text-base text-sm'>
-              Market Price: AED &nbsp;
-              {formatNumberWithCommas(data?.evaluationPrices)}
+            <p className='text-sm text-reefGold md:text-base'>
+              Market Price: AED {formatNumberWithCommas(data?.evaluationPrices)}
             </p>
           </div>
-          <div className='flex gap-3 flex-wrap items-center mb-5'>
+
+          <div className='flex w-full flex-wrap items-center gap-3'>
             <button
-              onClick={handleArrangeViewingClick}
-              className='flex text-white justify-center btn-gradient border-0 py-2 sm:px-2 px-1  flex-grow focus:outline-none md:text-sm text-[10px] font-medium rounded'
+              type='button'
+              onClick={() => setShowCalendarPopup(true)}
+              className='btn-gradient flex w-full justify-center rounded border-0 px-5 py-3 text-xs font-medium text-white focus:outline-none sm:w-auto md:text-sm'
             >
               Arrange Viewing
             </button>
-            <div className='flex gap-3 ml-3'>
+            <div className='flex gap-3'>
               {technicalReportSrc ? (
                 <>
-                  <div className='bg-[#E0E0E0] p-1 rounded relative group'>
+                  <div className='rounded bg-[#E0E0E0] p-1'>
                     <img
                       src='/icons/card1.png'
-                      className='w-[23px] h-[23px]  cursor-pointer'
-                      onClick={() => openTechnicalReport(technicalReportSrc)}
+                      className='h-[23px] w-[23px] cursor-pointer'
+                      alt='Technical report'
+                      onClick={() => setIsModalOpen(true)}
                     />
-                    <div className='absolute w-[200px] right-0 -top-12 transform -translate-y-1/2 bg-white text-black text-sm p-5 rounded-lg shadow-lg opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-300 z-50'>
-                      Technical Report
-                    </div>
                   </div>
                   <Modal
                     isOpen={isModalOpen}
-                    onClose={closeModal}
+                    onClose={() => setIsModalOpen(false)}
                     fileUrl={technicalReportSrc}
                   />
                 </>
               ) : null}
-
               {evaluationCertificateSrc ? (
                 <>
-                  <div className='bg-[#E0E0E0] p-1 rounded relative group'>
+                  <div className='rounded bg-[#E0E0E0] p-1'>
                     <img
                       src='/icons/card2.png'
-                      className='w-[23px] h-[23px] cursor-pointer'
-                      onClick={() =>
-                        openEvaluationCertificate(evaluationCertificateSrc)
-                      }
+                      className='h-[23px] w-[23px] cursor-pointer'
+                      alt='Evaluation certificate'
+                      onClick={() => setIsModal2Open(true)}
                     />
-                    <div className='absolute w-[200px] right-0 -top-12 transform -translate-y-1/2 bg-white text-black text-sm p-5 rounded-lg shadow-lg opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-300 z-50'>
-                      Evaluation Certificate
-                    </div>
                   </div>
                   <Modal2
                     isOpen={isModal2Open}
-                    onClose={closeModal2}
+                    onClose={() => setIsModal2Open(false)}
                     file2Url={evaluationCertificateSrc}
-                    downloadFileName={data?.evaluationCertificate?.Certificate?.name}
+                    downloadFileName={
+                      data?.evaluationCertificate?.Certificate?.name
+                    }
                   />
                 </>
-              ) : (
-                ' '
-              )}
+              ) : null}
               {data?.video3DWalkthrough?.link ? (
                 <>
                   <div
-                    onClick={() => {
-                      setSelectedMedia(true)
-                    }}
-                    className='bg-[#E0E0E0] p-1 rounded relative group'
+                    onClick={() => setSelectedMedia(true)}
+                    className='rounded bg-[#E0E0E0] p-1'
                   >
                     <img
                       src='/icons/3dicon.png'
-                      className='w-[23px] h-[23px] cursor-pointer'
+                      className='h-[23px] w-[23px] cursor-pointer'
+                      alt='3D Walkthrough'
                     />
-                    <div className='absolute w-[200px] right-0 -top-12 transform -translate-y-1/2 bg-white text-black text-sm p-5 rounded-lg shadow-lg opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-300 z-50'>
-                      3D Walkthrough
-                    </div>
                   </div>
-                  {selectedMedia && (
+                  {selectedMedia ? (
                     <Open3dModal
                       selectedMedia={selectedMedia}
                       setSelectedMedia={setSelectedMedia}
                       link={data?.video3DWalkthrough?.link}
                     />
-                  )}
+                  ) : null}
                 </>
-              ) : (
-                ' '
-              )}
+              ) : null}
             </div>
           </div>
-          <span className='font-medium md:text-lg text-base mb-2 block'>
-            Ref: {getListingRef(data)}
-          </span>
-          <ListingQrCodeSection src={getListingQrScanSrc(data)} />
-          <div className='flex justify-between w-full items-end'>
-            <ListingSocialShare
-              listing={{ ...data, type: 'jewelry' }}
-              linkedinIcon='white'
-            />
-          </div>
-        </div>
-      </div>
-      <div className='bg-light-gray p-5 rounded-md'>
-        <div className='flex gap-4 pb-4 justify-center'>
-          <button
-            className={`flex-grow md:text-base text-xs flex justify-center py-1 ${openDiscription
-              ? 'text-lightBlue border-b-2 border-gold-800'
-              : 'text-black'
-              }`}
-            onClick={() => {
-              handleOpenValues('Description')
-            }}
-          >
-            DESCRIPTION
-          </button>
-          <button
-            className={`flex-grow md:text-base text-xs flex justify-center py-1 ${openAdditional_info
-              ? 'text-lightBlue border-b-2 border-gold-800'
-              : 'text-black'
-              }`}
-            onClick={() => {
-              handleOpenValues('Additional')
-            }}
-          >
-            ADDITIONAL INFORMATION
-          </button>
-          <button
-            className={`flex-grow md:text-base text-xs flex justify-center py-1 ${openReview
-              ? 'text-lightBlue border-b-2 border-gold-800'
-              : 'text-black'
-              }`}
-            onClick={() => {
-              handleOpenValues('Reviews')
-            }}
-          >
-            REVIEWS
-          </button>
-        </div>
-        {openAdditional_info && (
-          <>
-            {data?.facilities?.length !== 0 ? (
-              <div className='grid grid-cols-4'>
-                {data?.facilities?.map((item, columnIndex) => (
-                  <div key={columnIndex} className='col-span-1'>
-                    <div className='md:text-base text-xs font-normal'>
-                      <div className='flex flex-row flex-wrap items-center p-2 space-x-2'>
-                        <IoCheckmarkSharp className='mr-4' /> {item}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className='w-full flex items-center md:text-base text-xs justify-center text-prussianBlue py-5'>
-                No Additional Facilities!
-              </div>
-            )}
-          </>
-        )}
 
-        {openDiscription && (
-          <>
-            {data.description !== '' ? (
-              <Description text={data.description} />
-            ) : (
-              <Description text={'No Description For this Product'} />
-            )}
-          </>
-        )}
-        {openReview && (
-          <div>
-            <Review productdata={data} />
+          <div className='flex w-full flex-col gap-4 border-t border-black/10 pt-5'>
+            <div className='flex w-full flex-col gap-4 sm:flex-row sm:items-center sm:justify-between'>
+              <span className='text-base font-medium text-black md:text-lg'>
+                Ref: {getListingRef(data)}
+              </span>
+              <ListingSocialShare listing={data} linkedinIcon='white' />
+            </div>
+            <ListingQrCodeSection src={getListingQrScanSrc(data)} />
           </div>
-        )}
-        {showCalendarPopup && (
-          <CalendarPopup
-            onClose={handleCloseCalendarPopup}
-            productData={data}
-          />
-        )}
+        </div>
       </div>
+
+      <div className='rounded-md bg-light-gray sm:p-5'>
+        <div className='flex flex-wrap justify-center gap-2 pb-4 md:gap-4'>
+          {TABS.map((tab) => (
+            <button
+              key={tab}
+              type='button'
+              onClick={() => setActiveTab(tab)}
+              className={tabButtonClass(tab)}
+            >
+              {tab === 'Additional' ? 'Additional Information' : tab}
+            </button>
+          ))}
+        </div>
+
+        {activeTab === 'Description' ? (
+          <div className='space-y-4'>
+            {data?.description ? <Description text={data.description} /> : null}
+            {data?.additionalDescription &&
+            data.additionalDescription !== data?.description ? (
+              <Description text={data.additionalDescription} />
+            ) : null}
+            {!data?.description && !data?.additionalDescription ? (
+              <p className='px-4 py-6 text-sm text-black/60'>
+                No description available.
+              </p>
+            ) : null}
+          </div>
+        ) : null}
+
+        {activeTab === 'Reviews' ? <Review productdata={data} /> : null}
+
+        {activeTab === 'Additional' ? (
+          <ListingAmenitiesPanel amenities={amenities} />
+        ) : null}
+      </div>
+
+      {showCalendarPopup ? (
+        <CalendarPopup
+          onClose={() => setShowCalendarPopup(false)}
+          productData={data}
+        />
+      ) : null}
     </div>
   )
 }

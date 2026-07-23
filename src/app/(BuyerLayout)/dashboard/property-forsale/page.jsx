@@ -5,17 +5,19 @@ import axios from 'axios'
 import { routes } from '@/libs/api'
 import { useState, useEffect } from 'react'
 import {
-  DUMMY_DUBAI_NEIGHBOURHOODS,
   DUMMY_FALLBACK_COUNTRIES,
   DUMMY_UAE_CITY_PREDICTIONS,
   filterDummyCitiesByQuery,
+  getDummyNeighbourhoodsForCity,
+  hasDummyNeighbourhoodsForCity,
   isDummyUaeLocationsEnabled,
-  isDubaiCitySelection,
   LISTING_COUNTRY_UAE_LABEL,
   isUnitedArabEmiratesListingCountry,
   toUnitedArabEmiratesListingCountryName,
   filterCountriesToUaeOnly,
+  formatCityLabel,
 } from '@/libs/dummyLocationData'
+import { autoCapitalizeField } from '@/libs/autoCapitalizeText'
 import {
   normalizeCountriesResponse,
   normalizeCitiesResponse,
@@ -39,6 +41,7 @@ import {
 import { toast, ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 import customAxios from '../../../../utils/apis/apis'
+import ListingMapSection from '@/components/ListingsForm/ListingMapSection'
 import {
   LISTING_IMAGE_MAX_BYTES,
   LISTING_IMAGE_MAX_MB,
@@ -81,6 +84,7 @@ const initialFormData = {
   occupancyStatus: '',
   listings: [],
   facilities: [],
+  mapUrl: '',
   createdAt: new Date(),
   updatedAt: new Date(),
 }
@@ -433,8 +437,8 @@ function Page() {
         if (!cancelled) setNeighbourhoodOptions([])
         return
       }
-      if (isDummyUaeLocationsEnabled && isDubaiCitySelection(city)) {
-        if (!cancelled) setNeighbourhoodOptions([...DUMMY_DUBAI_NEIGHBOURHOODS])
+      if (hasDummyNeighbourhoodsForCity(city)) {
+        if (!cancelled) setNeighbourhoodOptions(getDummyNeighbourhoodsForCity(city))
         return
       }
       try {
@@ -443,19 +447,10 @@ function Page() {
         )
         if (!response.ok) throw new Error('neighbourhoods')
         const data = await response.json()
-        let places = Array.isArray(data?.places) ? data.places : []
-        if (isDubaiCitySelection(city) && places.length === 0) {
-          places = [...DUMMY_DUBAI_NEIGHBOURHOODS]
-        }
+        const places = Array.isArray(data?.places) ? data.places : []
         if (!cancelled) setNeighbourhoodOptions(places)
       } catch {
-        if (!cancelled) {
-          if (isDubaiCitySelection(city)) {
-            setNeighbourhoodOptions([...DUMMY_DUBAI_NEIGHBOURHOODS])
-          } else {
-            setNeighbourhoodOptions([])
-          }
-        }
+        if (!cancelled) setNeighbourhoodOptions([])
       }
     }
     load()
@@ -487,10 +482,11 @@ function Page() {
   }
 
   const handleLocationCityPick = (cityRow) => {
-    const cityName =
+    const cityName = formatCityLabel(
       typeof cityRow === 'object' && cityRow?.description
         ? cityRow.description
-        : String(cityRow)
+        : String(cityRow),
+    )
     setFormData((prev) => ({
       ...prev,
       city: cityName,
@@ -613,7 +609,7 @@ function Page() {
     const next =
       name === 'country'
         ? toUnitedArabEmiratesListingCountryName(value) || value
-        : value
+        : autoCapitalizeField(name, value)
     setFormData({ ...formData, [name]: next })
     setErrors({ ...errors, [name]: '' })
   }
@@ -898,7 +894,7 @@ function Page() {
                         City
                       </p>
                       <p className=' lg:text-xs md:text-[10px] xxs:text-[12px] font-normal pt-[5px] text-dark-grey truncate max-w-[140px]'>
-                        {formData.city || 'Select city'}
+                        {formatCityLabel(formData.city) || 'Select city'}
                       </p>
                     </div>
                     <Image
@@ -919,10 +915,11 @@ function Page() {
                         </p>
                       ) : (
                         cityOptions.map((row, idx) => {
-                          const label =
+                          const label = formatCityLabel(
                             typeof row === 'object' && row?.description
                               ? row.description
-                              : String(row)
+                              : String(row),
+                          )
                           return (
                             <button
                               key={`${label}-${idx}`}
@@ -2074,15 +2071,11 @@ function Page() {
                   />
                 </div>
                 {/* map  */}
-                <div className='mt-[30px]'>
-                  <iframe
-                    className='max-w-[1064px] w-full mx-auto h-[351px] rounded-[5px] shadow-neons'
-                    src='https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d231280.4131872353!2d55.06267954491565!3d25.0762424478002!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3e5f43496ad9c645%3A0xbde66e5084295162!2sDubai%20-%20United%20Arab%20Emirates!5e0!3m2!1sen!2s!4v1716351024030!5m2!1sen!2s'
-                    allowFullScreen
-                    loading='lazy'
-                    referrerPolicy='no-referrer-when-downgrade'
-                  />
-                </div>
+                <ListingMapSection
+                  mapUrl={formData.mapUrl}
+                  handleChange={handleChange}
+                  iframeClassName='max-w-[1064px] w-full mx-auto h-[351px] rounded-[5px] shadow-neons'
+                />
                 <div className='grid place-items-center mt-[30px] pb-[65px]'>
                   <button
                     className='text-whitee text-xl font-medium w-[205px] h-[50px] rounded-[3px] bg-light-gold shadow-neons disabled:opacity-60 disabled:cursor-not-allowed'

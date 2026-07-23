@@ -9,6 +9,7 @@ import DropdownInput from '@/components/Inputs/DropdownInput'
 import Loader from '../../EvaluatorProfile/requestCompoenets/Loader'
 import { formatNumberWithCommas } from '../../../../utils/global-functions/global'
 import customAxios from '../../../../utils/apis/apis'
+import { formatCityLabel } from '@/libs/dummyLocationData'
 
 const BankForm = ({
   user,
@@ -186,7 +187,9 @@ const BankForm = ({
             <DropdownInput
               setToggle={setToggleCity}
               selectedValue={values.city || user?.financialInfo?.city}
-              dropdownOptions={cities?.map((city) => city.description)} // Pass city names only
+              dropdownOptions={cities?.map((city) =>
+                formatCityLabel(city?.description || city),
+              )}
               onChange={(selectedCity) => {
                 setFieldValue('city', selectedCity)
                 setSearchQueryCity(selectedCity)

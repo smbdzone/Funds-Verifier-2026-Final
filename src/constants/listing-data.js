@@ -26,6 +26,7 @@ export const globalFormInput = {
   developer: "",
   advertisementId: "",
   dldNumber: "",
+  mapUrl: "",
   sizeSQFT: "",
   sizeSQM: "",
   sizeSQFTFrom: "",
@@ -36,6 +37,7 @@ export const globalFormInput = {
   qrScan: null,
   deliveryQuarter: "",
   deliveryYear: "",
+  paymentPlanType: "",
   layout: "",
   numberOfFloors: "",
   availableApartment: "",
@@ -99,14 +101,14 @@ export const globalFormInputFields = [
     type: "file",
     mediaType: "qrScan",
     name: "qrScan",
-    label: "QR Scan (optional)",
-    acceptedFormats: "JPG, PNG, GIF. Optional — 1 image, 2MB",
+    label: "QR Scan",
+    acceptedFormats: "JPG, PNG, GIF. 1 image, 2MB",
     maxSize: "2MB",
     files: [],
     formDataKey: "qrScan",
     multiple: false,
     errorKey: "qrScan",
-    required: false,
+    required: true,
   },
   {
     type: "text",
@@ -220,14 +222,14 @@ export const offPlanGlobalFormInputFields = [
     type: "file",
     mediaType: "qrScan",
     name: "qrScan",
-    label: "QR Scan (optional)",
-    acceptedFormats: "JPG, PNG, GIF. Optional — 1 image, 2MB",
+    label: "QR Scan",
+    acceptedFormats: "JPG, PNG, GIF. 1 image, 2MB",
     maxSize: "2MB",
     files: [],
     formDataKey: "qrScan",
     multiple: false,
     errorKey: "qrScan",
-    required: false,
+    required: true,
   },
   {
     type: "text",
@@ -1372,6 +1374,9 @@ export const bedroomsOptions = [
 
 export const deliveryQuarterOptions = ["Q1", "Q2", "Q3", "Q4"];
 
+/** Off-plan payment plan options shown on listing cards. "Payment Plan" is auto-appended on display. */
+export const paymentPlanTypeOptions = ["20/80", "Others"];
+
 const currentYear = new Date().getFullYear();
 export const deliveryYearOptions = Array.from({ length: 20 }, (_, i) =>
   String(currentYear + i),
@@ -1448,7 +1453,8 @@ export const OFF_PLAN_PAYMENT_STEP_META = [
 
 export const MAX_OFF_PLAN_PAYMENT_STEPS = 30;
 export const MIN_OFF_PLAN_PAYMENT_STEPS = 1;
-export const DEFAULT_OFF_PLAN_PAYMENT_STEPS = 5;
+/** Start with one step; sellers add more as needed so listings match what they entered. */
+export const DEFAULT_OFF_PLAN_PAYMENT_STEPS = 1;
 
 const OFF_PLAN_STEP_ORDINALS = [
   "First",
@@ -1496,6 +1502,19 @@ export const reindexOffPlanPaymentPlan = (steps = []) =>
     stepLabel: `${index + 1}: ${OFF_PLAN_STEP_ORDINALS[index] || `${index + 1}th`} Step`,
     paymentLabel: getOffPlanPaymentLabel(index, steps.length),
   }));
+
+/** Keep only steps the seller actually filled (share % and/or payment title). */
+export const isOffPlanPaymentStepFilled = (step) => {
+  const share = String(step?.sharePercent ?? "").trim();
+  const milestone = String(step?.milestone ?? "").trim();
+  return share !== "" || milestone !== "";
+};
+
+/** Drop empty steps and reindex — used on save and public display. */
+export const sanitizeOffPlanPaymentPlan = (steps = []) =>
+  reindexOffPlanPaymentPlan(
+    (Array.isArray(steps) ? steps : []).filter(isOffPlanPaymentStepFilled),
+  );
 
 export const createDefaultOffPlanPaymentPlan = (
   count = DEFAULT_OFF_PLAN_PAYMENT_STEPS,

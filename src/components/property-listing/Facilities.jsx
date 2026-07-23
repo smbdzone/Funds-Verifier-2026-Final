@@ -1,6 +1,7 @@
 import Image from "next/image";
 import React from "react";
 import ConfirmationModal from "@/components/AddListing/ConfirmationModal";
+import ListingMapSection from "@/components/ListingsForm/ListingMapSection";
 import { IoReload } from "react-icons/io5";
 import { isListingEvaluatorApprovedLocked } from "@/libs/listingEditLock";
 
@@ -10,6 +11,7 @@ const Facilities = React.memo(
     listings,
     handleRadioChange,
     handleCheckboxChange,
+    handleChange,
     facilities,
     adImage,
     submitConfirmation,
@@ -89,16 +91,11 @@ const Facilities = React.memo(
             alt="car"
           />
         </div>
-        {/* map  */}
-        <div className="mt-[30px]">
-          <iframe
-            className="max-w-[1064px] w-full mx-auto h-[351px] rounded-[5px] shadow-neons"
-            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d231280.4131872353!2d55.06267954491565!3d25.0762424478002!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3e5f43496ad9c645%3A0xbde66e5084295162!2sDubai%20-%20United%20Arab%20Emirates!5e0!3m2!1sen!2s!4v1716351024030!5m2!1sen!2s"
-            allowFullScreen
-            loading="lazy"
-            referrerPolicy="no-referrer-when-downgrade"
-          />
-        </div>
+        <ListingMapSection
+          mapUrl={formData?.mapUrl}
+          handleChange={handleChange}
+          disabled={fieldsLocked}
+        />
         <div className="grid place-items-center mt-[30px] pb-[65px]">
           <button
             className={`text-whitee flex justify-center items-center text-xl font-medium w-[205px] h-[50px] rounded-[3px] bg-light-gold shadow-neons`}

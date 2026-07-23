@@ -258,7 +258,9 @@ const JewelryListingForm = ({
           </ListingImageUploadLayout>
           <ListingImageUploadLayout
             formats={LISTING_QR_SCAN_FORMATS_LABEL}
-            label='Upload QR Scan (optional)'
+            label='Upload QR Scan'
+            required
+            errors={errors.qrScan && !qrScan}
           >
             <ListingsImageComponent
               image={qrScan}
@@ -267,6 +269,8 @@ const JewelryListingForm = ({
               disabled={isEvaluatorApprovedLocked}
               inputId='qr-scan-jewelry'
               uploadLabel='Upload QR Scan'
+              errors={errors.qrScan && !qrScan}
+              errorMessage={errors.qrScan}
             />
           </ListingImageUploadLayout>
           <div className='relative w-full dropdown-container'>

@@ -8,6 +8,7 @@ import {
   createDefaultOffPlanPaymentPlan,
   reindexOffPlanPaymentPlan,
 } from '@/constants/listing-data'
+import { autoCapitalizeTitle } from '@/libs/autoCapitalizeText'
 
 const PaymentPlanStepCard = ({
   step,
@@ -46,15 +47,25 @@ const PaymentPlanStepCard = ({
             {String(milestone || '').trim() || paymentLabel}
           </span>
           <div className='flex w-full max-w-[72px] flex-col items-center gap-1.5 xl:max-w-[80px]'>
-            <input
-              type='text'
-              inputMode='numeric'
-              disabled={disabled}
-              value={sharePercent}
-              onChange={onShareChange}
-              placeholder='e.g: 20%'
-              className='w-full border-0 bg-transparent text-center text-[13px] leading-5 text-dark-grey outline-none placeholder:text-dark-grey/60 disabled:opacity-60 xl:text-[14px]'
-            />
+            <div className='flex w-full items-center justify-center gap-0.5'>
+              <input
+                type='text'
+                inputMode='numeric'
+                disabled={disabled}
+                value={sharePercent}
+                onChange={onShareChange}
+                placeholder='e.g: 20'
+                className='min-w-0 flex-1 border-0 bg-transparent text-right text-[13px] leading-5 text-dark-grey outline-none placeholder:text-dark-grey/60 disabled:opacity-60 xl:text-[14px]'
+              />
+              <span
+                className={`shrink-0 text-[13px] leading-5 xl:text-[14px] ${sharePercent !== '' && sharePercent != null
+                    ? 'text-dark-grey'
+                    : 'text-dark-grey/60'
+                  }`}
+              >
+                %
+              </span>
+            </div>
             <div className='h-px w-full border-b border-dark-grey/40' />
           </div>
         </div>
@@ -71,7 +82,7 @@ const PaymentPlanStepCard = ({
           disabled={disabled}
           value={milestone}
           onChange={onMilestoneChange}
-          placeholder='Enter Milestone'
+          placeholder='Enter payment title'
           className='w-full min-w-0 border-0 bg-transparent text-center text-[11px] leading-[14px] text-dark-grey outline-none placeholder:text-dark-grey/60 disabled:opacity-60 xl:text-[13px] xl:leading-[16px]'
         />
       </div>
@@ -129,7 +140,11 @@ const OffPlanPaymentPlan = ({
               }
             }}
             onMilestoneChange={(event) =>
-              onStepChange(index, 'milestone', event.target.value)
+              onStepChange(
+                index,
+                'milestone',
+                autoCapitalizeTitle(event.target.value),
+              )
             }
             onRemove={() => onStepRemove(index)}
             shareError={errors?.[`paymentPlanShare_${index}`]}

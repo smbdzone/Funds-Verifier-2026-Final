@@ -6,6 +6,7 @@ import ProductView from '@/components/views/ProductView'
 import GlobalLoader from '@/utils/GlobalLoader'
 import { getPublicApiHeaders } from '@/libs/publicApiClient'
 import { buildListingPageMetadata } from '@/libs/listingMetadata'
+import { isOffPlanListing } from '@/libs/filterMyListingTab'
 import { cache } from 'react'
 
 const GetProductData = cache(async ({ slug }) => {
@@ -26,7 +27,8 @@ const GetProductData = cache(async ({ slug }) => {
       (item) =>
         Number(item?.status) === 1 &&
         item?.uuid !== propertyInfo?.uuid &&
-        item?.slug !== propertyInfo?.slug,
+        item?.slug !== propertyInfo?.slug &&
+        !isOffPlanListing(item),
     )
 
     return {
