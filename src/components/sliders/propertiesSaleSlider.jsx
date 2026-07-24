@@ -9,7 +9,7 @@ import { Pagination, Autoplay } from 'swiper/modules'
 import Image from 'next/image'
 import Link from 'next/link'
 import { FaStar } from 'react-icons/fa'
-import { formatCardPrice } from '@/libs/listingPriceDisplay'
+import { formatCardPrice, formatListingCardPrice } from '@/libs/listingPriceDisplay'
 import { ucFirst } from '@/utils'
 import {
   getListingCardImageSrc,
@@ -352,7 +352,10 @@ export default function PropertySaleSlider() {
                             </div>
                           </div>
                           <div className='text-xs font-semibold text-[#000000] md:text-sm lg:text-lg'>
-                            AED {formatCardPrice(propertyForSale.price)}
+                            AED{' '}
+                            {isOffPlanListing(propertyForSale)
+                              ? formatListingCardPrice(propertyForSale)
+                              : formatCardPrice(propertyForSale.price)}
                           </div>
                         </div>
                       </div>

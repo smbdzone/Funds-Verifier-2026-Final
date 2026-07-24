@@ -31,6 +31,7 @@ import {
   removeOffPlanPaymentStep,
   reindexOffPlanPaymentPlan,
   sanitizeOffPlanPaymentPlan,
+  normalizePaymentPlanType,
 } from '@/constants/listing-data'
 import { LISTING_IMAGE_MAX_BYTES, LISTING_IMAGE_MAX_MB } from '@/constants/listingUploadLimits'
 import { autoCapitalizeField } from '@/libs/autoCapitalizeText'
@@ -257,6 +258,7 @@ const Page = () => {
     paymentPlan: createDefaultOffPlanPaymentPlan(),
     listings: [],
     facilities: [],
+    customFacilities: [],
     qrScan: null,
     agencyAgreement: null,
     createdAt: new Date(),
@@ -799,6 +801,7 @@ const Page = () => {
         paymentPlan: sanitizeOffPlanPaymentPlan(
           Array.isArray(formData.paymentPlan) ? formData.paymentPlan : [],
         ),
+        paymentPlanType: normalizePaymentPlanType(formData.paymentPlanType),
         facilities: Array.isArray(formData.facilities)
           ? formData.facilities.filter(Boolean)
           : [],
@@ -1315,6 +1318,7 @@ const Page = () => {
                 handleSubmit={handleSubmit}
                 loading={loading}
                 facilities={facilities}
+                setFormData={setFormData}
                 adImage={adImage}
                 id={id}
                 submitConfirmation={submitConfirmation}

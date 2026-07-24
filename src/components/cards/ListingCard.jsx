@@ -11,7 +11,7 @@ import { Swiper, SwiperSlide } from 'swiper/react'
 import 'swiper/css'
 import 'swiper/css/navigation'
 import 'swiper/css/pagination'
-import { Navigation, Pagination, Scrollbar, A11y } from 'swiper/modules'
+import { Pagination, Scrollbar, A11y } from 'swiper/modules'
 import Link from 'next/link'
 import Modal2 from '../product-modal/modal2'
 import Image from 'next/image'
@@ -39,6 +39,8 @@ import {
 } from '@/libs/listingEditPaths'
 import { getListingDetailId } from '@/libs/listingSlug'
 import { hasPendingDocumentRequests } from '@/utils/requestDocumentUtils'
+import ListingCarouselNavButton from '@/components/cards/ListingCarouselNavButton'
+import { useProfile } from '@/context/UserContext'
 
 const renderListingDetails = (listing, hasFeaturedStyling) => {
   switch (listing.assetType) {
@@ -166,9 +168,18 @@ const ListingCard = ({
   listings,
   usePendingEvaluation = false,
   handleDeleteClick,
+  showEdit,
 }) => {
-  const [preious] = useState(false)
-  const [next] = useState(false)
+  const { user } = useProfile() || {}
+  const roleNorm = String(user?.role || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_-]/g, '')
+  const isAdminViewer =
+    roleNorm === 'admin' || roleNorm === 'superadmin'
+  // Super Admin / Admin: same card look as asset holder, but no edit control
+  const canEdit = showEdit ?? !isAdminViewer
+
   const [walkthroughListingId, setWalkthroughListingId] = useState(null)
   const [walkthroughLink, setWalkthroughLink] = useState('')
   const [modalCardId, setModalCardId] = useState(null)
@@ -354,19 +365,21 @@ const ListingCard = ({
                 </button>
               )}
 
-              {/* Edit Icon with Link */}
-              <Link href={getEditLink(listing.assetType, listing.uuid)}>
-                <IconButton
-                  style={{
-                    background: 'transparent',
-                  }}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                  }}
-                >
-                  <EditIcon className='py-1 text-[#8D7C3B]' />
-                </IconButton>
-              </Link>
+              {/* Edit — hidden for Super Admin / Admin */}
+              {canEdit ? (
+                <Link href={getEditLink(listing.assetType, listing.uuid)}>
+                  <IconButton
+                    style={{
+                      background: 'transparent',
+                    }}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                    }}
+                  >
+                    <EditIcon className='py-1 text-[#8D7C3B]' />
+                  </IconButton>
+                </Link>
+              ) : null}
               {typeof handleDeleteClick === 'function' &&
                 !usePendingEvaluation && (
                   <IconButton
@@ -384,20 +397,12 @@ const ListingCard = ({
             </div>
 
             <div className='xl:!max-w-[350px] relative'>
-              {/* Previous arrow */}
-              <div
-                onClick={() => handlePrevSlide(i)}
-                className={`absolute top-[30%] left-10 z-40 h-[100px] w-[25px] flex items-center justify-center ${preious ? 'bg-white' : 'bg-[#FFFFFF]'
-                  }`}
-              >
-                <div className=' px-2 py-1 rounded'>
-                  <img
-                    src={'/icons/golden-arrow-previous.png'}
-                    alt='previous'
-                    className=''
-                  />
-                </div>
-              </div>
+              {swiperSlides.length > 1 ? (
+                <ListingCarouselNavButton
+                  direction='prev'
+                  onClick={() => handlePrevSlide(i)}
+                />
+              ) : null}
               {/* Image slider */}
               <Swiper
                 spaceBetween={0}
@@ -408,8 +413,9 @@ const ListingCard = ({
                 loop={swiperSlides.length > 1}
                 pagination={{ clickable: true }}
                 scrollbar={{ draggable: true }}
-                style={{ maxWidth: '312px', width: '100%', height: '250px' }} // Adjusted height to match your design
-                modules={[Navigation, Pagination, Scrollbar, A11y]}
+                navigation={false}
+                style={{ maxWidth: '312px', width: '100%', height: '250px' }}
+                modules={[Pagination, Scrollbar, A11y]}
                 onSwiper={(swiper) => {
                   swiperRefs.current[i] = swiper
                 }}
@@ -446,23 +452,15 @@ const ListingCard = ({
                   </SwiperSlide>
                 ))}
               </Swiper>
-              {/* Next arrow */}
-              <div
-                onClick={() => handleNextSlide(i)}
-                className={`absolute top-[30%] right-10 z-40 h-[100px] w-[25px] flex items-center justify-center ${next ? 'bg-white' : 'bg-[#FFFFFF]'
-                  }`}
-              >
-                <div className='px-2 py-1 rounded'>
-                  <img
-                    src={'/icons/golden-arrow-previous.png'}
-                    className='transform rotate-180'
-                    alt='next'
-                  />
-                </div>
-              </div>
+              {swiperSlides.length > 1 ? (
+                <ListingCarouselNavButton
+                  direction='next'
+                  onClick={() => handleNextSlide(i)}
+                />
+              ) : null}
             </div>
             {/* Details section */}
-            <div className='xl:!max-w-[450px] flex flex-col'>
+            <div className='xl:!max-w-[450px] flex w-full min-w-0 flex-1 flex-col md:pt-10'>
               <span
                 className={`capitalize lg:text-base text-sm${hasFeaturedStyling
                   ? 'text-gradient-custom text-light-gold capitalize'
@@ -505,7 +503,7 @@ const ListingCard = ({
                     width={72}
                     height={72}
                     alt='QR code'
-                    className='listing-qr-thumb ml-auto h-[72px] w-[72px] shrink-0 rounded border border-gray-200 bg-white object-contain'
+                    className='listing-qr-thumb relative z-10 ml-auto h-[72px] w-[72px] shrink-0 rounded border border-gray-200 bg-white object-contain'
                     unoptimized
                   />
                 ) : null}

@@ -24,6 +24,9 @@ import {
   LISTING_VIDEO_FORMATS_LABEL,
 } from '@/constants/listingUploadLimits'
 import { XIcon } from 'lucide-react'
+import OffPlanPaymentPlanTypeField, {
+  PAYMENT_PLAN_TYPE_OTHER,
+} from '@/components/property-listing/OffPlanPaymentPlanTypeField'
 import {
   canRequestPremiumServices,
   isListingEvaluatorApprovedLocked,
@@ -39,7 +42,6 @@ import OffPlanAgencyAgreementUpload from '@/components/property-listing/OffPlanA
 import {
   deliveryQuarterOptions,
   deliveryYearOptions,
-  paymentPlanTypeOptions,
 } from '@/constants/listing-data'
 import {
   blocksPremiumServiceRequest,
@@ -460,27 +462,27 @@ export const ImageUploadComponent = React.memo(
               errors={errors.deliveryTime}
               errorsMessage={errors.deliveryTime}
             />
-            <div className='relative w-full dropdown-container'>
-              <ListingsDropdownInputComponents
-                errors={errors.paymentPlanType && !formData.paymentPlanType}
-                errorMessage={errors.paymentPlanType}
-                value={formData.paymentPlanType || ''}
-                placeholder='Payment Plan'
-                name='paymentPlanType'
-                handleToggleDropdown={() =>
-                  handleToggleDropdown('paymentPlanType')
-                }
-                dropdown={dropdowns.paymentPlanType}
-                dropdownType='paymentPlanType'
-                dropdownOptions={paymentPlanTypeOptions}
-                handleSelectOption={(_, option) =>
-                  handleSelectOption('paymentPlanType', option)
-                }
-                readOnly={isEvaluatorApprovedLocked}
-                disabled={isEvaluatorApprovedLocked}
-                required={false}
-              />
-            </div>
+            <OffPlanPaymentPlanTypeField
+              value={formData.paymentPlanType || ''}
+              errors={errors.paymentPlanType && !formData.paymentPlanType}
+              errorMessage={errors.paymentPlanType}
+              dropdown={dropdowns.paymentPlanType}
+              onToggleDropdown={() => handleToggleDropdown('paymentPlanType')}
+              onSelect={(option) =>
+                handleSelectOption('paymentPlanType', option)
+              }
+              onCustomChange={(customValue) => {
+                handleChange({
+                  target: {
+                    name: 'paymentPlanType',
+                    value: customValue || PAYMENT_PLAN_TYPE_OTHER,
+                  },
+                })
+              }}
+              readOnly={isEvaluatorApprovedLocked}
+              disabled={isEvaluatorApprovedLocked}
+              required={false}
+            />
             <OffPlanLayoutFloorPlan
               formData={formData}
               errors={errors}

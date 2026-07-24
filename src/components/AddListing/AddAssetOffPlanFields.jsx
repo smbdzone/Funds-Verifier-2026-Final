@@ -9,12 +9,14 @@ import DeliveryTimeField from '@/components/property-listing/DeliveryTimeField'
 import OffPlanLayoutFloorPlan from '@/components/property-listing/OffPlanLayoutFloorPlan'
 import OffPlanPaymentPlan from '@/components/property-listing/OffPlanPaymentPlan'
 import OffPlanAgencyAgreementUpload from '@/components/property-listing/OffPlanAgencyAgreementUpload'
+import OffPlanPaymentPlanTypeField, {
+  PAYMENT_PLAN_TYPE_OTHER,
+} from '@/components/property-listing/OffPlanPaymentPlanTypeField'
 import {
   bathroomsOptions,
   bedroomsOptions,
   deliveryQuarterOptions,
   deliveryYearOptions,
-  paymentPlanTypeOptions,
 } from '@/constants/listing-data'
 
 const AddAssetOffPlanFields = ({
@@ -153,18 +155,23 @@ const AddAssetOffPlanFields = ({
         />
       </div>
 
-      <DropdownInput
-        name='paymentPlanType'
-        placeholder='Payment Plan'
-        value={formData.paymentPlanType || ''}
-        options={paymentPlanTypeOptions}
-        onSelect={(value) => onSelectOption('paymentPlanType', value)}
-        dropdownOpen={dropdownOpen}
-        onDropdownOpen={onDropdownOpen}
-        required={false}
-        errors={errors}
-      />
-
+      <div className='col-span-2 sm:col-span-1'>
+        <OffPlanPaymentPlanTypeField
+          value={formData.paymentPlanType || ''}
+          errors={Boolean(errors?.paymentPlanType)}
+          errorMessage={errors?.paymentPlanType}
+          dropdown={dropdownOpen === 'paymentPlanType'}
+          onToggleDropdown={() => onDropdownOpen('paymentPlanType')}
+          onSelect={(option) => onSelectOption('paymentPlanType', option)}
+          onCustomChange={(customValue) =>
+            onInputChange(
+              'paymentPlanType',
+              customValue || PAYMENT_PLAN_TYPE_OTHER
+            )
+          }
+          required={false}
+        />
+      </div>
       <div className='col-span-2'>
         <TextInput
           type='textarea'

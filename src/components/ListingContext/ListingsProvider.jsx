@@ -35,7 +35,7 @@ import {
   LISTING_IMAGE_MAX_COUNT,
   LISTING_VIDEO_MAX_COUNT,
 } from '@/constants/listingUploadLimits'
-import { createDefaultOffPlanPaymentPlan, sanitizeOffPlanPaymentPlan } from '@/constants/listing-data'
+import { createDefaultOffPlanPaymentPlan, sanitizeOffPlanPaymentPlan, facilities, getExtraFacilities } from '@/constants/listing-data'
 import {
   ensureWithinSize,
   isCompressionConfigured,
@@ -195,6 +195,9 @@ const ListingsProvider = ({ children }) => {
           availableApartment: d.availableApartment || '',
           facilities: Array.isArray(d.facilities)
             ? d.facilities.filter(Boolean)
+            : [],
+          customFacilities: Array.isArray(d.facilities)
+            ? getExtraFacilities(d.facilities, [], facilities)
             : [],
           paymentPlan: (() => {
             const cleaned = sanitizeOffPlanPaymentPlan(d.paymentPlan)

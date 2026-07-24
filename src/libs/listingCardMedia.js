@@ -201,12 +201,28 @@ export function getListingThumbSrc(listing, fallback) {
  */
 export function getListingQrScanSrc(listing) {
   const qr = listing?.qrScan
-  if (!qr || typeof qr !== 'object') return ''
-  const imgs = Array.isArray(qr.images) ? qr.images : [qr]
-  for (const img of imgs) {
+  if (!qr) return ''
+
+  if (typeof qr === 'string') {
+    const src = getListingImageSrc(qr)
+    return src && src !== PLACEHOLDER ? src : ''
+  }
+
+  if (typeof qr !== 'object') return ''
+
+  const candidates = []
+  if (Array.isArray(qr.images) && qr.images.length) {
+    candidates.push(...qr.images)
+  } else {
+    // Some payloads nest a single image on the asset itself
+    candidates.push(qr)
+  }
+
+  for (const img of candidates) {
     const src = getListingImageSrc(img)
     if (src && src !== PLACEHOLDER) return src
   }
+
   return ''
 }
 

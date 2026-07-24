@@ -104,6 +104,10 @@ const SKIP_FIELD_NAMES = new Set([
 
   'video3dwalkthrough',
 
+  'paymentplantype',
+
+  'paymentplantypecustom',
+
 ])
 
 

@@ -20,6 +20,7 @@ import {
 import { handleFileUpload } from '@/libs/uploadAsset'
 import Loader from './requestCompoenets/Loader'
 import { formatNumberWithCommas } from '../../../utils/global-functions/global'
+import { formatListingCardPrice } from '@/libs/listingPriceDisplay'
 import { IoCheckmarkSharp } from 'react-icons/io5'
 import { getCookie } from 'cookies-next'
 import customAxios from '../../../utils/apis/apis'
@@ -598,7 +599,7 @@ export const RequestTab1 = () => {
                 <p className='text-base text-black/80'>
                   Price:
                   <span className='text-black/50'>
-                    AED {formatNumberWithCommas(data?.price)}
+                    AED {formatListingCardPrice(data)}
                   </span>
                 </p>
               </div>

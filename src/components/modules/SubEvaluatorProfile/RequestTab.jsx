@@ -19,6 +19,7 @@ import {
 import { handleFileUpload } from '@/libs/uploadAsset'
 import Loader from '../EvaluatorProfile/requestCompoenets/Loader'
 import { formatNumberWithCommas } from '../../../utils/global-functions/global'
+import { formatListingCardPrice } from '@/libs/listingPriceDisplay'
 import customAxios from '../../../utils/apis/apis'
 import EvaluatorListingMedia from '../EvaluatorProfile/requestCompoenets/EvaluatorListingMedia'
 import EvaluatorDateField from '../EvaluatorProfile/requestCompoenets/EvaluatorDateField'
@@ -610,7 +611,7 @@ export const RequestTab = () => {
                 <p className='text-base text-black/80'>
                   Price:
                   <span className='text-black/50'>
-                    AED {formatNumberWithCommas(data?.price)}
+                    AED {formatListingCardPrice(data)}
                   </span>
                 </p>
               </div>

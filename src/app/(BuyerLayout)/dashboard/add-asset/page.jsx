@@ -26,6 +26,7 @@ import {
   OFF_PLAN_MEDIA_KEYS,
   reindexOffPlanPaymentPlan,
   sanitizeOffPlanPaymentPlan,
+  normalizePaymentPlanType,
   addOffPlanPaymentStep,
   removeOffPlanPaymentStep,
 } from '@/constants/listing-data'
@@ -37,6 +38,7 @@ import CheckboxInput from '@/components/AddListing/CheckboxInput'
 import BookingField from '@/components/AddListing/BookingField'
 import ConfirmationModal from '@/components/AddListing/ConfirmationModal'
 import ListingMapSection from '@/components/ListingsForm/ListingMapSection'
+import FacilitiesChecklist from '@/components/property-listing/FacilitiesChecklist'
 import { IoReload } from 'react-icons/io5'
 import propertyAd from '@/assets/images/advertisement.png'
 import { validateAsset, validateOffPlanAsset } from '../../../../utils/validateForms'
@@ -593,6 +595,7 @@ const Page = () => {
           paymentPlan: sanitizeOffPlanPaymentPlan(
             Array.isArray(formData.paymentPlan) ? formData.paymentPlan : [],
           ),
+          paymentPlanType: normalizePaymentPlanType(formData.paymentPlanType),
           ...offPlanMediaRefs,
         }),
       }
@@ -735,24 +738,15 @@ const Page = () => {
                       className='w-full p-4 col-span-2 space-y-4'
                       key={field.id}
                     >
-                      <h2 className='text-dark-black text-xl font-medium'>
-                        {field.heading}
-                      </h2>
-                      <div className='grid grid-cols-2 gap-3 w-full sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6'>
-                        {field?.checkboxes?.map((opt, index) => (
-                          <CheckboxInput
-                            key={index}
-                            label={opt}
-                            value={opt}
-                            checked={
-                              formData[field.name]?.includes(opt) || false
-                            }
-                            onChange={(e) =>
-                              handleCheckboxChange(e, field.name)
-                            }
-                          />
-                        ))}
-                      </div>
+                      <FacilitiesChecklist
+                        title={field.heading}
+                        presetFacilities={field?.checkboxes || []}
+                        selectedFacilities={formData.facilities}
+                        customFacilities={formData.customFacilities}
+                        onCheckboxChange={handleCheckboxChange}
+                        setFormData={setFormData}
+                        gridClassName='grid grid-cols-2 gap-3 w-full sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6'
+                      />
                     </div>
                   ))}
                 <div className='grid col-span-2 place-items-center mt-[49px]'>

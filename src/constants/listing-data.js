@@ -43,6 +43,7 @@ export const globalFormInput = {
   availableApartment: "",
   paymentPlan: [],
   facilities: [],
+  customFacilities: [],
   listings: [],
 };
 
@@ -484,6 +485,24 @@ export const facilities = [
   "Chiller A/C",
   "Cleaning Services",
 ];
+
+/** Facilities the user added beyond the preset checklist. */
+export function getExtraFacilities(
+  selected = [],
+  custom = [],
+  presetList = facilities,
+) {
+  const presetSet = new Set(presetList)
+  const extras = []
+  const seen = new Set()
+  for (const name of [...(custom || []), ...(selected || [])]) {
+    const n = String(name || "").trim()
+    if (!n || presetSet.has(n) || seen.has(n.toLowerCase())) continue
+    seen.add(n.toLowerCase())
+    extras.push(n)
+  }
+  return extras
+}
 
 export const propertyCheckBoxFields = [
   {
@@ -1375,7 +1394,38 @@ export const bedroomsOptions = [
 export const deliveryQuarterOptions = ["Q1", "Q2", "Q3", "Q4"];
 
 /** Off-plan payment plan options shown on listing cards. "Payment Plan" is auto-appended on display. */
-export const paymentPlanTypeOptions = ["20/80", "Others"];
+export const PAYMENT_PLAN_TYPE_OTHER = "Others";
+export const paymentPlanTypeOptions = ["20/80", PAYMENT_PLAN_TYPE_OTHER];
+export const paymentPlanTypePresets = ["20/80"];
+
+export function isPaymentPlanTypeOtherMode(value) {
+  const v = String(value || "").trim();
+  if (!v) return false;
+  if (v === PAYMENT_PLAN_TYPE_OTHER) return true;
+  return !paymentPlanTypePresets.includes(v);
+}
+
+export function getPaymentPlanTypeDropdownValue(value) {
+  return isPaymentPlanTypeOtherMode(value)
+    ? PAYMENT_PLAN_TYPE_OTHER
+    : String(value || "").trim();
+}
+
+/** Value shown in the custom text field when "Others" is selected. */
+export function getPaymentPlanTypeCustomValue(value) {
+  const v = String(value || "").trim();
+  if (!v || v === PAYMENT_PLAN_TYPE_OTHER || paymentPlanTypePresets.includes(v)) {
+    return "";
+  }
+  return v;
+}
+
+/** Persist empty when user left "Others" without typing a custom plan. */
+export function normalizePaymentPlanType(value) {
+  const v = String(value || "").trim();
+  if (!v || v === PAYMENT_PLAN_TYPE_OTHER) return "";
+  return v;
+}
 
 const currentYear = new Date().getFullYear();
 export const deliveryYearOptions = Array.from({ length: 20 }, (_, i) =>

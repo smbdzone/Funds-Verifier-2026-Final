@@ -2,20 +2,39 @@ import { isOffPlanListing } from '@/libs/filterMyListingTab'
 import { formatNumberWithCommas } from '@/utils/global-functions/global'
 
 /**
- * Compact price part: 1.1M above 1M; optional k for thousands (public cards).
+ * Format amount/divisor as compact suffix without rounding
+ * (e.g. 1020000 → "1.02M", 50000 → "50k", 1500000 → "1.5M").
+ */
+function formatExactCompact(amount, divisor, suffix) {
+  const whole = Math.trunc(amount / divisor)
+  const remainder = amount % divisor
+  if (remainder === 0) return `${whole}${suffix}`
+
+  const fractionDigits = String(divisor).length - 1
+  const frac = String(remainder)
+    .padStart(fractionDigits, '0')
+    .replace(/0+$/, '')
+
+  return frac ? `${whole}.${frac}${suffix}` : `${whole}${suffix}`
+}
+
+/**
+ * Compact price part: M at/above 1M; optional k for thousands (public cards).
+ * Keeps exact decimals — does not round (1,020,000 → 1.02M, not 1.0M).
  */
 export function formatCompactPriceAmount(value, { abbreviateThousands = false } = {}) {
-  const amount = Number(value)
-  if (!Number.isFinite(amount) || amount <= 0) return ''
+  const raw = Number(value)
+  if (!Number.isFinite(raw) || raw <= 0) return ''
+
+  // Prices are whole AED; truncate fractional noise without rounding up.
+  const amount = Math.trunc(raw)
 
   if (amount >= 1_000_000) {
-    const millions = amount / 1_000_000
-    return millions % 1 === 0 ? `${millions}M` : `${millions.toFixed(1)}M`
+    return formatExactCompact(amount, 1_000_000, 'M')
   }
 
   if (abbreviateThousands && amount >= 1_000) {
-    const thousands = amount / 1_000
-    return thousands % 1 === 0 ? `${thousands}k` : `${thousands.toFixed(0)}k`
+    return formatExactCompact(amount, 1_000, 'k')
   }
 
   return formatNumberWithCommas(amount)
@@ -45,14 +64,16 @@ export function formatOffPlanPriceRangeDisplay(
 
 /**
  * Price label for listing cards and dashboards.
- * Off-plan ranges use compact M/k formatting when values are large.
+ * Off-plan ranges and single prices use compact M/k (no rounding).
  */
 export function formatListingPriceDisplay(listing) {
   if (isOffPlanListing(listing)) {
-    return formatOffPlanPriceRangeDisplay(listing?.priceFrom, listing?.priceTo)
+    return formatOffPlanPriceRangeDisplay(listing?.priceFrom, listing?.priceTo, {
+      abbreviateThousands: true,
+    })
   }
 
-  return formatCompactPriceAmount(listing?.price)
+  return formatCompactPriceAmount(listing?.price, { abbreviateThousands: true })
 }
 
 /** Single price on public listing cards (sliders, product cards). Uses k/M when large. */

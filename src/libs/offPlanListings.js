@@ -40,6 +40,8 @@ export function getOffPlanPaymentPlanLabel(paymentPlanOrType, paymentPlanSteps) 
   // Only show a badge when an explicit dropdown value was saved
   if (typeof paymentPlanOrType === 'string' && paymentPlanOrType.trim()) {
     const type = paymentPlanOrType.trim()
+    // "Others" is a UI placeholder, not a real plan label
+    if (type.toLowerCase() === 'others') return ''
     return type.toLowerCase().includes('payment plan')
       ? type
       : `${type} Payment Plan`

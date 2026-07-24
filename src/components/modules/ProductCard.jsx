@@ -5,7 +5,7 @@ import { LocationIcon } from '../Icons'
 import ListingSocialShare from '@/components/shared/ListingSocialShare'
 import Modal from '../product-modal/modal'
 import Modal2 from '../product-modal/modal2'
-import { Navigation, Pagination, Scrollbar, A11y } from 'swiper/modules'
+import { Pagination, Scrollbar, A11y } from 'swiper/modules'
 import { Swiper, SwiperSlide } from 'swiper/react'
 import 'swiper/css'
 import 'swiper/css/navigation'
@@ -15,11 +15,13 @@ import { swiperCanLoop } from '@/utils/swiperLoop'
 import {
   getListingCarouselItems,
   getListingDocumentSrc,
+  getListingQrScanSrc,
   isListingCarouselPlaceholderSlide,
   PLACEHOLDER,
 } from '@/libs/listingCardMedia'
 import { formatCardPrice, formatListingCardPrice } from '@/libs/listingPriceDisplay'
 import { getListingSharePath } from '@/libs/listingSocialShare'
+import ListingCarouselNavButton from '@/components/cards/ListingCarouselNavButton'
 
 const ProductCard = ({
   type,
@@ -73,12 +75,12 @@ const ProductCard = ({
       }}
     >
       <div className='w-full sm:w-1/2 relative' style={{ maxWidth: '350px' }}>
-        <div
-          onClick={() => handlePrevSlide(item.uuid)}
-          className='absolute opacity-70 hover:opacity-100 top-[30%] left-2 px-2 py-12 bg-white rounded-bl-md z-40 h-fit w-fit flex items-center justify-center'
-        >
-          <img src='/icons/golden-arrow-previous.png' alt='previous' />
-        </div>
+        {carouselSlides.length > 1 ? (
+          <ListingCarouselNavButton
+            direction='prev'
+            onClick={() => handlePrevSlide(item.uuid)}
+          />
+        ) : null}
         <Swiper
           spaceBetween={0}
           slidesPerView={1}
@@ -86,8 +88,9 @@ const ProductCard = ({
           loop={swiperCanLoop(carouselSlides.length, 1)}
           pagination={{ clickable: true }}
           scrollbar={{ draggable: true }}
+          navigation={false}
           style={{ maxWidth: '312px', width: '100%', height: '220px' }}
-          modules={[Navigation, Pagination, Scrollbar, A11y]}
+          modules={[Pagination, Scrollbar, A11y]}
           onSwiper={(swiper) => {
             swiperRefs.current[item.uuid] = swiper
           }}
@@ -141,23 +144,19 @@ const ProductCard = ({
             </SwiperSlide>
           )}
         </Swiper>
-        <div
-          onClick={() => handleNextSlide(item.uuid)}
-          className='bg-white absolute opacity-70 hover:opacity-100 top-[30%] right-2 px-2 py-12 rounded-br-md z-40 h-fit w-fit flex items-center justify-center'
-        >
-          <img
-            src='/icons/golden-arrow-previous.png'
-            className='transform rotate-180'
-            alt='next'
+        {carouselSlides.length > 1 ? (
+          <ListingCarouselNavButton
+            direction='next'
+            onClick={() => handleNextSlide(item.uuid)}
           />
-        </div>
+        ) : null}
       </div>
       <div
         className={`w-full text-base ${hasAdditionalContent ? 'text-white' : 'text-reef-gold'
           }`}
       >
-        <div className='flex justify-between gap-2 w-full'>
-          <Link href={listingHref}>
+        <div className='listing-card-meta flex w-full items-start justify-between gap-2'>
+          <Link href={listingHref} className='min-w-0 flex-1'>
             <h2
               className={`text-xl font-semibold capitalize ${hasAdditionalContent ? 'text-white' : 'text-black'
                 }`}
@@ -165,6 +164,16 @@ const ProductCard = ({
               {getShortTitle(title)}
             </h2>
           </Link>
+          {getListingQrScanSrc(item) ? (
+            <Image
+              src={getListingQrScanSrc(item)}
+              width={72}
+              height={72}
+              alt='QR code'
+              className='listing-qr-thumb ml-auto h-[72px] w-[72px] shrink-0 rounded border border-gray-200 bg-white object-contain'
+              unoptimized
+            />
+          ) : null}
         </div>
         <div className='w-full flex gap-x-2 my-2'>
           <p
