@@ -205,6 +205,12 @@ export const login = async (values, router) => {
       case 'Advertiser':
         router.replace('/advertiser-dashboard')
         break
+      case 'Developer': {
+        const developerUrl =
+          process.env.NEXT_PUBLIC_DEVELOPER_APP_URL || 'http://localhost:3012'
+        window.location.href = developerUrl.replace(/\/$/, '')
+        break
+      }
       case 'AssetHolder':
         router.replace('/seller-profile')
         break

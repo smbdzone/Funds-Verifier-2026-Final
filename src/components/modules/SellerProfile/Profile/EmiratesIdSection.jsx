@@ -4,15 +4,13 @@ import { Formik, Form, Field, ErrorMessage } from 'formik'
 import * as Yup from 'yup'
 import { toast } from 'react-toastify'
 import customAxios from '@/utils/apis/apis'
+import { normalizePersonFullName } from '@/utils/auth/parseUaePassName'
 
 const validationSchema = Yup.object({
   fullName: Yup.string().required('Full name (as per Emirates ID) is required'),
   number: Yup.string()
     .required('Emirates ID number is required')
-    .matches(
-      /^784-\d{4}-\d{7}-\d$/,
-      'Use format 784-XXXX-XXXXXXX-X',
-    ),
+    .matches(/^784-\d{4}-\d{7}-\d$/, 'Use format 784-XXXX-XXXXXXX-X'),
   expiryDate: Yup.date()
     .required('Emirates ID expiry date is required')
     .min(new Date(), 'Emirates ID must not be expired'),
@@ -32,6 +30,11 @@ const EmiratesIdSection = ({ user, fetchData, variant = 'dark' }) => {
     ? new Date(user.emiratesId.expiryDate).toISOString().split('T')[0]
     : ''
 
+  const cleanedFullName = normalizePersonFullName(
+    user?.emiratesId?.fullName || user?.displayName || user?.name || '',
+    user?.lastname || '',
+  )
+
   return (
     <div className={variant === 'dark' ? 'sm:px-8 px-4 pb-3 sm:py-6' : ''}>
       {variant === 'dark' && (
@@ -47,7 +50,7 @@ const EmiratesIdSection = ({ user, fetchData, variant = 'dark' }) => {
 
       <Formik
         initialValues={{
-          fullName: user?.emiratesId?.fullName || user?.displayName || user?.name || '',
+          fullName: cleanedFullName,
           number: user?.emiratesId?.number || '',
           expiryDate: expiryValue,
         }}
@@ -55,9 +58,10 @@ const EmiratesIdSection = ({ user, fetchData, variant = 'dark' }) => {
         validationSchema={validationSchema}
         onSubmit={async (values) => {
           try {
+            const fullName = normalizePersonFullName(values.fullName)
             const res = await customAxios.put(`/user/update/${user?.uuid}`, {
               emiratesId: {
-                fullName: values.fullName.trim(),
+                fullName,
                 number: values.number.trim(),
                 expiryDate: values.expiryDate,
               },
@@ -75,7 +79,7 @@ const EmiratesIdSection = ({ user, fetchData, variant = 'dark' }) => {
           }
         }}
       >
-        {({ isSubmitting }) => (
+        {({ isSubmitting, values, setFieldValue }) => (
           <Form className='space-y-4'>
             <div className={variant === 'light' ? 'flex' : ''}>
               {variant === 'light' && (
@@ -83,13 +87,21 @@ const EmiratesIdSection = ({ user, fetchData, variant = 'dark' }) => {
               )}
               <div className={variant === 'light' ? 'w-full' : ''}>
                 {variant === 'dark' && (
-                  <label className={labelClass}>Full Name (as per Emirates ID)</label>
+                  <label className={labelClass}>
+                    Full Name (as per Emirates ID)
+                  </label>
                 )}
                 <Field
                   name='fullName'
                   type='text'
                   placeholder='Ahmed Mohammed'
                   className={inputClass}
+                  onBlur={(e) => {
+                    const cleaned = normalizePersonFullName(e.target.value)
+                    if (cleaned !== values.fullName) {
+                      setFieldValue('fullName', cleaned)
+                    }
+                  }}
                 />
                 <ErrorMessage
                   name='fullName'
@@ -138,7 +150,11 @@ const EmiratesIdSection = ({ user, fetchData, variant = 'dark' }) => {
               </div>
             </div>
 
-            <div className={variant === 'light' ? 'flex justify-end' : 'flex justify-end mt-2'}>
+            <div
+              className={
+                variant === 'light' ? 'flex justify-end' : 'flex justify-end mt-2'
+              }
+            >
               <button
                 type='submit'
                 disabled={isSubmitting}

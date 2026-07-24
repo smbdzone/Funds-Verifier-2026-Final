@@ -17,6 +17,8 @@ const normalizeRole = (role) => {
   if (cleaned === 'evaluator') return 'Evaluator'
   if (cleaned === 'trustee') return 'Trustee'
   if (cleaned === 'admin') return 'Admin'
+  if (cleaned === 'advertiser') return 'Advertiser'
+  if (cleaned === 'developer') return 'Developer'
 
   return role
 }
@@ -103,6 +105,10 @@ function getRoleHomeRoute(role) {
       return '/3d-walkthrough'
     case 'TechnicalReport':
       return '/survey-dashboard'
+    case 'Advertiser':
+      return '/advertiser-dashboard'
+    case 'Developer':
+      return process.env.NEXT_PUBLIC_DEVELOPER_APP_URL || 'http://localhost:3012'
     default:
       return '/'
   }
