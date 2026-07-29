@@ -115,7 +115,7 @@ const OffPlanPaymentPlan = ({
   return (
     <section className='col-span-2 mt-10 w-full border border-light-gold/50 bg-white px-4 py-8 sm:px-8 sm:py-10'>
       <h3 className='mb-6 w-full text-center text-[15px] font-normal leading-[18px] text-black'>
-        Enter a Payment Plan
+        Enter the Payment Plan
       </h3>
       {errors?.paymentPlan ? (
         <span className='mb-4 block text-center text-xs font-medium text-red-500'>

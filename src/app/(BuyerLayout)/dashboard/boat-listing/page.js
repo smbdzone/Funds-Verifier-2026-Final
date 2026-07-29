@@ -7,6 +7,7 @@ import {
   handleVideoUpload,
 } from '@/libs/uploadAsset'
 import { autoCapitalizeField } from '@/libs/autoCapitalizeText'
+import { flagListingPendingApprovalNotice } from '@/libs/listingPendingApprovalNotice'
 import {
   applyPremiumServiceRefs,
   listingMediaRef,
@@ -692,6 +693,7 @@ function Page() {
             : 'Submitted successfully. Evaluator will evaluate it.'
         )
         if (!id) {
+          flagListingPendingApprovalNotice({ assetKind: 'boat' })
           resetForm()
           setFormData(initialFormData)
           localStorage.removeItem('FormPayment')

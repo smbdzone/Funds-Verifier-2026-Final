@@ -141,24 +141,26 @@ export default function OffPlanPage() {
             </p>
           ) : (
             <>
-              <div className='hidden sm:grid grid-cols-1 items-stretch justify-items-center gap-6 sm:grid-cols-2 xl:grid-cols-3'>
+              <div className='hidden sm:grid grid-cols-1 items-stretch justify-items-stretch gap-6 sm:grid-cols-2 xl:grid-cols-3'>
                 {paginatedListings.map((listing) => (
-                  <OffPlanPropertyCard
-                    key={listing.id}
-                    href={`/offplan/${listing.slug}`}
-                    title={listing.title}
-                    location={listing.location}
-                    deliveryLabel={listing.deliveryLabel}
-                    paymentPlanLabel={listing.paymentPlanLabel}
-                    rating={listing.rating}
-                    reviewCount={listing.reviewCount}
-                    listingRef={listing.ref}
-                    qrScanSrc={listing.qrScanSrc}
-                    priceFrom={listing.priceFrom}
-                    priceTo={listing.priceTo}
-                    images={listing.images}
-                    developerAvatar={listing.developerAvatar}
-                  />
+                  <div key={listing.id} className='flex h-full w-full min-h-0'>
+                    <OffPlanPropertyCard
+                      href={`/offplan/${listing.slug}`}
+                      title={listing.title}
+                      location={listing.location}
+                      deliveryLabel={listing.deliveryLabel}
+                      paymentPlanLabel={listing.paymentPlanLabel}
+                      rating={listing.rating}
+                      reviewCount={listing.reviewCount}
+                      listingRef={listing.ref}
+                      qrScanSrc={listing.qrScanSrc}
+                      priceFrom={listing.priceFrom}
+                      priceTo={listing.priceTo}
+                      images={listing.images}
+                      developerAvatar={listing.developerAvatar}
+                      className='max-w-none'
+                    />
+                  </div>
                 ))}
               </div>
 

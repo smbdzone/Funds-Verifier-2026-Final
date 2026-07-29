@@ -65,14 +65,13 @@ const Listing = ({
   setLand,
   errors,
 }) => {
-  const [type, setType] = useState(false)
-
   const [residential, setResidential] = useState(false)
   const [commercial, setCommercial] = useState(false)
-  const [multiple, setMultiple] = useState(false)
 
   const togglePropertTypeDropdown = () => {
-    setType(!type)
+    setResidential(false)
+    setCommercial(false)
+    handleToggleDropdown('propertyType')
   }
   const [filteredCities, setFilteredCities] = useState([])
   const [filterneighbours, setFilteredNeighbours] = useState([])
@@ -101,15 +100,13 @@ const Listing = ({
   }, [searchQueryNeighbourhood, neighbourhoods])
 
   const toggleResidentialDropdown = () => {
-    setResidential(!residential)
+    setResidential((open) => !open)
+    setCommercial(false)
   }
   const toggleCommercialDropdown = () => {
-    setCommercial(!commercial)
+    setCommercial((open) => !open)
+    setResidential(false)
   }
-  const toggleMultipleDropdown = () => {
-    setMultiple(!multiple)
-  }
-
   const propertyType = [
     {
       text: 'Residential',
@@ -125,13 +122,6 @@ const Listing = ({
       onclick: toggleCommercialDropdown,
       mapData: Commercial,
     },
-
-    {
-      text: 'Multiple',
-      state: commercial,
-      setState: setResidential,
-      onclick: toggleMultipleDropdown,
-    },
   ]
 
   const togglePriceDropdown = () => { }
@@ -143,7 +133,8 @@ const Listing = ({
 
   const handleProperty = (ele) => {
     handlePropertyTypeSelect(ele)
-    setType(false)
+    setResidential(false)
+    setCommercial(false)
   }
 
   const isEvaluatorApprovedLocked = isListingEvaluatorApprovedLocked(formData)
@@ -154,7 +145,6 @@ const Listing = ({
       isListings: property || car || boat || jewelry,
       handleToggleDropdown: () => handleToggleDropdown('assetType'),
       formData: formData?.assetType,
-      handleMouseLeave: () => handleMouseLeave('assetType'),
       handleSelectOption: handleSelectOption,
       dropdowns: dropdowns.assetType,
       dropdownOptions: asset,
@@ -267,9 +257,8 @@ const Listing = ({
       isListings: property,
       handleToggleDropdown: togglePropertTypeDropdown,
       formData: formData?.propertyType || selectType,
-      handleMouseLeave: () => setType(false),
       handleSelectOption: handleProperty,
-      dropdowns: type,
+      dropdowns: dropdowns.propertyType,
       dropdownOptions: propertyType,
       setLand: setLand,
       error: errors.propertyType && !formData.propertyType,

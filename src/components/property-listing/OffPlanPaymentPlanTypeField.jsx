@@ -1,70 +1,48 @@
 'use client'
 
 import ListingFormInput from '@/components/ListingFormInput/ListingFormInput'
-import ListingsDropdownInputComponents from '@/components/ListingsImageComponent/ListingsDropdownInputComponents'
-import {
-  PAYMENT_PLAN_TYPE_OTHER,
-  getPaymentPlanTypeCustomValue,
-  getPaymentPlanTypeDropdownValue,
-  isPaymentPlanTypeOtherMode,
-  paymentPlanTypeOptions,
-} from '@/constants/listing-data'
+import { formatPaymentPlanRatioInput } from '@/constants/listing-data'
 
 /**
- * Payment Plan dropdown with an "Others" option that reveals a free-text field.
+ * Payment plan ratio input — auto formats as 20/80 while typing.
  */
 const OffPlanPaymentPlanTypeField = ({
   value = '',
   errors = false,
   errorMessage = '',
-  dropdown = false,
-  onToggleDropdown,
+  onChange,
   onSelect,
   onCustomChange,
   disabled = false,
   readOnly = false,
   required = false,
 }) => {
-  const dropdownValue = getPaymentPlanTypeDropdownValue(value)
-  const showCustomInput = isPaymentPlanTypeOtherMode(value)
-  const customValue = getPaymentPlanTypeCustomValue(value)
+  const emit = (next) => {
+    onChange?.(next)
+    onSelect?.(next)
+    onCustomChange?.(next)
+  }
+
+  const handleChange = (e) => {
+    if (readOnly || disabled) return
+    emit(formatPaymentPlanRatioInput(e.target.value))
+  }
 
   return (
-    <div className='flex w-full flex-col gap-4'>
-      <div className='relative w-full dropdown-container'>
-        <ListingsDropdownInputComponents
-          errors={errors}
-          errorMessage={errorMessage}
-          value={dropdownValue}
-          placeholder='Payment Plan'
-          name='paymentPlanType'
-          handleToggleDropdown={onToggleDropdown}
-          dropdown={dropdown}
-          dropdownType='paymentPlanType'
-          dropdownOptions={paymentPlanTypeOptions}
-          handleSelectOption={(_, option) => onSelect?.(option)}
-          readOnly={readOnly}
-          disabled={disabled}
-          required={required}
-        />
-      </div>
-
-      {showCustomInput ? (
-        <ListingFormInput
-          name='paymentPlanTypeCustom'
-          value={customValue}
-          handleChange={(e) => onCustomChange?.(e.target.value)}
-          placeholder='Enter payment plan (e.g. 30/70)'
-          fieldLabel='Custom Payment Plan'
-          required={false}
-          type='text'
-          maxLength={40}
-          disabled={disabled}
-        />
-      ) : null}
-    </div>
+    <ListingFormInput
+      name='paymentPlanType'
+      value={value || ''}
+      handleChange={handleChange}
+      placeholder='Enter the Payment Plan'
+      fieldLabel='Payment Plan'
+      errors={errors}
+      errorsMessage={errorMessage}
+      required={required}
+      type='text'
+      maxLength={7}
+      disabled={disabled || readOnly}
+    />
   )
 }
 
-export { PAYMENT_PLAN_TYPE_OTHER }
 export default OffPlanPaymentPlanTypeField

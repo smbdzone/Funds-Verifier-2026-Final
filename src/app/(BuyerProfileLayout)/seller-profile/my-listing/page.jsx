@@ -1,6 +1,7 @@
 'use client'
 import React, { useEffect, useState } from 'react'
 import MyListingTabClient from '@/components/modules/SellerProfile/MyListings/MyListingsTabClient'
+import ListingPendingApprovalNotice from '@/components/ListingsForm/ListingPendingApprovalNotice'
 import { useProfile } from '@/context/UserContext'
 import { fetchAssetHolderListingsProgressive } from '@/libs/fetchAllDashboardProducts'
 import { toast } from 'react-toastify'
@@ -58,12 +59,15 @@ const MyListingTab = () => {
   }
 
   return (
-    <MyListingTabClient
-      listings={listings}
-      listingsLoading={listingsLoading || authLoading}
-      isLoadingMore={isLoadingMore}
-      onListingDeleted={handleListingDeleted}
-    />
+    <>
+      <ListingPendingApprovalNotice />
+      <MyListingTabClient
+        listings={listings}
+        listingsLoading={listingsLoading || authLoading}
+        isLoadingMore={isLoadingMore}
+        onListingDeleted={handleListingDeleted}
+      />
+    </>
   )
 }
 

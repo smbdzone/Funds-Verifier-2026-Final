@@ -19,6 +19,7 @@ import { useProfile } from '@/context/UserContext'
 import { setAccessToken } from '../../utils/auth/accessTokenStore'
 import { getRoleHomeRoute } from '@/utils/auth/roleHome'
 import { POST_LOGIN_BOOTSTRAP_KEY } from '@/utils/auth/uaePass'
+import { consumePostLoginRedirect } from '@/utils/auth/postLoginRedirect'
 import { parseUaePassName } from '@/utils/auth/parseUaePassName'
 
 export default function Login() {
@@ -99,6 +100,12 @@ export default function Login() {
     applyUserFromLogin?.(data)
 
     toast.success(data?.message || 'Login Successful!')
+
+    const intended = consumePostLoginRedirect()
+    if (intended) {
+      window.location.replace(intended)
+      return
+    }
 
     const role = data?.role === 'AssetHolder' ? 'AssetHolder' : 'DealHunter'
     window.location.replace(getRoleHomeRoute(role))

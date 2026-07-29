@@ -68,7 +68,7 @@ const ListingMapSection = ({
           setEmbedSrc('')
           setResolveError(
             data?.error ||
-              'Could not open this short Maps link. Paste the full Google Maps URL instead.'
+            'Could not open this short Maps link. Paste the full Google Maps URL instead.'
           )
           return
         }
@@ -110,7 +110,7 @@ const ListingMapSection = ({
             name='mapUrl'
             value={mapUrl || ''}
             handleChange={handleChange}
-            placeholder='Google Maps URL (optional)'
+            placeholder='Google Maps URL (maps.app.goo.gl or share.google)'
             fieldLabel='Google Maps URL'
             required={false}
             type='url'

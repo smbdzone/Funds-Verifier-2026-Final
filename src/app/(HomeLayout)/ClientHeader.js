@@ -1,32 +1,36 @@
-"use client";
-import { useEffect, useState } from "react";
-import Header from "@/components/Layout/Header";
+'use client'
+import { useEffect, useState } from 'react'
+import { usePathname } from 'next/navigation'
+import Header from '@/components/Layout/Header'
+import { isChromelessAuthRoute } from '@/libs/chromelessAuthRoutes'
 
 export default function ClientHeader() {
-  const [isScrolled, setIsScrolled] = useState(false);
+  const pathname = usePathname()
+  const hideHeader = isChromelessAuthRoute(pathname)
+  const [isScrolled, setIsScrolled] = useState(false)
 
   useEffect(() => {
-    const handleScroll = () => {
-      if (window.scrollY > 0) {
-        setIsScrolled(true);
-      } else {
-        setIsScrolled(false);
-      }
-    };
+    if (hideHeader) return
 
-    window.addEventListener("scroll", handleScroll);
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 0)
+    }
+
+    window.addEventListener('scroll', handleScroll)
     return () => {
-      window.removeEventListener("scroll", handleScroll);
-    };
-  }, []);
+      window.removeEventListener('scroll', handleScroll)
+    }
+  }, [hideHeader])
+
+  if (hideHeader) return null
 
   return (
     <div
       className={`w-full bg-white ${
-        isScrolled ? "fixed top-0 z-50" : "sticky top-0 z-50"
+        isScrolled ? 'fixed top-0 z-50' : 'sticky top-0 z-50'
       }`}
     >
       <Header />
     </div>
-  );
+  )
 }

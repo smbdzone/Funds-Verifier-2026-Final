@@ -24,9 +24,7 @@ import {
   LISTING_VIDEO_FORMATS_LABEL,
 } from '@/constants/listingUploadLimits'
 import { XIcon } from 'lucide-react'
-import OffPlanPaymentPlanTypeField, {
-  PAYMENT_PLAN_TYPE_OTHER,
-} from '@/components/property-listing/OffPlanPaymentPlanTypeField'
+import OffPlanPaymentPlanTypeField from '@/components/property-listing/OffPlanPaymentPlanTypeField'
 import {
   canRequestPremiumServices,
   isListingEvaluatorApprovedLocked,
@@ -35,6 +33,7 @@ import {
 import ListingApprovedEditNotice from '@/components/ListingsForm/ListingApprovedEditNotice'
 import OffPlanPriceRange from '@/components/property-listing/OffPlanPriceRange'
 import OffPlanSizeRange from '@/components/property-listing/OffPlanSizeRange'
+import PropertySizeField from '@/components/property-listing/PropertySizeField'
 import DeliveryTimeField from '@/components/property-listing/DeliveryTimeField'
 import OffPlanLayoutFloorPlan from '@/components/property-listing/OffPlanLayoutFloorPlan'
 import OffPlanPaymentPlan from '@/components/property-listing/OffPlanPaymentPlan'
@@ -120,7 +119,8 @@ export const ImageUploadComponent = React.memo(
     const getIdByRole = async () => {
       try {
         const response = await customAxios.get(
-          `/user/service-providers/TechnicalReport`
+          `/user/service-providers/TechnicalReport`,
+          { _skipAuthLogout: true },
         )
 
         const providers = Array.isArray(response?.data) ? response.data : []
@@ -128,8 +128,8 @@ export const ImageUploadComponent = React.memo(
           setData(providers[0])
         }
       } catch (error) {
-        console.error('Error loading technical report provider:', error)
-        toast.error('Could not load technical report availability')
+        // Optional premium service — don't toast or kick the user out.
+        console.warn('Technical report provider unavailable:', error?.message)
       }
     }
     useEffect(() => {
@@ -140,7 +140,8 @@ export const ImageUploadComponent = React.memo(
     const getIdByRole3d = async () => {
       try {
         const response = await customAxios.get(
-          `/user/service-providers/3dWalkthrough`
+          `/user/service-providers/3dWalkthrough`,
+          { _skipAuthLogout: true },
         )
 
         const providers = Array.isArray(response?.data) ? response.data : []
@@ -148,8 +149,7 @@ export const ImageUploadComponent = React.memo(
           setData2(providers[0])
         }
       } catch (error) {
-        console.error('Error loading 3D walkthrough provider:', error)
-        toast.error('Could not load 3D walkthrough availability')
+        console.warn('3D walkthrough provider unavailable:', error?.message)
       }
     }
 
@@ -329,6 +329,53 @@ export const ImageUploadComponent = React.memo(
                 errorsMessage={errors.price}
               />
             </div>
+            <div className='relative w-full dropdown-container space-y-3'>
+              <OffPlanPaymentPlanTypeField
+                value={formData.paymentPlanType || ''}
+                errors={errors.paymentPlanType && !formData.paymentPlanType}
+                errorMessage={errors.paymentPlanType}
+                onChange={(next) => {
+                  handleChange({
+                    target: { name: 'paymentPlanType', value: next },
+                  })
+                }}
+                readOnly={isEvaluatorApprovedLocked}
+                disabled={isEvaluatorApprovedLocked}
+                required
+              />
+              <OffPlanSizeRange
+                label='Select Size Type'
+                sizeSQFTFrom={formData.sizeSQFTFrom || formData.sizeSQFT}
+                sizeSQFTTo={formData.sizeSQFTTo}
+                sizeSQMFrom={formData.sizeSQMFrom || formData.sizeSQM}
+                sizeSQMTo={formData.sizeSQMTo}
+                sizeUnit={formData.sizeUnit || formData.sizeType || 'SQFT'}
+                errors={errors.sizeSQFT}
+                errorsMessage={errors.sizeSQFT}
+                disabled={isEvaluatorApprovedLocked}
+                onSizeChange={handleSizeChange}
+                onBlur={handleBlur}
+              />
+              <DeliveryTimeField
+                deliveryQuarter={formData.deliveryQuarter}
+                deliveryYear={formData.deliveryYear}
+                quarterDropdownOpen={dropdowns.deliveryQuarter}
+                yearDropdownOpen={dropdowns.deliveryYear}
+                quarterOptions={deliveryQuarterOptions}
+                yearOptions={deliveryYearOptions}
+                onToggleQuarter={() => handleToggleDropdown('deliveryQuarter')}
+                onToggleYear={() => handleToggleDropdown('deliveryYear')}
+                onSelectQuarter={(option) =>
+                  handleSelectOption('deliveryQuarter', option)
+                }
+                onSelectYear={(option) =>
+                  handleSelectOption('deliveryYear', option)
+                }
+                disabled={isEvaluatorApprovedLocked}
+                errors={errors.deliveryTime}
+                errorsMessage={errors.deliveryTime}
+              />
+            </div>
             <div className='col-span-2'>
               <ListingTextareaComponent
                 errors={
@@ -364,26 +411,12 @@ export const ImageUploadComponent = React.memo(
             </div>
             <div className='relative w-full dropdown-container'>
               <ListingFormInput
-                errors={errors.advertisementId && !formData.advertisementId}
-                value={formData.advertisementId || ''}
-                handleChange={handleChange}
-                handleBlur={handleBlur}
-                placeholder='Advertisement ID'
-                fieldLabel='Advertisement ID'
-                errorsMessage={errors.advertisementId}
-                name='advertisementId'
-                type='text'
-                disabled={isEvaluatorApprovedLocked}
-              />
-            </div>
-            <div className='relative w-full dropdown-container'>
-              <ListingFormInput
                 errors={errors.dldNumber && !formData.dldNumber}
                 value={formData.dldNumber || ''}
                 handleChange={handleChange}
                 handleBlur={handleBlur}
-                placeholder='DLD Number'
-                fieldLabel='DLD Number'
+                placeholder='Project Number'
+                fieldLabel='Project Number'
                 errorsMessage={errors.dldNumber}
                 name='dldNumber'
                 type='text'
@@ -428,61 +461,6 @@ export const ImageUploadComponent = React.memo(
                 required
               />
             </div>
-            <div className='relative flex w-full flex-col justify-start'>
-              <OffPlanSizeRange
-                label='Select Size Type'
-                sizeSQFTFrom={formData.sizeSQFTFrom}
-                sizeSQFTTo={formData.sizeSQFTTo}
-                sizeSQMFrom={formData.sizeSQMFrom}
-                sizeSQMTo={formData.sizeSQMTo}
-                sizeUnit={formData.sizeUnit || formData.sizeType || 'SQFT'}
-                errors={errors.sizeSQFT}
-                errorsMessage={errors.sizeSQFT}
-                disabled={isEvaluatorApprovedLocked}
-                onSizeChange={handleSizeChange}
-                onBlur={handleBlur}
-              />
-            </div>
-            <DeliveryTimeField
-              deliveryQuarter={formData.deliveryQuarter}
-              deliveryYear={formData.deliveryYear}
-              quarterDropdownOpen={dropdowns.deliveryQuarter}
-              yearDropdownOpen={dropdowns.deliveryYear}
-              quarterOptions={deliveryQuarterOptions}
-              yearOptions={deliveryYearOptions}
-              onToggleQuarter={() => handleToggleDropdown('deliveryQuarter')}
-              onToggleYear={() => handleToggleDropdown('deliveryYear')}
-              onSelectQuarter={(option) =>
-                handleSelectOption('deliveryQuarter', option)
-              }
-              onSelectYear={(option) =>
-                handleSelectOption('deliveryYear', option)
-              }
-              disabled={isEvaluatorApprovedLocked}
-              errors={errors.deliveryTime}
-              errorsMessage={errors.deliveryTime}
-            />
-            <OffPlanPaymentPlanTypeField
-              value={formData.paymentPlanType || ''}
-              errors={errors.paymentPlanType && !formData.paymentPlanType}
-              errorMessage={errors.paymentPlanType}
-              dropdown={dropdowns.paymentPlanType}
-              onToggleDropdown={() => handleToggleDropdown('paymentPlanType')}
-              onSelect={(option) =>
-                handleSelectOption('paymentPlanType', option)
-              }
-              onCustomChange={(customValue) => {
-                handleChange({
-                  target: {
-                    name: 'paymentPlanType',
-                    value: customValue || PAYMENT_PLAN_TYPE_OTHER,
-                  },
-                })
-              }}
-              readOnly={isEvaluatorApprovedLocked}
-              disabled={isEvaluatorApprovedLocked}
-              required={false}
-            />
             <OffPlanLayoutFloorPlan
               formData={formData}
               errors={errors}
@@ -641,6 +619,28 @@ export const ImageUploadComponent = React.memo(
                 />
               </div>
             </div>
+            <div className='relative w-full dropdown-container space-y-6'>
+              <div className='relative-placeholder w-full'>
+                <ListingCustomPlacholderInput
+                  value={formData.dldNumber || ''}
+                  handleChange={handleChange}
+                  name='dldNumber'
+                  customPlaceholder='Project Number'
+                  disabled={isEvaluatorApprovedLocked}
+                />
+              </div>
+              <PropertySizeField
+                label='Select Size Type'
+                sizeSQFT={formData.sizeSQFT || formData.sizeSQFTFrom || ''}
+                sizeSQM={formData.sizeSQM || formData.sizeSQMFrom || ''}
+                sizeUnit={formData.sizeUnit || formData.sizeType || 'SQFT'}
+                errors={errors.sizeSQFT}
+                errorsMessage={errors.sizeSQFT}
+                disabled={isEvaluatorApprovedLocked}
+                onSizeChange={handleSizeChange}
+                onBlur={handleBlur}
+              />
+            </div>
             <div className='col-span-2'>
               <div className='w-full  '>
                 <ListingTextareaComponent
@@ -703,21 +703,6 @@ export const ImageUploadComponent = React.memo(
                 bedroomsDropDown={bedroomsOptions}
                 title='Bedrooms'
                 userUUID={data2?.uuid}
-              />
-            </div>
-            <div className='relative flex flex-col justify-start space-y-5'>
-              <OffPlanSizeRange
-                label='Select Size Type'
-                sizeSQFTFrom={formData.sizeSQFTFrom}
-                sizeSQFTTo={formData.sizeSQFTTo}
-                sizeSQMFrom={formData.sizeSQMFrom}
-                sizeSQMTo={formData.sizeSQMTo}
-                sizeUnit={formData.sizeUnit || formData.sizeType || 'SQFT'}
-                errors={errors.sizeSQFT}
-                errorsMessage={errors.sizeSQFT}
-                disabled={isEvaluatorApprovedLocked}
-                onSizeChange={handleSizeChange}
-                onBlur={handleBlur}
               />
             </div>
             {formData.assetType === 'Property For Lease' && (
@@ -881,17 +866,6 @@ export const ImageUploadComponent = React.memo(
                   handleChange={handleChange}
                   name='developer'
                   customPlaceholder='Developer'
-                  disabled={isEvaluatorApprovedLocked}
-                />
-              </div>
-            </div>
-            <div className='relative w-full dropdown-container'>
-              <div className='relative-placeholder w-full'>
-                <ListingCustomPlacholderInput
-                  value={formData.dldNumber || ''}
-                  handleChange={handleChange}
-                  name='dldNumber'
-                  customPlaceholder='DLD Number'
                   disabled={isEvaluatorApprovedLocked}
                 />
               </div>

@@ -577,13 +577,17 @@ const Page = () => {
               : 0,
           sizeSQFTFrom: formData.sizeSQFTFrom
             ? Number(formData.sizeSQFTFrom)
-            : undefined,
+            : formData.sizeSQFT
+              ? Number(formData.sizeSQFT)
+              : undefined,
           sizeSQFTTo: formData.sizeSQFTTo
             ? Number(formData.sizeSQFTTo)
             : undefined,
           sizeSQMFrom: formData.sizeSQMFrom
             ? Number(formData.sizeSQMFrom)
-            : undefined,
+            : formData.sizeSQM
+              ? Number(formData.sizeSQM)
+              : undefined,
           sizeSQMTo: formData.sizeSQMTo
             ? Number(formData.sizeSQMTo)
             : undefined,

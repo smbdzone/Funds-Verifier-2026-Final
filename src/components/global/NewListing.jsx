@@ -222,9 +222,13 @@ const NewListing = ({ formData, setFormData }) => {
         {/* Asset Type Dropdown */}
         <ListingDropdown
           label="Asset Type"
-          value={formData?.assetType || "Select Asset Type"}
+          value={
+            formData?.assetType === "Property For Sale"
+              ? "Ready Property For Sale"
+              : formData?.assetType || "Select Asset Type"
+          }
           options={[
-            "Property For Sale",
+            { value: "Property For Sale", label: "Ready Property For Sale" },
             "Property For Lease",
             "Property Off Plan For Sale",
             "Car For Sale",

@@ -40,6 +40,7 @@ import {
   ensureWithinSize,
   isCompressionConfigured,
 } from '@/libs/imageCompression'
+import { applyListingWatermark } from '@/libs/applyListingWatermark'
 
 const getMaxLengthForCountry = (country) => {
   const exampleNumber = getExampleNumber(country, metadata)
@@ -451,8 +452,28 @@ const ListingsProvider = ({ children }) => {
     setIsNeighbourDropdownOpen(false)
   }
 
+  const closeAllListingDropdowns = () => {
+    setDropdowns((prev) => {
+      const hasOpen = Object.values(prev || {}).some(Boolean)
+      return hasOpen ? {} : prev
+    })
+    setIsOpen((open) => (open ? false : open))
+    setIsCityDropdownOpen((open) => (open ? false : open))
+    setIsNeighbourDropdownOpen((open) => (open ? false : open))
+    setModelDropdownVisible((open) => (open ? false : open))
+  }
+
   const toggleDropdownn = () => {
-    setIsOpen(!isOpen)
+    setIsOpen((prev) => {
+      const next = !prev
+      if (next) {
+        setDropdowns({})
+        setIsCityDropdownOpen(false)
+        setIsNeighbourDropdownOpen(false)
+        setModelDropdownVisible(false)
+      }
+      return next
+    })
   }
 
   const handleMouseLeave = (field) => {
@@ -475,11 +496,29 @@ const ListingsProvider = ({ children }) => {
   }
 
   const toggleCityDropdown = () => {
-    setIsCityDropdownOpen(!isCityDropdownOpen)
+    setIsCityDropdownOpen((prev) => {
+      const next = !prev
+      if (next) {
+        setDropdowns({})
+        setIsOpen(false)
+        setIsNeighbourDropdownOpen(false)
+        setModelDropdownVisible(false)
+      }
+      return next
+    })
   }
 
   const toggleNeighbourDropdown = () => {
-    setIsNeighbourDropdownOpen(!isNeighbourDropdownOpen)
+    setIsNeighbourDropdownOpen((prev) => {
+      const next = !prev
+      if (next) {
+        setDropdowns({})
+        setIsOpen(false)
+        setIsCityDropdownOpen(false)
+        setModelDropdownVisible(false)
+      }
+      return next
+    })
   }
 
   const handleCountryChange = (value) => {
@@ -534,8 +573,15 @@ const ListingsProvider = ({ children }) => {
         const reader = new FileReader()
         reader.onload = (event) => {
           const img = new window.Image()
-          img.onload = () => {
-            resolve(workingFile) // File is valid (possibly compressed)
+          img.onload = async () => {
+            try {
+              const stamped = await applyListingWatermark(workingFile, {
+                position: 'bottom-left',
+              })
+              resolve(stamped)
+            } catch {
+              resolve(workingFile)
+            }
           }
           img.onerror = () => {
             toast.error(
@@ -717,6 +763,14 @@ const ListingsProvider = ({ children }) => {
       const isValid = await validateImageFile(selectedFile)
       if (!isValid) return
 
+      try {
+        selectedFile = await applyListingWatermark(selectedFile, {
+          position: 'bottom-left',
+        })
+      } catch {
+        // Keep original if watermarking fails
+      }
+
       setThumbnail(selectedFile)
     } finally {
       input.value = ''
@@ -799,11 +853,40 @@ const ListingsProvider = ({ children }) => {
   }
 
   const handleToggleDropdown = (dropdownName) => {
-    setDropdowns((prevState) => ({
-      ...prevState,
-      [dropdownName]: !prevState[dropdownName],
-    }))
+    setDropdowns((prevState) => {
+      const willOpen = !prevState[dropdownName]
+      return willOpen ? { [dropdownName]: true } : {}
+    })
+    setIsOpen(false)
+    setIsCityDropdownOpen(false)
+    setIsNeighbourDropdownOpen(false)
+    setModelDropdownVisible(false)
   }
+
+  useEffect(() => {
+    const isInsideDropdown = (target) =>
+      target instanceof Element &&
+      Boolean(
+        target.closest('.dropdown-container') ||
+        target.closest('[data-dropdown-root]'),
+      )
+
+    const onPointerDown = (event) => {
+      if (isInsideDropdown(event.target)) return
+      closeAllListingDropdowns()
+    }
+
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') closeAllListingDropdowns()
+    }
+
+    document.addEventListener('mousedown', onPointerDown)
+    document.addEventListener('keydown', onKeyDown)
+    return () => {
+      document.removeEventListener('mousedown', onPointerDown)
+      document.removeEventListener('keydown', onKeyDown)
+    }
+  }, [])
 
   const handleSelectOption = (dropdownName, option) => {
     setFormData((prev) => ({ ...prev, [dropdownName]: option }))
@@ -811,7 +894,16 @@ const ListingsProvider = ({ children }) => {
   }
 
   const toggleModelDropdown = () => {
-    setModelDropdownVisible(!modelDropdownVisible)
+    setModelDropdownVisible((prev) => {
+      const next = !prev
+      if (next) {
+        setDropdowns({})
+        setIsOpen(false)
+        setIsCityDropdownOpen(false)
+        setIsNeighbourDropdownOpen(false)
+      }
+      return next
+    })
   }
 
   const handleModelClick = (model) => {
@@ -951,6 +1043,7 @@ const ListingsProvider = ({ children }) => {
         toggleDropdownn,
         toggleModelDropdown,
         handleToggleDropdown,
+        closeAllListingDropdowns,
         selectedNeighbourhood,
         isCityDropdownOpen,
         isNeighbourDropdownOpen,

@@ -1,6 +1,7 @@
 import Image from 'next/image'
 import React, { useEffect, useState } from 'react'
 import { getListingImageSrc } from '@/libs/listingCardMedia'
+import ListingImagePreviewModal from '@/components/ListingsImageComponent/ListingImagePreviewModal'
 
 const PLACEHOLDER = '/listing/camera.svg'
 
@@ -35,10 +36,12 @@ const ListingsImageComponent = ({
   uploadLabel = 'Upload Thumbnail',
 }) => {
   const [previewUrl, setPreviewUrl] = useState(null)
+  const [lightboxOpen, setLightboxOpen] = useState(false)
 
   useEffect(() => {
     if (!image) {
       setPreviewUrl(null)
+      setLightboxOpen(false)
       return undefined
     }
 
@@ -65,14 +68,21 @@ const ListingsImageComponent = ({
         <div className='min-w-0 flex-1 overflow-hidden'>
           {previewUrl ? (
             <div className='group relative h-[88px] w-[88px] overflow-hidden rounded-sm border border-dark-grey/15 bg-offwhite'>
-              <Image
-                width={88}
-                height={88}
-                src={previewUrl}
-                alt='Uploaded thumbnail'
-                unoptimized
-                className='h-full w-full object-cover'
-              />
+              <button
+                type='button'
+                onClick={() => setLightboxOpen(true)}
+                className='block h-full w-full cursor-zoom-in'
+                title='Click to preview watermark'
+              >
+                <Image
+                  width={88}
+                  height={88}
+                  src={previewUrl}
+                  alt='Uploaded thumbnail'
+                  unoptimized
+                  className='h-full w-full object-cover'
+                />
+              </button>
               {!disabled && (
                 <button
                   type='button'
@@ -122,6 +132,14 @@ const ListingsImageComponent = ({
           **{errorMessage}
         </span>
       )}
+
+      {lightboxOpen ? (
+        <ListingImagePreviewModal
+          src={previewUrl}
+          alt='Thumbnail preview'
+          onClose={() => setLightboxOpen(false)}
+        />
+      ) : null}
     </>
   )
 }

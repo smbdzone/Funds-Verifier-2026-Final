@@ -10,6 +10,7 @@ const FilterSection = ({ title, options, updateSorting }) => {
     e.preventDefault();
     switch (title) {
       case "Property For Sale":
+      case "Ready Property For Sale":
       case "Property For Lease":
         updateSorting("property", e, value);
         break;

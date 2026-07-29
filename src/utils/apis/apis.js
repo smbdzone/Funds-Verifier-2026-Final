@@ -74,6 +74,14 @@ customAxios.interceptors.response.use(
       return Promise.reject(error)
     }
 
+    // Optional listing helpers must never force a full session logout.
+    if (
+      error.response.status === 401 &&
+      requestUrl.includes('/user/service-providers/')
+    ) {
+      return Promise.reject(error)
+    }
+
     // 🔁 ACCESS TOKEN EXPIRED
     if (
       error.response.status === 401 &&
@@ -107,6 +115,11 @@ customAxios.interceptors.response.use(
         processQueue(err, null)
         if (requestUrl.includes('/user/switch-user')) {
           /* keep session; switchUserRole shows the API error */
+        } else if (
+          // Optional listing helpers — never wipe the session if these fail.
+          requestUrl.includes('/user/service-providers/')
+        ) {
+          /* keep session */
         } else {
           globalLogout()
         }
@@ -145,8 +158,62 @@ export const login = async (values, router) => {
     )
 
     const data = res.data
-    // console.log(data, "login");
 
+    // OTP-gated roles (Evaluator, Sub-Evaluator, ...): password was correct but
+    // no session is issued yet. The caller shows the OTP screen.
+    if (data?.otpRequired) {
+      toast.info(data?.message ?? 'Check your email for the verification code.')
+      return data
+    }
+
+    return finalizeLoginSession(data, router)
+  } catch (error) {
+    toast.error(error.response?.data?.message ?? 'Login failed')
+    console.error(error)
+    throw error
+  }
+}
+
+// ------------------ LOGIN OTP (step 2) ------------------
+export const verifyLoginOtp = async ({ email, otp }, router) => {
+  try {
+    const csrfHeaders = await getCsrfHeaders()
+    const res = await axios.post(
+      `${process.env.NEXT_PUBLIC_BASE_URL}/user/login/verify-otp`,
+      { email, otp },
+      { withCredentials: true, headers: csrfHeaders },
+    )
+
+    return finalizeLoginSession(res.data, router)
+  } catch (error) {
+    toast.error(error.response?.data?.message ?? 'Verification failed')
+    throw error
+  }
+}
+
+export const resendLoginOtp = async (email) => {
+  try {
+    const csrfHeaders = await getCsrfHeaders()
+    const res = await axios.post(
+      `${process.env.NEXT_PUBLIC_BASE_URL}/user/login/resend-otp`,
+      { email },
+      { withCredentials: true, headers: csrfHeaders },
+    )
+
+    toast.success(res.data?.message ?? 'A new code is on its way.')
+    return res.data
+  } catch (error) {
+    toast.error(error.response?.data?.message ?? 'Could not resend the code')
+    throw error
+  }
+}
+
+/**
+ * Store the session and route the user to their dashboard (or the deep link
+ * captured before sign-in). Shared by password login and OTP verification.
+ */
+const finalizeLoginSession = async (data, router) => {
+  try {
     // Removed userUUID from localStorage - using /me endpoint instead for security
 
     let assignedRole = normalizeRole(data?.role)
@@ -189,14 +256,13 @@ export const login = async (values, router) => {
     }
     toast.success(data?.message)
 
-    // Honor an intended destination (e.g. "Get Started" from Advertise with Us)
+    // Honor an intended destination (e.g. email deep link or Advertise with Us)
     // captured before sign-in. Takes precedence over the role-based default below.
-    const redirectTo =
-      typeof window !== 'undefined'
-        ? localStorage.getItem('postLoginRedirect')
-        : null
+    const { consumePostLoginRedirect } = await import(
+      '@/utils/auth/postLoginRedirect'
+    )
+    const redirectTo = consumePostLoginRedirect()
     if (redirectTo) {
-      localStorage.removeItem('postLoginRedirect')
       router.replace(redirectTo)
       return data
     }
@@ -238,7 +304,6 @@ export const login = async (values, router) => {
 
     return data
   } catch (error) {
-    toast.error(error.response?.data?.message ?? 'Login failed')
     console.error(error)
     throw error
   }

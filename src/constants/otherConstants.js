@@ -44,7 +44,11 @@ export const times = [
 ]
 
 export const asset = [
-  { value: 'Property For Sale', link: 'property' },
+  {
+    value: 'Property For Sale',
+    label: 'Ready Property For Sale',
+    link: 'property',
+  },
   // { value: "Property For Lease", link: "property" },
   { value: 'Property Off Plan For Sale', link: 'property' },
   { value: 'Car For Sale', link: 'car' },

@@ -99,8 +99,7 @@ const JewelryListingForm = ({
         setData(providers[0])
       }
     } catch (error) {
-      console.error('Error loading technical report provider:', error)
-      toast.error('Could not load technical report availability')
+      console.warn('Technical report provider unavailable:', error?.message)
     }
   }
 
@@ -115,8 +114,7 @@ const JewelryListingForm = ({
         setData2(providers[0])
       }
     } catch (error) {
-      console.error('Error loading 3D walkthrough provider:', error)
-      toast.error('Could not load 3D walkthrough availability')
+      console.warn('3D walkthrough provider unavailable:', error?.message)
     }
   }
 

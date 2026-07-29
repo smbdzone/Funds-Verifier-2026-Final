@@ -286,7 +286,10 @@ const PriceListing = () => {
                       onClick={toggleBedroomsDropdown}
                       className='text-left text-sm items-center text-prussianBlue font-medium gap-2 justify-between flex bg-white w-full focus:outline-none'
                     >
-                      {assetType ? assetType : 'Select'}
+                      {assetType
+                        ? assetUpdated?.find((a) => a.value === assetType)
+                            ?.label || assetType
+                        : 'Select'}
                       <span className='rotate-90 mt-1'>
                         <SlArrowRight className='text-black/120' />
                       </span>
@@ -302,7 +305,7 @@ const PriceListing = () => {
                             }}
                             className='w-full truncate lg:text-base sm:text-sm text-xs px-4 py-2 text-left text-gray-700 hover:bg-gray-100'
                           >
-                            {item.value}
+                            {item.label || item.value}
                           </button>
                         ))}
                       </div>

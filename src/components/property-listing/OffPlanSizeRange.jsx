@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import ListingFieldLabel from '@/components/ListingsForm/ListingFieldLabel'
 import {
   PROPERTY_SIZE_UNITS,
@@ -8,18 +8,29 @@ import {
   parsePropertySizeInput,
 } from '@/libs/propertySizeUnits'
 
-const SizeInput = ({ label, name, value, onChange, onBlur, disabled, error }) => (
+const SizeInput = ({
+  label,
+  name,
+  value,
+  onChange,
+  onBlur,
+  disabled,
+  error,
+}) => (
   <div className='flex items-center gap-1'>
-    <span className='whitespace-nowrap text-[15px] text-dark-grey/60'>{label}</span>
+    <span className='whitespace-nowrap text-[15px] text-dark-grey/60'>
+      {label}
+    </span>
     <input
       type='text'
       inputMode='decimal'
       name={name}
-      value={value || ''}
+      value={value}
       onChange={onChange}
       onBlur={onBlur}
       disabled={disabled}
-      className={`h-8 w-[92px] rounded-sm border border-dark-grey/40 px-3 text-[15px] text-dark-grey outline-none disabled:opacity-60 ${error ? 'border-red-500' : ''}`}
+      placeholder='0'
+      className={`h-8 w-[110px] rounded-sm border border-dark-grey/40 px-3 text-[15px] text-dark-grey outline-none disabled:opacity-60 ${error ? 'border-red-500' : ''}`}
     />
   </div>
 )
@@ -38,6 +49,18 @@ const OffPlanSizeRange = ({
   onBlur,
 }) => {
   const [unitOpen, setUnitOpen] = useState(false)
+  const rootRef = useRef(null)
+
+  useEffect(() => {
+    if (!unitOpen) return
+    const onPointerDown = (event) => {
+      if (rootRef.current && !rootRef.current.contains(event.target)) {
+        setUnitOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', onPointerDown)
+    return () => document.removeEventListener('mousedown', onPointerDown)
+  }, [unitOpen])
 
   const fromDisplay = useMemo(() => {
     const raw = sizeUnit === 'SQM' ? sizeSQMFrom : sizeSQFTFrom
@@ -61,22 +84,27 @@ const OffPlanSizeRange = ({
     })
   }
 
-  const handleFromChange = (e) => {
+  const handleBoundChange = (bound) => (e) => {
     const next = parsePropertySizeInput(e.target.value)
     if (sizeUnit === 'SQM') {
-      emitChange({ sizeSQMFrom: next })
+      const patch =
+        bound === 'from'
+          ? {
+              sizeSQMFrom: next,
+              sizeSQM: next,
+            }
+          : { sizeSQMTo: next }
+      emitChange(patch)
       return
     }
-    emitChange({ sizeSQFTFrom: next })
-  }
-
-  const handleToChange = (e) => {
-    const next = parsePropertySizeInput(e.target.value)
-    if (sizeUnit === 'SQM') {
-      emitChange({ sizeSQMTo: next })
-      return
-    }
-    emitChange({ sizeSQFTTo: next })
+    const patch =
+      bound === 'from'
+        ? {
+            sizeSQFTFrom: next,
+            sizeSQFT: next,
+          }
+        : { sizeSQFTTo: next }
+    emitChange(patch)
   }
 
   const handleUnitPick = (unit) => {
@@ -87,7 +115,11 @@ const OffPlanSizeRange = ({
   }
 
   return (
-    <div className='relative w-full'>
+    <div
+      className='relative w-full dropdown-container'
+      data-dropdown-root
+      ref={rootRef}
+    >
       <ListingFieldLabel label={label} required />
       <div
         className={`flex h-[50px] w-full items-center justify-between px-[18px] shadow-neons ${errors ? 'input-field-error' : ''}`}
@@ -100,6 +132,7 @@ const OffPlanSizeRange = ({
             <button
               type='button'
               disabled={disabled}
+              aria-expanded={unitOpen}
               onClick={() => setUnitOpen((open) => !open)}
               className='flex h-full w-full items-center justify-between gap-1 text-[15px] font-medium text-dark-grey disabled:cursor-not-allowed disabled:opacity-60'
             >
@@ -107,13 +140,14 @@ const OffPlanSizeRange = ({
               <span className='text-xs text-dark-grey/70'>▾</span>
             </button>
             {unitOpen && !disabled ? (
-              <ul className='absolute left-0 right-0 top-[calc(100%+8px)] z-20 overflow-hidden rounded-md border border-gray-200 bg-white shadow-md'>
+              <ul className='absolute left-0 right-0 top-[calc(100%+8px)] z-30 overflow-hidden rounded-md border border-gray-200 bg-white shadow-md'>
                 {PROPERTY_SIZE_UNITS.map((unit) => (
                   <li key={unit}>
                     <button
                       type='button'
-                      className={`w-full px-3 py-2 text-left text-sm hover:bg-offwhite hover:text-reefGold ${unit === sizeUnit ? 'font-semibold text-reefGold' : ''
-                        }`}
+                      className={`w-full px-3 py-2 text-left text-sm hover:bg-offwhite hover:text-reefGold ${
+                        unit === sizeUnit ? 'font-semibold text-reefGold' : ''
+                      }`}
                       onClick={() => handleUnitPick(unit)}
                     >
                       {unit}
@@ -127,7 +161,7 @@ const OffPlanSizeRange = ({
             label='From:'
             name={sizeUnit === 'SQM' ? 'sizeSQMFrom' : 'sizeSQFTFrom'}
             value={fromDisplay}
-            onChange={handleFromChange}
+            onChange={handleBoundChange('from')}
             onBlur={onBlur}
             disabled={disabled}
             error={errors}
@@ -136,7 +170,7 @@ const OffPlanSizeRange = ({
             label='To:'
             name={sizeUnit === 'SQM' ? 'sizeSQMTo' : 'sizeSQFTTo'}
             value={toDisplay}
-            onChange={handleToChange}
+            onChange={handleBoundChange('to')}
             onBlur={onBlur}
             disabled={disabled}
             error={errors}

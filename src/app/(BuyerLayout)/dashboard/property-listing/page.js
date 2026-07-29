@@ -35,6 +35,7 @@ import {
 } from '@/constants/listing-data'
 import { LISTING_IMAGE_MAX_BYTES, LISTING_IMAGE_MAX_MB } from '@/constants/listingUploadLimits'
 import { autoCapitalizeField } from '@/libs/autoCapitalizeText'
+import { flagListingPendingApprovalNotice } from '@/libs/listingPendingApprovalNotice'
 import { ListingContext } from '@/components/ListingContext/ListingsProvider'
 import { propertyType } from '../../../../constants/listing-data'
 import PayModal from '../../../../components/Modals/PayModal'
@@ -481,6 +482,7 @@ const Page = () => {
       ...prevFormData,
       propertyType: type,
     }))
+    setDropdowns((prev) => ({ ...prev, propertyType: false }))
     setIsCityDropdownOpen(false)
   }
 
@@ -759,14 +761,20 @@ const Page = () => {
             : 0,
         sizeSQFTFrom: formData.sizeSQFTFrom
           ? Number(formData.sizeSQFTFrom)
-          : undefined,
+          : formData.sizeSQFT
+            ? Number(formData.sizeSQFT)
+            : undefined,
         sizeSQFTTo: formData.sizeSQFTTo
           ? Number(formData.sizeSQFTTo)
           : undefined,
         sizeSQMFrom: formData.sizeSQMFrom
           ? Number(formData.sizeSQMFrom)
+          : formData.sizeSQM
+            ? Number(formData.sizeSQM)
+            : undefined,
+        sizeSQMTo: formData.sizeSQMTo
+          ? Number(formData.sizeSQMTo)
           : undefined,
-        sizeSQMTo: formData.sizeSQMTo ? Number(formData.sizeSQMTo) : undefined,
         sizeUnit: formData.sizeType || formData.sizeUnit || 'SQFT',
         priceFrom: formData.priceFrom ? Number(formData.priceFrom) : undefined,
         priceTo: formData.priceTo ? Number(formData.priceTo) : undefined,
@@ -850,6 +858,12 @@ const Page = () => {
               ? 'Submitted successfully. Your off-plan listing is pending Super Admin approval.'
               : 'Submitted successfully. Evaluator will evaluate it.',
         )
+
+        if (!id) {
+          flagListingPendingApprovalNotice({
+            assetKind: isOffPlan ? 'offplan' : 'property',
+          })
+        }
 
         // Reset everything
         setDropdowns(dropdownData)
@@ -994,19 +1008,26 @@ const Page = () => {
     }
 
     const sizeUnit = data.sizeUnit || data.sizeType || 'SQFT'
-    const sizeFrom =
-      sizeUnit === 'SQM'
-        ? data.sizeSQMFrom || data.sizeSQM
-        : data.sizeSQFTFrom || data.sizeSQFT
-    const sizeTo = sizeUnit === 'SQM' ? data.sizeSQMTo : data.sizeSQFTTo
+    if (offPlan) {
+      const sizeFrom =
+        sizeUnit === 'SQM'
+          ? data.sizeSQMFrom || data.sizeSQM
+          : data.sizeSQFTFrom || data.sizeSQFT
+      const sizeTo = sizeUnit === 'SQM' ? data.sizeSQMTo : data.sizeSQFTTo
 
-    if (!String(sizeFrom || '').trim()) {
-      errors.sizeSQFT = 'Size from is required'
-    } else if (
-      String(sizeTo || '').trim() &&
-      Number(sizeTo) < Number(sizeFrom)
-    ) {
-      errors.sizeSQFT = 'Size to must be greater than or equal to size from'
+      if (!String(sizeFrom || '').trim()) {
+        errors.sizeSQFT = 'Size from is required'
+      } else if (!String(sizeTo || '').trim()) {
+        errors.sizeSQFT = 'Size to is required'
+      } else if (Number(sizeTo) < Number(sizeFrom)) {
+        errors.sizeSQFT = 'Size to must be greater than or equal to size from'
+      }
+    } else {
+      const sizeValue =
+        sizeUnit === 'SQM' ? data.sizeSQM : data.sizeSQFT
+      if (!String(sizeValue || '').trim()) {
+        errors.sizeSQFT = 'Size is required'
+      }
     }
 
     if (!String(data.title || '').trim()) {

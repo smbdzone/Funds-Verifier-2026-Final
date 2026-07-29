@@ -13,12 +13,15 @@ import EvaluatorPriceInput from './requestCompoenets/EvaluatorPriceInput'
 import {
   buildEvaluatorUpdatePayload,
   formatNumericInput,
+  getListingPriceForEvaluator,
+  getListingSizeForEvaluator,
   initFormattedPrice,
 } from './requestCompoenets/evaluatorPriceHandlers'
 import { handleFileUpload } from '@/libs/uploadAsset'
 import Loader from './requestCompoenets/Loader'
 import { formatNumberWithCommas } from '../../../utils/global-functions/global'
 import { formatListingCardPrice } from '@/libs/listingPriceDisplay'
+import { formatPropertySizeDisplay } from '@/libs/propertySizeUnits'
 import { useProfile } from '../../../context/UserContext'
 import { getCookie } from 'cookies-next'
 import customAxios from '../../../utils/apis/apis'
@@ -115,12 +118,12 @@ export const RequestTab = () => {
         setFormattedPrice,
       )
       initFormattedPrice(
-        response.data.price,
+        getListingPriceForEvaluator(response.data),
         setListingPrice,
         setFormattedListingPrice,
       )
       initFormattedPrice(
-        response.data.sizeSQFT,
+        getListingSizeForEvaluator(response.data),
         setSizeSQFT,
         setFormattedSizeSQFT,
       )
@@ -356,12 +359,16 @@ export const RequestTab = () => {
 
   const handleSaveEvaluationDetails = async () => {
     const isPending = property?.status !== 1
+    const isOffPlan = String(property?.assetType || '')
+      .toLowerCase()
+      .includes('off plan')
     const updateData = buildEvaluatorUpdatePayload({
       listingPrice,
       evaluationPrice: isPending ? '' : evaluationPrice,
       roi: isPending ? '' : roi,
       sizeSQFT: isPending ? sizeSQFT : '',
       includeRoi: !isPending,
+      isOffPlan,
     })
 
     if (Object.keys(updateData).length === 0) {
@@ -417,8 +424,15 @@ export const RequestTab = () => {
         {property?.status === 1 ? (
           <div className='mb-4 grid sm:grid-cols-2 gap-4'>
             <InputField
-              label='Size in square feet'
-              value={formatNumberWithCommas(property.sizeSQFT)}
+              label='Size'
+              value={formatPropertySizeDisplay(property) || formatNumberWithCommas(property.sizeSQFT)}
+            />
+            <InputField
+              label='Price'
+              value={
+                formatListingCardPrice(property) ||
+                formatNumberWithCommas(property.price)
+              }
             />
           </div>
         ) : null}

@@ -54,10 +54,12 @@ const DropdownComponent = ({
 
   const renderLabelContent = () => (
     <button
+      type='button'
       className={`dropdownButton h-full pl-2 pr-3 py-2 md:py-0 border-b md:border-b-none border-dark-grey md:border-r w-full text-start text-light-blue ${disabled ? 'opacity-50 cursor-not-allowed bg-gray-100' : ''
         }`}
       onClick={!disabled ? handleToggleDropdown : undefined}
       disabled={disabled}
+      aria-expanded={Boolean(dropdowns)}
     >
       <span className='sr-only'>{upperLabel}</span>
       <div className='flex justify-between'>
@@ -71,7 +73,11 @@ const DropdownComponent = ({
             ) : null}
           </p>
           <p className='lg:text-xs md:text-[10px] truncate xxs:text-xs font-normal pt-[5px] text-dark-grey'>
-            {formData || ''}
+            {label === 'Asset Type'
+              ? dropdownOptions?.find((o) => o.value === formData)?.label ||
+                formData ||
+                ''
+              : formData || ''}
           </p>
         </div>
         <Image
@@ -79,8 +85,8 @@ const DropdownComponent = ({
           height={12}
           src='/listing/arrowgold.svg'
           alt='arrowblue'
-          className={`xl:ml-[30px] lg:ml-[20px] xxs:ml-[10px] transition-transform ${disabled ? 'opacity-40' : ''
-            }`}
+          className={`xl:ml-[30px] lg:ml-[20px] xxs:ml-[10px] transition-transform duration-200 ${dropdowns ? 'rotate-180' : ''
+            } ${disabled ? 'opacity-40' : ''}`}
         />
       </div>
     </button>
@@ -88,10 +94,7 @@ const DropdownComponent = ({
 
   // ✅ Asset Type dropdown
   const renderAssetTypeDropdown = () => (
-    <div
-      onMouseLeave={handleMouseLeave}
-      className='absolute mt-2 left-0 right-0 bg-white rounded-lg shadow-neon z-10 py-2'
-    >
+    <div className='absolute mt-2 left-0 right-0 bg-white rounded-lg shadow-neon z-30 py-2'>
       {dropdownOptions?.map((option, index) => {
         const targetPath = `/dashboard/${option.link}-listing`
         const href = `${targetPath}?assetType=${encodeURIComponent(option.value)}`
@@ -114,7 +117,7 @@ const DropdownComponent = ({
                   : undefined
               }
             >
-              {option.value}
+              {option.label || option.value}
             </div>
           )
         }
@@ -129,7 +132,7 @@ const DropdownComponent = ({
                   : undefined
               }
             >
-              {option.value}
+              {option.label || option.value}
             </div>
           </Link>
         )
@@ -139,13 +142,12 @@ const DropdownComponent = ({
 
   // ✅ Property Type dropdown
   const renderPropertyTypeDropdown = () => (
-    <div
-      onMouseLeave={handleMouseLeave}
-      className='absolute mt-2 left-0 right-0 bg-white rounded-lg shadow-neon z-10 py-2'
-    >
+    <div className='absolute mt-2 left-0 right-0 bg-white rounded-lg shadow-neon z-30 py-2'>
       {dropdownOptions?.map((type, index) => (
-        <div key={index}>
+        <div key={index} className='relative'>
           <div
+            role='button'
+            tabIndex={0}
             onClick={type.onclick}
             className='relative flex justify-between items-center cursor-pointer p-2 hover:bg-gray-100 hover:text-[#8D7C3B] hover:bg-[#F5F5F5] text-gray-400'
           >
@@ -155,15 +157,13 @@ const DropdownComponent = ({
               height={10}
               src='/listing/arrowgold.svg'
               alt='arrowblue'
-              className='-rotate-90'
+              className={`transition-transform duration-200 ${type.state ? 'rotate-0' : '-rotate-90'
+                }`}
             />
           </div>
-          {type.state && (
-            <div
-              onMouseLeave={() => setLand(false)}
-              className='absolute text-xs left-[90%] top-2 !w-[135px] bg-white justify-center items-center flex flex-col rounded-lg shadow-neon z-20'
-            >
-              {type.mapData?.map((ele) => (
+          {type.state && type.mapData ? (
+            <div className='absolute text-xs left-full top-0 ml-1 !w-[135px] bg-white justify-center items-center flex flex-col rounded-lg shadow-neon z-40'>
+              {type.mapData.map((ele) => (
                 <p
                   key={ele.id}
                   onClick={() => handleSelectOption(ele.value)}
@@ -173,7 +173,7 @@ const DropdownComponent = ({
                 </p>
               ))}
             </div>
-          )}
+          ) : null}
         </div>
       ))}
     </div>
@@ -181,7 +181,7 @@ const DropdownComponent = ({
 
   // ✅ General dropdown (country, city, etc.)
   const renderGeneralDropdown = () => (
-    <div className='absolute mt-2 left-0 right-0 max-h-[280px] bg-white h-96 overflow-y-auto rounded-lg shadow-neon z-10 py-2'>
+    <div className='absolute mt-2 left-0 right-0 max-h-[280px] bg-white h-96 overflow-y-auto rounded-lg shadow-neon z-30 py-2'>
       {!['Make', 'Model', 'Category', 'Subcategory'].includes(label) && (
         <input
           type='text'
@@ -189,6 +189,7 @@ const DropdownComponent = ({
           className='w-full p-2 bg-[#F5F5F5] outline-none text-[#8D7C3B]'
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
+          onClick={(e) => e.stopPropagation()}
         />
       )}
       {dropdownOptions?.map((option, index) => (
@@ -230,7 +231,10 @@ const DropdownComponent = ({
   return (
     <>
       {isListings && (
-        <div className='relative w-full text-start dropdown-container'>
+        <div
+          className='relative w-full text-start dropdown-container'
+          data-dropdown-root
+        >
           {renderLabelContent()}
 
           {error && (

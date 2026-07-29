@@ -24,10 +24,14 @@ import ListingDetailMediaColumn from '@/components/shared/ListingDetailMediaColu
 import ListingAmenitiesPanel from '@/components/shared/ListingAmenitiesPanel'
 import { getListingAmenities } from '@/libs/listingAmenities'
 import { formatListingLocation } from '@/libs/listingLocationUtils'
+import { isOwnListing } from '@/libs/isOwnListing'
+import { useProfile } from '@/context/UserContext'
 
 const TABS = ['Description', 'Reviews', 'Additional']
 
 export default function ProductView({ data }) {
+  const { user } = useProfile()
+  const ownsListing = isOwnListing(data, user)
   const combinedMedia = getListingDetailMediaItems(data)
   const [previewMedia, setPreviewMedia] = useState(
     () => combinedMedia[0] || null,
@@ -59,7 +63,7 @@ export default function ProductView({ data }) {
       { label: 'Furnished', value: data?.isFurnished },
       { label: 'Occupancy Status', value: data?.occupancyStatus },
       { label: 'Advertisement ID', value: data?.advertisementId },
-      { label: 'DLD Number', value: data?.dldNumber },
+      { label: 'Project Number', value: data?.dldNumber },
       {
         label: 'Garage',
         value: parseInt(data?.garages, 10) ? pad(data?.garages) : '',
@@ -75,10 +79,9 @@ export default function ProductView({ data }) {
   )
 
   const tabButtonClass = (tab) =>
-    `flex-grow md:text-base text-xs flex justify-center py-1 ${
-      activeTab === tab
-        ? 'text-lightBlue bg-gradient-to-r text-white sm:text-black from-[#a2913e] via-[#d7c590] to-[#a2913e] md:bg-none md:border-b-2 md:border-gold-800'
-        : 'text-black'
+    `flex-grow md:text-base text-xs flex justify-center py-1 ${activeTab === tab
+      ? 'text-lightBlue bg-gradient-to-r text-white sm:text-black from-[#a2913e] via-[#d7c590] to-[#a2913e] md:bg-none md:border-b-2 md:border-gold-800'
+      : 'text-black'
     }`
 
   return (
@@ -115,13 +118,15 @@ export default function ProductView({ data }) {
           </div>
 
           <div className='flex w-full flex-wrap items-center gap-3'>
-            <button
-              type='button'
-              className='btn-gradient flex w-full justify-center rounded border-0 px-5 py-3 text-xs font-medium text-white focus:outline-none sm:w-auto md:text-sm'
-              onClick={() => setShowCalendarPopup(true)}
-            >
-              Arrange Viewing
-            </button>
+            {!ownsListing ? (
+              <button
+                type='button'
+                className='btn-gradient flex w-full justify-center rounded border-0 px-5 py-3 text-xs font-medium text-white focus:outline-none sm:w-auto md:text-sm'
+                onClick={() => setShowCalendarPopup(true)}
+              >
+                Arrange Viewing
+              </button>
+            ) : null}
 
             <div className='flex gap-3'>
               {technicalReportSrc ? (
@@ -218,7 +223,7 @@ export default function ProductView({ data }) {
           <div className='space-y-4'>
             {data?.description ? <Description text={data.description} /> : null}
             {data?.additionalDescription &&
-            data.additionalDescription !== data?.description ? (
+              data.additionalDescription !== data?.description ? (
               <Description text={data.additionalDescription} />
             ) : null}
             {!data?.description && !data?.additionalDescription ? (

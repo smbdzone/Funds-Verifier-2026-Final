@@ -113,8 +113,8 @@ export const globalFormInputFields = [
   },
   {
     type: "text",
-    label: "DLD Number",
-    placeholder: "DLD Number (issued by the Dubai Land Department)",
+    label: "Project Number",
+    placeholder: "Project Number",
     name: "dldNumber",
     required: false,
   },
@@ -234,8 +234,8 @@ export const offPlanGlobalFormInputFields = [
   },
   {
     type: "text",
-    label: "DLD Number",
-    placeholder: "DLD Number (issued by the Dubai Land Department)",
+    label: "Project Number",
+    placeholder: "Project Number",
     name: "dldNumber",
     required: false,
   },
@@ -431,10 +431,6 @@ export const propertyType = [
     text: "Commercial",
     state: "commercial",
     mapData: Commercial,
-  },
-  {
-    text: "Multiple",
-    state: "commercial",
   },
 ];
 export const companiesOptions = ["Land Sterling Property Consultants LLC"];
@@ -1393,10 +1389,23 @@ export const bedroomsOptions = [
 
 export const deliveryQuarterOptions = ["Q1", "Q2", "Q3", "Q4"];
 
-/** Off-plan payment plan options shown on listing cards. "Payment Plan" is auto-appended on display. */
+/** Off-plan payment plan ratio (e.g. 20/80). Typed digits auto-insert "/". */
 export const PAYMENT_PLAN_TYPE_OTHER = "Others";
 export const paymentPlanTypeOptions = ["20/80", PAYMENT_PLAN_TYPE_OTHER];
 export const paymentPlanTypePresets = ["20/80"];
+
+/**
+ * Format raw payment-plan input as XX/YY.
+ * After 2 digits, inserts "/" then allows up to 2 more digits (e.g. 20 → 20/ → 20/80).
+ */
+export function formatPaymentPlanRatioInput(raw) {
+  const digits = String(raw ?? "")
+    .replace(/\D/g, "")
+    .slice(0, 4);
+  if (!digits) return "";
+  if (digits.length <= 2) return digits;
+  return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+}
 
 export function isPaymentPlanTypeOtherMode(value) {
   const v = String(value || "").trim();
@@ -1598,13 +1607,24 @@ export const removeOffPlanPaymentStep = (plan = [], index) => {
 };
 
 export const asset = [
-  { value: "Property For Sale", link: "property" },
+  {
+    value: "Property For Sale",
+    label: "Ready Property For Sale",
+    link: "property",
+  },
   // { value: "Property For Lease", link: "property" },
   { value: "Property Off Plan For Sale", link: "property" },
   { value: "Car For Sale", link: "car" },
   { value: "Jewellery For Sale", link: "jewelry" },
   { value: "Boats For Sale", link: "boat" },
 ];
+
+/** Display label for asset type (stored value may differ). */
+export const getAssetTypeLabel = (assetType) => {
+  if (!assetType) return assetType;
+  const match = asset.find((item) => item.value === assetType);
+  return match?.label || assetType;
+};
 
 export const carForSale = [
   {

@@ -4,7 +4,12 @@
  * Returns empty string when no usable URL is provided.
  */
 
-const SHORT_MAP_HOSTS = new Set(['goo.gl', 'maps.app.goo.gl', 'g.co'])
+const SHORT_MAP_HOSTS = new Set([
+  'goo.gl',
+  'maps.app.goo.gl',
+  'g.co',
+  'share.google',
+])
 
 function isMapsHost(hostname) {
   const host = hostname.replace(/^www\./, '').toLowerCase()
@@ -12,6 +17,7 @@ function isMapsHost(hostname) {
     host === 'google.com' ||
     host.endsWith('.google.com') ||
     host === 'maps.google.com' ||
+    host === 'share.google' ||
     SHORT_MAP_HOSTS.has(host)
   )
 }
@@ -22,6 +28,18 @@ export function isShortGoogleMapsUrl(url) {
     const parsed = new URL(String(url).trim())
     const host = parsed.hostname.replace(/^www\./, '').toLowerCase()
     return SHORT_MAP_HOSTS.has(host)
+  } catch {
+    return false
+  }
+}
+
+export function isShareGoogleUrl(url) {
+  if (url == null) return false
+  try {
+    const host = new URL(String(url).trim()).hostname
+      .replace(/^www\./, '')
+      .toLowerCase()
+    return host === 'share.google'
   } catch {
     return false
   }
@@ -62,6 +80,49 @@ export function extractLatLngFromMapsUrl(url) {
   return null
 }
 
+/**
+ * Pull the first usable Google Maps URL out of HTML (redirect pages / share pages).
+ */
+export function extractMapsUrlFromHtml(html) {
+  const text = String(html || '')
+  if (!text) return ''
+
+  const patterns = [
+    /https:\/\/www\.google\.com\/maps\/place\/[^"'\\\s<>]+/gi,
+    /https:\/\/maps\.google\.com\/maps\/place\/[^"'\\\s<>]+/gi,
+    /https:\/\/www\.google\.com\/maps\/@[^"'\\\s<>]+/gi,
+    /https:\/\/www\.google\.com\/maps\?[^"'\\\s<>]+/gi,
+    /https:\/\/maps\.app\.goo\.gl\/[^"'\\\s<>]+/gi,
+  ]
+
+  for (const pattern of patterns) {
+    const matches = text.match(pattern) || []
+    for (const match of matches) {
+      const cleaned = match
+        .replace(/&amp;/g, '&')
+        .replace(/\\u003d/g, '=')
+        .replace(/\\u0026/g, '&')
+        .replace(/\\+$/, '')
+      if (toGoogleMapsEmbedUrl(cleaned) || extractLatLngFromMapsUrl(cleaned)) {
+        return cleaned
+      }
+      if (cleaned.includes('/maps/')) return cleaned
+    }
+  }
+
+  const coordsInHtml = text.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/)
+  if (coordsInHtml) {
+    return `https://www.google.com/maps/@${coordsInHtml[1]},${coordsInHtml[2]},15z`
+  }
+
+  const pinInHtml = text.match(/!3d(-?\d+\.?\d*)!4d(-?\d+\.?\d*)/)
+  if (pinInHtml) {
+    return `https://www.google.com/maps?q=${pinInHtml[1]},${pinInHtml[2]}`
+  }
+
+  return ''
+}
+
 function extractPlaceName(parsed) {
   const placeMatch = parsed.pathname.match(/\/maps\/place\/([^/]+)/)
   if (!placeMatch) return ''
@@ -81,8 +142,8 @@ function buildEmbedFromQuery(query) {
 }
 
 /**
- * Sync converter. Short links (maps.app.goo.gl) cannot be embedded directly —
- * resolve them via /api/resolve-maps-url first, then pass the expanded URL here.
+ * Sync converter. Short links (maps.app.goo.gl / share.google) cannot be embedded
+ * directly — resolve them via /api/resolve-maps-url first, then pass the expanded URL here.
  */
 export function toGoogleMapsEmbedUrl(url) {
   if (url == null) return ''
@@ -110,6 +171,11 @@ export function toGoogleMapsEmbedUrl(url) {
       return ''
     }
 
+    // google.com/share.google pages are not embeddable Maps URLs
+    if (host === 'google.com' && parsed.pathname.includes('share.google')) {
+      return ''
+    }
+
     const coords = extractLatLngFromMapsUrl(trimmed)
     if (coords && Number.isFinite(coords.lat) && Number.isFinite(coords.lng)) {
       return buildEmbedFromCoords(coords.lat, coords.lng)
@@ -121,7 +187,7 @@ export function toGoogleMapsEmbedUrl(url) {
     }
 
     const q = parsed.searchParams.get('q') || parsed.searchParams.get('query')
-    if (q && !/^https?:\/\//i.test(q)) {
+    if (q && !/^https?:\/\//i.test(q) && !/share\.google/i.test(q)) {
       return buildEmbedFromQuery(q)
     }
 

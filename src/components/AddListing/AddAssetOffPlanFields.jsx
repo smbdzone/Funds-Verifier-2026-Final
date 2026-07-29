@@ -9,9 +9,7 @@ import DeliveryTimeField from '@/components/property-listing/DeliveryTimeField'
 import OffPlanLayoutFloorPlan from '@/components/property-listing/OffPlanLayoutFloorPlan'
 import OffPlanPaymentPlan from '@/components/property-listing/OffPlanPaymentPlan'
 import OffPlanAgencyAgreementUpload from '@/components/property-listing/OffPlanAgencyAgreementUpload'
-import OffPlanPaymentPlanTypeField, {
-  PAYMENT_PLAN_TYPE_OTHER,
-} from '@/components/property-listing/OffPlanPaymentPlanTypeField'
+import OffPlanPaymentPlanTypeField from '@/components/property-listing/OffPlanPaymentPlanTypeField'
 import {
   bathroomsOptions,
   bedroomsOptions,
@@ -76,16 +74,6 @@ const AddAssetOffPlanFields = ({
         errors={errors}
       />
 
-      <TextInput
-        type='text'
-        name='advertisementId'
-        placeholder='Advertisement ID'
-        value={formData.advertisementId || ''}
-        onChange={(e) => onInputChange('advertisementId', e.target.value)}
-        required={false}
-        errors={errors}
-      />
-
       <DropdownInput
         name='bedrooms'
         placeholder='Bedrooms'
@@ -112,9 +100,9 @@ const AddAssetOffPlanFields = ({
 
       <OffPlanSizeRange
         label='Property size'
-        sizeSQFTFrom={formData.sizeSQFTFrom}
+        sizeSQFTFrom={formData.sizeSQFTFrom || formData.sizeSQFT}
         sizeSQFTTo={formData.sizeSQFTTo}
-        sizeSQMFrom={formData.sizeSQMFrom}
+        sizeSQMFrom={formData.sizeSQMFrom || formData.sizeSQM}
         sizeSQMTo={formData.sizeSQMTo}
         sizeUnit={formData.sizeUnit || formData.sizeType || 'SQFT'}
         errors={errors.sizeSQFT}
@@ -126,6 +114,8 @@ const AddAssetOffPlanFields = ({
           sizeSQMTo,
           sizeUnit,
           sizeType,
+          sizeSQFT,
+          sizeSQM,
         }) => {
           if (sizeSQFTFrom !== undefined) onInputChange('sizeSQFTFrom', sizeSQFTFrom)
           if (sizeSQFTTo !== undefined) onInputChange('sizeSQFTTo', sizeSQFTTo)
@@ -133,8 +123,10 @@ const AddAssetOffPlanFields = ({
           if (sizeSQMTo !== undefined) onInputChange('sizeSQMTo', sizeSQMTo)
           if (sizeUnit !== undefined) onInputChange('sizeUnit', sizeUnit)
           if (sizeType !== undefined) onInputChange('sizeType', sizeType)
-          if (sizeSQFTFrom !== undefined) onInputChange('sizeSQFT', sizeSQFTFrom)
-          if (sizeSQMFrom !== undefined) onInputChange('sizeSQM', sizeSQMFrom)
+          if (sizeSQFT !== undefined) onInputChange('sizeSQFT', sizeSQFT)
+          else if (sizeSQFTFrom !== undefined) onInputChange('sizeSQFT', sizeSQFTFrom)
+          if (sizeSQM !== undefined) onInputChange('sizeSQM', sizeSQM)
+          else if (sizeSQMFrom !== undefined) onInputChange('sizeSQM', sizeSQMFrom)
         }}
       />
 
@@ -160,15 +152,7 @@ const AddAssetOffPlanFields = ({
           value={formData.paymentPlanType || ''}
           errors={Boolean(errors?.paymentPlanType)}
           errorMessage={errors?.paymentPlanType}
-          dropdown={dropdownOpen === 'paymentPlanType'}
-          onToggleDropdown={() => onDropdownOpen('paymentPlanType')}
-          onSelect={(option) => onSelectOption('paymentPlanType', option)}
-          onCustomChange={(customValue) =>
-            onInputChange(
-              'paymentPlanType',
-              customValue || PAYMENT_PLAN_TYPE_OTHER
-            )
-          }
+          onChange={(next) => onInputChange('paymentPlanType', next)}
           required={false}
         />
       </div>

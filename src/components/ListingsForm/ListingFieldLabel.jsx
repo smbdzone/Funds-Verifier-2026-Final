@@ -3,7 +3,7 @@ export default function ListingFieldLabel({ label, required = false, className =
 
   return (
     <label
-      className={`mb-1.5 block text-[13px] font-normal text-dark-grey ${className}`}
+      className={`mb-1 block text-[13px] leading-4 font-normal text-dark-grey ${className}`}
     >
       {label}
       {required ? (

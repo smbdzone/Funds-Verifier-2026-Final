@@ -25,7 +25,7 @@ const CATEGORY_ENDPOINTS = {
 }
 
 const CATEGORY_OPTIONS = [
-  { value: 'Property For Sale', label: 'Properties For Sale' },
+  { value: 'Property For Sale', label: 'Ready Property For Sale' },
   { value: 'Property Off Plan For Sale', label: 'Off Plan' },
   { value: 'Jewelry', label: 'Jewellery' },
   { value: 'Car', label: 'Cars' },

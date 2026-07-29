@@ -159,7 +159,10 @@ const EditPriceModal = ({ handleCloseModal, id, fetchData, userUUID }) => {
                       onClick={toggleBedroomsDropdown}
                       className='text-left items-center text-black/60 gap-2 justify-between flex bg-white w-full focus:outline-none'
                     >
-                      {assetType ? assetType : 'Select'}
+                      {assetType
+                        ? asset?.find((a) => a.value === assetType)?.label ||
+                          assetType
+                        : 'Select'}
                       <span className='rotate-90 mt-1'>
                         <SlArrowRight className='text-black/120' />
                       </span>
@@ -175,7 +178,7 @@ const EditPriceModal = ({ handleCloseModal, id, fetchData, userUUID }) => {
                             }}
                             className='w-full px-4 py-2 text-left text-gray-700 hover:bg-gray-100'
                           >
-                            {item.value}
+                            {item.label || item.value}
                           </button>
                         ))}
                       </div>

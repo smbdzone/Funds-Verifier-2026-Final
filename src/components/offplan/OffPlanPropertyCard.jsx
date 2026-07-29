@@ -56,7 +56,7 @@ const OffPlanPropertyCard = ({
     <article
       className={`listing-card mx-auto flex h-full w-full max-w-[404px] flex-col items-stretch self-stretch overflow-visible rounded-[5px] bg-white pb-4 ${className}`}
     >
-      <div className='listing-card-body flex w-full flex-col gap-3'>
+      <div className='listing-card-body flex h-full w-full flex-1 flex-col gap-3'>
         <div className='relative h-[275px] w-full shrink-0 overflow-hidden rounded-t-[5px]'>
           <Image
             src={imageList[activeImageIndex]}
@@ -107,8 +107,8 @@ const OffPlanPropertyCard = ({
           ) : null}
         </div>
 
-        <div className='flex w-full flex-col gap-5'>
-          <div className='flex flex-col gap-3 px-4'>
+        <div className='flex w-full flex-1 flex-col'>
+          <div className='flex flex-1 flex-col gap-3 px-4 pb-3'>
             <div className='flex flex-wrap items-center gap-x-3 gap-y-1'>
               <div className='flex shrink-0 items-end gap-[5px]'>
                 {Array.from({ length: 5 }, (_, index) => (
@@ -131,33 +131,37 @@ const OffPlanPropertyCard = ({
               </span>
             </div>
 
-            <div className='listing-card-meta flex w-full min-h-[88px] items-start justify-between gap-3'>
+            <div className='listing-card-meta flex w-full min-h-[132px] items-start justify-between gap-3'>
               <div className='flex min-w-0 flex-1 flex-col items-start gap-2 text-left break-words'>
-                <h3 className='listing-card-title w-full break-words text-left text-[18px] font-medium leading-[26px] text-prussianBlue sm:text-xl sm:leading-6'>
+                <h3 className='listing-card-title line-clamp-2 min-h-[52px] w-full break-words text-left text-[18px] font-medium leading-[26px] text-prussianBlue sm:min-h-[48px] sm:text-xl sm:leading-6'>
                   {title}
                 </h3>
 
                 {location ? (
-                  <p className='listing-card-location flex w-full items-start gap-1.5 break-words text-left text-[18px] leading-[26px] text-prussianBlue sm:text-base sm:leading-5'>
+                  <p className='listing-card-location flex w-full min-h-[52px] items-start gap-1.5 break-words text-left text-[18px] leading-[26px] text-prussianBlue sm:min-h-[40px] sm:text-base sm:leading-5'>
                     <FaMapMarkerAlt
                       className='mt-1 shrink-0 text-reefGold'
                       size={16}
                       aria-hidden
                     />
-                    <span className='min-w-0 break-words'>{location}</span>
+                    <span className='line-clamp-2 min-w-0 break-words'>{location}</span>
                   </p>
-                ) : null}
+                ) : (
+                  <p className='min-h-[52px] sm:min-h-[40px]' aria-hidden='true' />
+                )}
 
-                {deliveryLabel ? (
-                  <div className='flex w-full items-center justify-start gap-2'>
-                    <span className='text-[18px] font-medium capitalize leading-[26px] text-prussianBlue sm:text-xl sm:leading-6'>
-                      Ready:
-                    </span>
-                    <span className='text-[18px] font-medium leading-[26px] text-prussianBlue sm:text-xl sm:leading-6'>
-                      {deliveryLabel}
-                    </span>
-                  </div>
-                ) : null}
+                <div className='flex min-h-[26px] w-full items-center justify-start gap-2 sm:min-h-[24px]'>
+                  {deliveryLabel ? (
+                    <>
+                      <span className='text-[18px] font-medium capitalize leading-[26px] text-prussianBlue sm:text-xl sm:leading-6'>
+                        Ready:
+                      </span>
+                      <span className='text-[18px] font-medium leading-[26px] text-prussianBlue sm:text-xl sm:leading-6'>
+                        {deliveryLabel}
+                      </span>
+                    </>
+                  ) : null}
+                </div>
               </div>
               {qrScanSrc ? (
                 <Image
@@ -168,7 +172,9 @@ const OffPlanPropertyCard = ({
                   className='listing-qr-thumb ml-auto h-[72px] w-[72px] shrink-0 rounded border border-gray-200 bg-white object-contain'
                   unoptimized
                 />
-              ) : null}
+              ) : (
+                <div className='ml-auto h-[72px] w-[72px] shrink-0' aria-hidden='true' />
+              )}
             </div>
           </div>
 
@@ -204,7 +210,7 @@ const OffPlanPropertyCard = ({
 
   if (href) {
     return (
-      <Link href={href} className='block h-full transition-opacity hover:opacity-95'>
+      <Link href={href} className='flex h-full w-full transition-opacity hover:opacity-95'>
         {card}
       </Link>
     )

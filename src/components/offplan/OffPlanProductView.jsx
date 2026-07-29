@@ -15,6 +15,8 @@ import { formatOffPlanPriceRange, formatOffPlanSizeRange } from '@/constants/off
 import { getListingAmenities } from '@/libs/listingAmenities'
 import { formatListingLocation } from '@/libs/listingLocationUtils'
 import { getProfileImageSrc } from '@/utils/global-functions/global'
+import { isOwnListing } from '@/libs/isOwnListing'
+import { useProfile } from '@/context/UserContext'
 import Image from 'next/image'
 import React, { useMemo, useState } from 'react'
 import { IoCheckmarkSharp } from 'react-icons/io5'
@@ -28,6 +30,8 @@ const TABS = [
 ]
 
 export default function OffPlanProductView({ data }) {
+  const { user } = useProfile()
+  const ownsListing = isOwnListing(data, user)
   const [activeTab, setActiveTab] = useState('Description')
   const [previewSrc, setPreviewSrc] = useState(data?.images?.[0] || '/offplan/image1.svg')
   const [showCalendarPopup, setShowCalendarPopup] = useState(false)
@@ -72,8 +76,7 @@ export default function OffPlanProductView({ data }) {
       { label: 'Layout', value: data?.layout },
       { label: 'Number of Floors', value: data?.numberOfFloors },
       { label: 'Available Apartments', value: data?.availableApartment },
-      { label: 'Advertisement ID', value: data?.advertisementId },
-      { label: 'DLD Number', value: data?.dldNumber },
+      { label: 'Project Number', value: data?.dldNumber },
       {
         label: 'Price Range',
         value: formatOffPlanPriceRange(data?.priceFrom, data?.priceTo),
@@ -163,13 +166,15 @@ export default function OffPlanProductView({ data }) {
             </p>
           ) : null}
 
-          <button
-            type='button'
-            onClick={handleDeveloperRequestClick}
-            className='btn-gradient flex w-full justify-center rounded border-0 px-5 py-3 text-xs font-medium text-white focus:outline-none sm:w-auto md:text-sm'
-          >
-            Developer Request
-          </button>
+          {!ownsListing ? (
+            <button
+              type='button'
+              onClick={handleDeveloperRequestClick}
+              className='btn-gradient flex w-full justify-center rounded border-0 px-5 py-3 text-xs font-medium text-white focus:outline-none sm:w-auto md:text-sm'
+            >
+              Developer Request
+            </button>
+          ) : null}
 
           <div className='flex w-full flex-col gap-4 border-t border-black/10 pt-5'>
             <div className='flex w-full flex-col gap-4 sm:flex-row sm:items-center sm:justify-between'>

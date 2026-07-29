@@ -23,7 +23,7 @@ const ListingCustomPlaceholderDropdown = ({
     .includes('optional')
 
   return (
-    <div className='custom-container-dev'>
+    <div className='custom-container-dev dropdown-container' data-dropdown-root>
       {label ? <ListingFieldLabel label={label} /> : null}
       <div className='relative w-full'>
         <input
@@ -34,6 +34,7 @@ const ListingCustomPlaceholderDropdown = ({
           readOnly={readOnly}
           disabled={disabled}
           onClick={disabled ? undefined : handleToggleDropdown}
+          aria-expanded={Boolean(dropdown)}
           placeholder={
             safeValue
               ? ''
@@ -45,6 +46,7 @@ const ListingCustomPlaceholderDropdown = ({
         <button
           type='button'
           aria-label={`Toggle ${label || name} dropdown`}
+          aria-expanded={Boolean(dropdown)}
           className='absolute right-3 top-1/2 flex -translate-y-1/2 flex-col items-center justify-center gap-0.5 cursor-pointer dropdown-toggle disabled:cursor-not-allowed'
           onClick={disabled ? undefined : handleToggleDropdown}
           disabled={disabled}
@@ -66,7 +68,7 @@ const ListingCustomPlaceholderDropdown = ({
         </button>
 
         {dropdown && !disabled ? (
-          <div className='absolute left-0 right-0 top-[calc(100%+4px)] z-10 flex max-h-80 flex-col gap-2 overflow-auto rounded-md border border-gray-200 bg-white shadow-md cursor-pointer dropdown-toggle'>
+          <div className='absolute left-0 right-0 top-[calc(100%+4px)] z-30 flex max-h-80 flex-col gap-2 overflow-auto rounded-md border border-gray-200 bg-white shadow-md cursor-pointer dropdown-toggle'>
             {(dropdownOptions || []).map((option, index) => (
               <div
                 key={index}

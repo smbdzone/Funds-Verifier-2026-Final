@@ -7,6 +7,7 @@ import {
   handleVideoUpload,
 } from '@/libs/uploadAsset'
 import { autoCapitalizeField } from '@/libs/autoCapitalizeText'
+import { flagListingPendingApprovalNotice } from '@/libs/listingPendingApprovalNotice'
 import {
   applyPremiumServiceRefs,
   listingMediaRef,
@@ -545,6 +546,7 @@ function Page() {
           ),
         ])
         toast.success('Submitted successfully. Evaluator will evaluate it.')
+        flagListingPendingApprovalNotice({ assetKind: 'car' })
         resetForm()
         setFormData(initialFormData)
         localStorage.removeItem('FormPayment')

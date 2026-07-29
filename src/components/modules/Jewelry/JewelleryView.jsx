@@ -23,10 +23,14 @@ import ListingDetailMediaColumn from '@/components/shared/ListingDetailMediaColu
 import ListingAmenitiesPanel from '@/components/shared/ListingAmenitiesPanel'
 import { getListingAmenities } from '@/libs/listingAmenities'
 import { formatListingLocation } from '@/libs/listingLocationUtils'
+import { isOwnListing } from '@/libs/isOwnListing'
+import { useProfile } from '@/context/UserContext'
 
 const TABS = ['Description', 'Reviews', 'Additional']
 
 export default function JewelleryView({ data }) {
+  const { user } = useProfile()
+  const ownsListing = isOwnListing(data, user)
   const combinedMedia = getListingDetailMediaItems(data)
   const [previewMedia, setPreviewMedia] = useState(
     () => combinedMedia[0] || null,
@@ -100,13 +104,15 @@ export default function JewelleryView({ data }) {
           </div>
 
           <div className='flex w-full flex-wrap items-center gap-3'>
-            <button
-              type='button'
-              onClick={() => setShowCalendarPopup(true)}
-              className='btn-gradient flex w-full justify-center rounded border-0 px-5 py-3 text-xs font-medium text-white focus:outline-none sm:w-auto md:text-sm'
-            >
-              Arrange Viewing
-            </button>
+            {!ownsListing ? (
+              <button
+                type='button'
+                onClick={() => setShowCalendarPopup(true)}
+                className='btn-gradient flex w-full justify-center rounded border-0 px-5 py-3 text-xs font-medium text-white focus:outline-none sm:w-auto md:text-sm'
+              >
+                Arrange Viewing
+              </button>
+            ) : null}
             <div className='flex gap-3'>
               {technicalReportSrc ? (
                 <>

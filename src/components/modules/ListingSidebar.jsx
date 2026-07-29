@@ -347,7 +347,7 @@ export const ListingSidebar = ({ initialData, isSidebarVisible }) => {
   // const check = pathname.substring(1);
   const check = pathname?.split('/')?.[1] || ''
   const filterConfigs = [
-    { title: 'Property For Sale', options: propertyForSale },
+    { title: 'Ready Property For Sale', options: propertyForSale },
     { title: 'Car For Sale', options: carForSale },
     {
       title: 'Jewellery For Sale',

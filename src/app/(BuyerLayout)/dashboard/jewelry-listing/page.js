@@ -9,6 +9,7 @@ import {
   handleThumbnailUpload,
 } from '@/libs/uploadAsset'
 import { autoCapitalizeField } from '@/libs/autoCapitalizeText'
+import { flagListingPendingApprovalNotice } from '@/libs/listingPendingApprovalNotice'
 import {
   applyPremiumServiceRefs,
   listingMediaRef,
@@ -719,6 +720,9 @@ function Page() {
               ? 'Updated successfully.'
               : 'Submitted successfully. Evaluator will evaluate it.'
           )
+          if (!id) {
+            flagListingPendingApprovalNotice({ assetKind: 'jewelry' })
+          }
           router.push('/seller-profile/my-listing')
 
           if (!id) {

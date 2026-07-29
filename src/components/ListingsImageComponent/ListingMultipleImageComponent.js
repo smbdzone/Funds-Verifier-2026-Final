@@ -1,9 +1,10 @@
 import Image from 'next/image'
-import React, { useMemo } from 'react'
+import React, { useMemo, useState } from 'react'
 
 import {
   LISTING_IMAGE_MAX_COUNT,
 } from '@/constants/listingUploadLimits'
+import ListingImagePreviewModal from '@/components/ListingsImageComponent/ListingImagePreviewModal'
 
 const ListingMultipleImageComponent = ({
   images,
@@ -15,6 +16,8 @@ const ListingMultipleImageComponent = ({
   inputId = 'additional-pictures',
   uploadLabel = 'Add Pictures',
 }) => {
+  const [lightboxSrc, setLightboxSrc] = useState(null)
+
   const imagePreviews = useMemo(() => {
     if (!images || !Array.isArray(images)) {
       return []
@@ -60,13 +63,20 @@ const ListingMultipleImageComponent = ({
                 key={index}
                 className='group relative h-[52px] w-[52px] shrink-0 overflow-hidden rounded-sm border border-dark-grey/15 bg-offwhite'
               >
-                <Image
-                  width={52}
-                  height={52}
-                  src={imageData.preview}
-                  alt={`upload-${index}`}
-                  className='h-full w-full object-cover'
-                />
+                <button
+                  type='button'
+                  onClick={() => setLightboxSrc(imageData.preview)}
+                  className='block h-full w-full cursor-zoom-in'
+                  title='Click to preview watermark'
+                >
+                  <Image
+                    width={52}
+                    height={52}
+                    src={imageData.preview}
+                    alt={`upload-${index}`}
+                    className='h-full w-full object-cover'
+                  />
+                </button>
                 {!disabled && (
                   <button
                     type='button'
@@ -122,6 +132,14 @@ const ListingMultipleImageComponent = ({
           **{errorMessage}
         </span>
       )}
+
+      {lightboxSrc ? (
+        <ListingImagePreviewModal
+          src={lightboxSrc}
+          alt='Picture preview'
+          onClose={() => setLightboxSrc(null)}
+        />
+      ) : null}
     </>
   )
 }

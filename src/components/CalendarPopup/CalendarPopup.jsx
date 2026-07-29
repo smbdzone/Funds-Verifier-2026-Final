@@ -8,6 +8,7 @@ import { useProfile } from '../../context/UserContext'
 import customAxios from '../../utils/apis/apis'
 import { NoSlotsAvailable } from '@/components/global/NoSlotsAvailable'
 import { getBookableSlotsForDate } from '@/libs/slotTimeFilters'
+import { isOwnListing } from '@/libs/isOwnListing'
 
 const resolveTrusteeFromListing = (product) => {
   if (!product) return null
@@ -39,6 +40,13 @@ const CalendarPopup = ({ onClose, productData }) => {
   const [fetchingSlots, setFetchingSlots] = useState(false)
   const [slotsFetchError, setSlotsFetchError] = useState(null)
   const { user } = useProfile()
+  const ownsListing = isOwnListing(productData, user)
+
+  useEffect(() => {
+    if (!ownsListing) return
+    toast.error('You cannot request a viewing for your own listing.')
+    onClose?.()
+  }, [ownsListing, onClose])
 
   const loadTrustee = useCallback(async () => {
     setTrusteeLoading(true)
@@ -137,6 +145,10 @@ const CalendarPopup = ({ onClose, productData }) => {
 
   const handleSubmit = async (event) => {
     event.preventDefault()
+    if (ownsListing) {
+      toast.error('You cannot request a viewing for your own listing.')
+      return
+    }
     if (!selectedTimeSlotId) {
       toast.error('Please select a time slot before submitting.')
       return
@@ -193,6 +205,8 @@ const CalendarPopup = ({ onClose, productData }) => {
     setShowConfirmation(false)
     onClose()
   }
+
+  if (ownsListing) return null
 
   return (
     <>

@@ -8,6 +8,7 @@ import {
   getRoleHomeRoute,
 } from '@/utils/auth/roleHome'
 import { isUaePassCallback } from '@/utils/auth/uaePass'
+import { peekPostLoginRedirect, consumePostLoginRedirect } from '@/utils/auth/postLoginRedirect'
 
 /**
  * Client fallback when edge proxy cannot see HttpOnly cookies (e.g. localhost vs production domain).
@@ -30,12 +31,18 @@ export function useRedirectIfAuthenticated({ blockConsumerOnUserLogin = false } 
       pathname === '/user-login' &&
       CONSUMER_ROLES.has(role)
     ) {
-      router.replace(getRoleHomeRoute(role))
+      const intended = peekPostLoginRedirect()
+        ? consumePostLoginRedirect()
+        : null
+      router.replace(intended || getRoleHomeRoute(role))
       return
     }
 
     if (pathname === '/login' || pathname === '/user-login') {
-      router.replace(getRoleHomeRoute(role))
+      const intended = peekPostLoginRedirect()
+        ? consumePostLoginRedirect()
+        : null
+      router.replace(intended || getRoleHomeRoute(role))
     }
   }, [
     user,

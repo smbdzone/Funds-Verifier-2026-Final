@@ -28,6 +28,7 @@ const roleRoutes = {
     '/seller-profile',
     '/dashboard',
     '/dashboard/property-listing',
+    '/dashboard/property-forsale',
     '/dashboard/car-listing',
     '/dashboard/jewelry-listing',
     '/dashboard/boat-listing',
@@ -40,6 +41,13 @@ const roleRoutes = {
     '/profile/deal-preference',
     '/profile/purchase-tracker',
     '/seller-profile/all-slot',
+    '/seller-profile/my-listing',
+    '/dashboard/property-listing',
+    '/dashboard/property-forsale',
+    '/dashboard/car-listing',
+    '/dashboard/jewelry-listing',
+    '/dashboard/boat-listing',
+    '/dashboard/add-asset',
     '/advertise-with-us',
     '/advertise-with-us/analytics',
   ],
@@ -80,10 +88,12 @@ const roleRoutes = {
     '/3d-walkthrough',
     '/3d-walkthrough/create-slot',
     '/3d-walkthrough/price',
+    '/smb-details',
   ],
   TechnicalReport: [
     '/survey-dashboard',
     '/survey-dashboard/requested-reports',
+    '/survey-dashboard/technical-report',
     '/survey-dashboard/security',
     '/survey-dashboard/create-slot',
   ],
@@ -351,7 +361,7 @@ export async function proxy(request) {
     }
 
     // Local dev: API sets cookies on :4000; Next runs on :5002 — edge cannot see them.
-    // Let the page load; axios calls still send cookies to the API origin.
+    // Let the page load; client RequireAuth + axios session still gate access.
     const isLocalHost =
       nextUrl.hostname === 'localhost' || nextUrl.hostname === '127.0.0.1'
     const hasFrontendAuthCookie =
@@ -360,7 +370,10 @@ export async function proxy(request) {
       return NextResponse.next()
     }
 
-    return NextResponse.redirect(new URL('/login', request.url))
+    const returnPath = `${pathname}${nextUrl.search || ''}`
+    const loginUrl = new URL('/login', request.url)
+    loginUrl.searchParams.set('redirect', returnPath)
+    return NextResponse.redirect(loginUrl)
   }
 
   const { role } = session
@@ -395,6 +408,7 @@ export const config = {
     '/trustee/:path*',
     '/3d-walkthrough',
     '/3d-walkthrough/:path*',
+    '/smb-details',
     '/survey-dashboard',
     '/survey-dashboard/:path*',
   ],

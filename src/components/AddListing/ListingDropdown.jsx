@@ -11,6 +11,13 @@ const ListingDropdown = ({
   searchQuery,
   setSearchQuery,
 }) => {
+  const getOptionValue = (option) =>
+    typeof option === "object" && option !== null ? option.value : option;
+  const getOptionLabel = (option) =>
+    typeof option === "object" && option !== null
+      ? option.label || option.value
+      : option;
+
   return (
     <div className="relative border-r py-4 pr-4 w-full flex flex-col items-center justify-center">
       <button
@@ -49,10 +56,10 @@ const ListingDropdown = ({
           {options.map((option, index) => (
             <div
               key={index}
-              onClick={() => onSelect(option)}
+              onClick={() => onSelect(getOptionValue(option))}
               className="cursor-pointer p-2 hover:bg-gray-100 px-2 py-2 hover:text-[#8D7C3B] hover:bg-[#F5F5F5] text-gray-400"
             >
-              {option}
+              {getOptionLabel(option)}
             </div>
           ))}
         </div>

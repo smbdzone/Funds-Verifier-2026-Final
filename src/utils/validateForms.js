@@ -96,6 +96,20 @@ export const validateOffPlanAsset = (formData, formFields) => {
     !safeTrim(formData.sizeSQMFrom || formData.sizeSQM)
   ) {
     errors.sizeSQFT = "Size from is required";
+  } else {
+    const sizeUnit = formData.sizeUnit || formData.sizeType || "SQFT";
+    const sizeFrom =
+      sizeUnit === "SQM"
+        ? formData.sizeSQMFrom || formData.sizeSQM
+        : formData.sizeSQFTFrom || formData.sizeSQFT;
+    const sizeTo =
+      sizeUnit === "SQM" ? formData.sizeSQMTo : formData.sizeSQFTTo;
+    if (!safeTrim(sizeTo)) {
+      errors.sizeSQFT = "Size to is required";
+    } else if (Number(sizeTo) < Number(sizeFrom)) {
+      errors.sizeSQFT =
+        "Size to must be greater than or equal to size from";
+    }
   }
 
   const thumbnail =

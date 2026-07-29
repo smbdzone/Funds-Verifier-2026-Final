@@ -2,9 +2,9 @@ import { montserrat } from '@/lib/fonts'
 import './../globals.css'
 import 'swiper/css'
 import 'swiper/css/navigation'
-import Footer from '@/components/Layout/Footer'
 import ServerComponent from '@/components/home/ServerComponent'
 import ClientHeader from './ClientHeader'
+import ClientFooter from './ClientFooter'
 import Loadingbar from '@/components/Loadingbar/Loadingbar'
 import { ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
@@ -42,7 +42,7 @@ export default function RootLayout({ children }) {
               <ServerComponent>
                 <>{children}</>
               </ServerComponent>
-              <Footer />
+              <ClientFooter />
             </PublicTokenProvider>
           </UserProvider>
         </div>

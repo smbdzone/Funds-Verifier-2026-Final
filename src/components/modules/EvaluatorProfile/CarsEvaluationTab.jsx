@@ -9,13 +9,16 @@ import { OpenDisclosure, CloseDisclosure } from '@/components/Icons'
 import { SlArrowRight } from 'react-icons/sl'
 import useDebounce from '../../../hooks/useDebounce'
 import Modal from '../../documents/modal'
-import { useProfile } from '../../../context/UserContext'
-import { getTokenFromCookie } from '../../../utils/helper'
 import { getListingDocumentSrc } from '@/libs/listingCardMedia'
 import EvaluationActionDropdown, {
   evaluationMenuItemClass,
 } from './requestCompoenets/EvaluationActionDropdown'
 import { fetchEvaluatorListings } from '@/libs/evaluatorListingsQuery'
+import {
+  assignAssetToSubEvaluator,
+  isAssetAssignedToSubEvaluator,
+  unassignAssetFromSubEvaluator,
+} from '@/libs/evaluatorAssign'
 
 export const CarsEvaluationTab = () => {
   const [propertyListings, setPropertyListings] = useState([])
@@ -27,7 +30,6 @@ export const CarsEvaluationTab = () => {
   const [certificateUrl, setCertificateUrl] = useState('')
   const [assignDropdownOpen, setAssignDropdownOpen] = useState(null)
   const debouncedQuery = useDebounce(searchTerm, 500)
-  const { user } = useProfile()
   const menuAnchorRef = useRef(null)
 
   const router = useRouter()
@@ -121,11 +123,11 @@ export const CarsEvaluationTab = () => {
         setCertificateUrl(certificateUrl)
         setIsModalOpen(true)
       } else {
-        alert('No evaluation certificate found for this car.')
+        toast.info('No evaluation certificate found for this car.')
       }
     } catch (error) {
       console.error('Error fetching car certificate:', error)
-      alert('Failed to load evaluation certificate')
+      toast.error('Failed to load evaluation certificate')
     }
 
     closeActionMenu()
@@ -138,35 +140,32 @@ export const CarsEvaluationTab = () => {
 
   const handleAssignEvaluator = async (carId, evaluatorId) => {
     try {
-      const meRes = await customAxios.get('/user/me')
-      const userId = meRes?.data?._id || user?._id
-      const token =  getTokenFromCookie()  
-       
-
-      if (!token) {
-        alert('Authentication token not found. Please log in again.')
-        return
-      }
-      if (!userId) {
-        alert('Unable to identify user. Please log in again.')
-        return
-      }
-
-      const response = await customAxios.post(
-        `/assets/assign?userId=${userId}`,
-        {
-          assetId: carId,
-          assetType: 'car',
-          assigneeId: evaluatorId,
-        }
-      )
-
-      alert('Evaluator assigned successfully')
-      setAssignDropdownOpen(null)
-      fetchListingsData() // refresh the list
+      await assignAssetToSubEvaluator({
+        assetId: carId,
+        assetType: 'car',
+        assigneeId: evaluatorId,
+      })
+      toast.success('Evaluator assigned successfully')
+      closeActionMenu()
+      fetchListingsData()
     } catch (err) {
-      console.error('Assignment error', err)
-      alert('Failed to assign evaluator')
+      console.error('Assignment failed:', err)
+      toast.error(err?.response?.data?.message || 'Failed to assign evaluator')
+    }
+  }
+
+  const handleUnassignEvaluator = async (carId) => {
+    try {
+      await unassignAssetFromSubEvaluator({
+        assetId: carId,
+        assetType: 'car',
+      })
+      toast.success('Evaluator unassigned successfully')
+      closeActionMenu()
+      fetchListingsData()
+    } catch (err) {
+      console.error('Unassign failed:', err)
+      toast.error(err?.response?.data?.message || 'Failed to unassign evaluator')
     }
   }
 
@@ -333,61 +332,64 @@ export const CarsEvaluationTab = () => {
                                           anchorRef={menuAnchorRef}
                                           className='w-44 min-w-[11rem]'
                                         >
-                                          <button
-                                            type='button'
-                                            onClick={() =>
-                                                  setAssignDropdownOpen(
-                                                    (prev) =>
-                                                      prev === property.uuid
-                                                        ? null
-                                                        : property.uuid
+                                          {isAssetAssignedToSubEvaluator(property) ? (
+                                            <button
+                                              type='button'
+                                              onClick={() =>
+                                                handleUnassignEvaluator(
+                                                  property._id || property.uuid,
+                                                )
+                                              }
+                                              className={evaluationMenuItemClass}
+                                            >
+                                              Unassign
+                                            </button>
+                                          ) : (
+                                            <>
+                                              <button
+                                                type='button'
+                                                onClick={() =>
+                                                  setAssignDropdownOpen((prev) =>
+                                                    prev === property.uuid
+                                                      ? null
+                                                      : property.uuid,
                                                   )
                                                 }
                                                 className={evaluationMenuItemClass}
                                               >
                                                 Assign To
                                               </button>
-
                                               {assignDropdownOpen ===
                                                 property.uuid && (
                                                 <div className='max-h-48 overflow-y-auto border-t border-gray-100'>
                                                   {subEvaluators.map(
-                                                    (evaluator) => {
-                                                      const isAssigned =
-                                                        property?.evaluator ===
-                                                          evaluator.uuid ||
-                                                        property?.evaluator ===
+                                                    (evaluator) => (
+                                                      <button
+                                                        key={
                                                           evaluator._id ||
-                                                        property?.assignedTo ===
-                                                          evaluator.uuid ||
-                                                        property?.assignedTo ===
-                                                          evaluator._id
-                                                      return (
-                                                        <button
-                                                          key={evaluator._id || evaluator.uuid}
-                                                          onClick={() =>
-                                                            handleAssignEvaluator(
-                                                              property._id || property.uuid,
-                                                              evaluator._id || evaluator.uuid
-                                                            )
-                                                          }
-                                                          className='flex justify-between items-center w-full px-3 py-2 text-left text-sm text-gray-800 hover:bg-gray-100'
-                                                        >
-                                                          <span>
-                                                            {evaluator.name}
-                                                          </span>
-                                                          {isAssigned && (
-                                                            <span className='text-green-500'>
-                                                              ✔
-                                                            </span>
-                                                          )}
-                                                        </button>
-                                                      )
-                                                    }
+                                                          evaluator.uuid
+                                                        }
+                                                        type='button'
+                                                        onClick={() =>
+                                                          handleAssignEvaluator(
+                                                            property._id ||
+                                                              property.uuid,
+                                                            evaluator._id ||
+                                                              evaluator.uuid,
+                                                          )
+                                                        }
+                                                        className='flex justify-between items-center w-full px-3 py-2 text-left text-sm text-gray-800 hover:bg-gray-100'
+                                                      >
+                                                        <span>
+                                                          {evaluator.name}
+                                                        </span>
+                                                      </button>
+                                                    ),
                                                   )}
                                                 </div>
                                               )}
-
+                                            </>
+                                          )}
                                           <button
                                             type='button'
                                             onClick={() => {

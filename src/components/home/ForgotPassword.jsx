@@ -1,5 +1,7 @@
 'use client'
 
+import { useState } from 'react'
+import Link from 'next/link'
 import { useFormik } from 'formik'
 import * as Yup from 'yup'
 import axios from 'axios'
@@ -7,6 +9,8 @@ import { toast } from 'react-toastify'
 import { getCsrfHeaders } from '@/utils/csrf'
 
 export default function ForgotPassword() {
+  const [loading, setLoading] = useState(false)
+
   const formik = useFormik({
     initialValues: { email: '' },
     validationSchema: Yup.object({
@@ -14,6 +18,7 @@ export default function ForgotPassword() {
     }),
     onSubmit: async (values) => {
       try {
+        setLoading(true)
         const csrfHeaders = await getCsrfHeaders()
         const res = await axios.post(
           `${process.env.NEXT_PUBLIC_BASE_URL}/user/forgot-password`,
@@ -29,13 +34,15 @@ export default function ForgotPassword() {
           'Failed to send your message. Try again.'
 
         toast.error(message)
+      } finally {
+        setLoading(false)
       }
     },
   })
 
   return (
-    <div className='min-h-screen flex items-center justify-center bg-gray-100'>
-      <div className='p-5 flex flex-col gap-8 justify-center items-center bg-prussianBlue text-white w-full max-w-md rounded-xl shadow-xl'>
+    <div className='h-screen w-full grid md:grid-cols-2 relative z-[40]'>
+      <div className='p-5 flex flex-col gap-20 justify-center items-center bg-prussianBlue h-full text-white'>
         {/* Logo */}
         <div className='flex gap-2 items-center'>
           <img src='/icons/Logo2.png' alt='Funds Verifier' />
@@ -44,19 +51,21 @@ export default function ForgotPassword() {
 
         <form
           onSubmit={formik.handleSubmit}
-          className='w-full flex flex-col gap-5 justify-center items-center'
+          className='w-[80%] xl:w-[50%] flex flex-col gap-5 justify-center items-center'
         >
           <h2 className='font-semibold text-2xl'>Forgot Password</h2>
+          <p className='text-sm text-slate-200 text-center -mt-2'>
+            Enter your email and we will send you a link to reset your password.
+          </p>
 
           <input
             type='email'
             name='email'
             placeholder='Enter your email'
-            className={`w-full bg-transparent rounded-full border ${
-              formik.touched.email && formik.errors.email
+            className={`w-full bg-transparent rounded-full border ${formik.touched.email && formik.errors.email
                 ? 'border-red-500'
                 : 'border-white'
-            } py-2 px-4`}
+              } py-2 px-4`}
             {...formik.getFieldProps('email')}
           />
 
@@ -68,11 +77,33 @@ export default function ForgotPassword() {
 
           <button
             type='submit'
-            className='w-full bg-white text-prussianBlue rounded-full py-2 font-semibold'
+            disabled={loading}
+            className={`w-full bg-white text-prussianBlue rounded-full py-2 font-semibold flex items-center justify-center gap-2 ${loading ? 'opacity-70 cursor-not-allowed' : ''
+              }`}
           >
-            Send Reset Link
+            {loading ? (
+              <div className='h-5 w-5 border-2 border-prussianBlue border-t-transparent rounded-full animate-spin' />
+            ) : (
+              'Send Reset Link'
+            )}
           </button>
+
+          <Link
+            href='/user-login'
+            className='text-sm text-slate-300 hover:text-white hover:underline'
+          >
+            Back to Sign In
+          </Link>
         </form>
+      </div>
+
+      {/* Right Image */}
+      <div className='hidden md:flex relative z-50 items-center justify-center bg-white'>
+        <img
+          src='/icons/SMBSignIn.png'
+          className='w-[80%]'
+          alt='Forgot Password Illustration'
+        />
       </div>
     </div>
   )
