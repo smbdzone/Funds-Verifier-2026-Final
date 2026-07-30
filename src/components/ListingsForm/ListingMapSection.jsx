@@ -58,7 +58,7 @@ const ListingMapSection = ({
       setEmbedSrc('')
       try {
         const res = await fetch(
-          `/api/resolve-maps-url?url=${encodeURIComponent(trimmed)}`,
+          `/resolve-maps-url?url=${encodeURIComponent(trimmed)}`,
           { signal: controller.signal }
         )
         const data = await res.json().catch(() => ({}))
