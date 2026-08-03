@@ -15,20 +15,30 @@ const wrapUploadError = (error, fileType, maxMB) => {
 }
 
 const handleImageUpload = async (images) => {
-  const formData = new FormData()
-  images.forEach((image) => {
-    formData.append('images', image)
-  })
+  const files = Array.isArray(images) ? images.filter(Boolean) : []
+  if (!files.length) return null
 
-  try {
-    const response = await customAxios.post(
-      `${process.env.NEXT_PUBLIC_BASE_URL}/upload-imgs`,
-      formData,
-    )
-    return response.data
-  } catch (error) {
-    wrapUploadError(error, 'Image', LISTING_IMAGE_MAX_MB)
+  // Upload one file at a time so a multi-image batch cannot trip proxy 413 limits.
+  const mergedImages = []
+  let lastResponse = null
+
+  for (const image of files) {
+    const formData = new FormData()
+    formData.append('images', image)
+
+    try {
+      const response = await customAxios.post(`/upload-imgs`, formData)
+      lastResponse = response.data
+      if (Array.isArray(response?.data?.images)) {
+        mergedImages.push(...response.data.images)
+      }
+    } catch (error) {
+      wrapUploadError(error, 'Image', LISTING_IMAGE_MAX_MB)
+    }
   }
+
+  if (!lastResponse) return null
+  return { ...lastResponse, images: mergedImages }
 }
 
 const handleVideoUpload = async (video) => {

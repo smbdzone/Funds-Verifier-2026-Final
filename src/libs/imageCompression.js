@@ -1,13 +1,10 @@
-// Third-party image compression.
+// Image size helpers for listing uploads.
 //
-// When an uploaded image exceeds the allowed size, it is sent to an external
-// compression API and the compressed image is awaited before the user may
-// proceed. The API endpoint/key are provided via env (left empty for now):
+// Prefer local canvas JPEG compression so uploads stay under the API limit
+// even when no third-party compression API is configured.
+// Optional external API (when env is set):
 //   NEXT_PUBLIC_IMAGE_COMPRESSION_API_URL
 //   NEXT_PUBLIC_IMAGE_COMPRESSION_API_KEY
-//
-// Until the URL is set, isCompressionConfigured() returns false and callers
-// keep their existing behaviour (reject oversized files).
 
 const API_URL = process.env.NEXT_PUBLIC_IMAGE_COMPRESSION_API_URL
 const API_KEY = process.env.NEXT_PUBLIC_IMAGE_COMPRESSION_API_KEY
@@ -18,13 +15,6 @@ export const isCompressionConfigured = () =>
 
 /**
  * Send one file to the compression API and return the compressed File.
- * Throws if the API isn't configured or the request fails — callers must not
- * let the user proceed on a rejected promise.
- *
- * NOTE: the request/response shape below is a sensible default (multipart POST
- * with `file`, binary image back). Adjust to match the chosen provider once the
- * API is available.
- *
  * @param {File} file
  * @param {{ maxBytes?: number, signal?: AbortSignal }} [opts]
  * @returns {Promise<File>}
@@ -59,10 +49,106 @@ export async function compressImage(file, opts = {}) {
   })
 }
 
+function loadImage(file) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file)
+    const img = new window.Image()
+    img.onload = () => {
+      URL.revokeObjectURL(url)
+      resolve(img)
+    }
+    img.onerror = () => {
+      URL.revokeObjectURL(url)
+      reject(new Error('Could not load image for compression'))
+    }
+    img.src = url
+  })
+}
+
+function canvasToJpeg(canvas, name, quality) {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(
+      (blob) => {
+        if (!blob) {
+          reject(new Error('Compression produced an empty image'))
+          return
+        }
+        const baseName = String(name || 'image.jpg').replace(/\.[^.]+$/, '')
+        resolve(
+          new File([blob], `${baseName}.jpg`, {
+            type: 'image/jpeg',
+            lastModified: Date.now(),
+          }),
+        )
+      },
+      'image/jpeg',
+      quality,
+    )
+  })
+}
+
 /**
- * Ensure a file is within `maxBytes`. Returns the original if already within
- * the limit; otherwise compresses it and returns the compressed File. If the
- * compressed result is still too large, throws (caller must block progress).
+ * Browser-side resize + JPEG compression until under maxBytes.
+ * @param {File} file
+ * @param {number} maxBytes
+ * @returns {Promise<File>}
+ */
+export async function compressImageLocally(file, maxBytes) {
+  if (typeof window === 'undefined') return file
+  const photo = await loadImage(file)
+  let width = photo.naturalWidth || photo.width
+  let height = photo.naturalHeight || photo.height
+  if (!width || !height) return file
+
+  const maxEdge = 2400
+  if (width > maxEdge || height > maxEdge) {
+    const scale = maxEdge / Math.max(width, height)
+    width = Math.max(1, Math.round(width * scale))
+    height = Math.max(1, Math.round(height * scale))
+  }
+
+  const qualities = [0.85, 0.75, 0.65, 0.55, 0.45, 0.35]
+  let best = file
+
+  const draw = (w, h) => {
+    const canvas = document.createElement('canvas')
+    canvas.width = w
+    canvas.height = h
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return null
+    ctx.drawImage(photo, 0, 0, w, h)
+    return canvas
+  }
+
+  for (const quality of qualities) {
+    const canvas = draw(width, height)
+    if (!canvas) break
+    const next = await canvasToJpeg(canvas, file.name, quality)
+    best = next
+    if (next.size <= maxBytes) return next
+  }
+
+  for (let i = 0; i < 5; i += 1) {
+    width = Math.max(1, Math.round(width * 0.75))
+    height = Math.max(1, Math.round(height * 0.75))
+    const canvas = draw(width, height)
+    if (!canvas) break
+    const next = await canvasToJpeg(canvas, file.name, 0.7)
+    best = next
+    if (next.size <= maxBytes) return next
+  }
+
+  if (best.size > maxBytes) {
+    throw new Error(
+      `Image is still larger than the ${(maxBytes / (1024 * 1024)).toFixed(1)}MB limit after compression`,
+    )
+  }
+  return best
+}
+
+/**
+ * Ensure a file is within `maxBytes`. Uses remote API when configured, otherwise
+ * local canvas compression.
  *
  * @param {File} file
  * @param {number} maxBytes
@@ -72,21 +158,23 @@ export async function compressImage(file, opts = {}) {
 export async function ensureWithinSize(file, maxBytes, opts = {}) {
   if (!maxBytes || file.size <= maxBytes) return file
 
-  const compressed = await compressImage(file, { maxBytes, signal: opts.signal })
-
-  if (compressed.size > maxBytes) {
-    throw new Error(
-      `Image is still larger than the ${(maxBytes / (1024 * 1024)).toFixed(
-        1,
-      )}MB limit after compression`,
-    )
+  if (isCompressionConfigured()) {
+    try {
+      const compressed = await compressImage(file, {
+        maxBytes,
+        signal: opts.signal,
+      })
+      if (compressed.size <= maxBytes) return compressed
+    } catch {
+      // Fall through to local compression.
+    }
   }
-  return compressed
+
+  return compressImageLocally(file, maxBytes)
 }
 
 /**
  * Ensure every file in a list is within `maxBytes` (compressing as needed).
- * Rejects if any file can't be brought within the limit.
  *
  * @param {File[]} files
  * @param {number} maxBytes

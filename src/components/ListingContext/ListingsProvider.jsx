@@ -30,7 +30,6 @@ import {
 import {
   LISTING_IMAGE_MAX_BYTES,
   LISTING_VIDEO_MAX_BYTES,
-  LISTING_IMAGE_MAX_MB,
   LISTING_VIDEO_MAX_MB,
   LISTING_IMAGE_MAX_COUNT,
   LISTING_VIDEO_MAX_COUNT,
@@ -38,7 +37,6 @@ import {
 import { createDefaultOffPlanPaymentPlan, sanitizeOffPlanPaymentPlan, facilities, getExtraFacilities } from '@/constants/listing-data'
 import {
   ensureWithinSize,
-  isCompressionConfigured,
 } from '@/libs/imageCompression'
 import { applyListingWatermark } from '@/libs/applyListingWatermark'
 
@@ -553,13 +551,8 @@ const ListingsProvider = ({ children }) => {
     const validFiles = []
     const checkFile = async (file) => {
       let workingFile = file
-      // Oversized images are compressed via the API before proceeding. If the
-      // API isn't configured yet, keep the original reject-and-skip behaviour.
+      // Oversized images are compressed locally (or via API if configured).
       if (file.size > LISTING_IMAGE_MAX_BYTES) {
-        if (!isCompressionConfigured()) {
-          toast.error(`The file ${file.name} exceeds the ${LISTING_IMAGE_MAX_MB}MB size limit`)
-          return null
-        }
         try {
           workingFile = await ensureWithinSize(file, LISTING_IMAGE_MAX_BYTES)
         } catch (err) {
@@ -575,12 +568,23 @@ const ListingsProvider = ({ children }) => {
           const img = new window.Image()
           img.onload = async () => {
             try {
-              const stamped = await applyListingWatermark(workingFile, {
+              let stamped = await applyListingWatermark(workingFile, {
                 position: 'center',
+                maxBytes: LISTING_IMAGE_MAX_BYTES,
               })
+              if (stamped.size > LISTING_IMAGE_MAX_BYTES) {
+                stamped = await ensureWithinSize(
+                  stamped,
+                  LISTING_IMAGE_MAX_BYTES,
+                )
+              }
               resolve(stamped)
-            } catch {
-              resolve(workingFile)
+            } catch (err) {
+              toast.error(
+                err?.message ||
+                `Could not prepare ${workingFile.name} for upload`,
+              )
+              resolve(null)
             }
           }
           img.onerror = () => {
@@ -623,10 +627,21 @@ const ListingsProvider = ({ children }) => {
         try {
           const imageIDs = await handleImageUpload(validFiles)
 
-          setFormData((prevFormData) => ({
-            ...prevFormData,
-            pictures: imageIDs,
-          }))
+          setFormData((prevFormData) => {
+            const prevImages = Array.isArray(prevFormData.pictures?.images)
+              ? prevFormData.pictures.images
+              : []
+            const nextImages = Array.isArray(imageIDs?.images)
+              ? imageIDs.images
+              : []
+            return {
+              ...prevFormData,
+              pictures: {
+                ...(imageIDs || {}),
+                images: [...prevImages, ...nextImages],
+              },
+            }
+          })
         } catch (error) {
           toast.error(error?.message || 'Image upload failed. Please try again.')
           setImages((prevImages) =>
@@ -738,12 +753,6 @@ const ListingsProvider = ({ children }) => {
 
     try {
       if (selectedFile.size > LISTING_IMAGE_MAX_BYTES) {
-        if (!isCompressionConfigured()) {
-          toast.error(
-            `The file ${selectedFile.name} exceeds the ${LISTING_IMAGE_MAX_MB}MB size limit`,
-          )
-          return
-        }
         setIsCompressing(true)
         try {
           selectedFile = await ensureWithinSize(
@@ -766,9 +775,19 @@ const ListingsProvider = ({ children }) => {
       try {
         selectedFile = await applyListingWatermark(selectedFile, {
           position: 'center',
+          maxBytes: LISTING_IMAGE_MAX_BYTES,
         })
-      } catch {
-        // Keep original if watermarking fails
+        if (selectedFile.size > LISTING_IMAGE_MAX_BYTES) {
+          selectedFile = await ensureWithinSize(
+            selectedFile,
+            LISTING_IMAGE_MAX_BYTES,
+          )
+        }
+      } catch (err) {
+        toast.error(
+          err?.message || 'Could not prepare thumbnail for upload',
+        )
+        return
       }
 
       setThumbnail(selectedFile)
@@ -792,13 +811,6 @@ const ListingsProvider = ({ children }) => {
     let selectedFile = event.target.files[0]
     if (selectedFile) {
       if (selectedFile.size > LISTING_IMAGE_MAX_BYTES) {
-        if (!isCompressionConfigured()) {
-          toast.error(
-            `The file ${selectedFile.name} exceeds the ${LISTING_IMAGE_MAX_MB}MB size limit`,
-          )
-          event.target.value = null
-          return
-        }
         setIsCompressing(true)
         try {
           selectedFile = await ensureWithinSize(

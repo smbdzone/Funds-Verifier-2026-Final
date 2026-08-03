@@ -47,19 +47,29 @@ export const CreateViewingSlotTab = ({
 
   useEffect(() => {
     fetchSlots()
-  }, [user])
+  }, [user, slotCategory])
 
   // Fetch all slots
   // console.log({ user })
 
+  const slotDateKey = (slotDate) => {
+    if (!slotDate) return ''
+    if (typeof slotDate === 'string' && /^\d{4}-\d{2}-\d{2}/.test(slotDate)) {
+      return slotDate.slice(0, 10)
+    }
+    const d = new Date(slotDate)
+    if (Number.isNaN(d.getTime())) return ''
+    return d.toISOString().slice(0, 10)
+  }
+
   const fetchSlots = async () => {
+    if (!user?.uuid) return
     setLoading(true)
     try {
       const response = await customAxios.get(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/arrange-view/slots/all/${user?.uuid}`
+        `/arrange-view/slots/all/${user.uuid}?slotCategory=${encodeURIComponent(slotCategory)}`
       )
-      setSlots(response.data)
-      // setItems(response?.data?.times);
+      setSlots(Array.isArray(response.data) ? response.data : [])
     } catch (error) {
       toast.error('Error fetching slots.')
     } finally {
@@ -102,7 +112,9 @@ export const CreateViewingSlotTab = ({
     }
 
     // Check if the selected date already has slots
-    const existingSlot = slots.find((slot) => slot.date === message.date)
+    const existingSlot = slots.find(
+      (slot) => slotDateKey(slot.date) === message.date
+    )
     if (existingSlot) {
       toast.error(
         'Slots already exist for this date. Please edit the existing slot or choose a different date.'
@@ -123,7 +135,7 @@ export const CreateViewingSlotTab = ({
     setLoading(true)
     try {
       await customAxios.post(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/arrange-view/slots/add`,
+        `/arrange-view/slots/add`,
         {
           userUUID: user?.uuid,
           date: message.date,
@@ -184,7 +196,7 @@ export const CreateViewingSlotTab = ({
     setIsDeleting(true)
     try {
       await customAxios.delete(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/arrange-view/slots/delete/${slotIdToDelete}`
+        `/arrange-view/slots/delete/${slotIdToDelete}`
       )
       toast.success('Slot deleted successfully.')
       await fetchSlots()
@@ -235,7 +247,7 @@ export const CreateViewingSlotTab = ({
       loading ||
       !message.date ||
       message.time.length === 0 ||
-      slots.some((slot) => slot.date === message.date)
+      slots.some((slot) => slotDateKey(slot.date) === message.date)
     )
   }
 
@@ -268,7 +280,7 @@ export const CreateViewingSlotTab = ({
                   />
                 </div>
                 {/* Display warning if date already has slots */}
-                {slots.some((slot) => slot.date === message.date) && (
+                {slots.some((slot) => slotDateKey(slot.date) === message.date) && (
                   <div className='text-red-500 text-sm mt-2 p-2 bg-red-50 border border-red-200 rounded'>
                     <strong>Warning:</strong> This date already has slots.
                     Please select a different date or edit the existing slot.

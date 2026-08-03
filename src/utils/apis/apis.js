@@ -77,7 +77,8 @@ customAxios.interceptors.response.use(
     // Optional listing helpers must never force a full session logout.
     if (
       error.response.status === 401 &&
-      requestUrl.includes('/user/service-providers/')
+      (requestUrl.includes('/user/service-providers/') ||
+        requestUrl.includes('/notifications/'))
     ) {
       return Promise.reject(error)
     }
@@ -117,7 +118,8 @@ customAxios.interceptors.response.use(
           /* keep session; switchUserRole shows the API error */
         } else if (
           // Optional listing helpers — never wipe the session if these fail.
-          requestUrl.includes('/user/service-providers/')
+          requestUrl.includes('/user/service-providers/') ||
+          requestUrl.includes('/notifications/')
         ) {
           /* keep session */
         } else {

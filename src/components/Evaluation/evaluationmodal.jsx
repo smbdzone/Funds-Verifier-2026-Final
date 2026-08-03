@@ -94,10 +94,10 @@ const EvaluationModal = ({
   }, [isOpen, user, parentFormData?.phoneNumber, assetType])
 
   useEffect(() => {
-    if (isOpen && evaluator?.uuid) {
+    if (isOpen) {
       fetchSlots()
     }
-  }, [isOpen, selectedDate, evaluator?.uuid])
+  }, [isOpen, selectedDate])
 
   const getEvaluatorProvider = async () => {
     setEvaluatorLoading(true)
@@ -120,18 +120,66 @@ const EvaluationModal = ({
   }
 
   const fetchSlots = async () => {
-    if (!evaluator?.uuid || !selectedDate) return
+    if (!selectedDate) return
 
     const date = formatLocalDate(selectedDate)
     setSlotsLoading(true)
     setSelectedTime(null)
 
     try {
-      const response = await customAxios.get(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/arrange-view/slot-by-date?userUUID=${evaluator.uuid}&date=${date}&slotCategory=service`,
+      const providersResponse = await customAxios.get(
+        `/user/service-providers/Evaluator`,
       )
-      setSlots(response?.data[0]?.times || [])
-      setTimeslotId(response?.data[0]?.uuid)
+      const providers = Array.isArray(providersResponse?.data)
+        ? providersResponse.data
+        : []
+
+      if (!providers.length) {
+        setSlots([])
+        setTimeslotId(undefined)
+        return
+      }
+
+      // Prefer current evaluator, then any other with open slots that day.
+      const ordered = evaluator?.uuid
+        ? [
+            ...providers.filter((p) => p.uuid === evaluator.uuid),
+            ...providers.filter((p) => p.uuid !== evaluator.uuid),
+          ]
+        : providers
+
+      let matchedProvider = null
+      let matchedSlot = null
+      let matchedHasOpen = false
+
+      for (const provider of ordered) {
+        if (!provider?.uuid) continue
+        const response = await customAxios.get(
+          `/arrange-view/slot-by-date?userUUID=${provider.uuid}&date=${date}&slotCategory=service`,
+        )
+        const daySlot = Array.isArray(response?.data) ? response.data[0] : null
+        const times = daySlot?.times || []
+        const openTimes = getBookableSlotsForDate(times, selectedDate)
+        if (openTimes.length > 0) {
+          matchedProvider = provider
+          matchedSlot = daySlot
+          matchedHasOpen = true
+          break
+        }
+        if (!matchedSlot && daySlot) {
+          matchedProvider = provider
+          matchedSlot = daySlot
+        }
+      }
+
+      if (matchedProvider && matchedProvider.uuid !== evaluator?.uuid) {
+        setEvaluator(matchedProvider)
+      }
+      setSlots(matchedSlot?.times || [])
+      setTimeslotId(matchedSlot?.uuid)
+      if (!matchedHasOpen && !matchedSlot) {
+        setSlots([])
+      }
     } catch (error) {
       console.error('Error fetching slots:', error)
       setSlots([])

@@ -1,8 +1,10 @@
 /**
  * Burn a light white centered "FUNDS VERIFIER" text watermark onto listing photos.
  * Applied client-side on upload so saved assets (and downloads) include branding.
- * Style matches agency-style centered translucent white typography.
+ * Always outputs JPEG and shrinks quality/dimensions to stay under maxBytes.
  */
+
+import { LISTING_IMAGE_MAX_BYTES } from '@/constants/listingUploadLimits'
 
 function loadImageFromFile(file) {
   return new Promise((resolve, reject) => {
@@ -20,11 +22,7 @@ function loadImageFromFile(file) {
   })
 }
 
-function canvasToFile(canvas, sourceFile, quality = 0.92) {
-  const preferPng =
-    String(sourceFile?.type || '').toLowerCase().includes('png') ||
-    /\.png$/i.test(sourceFile?.name || '')
-
+function canvasToJpegFile(canvas, sourceFile, quality) {
   return new Promise((resolve, reject) => {
     canvas.toBlob(
       (blob) => {
@@ -36,16 +34,14 @@ function canvasToFile(canvas, sourceFile, quality = 0.92) {
           /\.[^.]+$/,
           '',
         )
-        const ext = preferPng ? 'png' : 'jpg'
-        const type = preferPng ? 'image/png' : 'image/jpeg'
         resolve(
-          new File([blob], `${baseName}-fv.${ext}`, {
-            type,
+          new File([blob], `${baseName}-fv.jpg`, {
+            type: 'image/jpeg',
             lastModified: Date.now(),
           }),
         )
       },
-      preferPng ? 'image/png' : 'image/jpeg',
+      'image/jpeg',
       quality,
     )
   })
@@ -74,7 +70,6 @@ export function drawFundsVerifierTextWatermark(ctx, width, height, opts = {}) {
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
   ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`
-  // Soft shadow so light text stays readable on bright skies
   ctx.shadowColor = 'rgba(0, 0, 0, 0.18)'
   ctx.shadowBlur = Math.max(2, Math.round(minSide * 0.008))
   ctx.shadowOffsetX = 0
@@ -90,40 +85,78 @@ export function drawFundsVerifierTextWatermark(ctx, width, height, opts = {}) {
   ctx.restore()
 }
 
+function drawWatermarkedCanvas(photo, width, height, options = {}) {
+  const canvas = document.createElement('canvas')
+  canvas.width = width
+  canvas.height = height
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return null
+  ctx.drawImage(photo, 0, 0, width, height)
+  drawFundsVerifierTextWatermark(ctx, width, height, {
+    opacity: options.opacity,
+  })
+  return canvas
+}
+
 /**
  * @param {File|Blob} file
- * @param {{ position?: 'center' | 'bottom-left' | 'top-right', opacity?: number }} [options]
+ * @param {{ position?: 'center' | 'bottom-left' | 'top-right', opacity?: number, maxBytes?: number }} [options]
  * @returns {Promise<File>}
  */
 export async function applyListingWatermark(file, options = {}) {
   if (!file || typeof window === 'undefined') return file
 
+  const maxBytes = options.maxBytes || LISTING_IMAGE_MAX_BYTES
   const photo = await loadImageFromFile(file)
-  const width = photo.naturalWidth || photo.width
-  const height = photo.naturalHeight || photo.height
+  let width = photo.naturalWidth || photo.width
+  let height = photo.naturalHeight || photo.height
   if (!width || !height) return file
 
-  const canvas = document.createElement('canvas')
-  canvas.width = width
-  canvas.height = height
-  const ctx = canvas.getContext('2d')
-  if (!ctx) return file
-
-  ctx.drawImage(photo, 0, 0, width, height)
-  drawFundsVerifierTextWatermark(ctx, width, height, {
-    opacity: options.opacity,
-  })
-
-  try {
-    return await canvasToFile(canvas, file)
-  } catch {
-    return file
+  // Cap very large phone photos before watermarking (keeps output under limit).
+  const maxEdge = 2400
+  if (width > maxEdge || height > maxEdge) {
+    const scale = maxEdge / Math.max(width, height)
+    width = Math.max(1, Math.round(width * scale))
+    height = Math.max(1, Math.round(height * scale))
   }
+
+  let canvas = drawWatermarkedCanvas(photo, width, height, options)
+  if (!canvas) return file
+
+  const qualities = [0.85, 0.75, 0.65, 0.55, 0.45]
+  let best = null
+
+  for (const quality of qualities) {
+    try {
+      const next = await canvasToJpegFile(canvas, file, quality)
+      best = next
+      if (next.size <= maxBytes) return next
+    } catch {
+      // try next quality
+    }
+  }
+
+  // Still too large: shrink dimensions and retry.
+  for (let i = 0; i < 4; i += 1) {
+    width = Math.max(1, Math.round(width * 0.75))
+    height = Math.max(1, Math.round(height * 0.75))
+    canvas = drawWatermarkedCanvas(photo, width, height, options)
+    if (!canvas) break
+    try {
+      const next = await canvasToJpegFile(canvas, file, 0.7)
+      best = next
+      if (next.size <= maxBytes) return next
+    } catch {
+      // continue
+    }
+  }
+
+  return best || file
 }
 
 /**
  * @param {File[]} files
- * @param {{ position?: 'center' | 'bottom-left' | 'top-right', opacity?: number }} [options]
+ * @param {{ position?: 'center' | 'bottom-left' | 'top-right', opacity?: number, maxBytes?: number }} [options]
  * @returns {Promise<File[]>}
  */
 export async function applyListingWatermarkToFiles(files, options = {}) {

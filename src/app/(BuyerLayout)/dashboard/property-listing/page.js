@@ -34,6 +34,8 @@ import {
   normalizePaymentPlanType,
 } from '@/constants/listing-data'
 import { LISTING_IMAGE_MAX_BYTES, LISTING_IMAGE_MAX_MB } from '@/constants/listingUploadLimits'
+import { ensureWithinSize } from '@/libs/imageCompression'
+import { applyListingWatermark } from '@/libs/applyListingWatermark'
 import { autoCapitalizeField } from '@/libs/autoCapitalizeText'
 import { flagListingPendingApprovalNotice } from '@/libs/listingPendingApprovalNotice'
 import { ListingContext } from '@/components/ListingContext/ListingsProvider'
@@ -417,17 +419,35 @@ const Page = () => {
     setFormData((prev) => ({ ...prev, agencyAgreement: null }))
   }
 
-  const handleOffPlanImageChange = (key) => (event) => {
-    const selectedFile = event.target.files?.[0]
+  const handleOffPlanImageChange = (key) => async (event) => {
+    let selectedFile = event.target.files?.[0]
+    event.target.value = null
     if (!selectedFile) return
-    if (selectedFile.size > LISTING_IMAGE_MAX_BYTES) {
+
+    try {
+      if (selectedFile.size > LISTING_IMAGE_MAX_BYTES) {
+        selectedFile = await ensureWithinSize(
+          selectedFile,
+          LISTING_IMAGE_MAX_BYTES,
+        )
+      }
+      selectedFile = await applyListingWatermark(selectedFile, {
+        position: 'center',
+        maxBytes: LISTING_IMAGE_MAX_BYTES,
+      })
+      if (selectedFile.size > LISTING_IMAGE_MAX_BYTES) {
+        selectedFile = await ensureWithinSize(
+          selectedFile,
+          LISTING_IMAGE_MAX_BYTES,
+        )
+      }
+      setOffPlanMedia((prev) => ({ ...prev, [key]: selectedFile }))
+    } catch (err) {
       toast.error(
-        `The file ${selectedFile.name} exceeds the ${LISTING_IMAGE_MAX_MB}MB size limit`,
+        err?.message ||
+        `Could not prepare ${selectedFile?.name || 'image'} (max ${LISTING_IMAGE_MAX_MB}MB)`,
       )
-      event.target.value = null
-      return
     }
-    setOffPlanMedia((prev) => ({ ...prev, [key]: selectedFile }))
   }
 
   const handleOffPlanImageRemove = (key) => {

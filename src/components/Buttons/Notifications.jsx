@@ -10,6 +10,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import customAxios from '../../utils/apis/apis'
 import { useNotificationSocket } from '@/hooks/useNotificationSocket'
 import { formatNotificationTimestamp } from '@/utils/formatNotificationTimestamp'
+import { getAccessToken } from '@/utils/auth/accessTokenStore'
 
 const NotificationDropdown = ({ className }) => {
   const { user } = useProfile()
@@ -174,8 +175,13 @@ const NotificationDropdown = ({ className }) => {
     }
   }
 
-  // Initial fetch on mount
+  // Initial fetch on mount (wait for access token so we don't hit 401 races)
   useEffect(() => {
+    if (!user?.uuid) return
+    if (!getAccessToken()) {
+      setLoading(false)
+      return
+    }
     fetchNotifications()
   }, [user?.uuid])
 
