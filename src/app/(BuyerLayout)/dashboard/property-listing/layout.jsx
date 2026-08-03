@@ -1,6 +1,12 @@
 'use client'
 
-/** TEMP: open without login until asked to re-protect. */
+import RequireAuth from '@/components/auth/RequireAuth'
+
+/** Listing forms: Asset Holder & Deal Hunter only. */
 export default function PropertyListingLayout({ children }) {
-  return children
+  return (
+    <RequireAuth roles={['AssetHolder', 'DealHunter']} loginPath='/login'>
+      {children}
+    </RequireAuth>
+  )
 }
