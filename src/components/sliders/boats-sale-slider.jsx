@@ -21,6 +21,8 @@ import arrow_right from '@/assets/vector1.svg'
 import { getProfileImageSrc } from '@/utils/global-functions/global'
 import { HomeListingSliderSkeleton } from '@/components/home/HomeSectionSkeletons'
 import { publicApiFetch } from '@/libs/publicApiClient'
+import ListingCardViewCount from '@/components/shared/ListingCardViewCount'
+import ListingWatermarkOverlay from '@/components/shared/ListingWatermarkOverlay'
 
 const APPROVED_BOATS_URL = '/boat?statusFilter=1&limit=100&sort=-createdAt'
 
@@ -206,13 +208,16 @@ export default function BoatsSaleSlider() {
                 <SwiperSlide className='listing-card-slide !h-auto w-full' key={boatForSale.uuid}>
                   <div className='listing-card mx-1 my-1 h-full w-full rounded-md bg-white'>
                     {imageSrc ? (
-                      <Image
-                        width={414}
-                        height={275}
-                        className='rounded-md object-cover !h-[275px] w-full'
-                        alt={boatForSale.title || boatForSale?.make || 'Boat'}
-                        src={imageSrc}
-                      />
+                      <div className='relative shrink-0 overflow-hidden rounded-md !h-[275px] w-full'>
+                        <Image
+                          width={414}
+                          height={275}
+                          className='h-full w-full rounded-md object-cover'
+                          alt={boatForSale.title || boatForSale?.make || 'Boat'}
+                          src={imageSrc}
+                        />
+                        <ListingWatermarkOverlay />
+                      </div>
                     ) : (
                       <div className='flex justify-center items-center rounded-md bg-[#f0f4f8] !h-[275px] w-full'>
                         <Image
@@ -318,6 +323,7 @@ export default function BoatsSaleSlider() {
                             <div className='md:text-sm lg:text-base text-xs font-medium text-[#000000]'>
                               Ref: {getListingRef(boatForSale)}
                             </div>
+                            <ListingCardViewCount listing={boatForSale} />
                           </div>
                           <div className='lg:text-lg md:text-sm text-xs font-semibold text-[#000000]'>
                             AED {formatCardPrice(boatForSale.price)}

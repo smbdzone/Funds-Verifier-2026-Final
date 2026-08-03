@@ -6,6 +6,8 @@ import React, { useMemo, useState } from 'react'
 import { FaMapMarkerAlt, FaStar } from 'react-icons/fa'
 import { formatOffPlanPriceRange } from '@/constants/offPlanDummyListings'
 import { getProfileImageSrc } from '@/utils/global-functions/global'
+import ListingWatermarkOverlay from '@/components/shared/ListingWatermarkOverlay'
+import ListingCardViewCount from '@/components/shared/ListingCardViewCount'
 
 const OffPlanPropertyCard = ({
   title,
@@ -23,6 +25,10 @@ const OffPlanPropertyCard = ({
   developerAvatar = '/assets/images/profile-01.jpg',
   href,
   className = '',
+  /** Same as other listings: Approved / Featured / Recommended after Super Admin approve */
+  approvalBadge = 'Approved',
+  /** Optional analytics for view count ({ clicks, impressions }) */
+  analytics = null,
 }) => {
   const imageList = useMemo(
     () => (Array.isArray(images) && images.length ? images : ['/assets/images/property.jpg']),
@@ -35,6 +41,7 @@ const OffPlanPropertyCard = ({
   const roundedRating = Number(rating || 0).toFixed(1)
   const reviewLabel =
     reviewCount === 1 ? '(1 Review)' : `(${reviewCount || 0} Reviews)`
+  const viewListing = analytics ? { analytics } : null
 
   const goPrev = (event) => {
     event.preventDefault()
@@ -65,6 +72,7 @@ const OffPlanPropertyCard = ({
             height={275}
             className='h-[275px] w-full object-cover'
           />
+          <ListingWatermarkOverlay />
 
           {String(paymentPlanLabel || '').trim() ? (
             <div className='absolute right-[10px] top-[10px] rounded-[2px] px-2 py-1 shadow-[0px_0px_8px_rgba(0,0,0,0.15)] [background:linear-gradient(90deg,#A2913E_0%,#D7C590_35.28%,#A2913E_68.99%,#D7C58F_100%)]'>
@@ -129,6 +137,9 @@ const OffPlanPropertyCard = ({
               <span className='text-[18px] leading-[24px] text-black/50'>
                 {reviewLabel}
               </span>
+              <div className='ml-auto'>
+                <ListingCardViewCount listing={viewListing || {}} />
+              </div>
             </div>
 
             <div className='listing-card-meta flex w-full min-h-[132px] items-start justify-between gap-3'>
@@ -163,6 +174,7 @@ const OffPlanPropertyCard = ({
                   ) : null}
                 </div>
               </div>
+
               {qrScanSrc ? (
                 <Image
                   src={qrScanSrc}

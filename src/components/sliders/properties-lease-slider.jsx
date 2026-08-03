@@ -20,6 +20,8 @@ import location from '@/assets/vector2.svg'
 import arrow_right from '@/assets/vector1.svg'
 import Image from 'next/image'
 import Link from 'next/link'
+import ListingCardViewCount from '@/components/shared/ListingCardViewCount'
+import ListingWatermarkOverlay from '@/components/shared/ListingWatermarkOverlay'
 
 export default function PropertyLeaseSlider() {
   const { propertiesForLease } = useAppContext()
@@ -153,13 +155,16 @@ export default function PropertyLeaseSlider() {
                 {(() => {
                   const imageSrc = getListingCardImageSrc(propertyForLease)
                   return imageSrc ? (
-                    <Image
-                      width={414}
-                      height={275}
-                      className='rounded-md object-cover !h-[275px]'
-                      alt={propertyForLease?.propertyType || 'Property'}
-                      src={imageSrc}
-                    />
+                    <div className='relative shrink-0 overflow-hidden rounded-md !h-[275px] w-full'>
+                      <Image
+                        width={414}
+                        height={275}
+                        className='h-full w-full rounded-md object-cover'
+                        alt={propertyForLease?.propertyType || 'Property'}
+                        src={imageSrc}
+                      />
+                      <ListingWatermarkOverlay />
+                    </div>
                   ) : (
                     <div className='flex justify-center items-center rounded-md bg-[#f0f4f8] !h-[275px] w-full'>
                       <Image
@@ -265,6 +270,7 @@ export default function PropertyLeaseSlider() {
                         <div className='md:text-sm lg:text-base text-xs font-medium text-[#000000]'>
                           Ref: {getListingRef(propertyForLease)}
                         </div>
+                        <ListingCardViewCount listing={propertyForLease} />
                       </div>
                       <div className='lg:text-lg md:text-sm text-xs font-semibold text-[#000000]'>
                         AED {formatCardPrice(propertyForLease.price)}

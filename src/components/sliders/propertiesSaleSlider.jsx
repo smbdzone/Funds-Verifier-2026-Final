@@ -23,6 +23,8 @@ import arrow_right from '@/assets/vector1.svg'
 import { HomeListingSliderSkeleton } from '@/components/home/HomeSectionSkeletons'
 import { publicApiFetch } from '@/libs/publicApiClient'
 import { isOffPlanListing } from '@/libs/filterMyListingTab'
+import ListingCardViewCount from '@/components/shared/ListingCardViewCount'
+import ListingWatermarkOverlay from '@/components/shared/ListingWatermarkOverlay'
 
 const APPROVED_PROPERTIES_URL =
   '/property?statusFilter=1&limit=100&sort=-createdAt'
@@ -240,13 +242,16 @@ export default function PropertySaleSlider() {
                 <SwiperSlide className='listing-card-slide !h-auto w-full' key={propertyForSale.uuid}>
                   <div className='listing-card mx-1 my-1 h-full w-full rounded-md bg-white'>
                     {imageSrc ? (
-                      <Image
-                        className='shrink-0 rounded-md object-cover !h-[275px] w-full'
-                        alt={propertyForSale.title || 'Property'}
-                        src={imageSrc}
-                        width={414}
-                        height={275}
-                      />
+                      <div className='relative shrink-0 overflow-hidden rounded-md !h-[275px] w-full'>
+                        <Image
+                          className='h-full w-full rounded-md object-cover'
+                          alt={propertyForSale.title || 'Property'}
+                          src={imageSrc}
+                          width={414}
+                          height={275}
+                        />
+                        <ListingWatermarkOverlay />
+                      </div>
                     ) : (
                       <div className='flex shrink-0 justify-center items-center rounded-md bg-[#f0f4f8] !h-[275px] w-full'>
                         <Image
@@ -350,6 +355,7 @@ export default function PropertySaleSlider() {
                             <div className='text-xs font-medium text-[#000000] md:text-sm lg:text-base'>
                               Ref: {getListingRef(propertyForSale)}
                             </div>
+                            <ListingCardViewCount listing={propertyForSale} />
                           </div>
                           <div className='text-xs font-semibold text-[#000000] md:text-sm lg:text-lg'>
                             AED{' '}

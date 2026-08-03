@@ -158,6 +158,8 @@ export default function OffPlanPage() {
                       priceTo={listing.priceTo}
                       images={listing.images}
                       developerAvatar={listing.developerAvatar}
+                      approvalBadge={listing.approvalBadge}
+                      analytics={listing.analytics}
                       className='max-w-none'
                     />
                   </div>
@@ -216,6 +218,8 @@ export default function OffPlanPage() {
                       priceTo={mobileVisibleCard.priceTo}
                       images={mobileVisibleCard.images}
                       developerAvatar={mobileVisibleCard.developerAvatar}
+                      approvalBadge={mobileVisibleCard.approvalBadge}
+                      analytics={mobileVisibleCard.analytics}
                     />
                   </>
                 ) : null}

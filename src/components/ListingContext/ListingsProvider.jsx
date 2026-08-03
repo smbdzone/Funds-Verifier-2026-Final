@@ -576,7 +576,7 @@ const ListingsProvider = ({ children }) => {
           img.onload = async () => {
             try {
               const stamped = await applyListingWatermark(workingFile, {
-                position: 'bottom-left',
+                position: 'center',
               })
               resolve(stamped)
             } catch {
@@ -765,7 +765,7 @@ const ListingsProvider = ({ children }) => {
 
       try {
         selectedFile = await applyListingWatermark(selectedFile, {
-          position: 'bottom-left',
+          position: 'center',
         })
       } catch {
         // Keep original if watermarking fails

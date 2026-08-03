@@ -7,6 +7,7 @@ import Review from '@/components/Product_page/Review'
 import ImageSlider from '@/components/modules/Jewelry/ImageSlider'
 import OffPlanLayoutFloorPlanDisplay from '@/components/offplan/OffPlanLayoutFloorPlanDisplay'
 import OffPlanPaymentPlanDisplay from '@/components/offplan/OffPlanPaymentPlanDisplay'
+import OffPlanBuyerActions from '@/components/offplan/OffPlanBuyerActions'
 import ListingSocialShare from '@/components/shared/ListingSocialShare'
 import ListingQrCodeSection from '@/components/shared/ListingQrCodeSection'
 import ListingMapSection from '@/components/ListingsForm/ListingMapSection'
@@ -151,9 +152,27 @@ export default function OffPlanProductView({ data }) {
         </div>
 
         <div className='relative mt-6 flex w-full flex-col items-start gap-5 sm:mt-0'>
-          <h1 className='w-[90%] truncate text-wrap text-xl font-semibold capitalize text-blue md:text-2xl lg:text-3xl'>
-            {data?.title}
-          </h1>
+          <div className='flex w-full flex-wrap items-start gap-3'>
+            <h1 className='min-w-0 flex-1 truncate text-wrap text-xl font-semibold capitalize text-blue md:text-2xl lg:text-3xl'>
+              {data?.title}
+            </h1>
+            {String(data?.approvalBadge || '').trim() ? (
+              <span className='shrink-0 rounded border px-2.5 py-1 text-xs font-semibold text-white gradient sm:text-sm'>
+                {String(data.approvalBadge).trim()}
+              </span>
+            ) : Number(data?.status) === 1 ? (
+              <span className='shrink-0 rounded border px-2.5 py-1 text-xs font-semibold text-white gradient sm:text-sm'>
+                Approved
+              </span>
+            ) : null}
+            {['Reserved', 'Under Offer'].includes(
+              String(data?.occupancyStatus || ''),
+            ) ? (
+              <span className='shrink-0 rounded border border-amber-300 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-900 sm:text-sm'>
+                {data.occupancyStatus}
+              </span>
+            ) : null}
+          </div>
 
           <div className='flex w-full flex-col gap-3'>
             <h2 className='text-sm font-medium md:text-base'>Details</h2>
@@ -167,13 +186,10 @@ export default function OffPlanProductView({ data }) {
           ) : null}
 
           {!ownsListing ? (
-            <button
-              type='button'
-              onClick={handleDeveloperRequestClick}
-              className='btn-gradient flex w-full justify-center rounded border-0 px-5 py-3 text-xs font-medium text-white focus:outline-none sm:w-auto md:text-sm'
-            >
-              Developer Request
-            </button>
+            <OffPlanBuyerActions
+              listing={data}
+              onArrangeViewing={handleDeveloperRequestClick}
+            />
           ) : null}
 
           <div className='flex w-full flex-col gap-4 border-t border-black/10 pt-5'>

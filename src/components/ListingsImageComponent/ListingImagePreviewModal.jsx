@@ -51,8 +51,8 @@ const ListingImagePreviewModal = ({ src, alt = 'Preview', onClose }) => {
           />
         </div>
         <p className='border-t border-slate-100 px-3 py-2 text-center text-xs text-slate-500'>
-          Funds Verifier logo watermark appears on the bottom-left of uploaded
-          photos
+          A light white “FUNDS VERIFIER” watermark is centered on uploaded
+          photos and stays on the file when downloaded
         </p>
       </div>
     </div>

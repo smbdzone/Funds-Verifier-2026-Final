@@ -6,6 +6,7 @@ import {
 } from '@/libs/listingCardMedia'
 import { getListingDetailId } from '@/libs/listingSlug'
 import { getListingRef } from '@/libs/listingRef'
+import { getListingPremiumDisplay } from '@/libs/listingPremiumStatus'
 import { publicApiFetch } from '@/libs/publicApiClient'
 import { sanitizeOffPlanPaymentPlan } from '@/constants/listing-data'
 import { formatListingLocation } from '@/libs/listingLocationUtils'
@@ -78,6 +79,8 @@ export function mapApiListingToOffPlanCard(listing) {
   const paymentPlan = sanitizeOffPlanPaymentPlan(listing?.paymentPlan)
   const paymentPlanType = String(listing?.paymentPlanType || '').trim()
 
+  const { badge: approvalBadge } = getListingPremiumDisplay(listing)
+
   return {
     id,
     uuid: listing?.uuid,
@@ -131,6 +134,13 @@ export function mapApiListingToOffPlanCard(listing) {
     unitLayout: resolveLayoutImageSrc(listing?.unitLayout),
     floorPlan: resolveLayoutImageSrc(listing?.floorPlan),
     status: listing?.status,
+    evaluationStatus: listing?.evaluationStatus,
+    occupancyStatus: listing?.occupancyStatus || '',
+    underProcess: Boolean(listing?.underProcess),
+    price: listing?.price,
+    analytics: listing?.analytics || { impressions: 0, clicks: 0 },
+    /** Same badge as other marketplace cards (Super Admin approved off-plan → Approved). */
+    approvalBadge: approvalBadge || null,
     userUUID: listing?.userUUID,
     trusteeUUID: listing?.trusteeUUID,
   }

@@ -28,6 +28,8 @@ import {
 } from '@/libs/listingCardMedia'
 import { getListingSharePath } from '@/libs/listingSocialShare'
 import ListingCarouselNavButton from '@/components/cards/ListingCarouselNavButton'
+import ListingWatermarkOverlay from '@/components/shared/ListingWatermarkOverlay'
+import ListingCardViewCount from '@/components/shared/ListingCardViewCount'
 
 const ProductCard = ({
   type,
@@ -124,13 +126,16 @@ const ProductCard = ({
                   />
                 </div>
               ) : (
-                <Image
-                  className='rounded-lg !w-[314px] !h-[220px]'
-                  src={slide.src}
-                  height={210}
-                  width={210}
-                  alt={title}
-                />
+                <div className='relative !h-[220px] !w-[314px] overflow-hidden rounded-lg'>
+                  <Image
+                    className='rounded-lg !w-[314px] !h-[220px]'
+                    src={slide.src}
+                    height={210}
+                    width={210}
+                    alt={title}
+                  />
+                  <ListingWatermarkOverlay />
+                </div>
               )}
             </SwiperSlide>
           ))}
@@ -179,12 +184,13 @@ const ProductCard = ({
             />
           ) : null}
         </div>
-        <div className='w-full flex flex-wrap gap-x-2 my-2'>
+        <div className='w-full flex flex-wrap items-center gap-x-2 my-2'>
           <p
             className={`lg:text-base md:text-sm text-xs text-reef-gold`}
           >
             Selling Price: AED {formatListingCardPrice(item)}
           </p>
+          <ListingCardViewCount listing={item} />
           <p
             className={`lg:text-base md:text-sm text-xs text-reef-gold`}
           >

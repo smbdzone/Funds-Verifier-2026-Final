@@ -80,6 +80,8 @@ export default async function OffPlanDetailPage({ params }) {
                   priceTo={item.priceTo}
                   images={item.images}
                   developerAvatar={item.developerAvatar}
+                  approvalBadge={item.approvalBadge}
+                  analytics={item.analytics}
                 />
               ))}
             </div>

@@ -236,7 +236,10 @@ export const PropertyEvaluationTab = () => {
                                 Evaluation Date & Time
                               </th>
                               {index === 0 ? (
-                                <th className='py-2 px-4 text-left'>Action</th>
+                                <>
+                                  <th className='py-2 px-4 text-left'>Status</th>
+                                  <th className='py-2 px-4 text-left'>Action</th>
+                                </>
                               ) : (
                                 <>
                                   <th className='py-2 px-4 text-left'>
@@ -309,14 +312,16 @@ export const PropertyEvaluationTab = () => {
                                       {property.title}
                                     </td>
                                     <td className='py-3 truncate px-4'>
-                                      {index === 0 ? (
-                                        <>{`Evaluation Pending`}</>
-                                      ) : (
-                                        <>{`${formattedDate} ${formattedTime}`}</>
-                                      )}
+                                      {`${formattedDate} ${formattedTime}`}
                                     </td>
                                     {index === 0 ? (
-                                      <td className='py-3 px-4'>
+                                      <>
+                                        <td className='py-3 px-4'>
+                                          <span className='inline-flex rounded bg-amber-50 px-2 py-0.5 text-sm font-medium text-amber-800'>
+                                            Pending
+                                          </span>
+                                        </td>
+                                        <td className='py-3 px-4'>
                                         <button
                                           type='button'
                                           aria-haspopup='menu'
@@ -408,6 +413,7 @@ export const PropertyEvaluationTab = () => {
                                           </button>
                                         </EvaluationActionDropdown>
                                       </td>
+                                      </>
                                     ) : (
                                       <>
                                         <td className='py-3 px-4'>

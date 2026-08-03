@@ -22,6 +22,8 @@ import arrow_right from '@/assets/vector1.svg'
 import Image from 'next/image'
 import Link from 'next/link'
 import { swiperCanLoop } from '@/utils/swiperLoop'
+import ListingCardViewCount from '@/components/shared/ListingCardViewCount'
+import ListingWatermarkOverlay from '@/components/shared/ListingWatermarkOverlay'
 
 // Utility function to shuffle an array
 const shuffleArray = (array) => {
@@ -147,15 +149,18 @@ export default function CarForSale() {
             return (
               <SwiperSlide className='listing-card-slide !h-auto' key={car.uuid || index}>
                 <div className='listing-card mx-1 my-1 h-full w-full rounded-md bg-white'>
-                  <figure className=''>
+                  <figure className='relative overflow-hidden rounded-md'>
                     {imageSrc ? (
-                      <Image
-                        width={414}
-                        height={275}
-                        className='rounded-md object-cover !h-[275px]'
-                        alt={car?.make || 'Car'}
-                        src={imageSrc}
-                      />
+                      <>
+                        <Image
+                          width={414}
+                          height={275}
+                          className='rounded-md object-cover !h-[275px] w-full'
+                          alt={car?.make || 'Car'}
+                          src={imageSrc}
+                        />
+                        <ListingWatermarkOverlay />
+                      </>
                     ) : (
                       <div className='flex justify-center items-center rounded-md bg-[#f0f4f8] !h-[275px] w-full'>
                         <Image
@@ -258,6 +263,7 @@ export default function CarForSale() {
                           <div className='text-base font-medium text-[#000000]'>
                             Ref: {getListingRef(car)}
                           </div>
+                          <ListingCardViewCount listing={car} />
                         </div>
                         <div className='text-lg font-semibold text-[#000000]'>
                           AED {formatCardPrice(car.price)}

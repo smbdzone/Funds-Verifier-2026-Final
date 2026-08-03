@@ -40,6 +40,7 @@ import {
 import { getListingDetailId } from '@/libs/listingSlug'
 import { hasPendingDocumentRequests } from '@/utils/requestDocumentUtils'
 import ListingCarouselNavButton from '@/components/cards/ListingCarouselNavButton'
+import ListingWatermarkOverlay from '@/components/shared/ListingWatermarkOverlay'
 import { useProfile } from '@/context/UserContext'
 
 const renderListingDetails = (listing, hasFeaturedStyling) => {
@@ -441,13 +442,16 @@ const ListingCard = ({
                         />
                       </div>
                     ) : (
-                      <Image
-                        className='rounded-lg object-fill !h-[250px]'
-                        src={item.src}
-                        height={253}
-                        width={314}
-                        alt={listing.title}
-                      />
+                      <div className='relative h-[250px] w-full max-w-[312px] overflow-hidden rounded-lg'>
+                        <Image
+                          className='rounded-lg object-fill !h-[250px]'
+                          src={item.src}
+                          height={253}
+                          width={314}
+                          alt={listing.title}
+                        />
+                        <ListingWatermarkOverlay />
+                      </div>
                     )}
                   </SwiperSlide>
                 ))}
