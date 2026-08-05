@@ -348,11 +348,6 @@ export async function proxy(request) {
   const { nextUrl } = request
   const pathname = nextUrl.pathname
 
-  // TEMP: allow property listing without auth (local preview).
-  if (pathname.startsWith('/dashboard/property-listing')) {
-    return NextResponse.next()
-  }
-
   if (LOGIN_ROUTES.includes(pathname)) {
     return handleLoginRoutes(request, pathname)
   }
