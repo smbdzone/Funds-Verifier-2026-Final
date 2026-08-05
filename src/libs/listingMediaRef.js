@@ -51,6 +51,9 @@ export function stripEmptyObjectIdRefs(body) {
     'pictures',
     'thumbnailImg',
     'agencyAgreement',
+    'unitLayout',
+    'floorPlan',
+    'titleDeed',
   ]) {
     const value = body[key]
     if (value === null || value === '' || value === undefined) {

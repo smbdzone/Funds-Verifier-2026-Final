@@ -6,6 +6,7 @@ import { isValidPhoneNumber } from 'libphonenumber-js'
 import adImage from '@/assets/images/advertisement.png'
 import Listing from '@/components/global/Listing'
 import Facilities from '../../../../components/property-listing/Facilities'
+import ReadyMarketLayoutDocuments from '@/components/property-listing/ReadyMarketLayoutDocuments'
 import GlobalLoader from '@/utils/GlobalLoader'
 import PaymentModal from '@/components/payments/PaymentModal'
 import {
@@ -26,6 +27,7 @@ import {
   isFurnishedOptions,
   facilities,
   OFF_PLAN_MEDIA_KEYS,
+  READY_MARKET_LAYOUT_MEDIA_KEYS,
   createDefaultOffPlanPaymentPlan,
   addOffPlanPaymentStep,
   removeOffPlanPaymentStep,
@@ -66,6 +68,7 @@ import {
   bookEvaluationTimeslotFromFormData,
   stripEvaluationBookingMeta,
 } from '@/libs/evaluationBooking'
+import { isListingEvaluatorApprovedLocked } from '@/libs/listingEditLock'
 
 const dropdownData = {
   leaseNumberofCheques: false,
@@ -83,7 +86,7 @@ const dropdownData = {
 }
 
 const emptyOffPlanMedia = () =>
-  OFF_PLAN_MEDIA_KEYS.reduce((acc, key) => {
+  READY_MARKET_LAYOUT_MEDIA_KEYS.reduce((acc, key) => {
     acc[key] = null
     return acc
   }, {})
@@ -393,15 +396,27 @@ const Page = () => {
   }, [formData?.priceFrom, formData?.priceTo])
 
   useEffect(() => {
-    if (!isOffPlan || !id) return
+    if (!id) return
     setOffPlanMedia({
-      unitLayout: formData?.unitLayout?.images?.[0] ?? formData?.unitLayout ?? null,
-      floorPlan: formData?.floorPlan?.images?.[0] ?? formData?.floorPlan ?? null,
+      titleDeed:
+        formData?.titleDeed?.images?.[0] ?? formData?.titleDeed ?? null,
+      unitLayout:
+        formData?.unitLayout?.images?.[0] ?? formData?.unitLayout ?? null,
+      floorPlan:
+        formData?.floorPlan?.images?.[0] ?? formData?.floorPlan ?? null,
     })
     if (formData?.agencyAgreement && !(agencyAgreementFile instanceof File)) {
       setAgencyAgreementFile(null)
     }
-  }, [id, isOffPlan, formData?.unitLayout, formData?.floorPlan, formData?.agencyAgreement, agencyAgreementFile])
+  }, [
+    id,
+    isOffPlan,
+    formData?.titleDeed,
+    formData?.unitLayout,
+    formData?.floorPlan,
+    formData?.agencyAgreement,
+    agencyAgreementFile,
+  ])
 
   const handleAgencyAgreementChange = (event) => {
     const selectedFile = event.target.files?.[0]
@@ -748,17 +763,18 @@ const Page = () => {
         }
       }
 
-      const offPlanMediaRefs = {}
-      if (isOffPlan) {
-        for (const key of OFF_PLAN_MEDIA_KEYS) {
-          const media = offPlanMedia[key]
-          if (media instanceof File) {
-            const uploaded = await handleImageUpload([media])
-            offPlanMediaRefs[key] =
-              listingMediaRef(uploaded) ?? listingMediaRef(formData?.[key])
-          } else {
-            offPlanMediaRefs[key] = listingMediaRef(formData?.[key])
-          }
+      const layoutMediaRefs = {}
+      const layoutMediaKeys = isOffPlan
+        ? OFF_PLAN_MEDIA_KEYS
+        : READY_MARKET_LAYOUT_MEDIA_KEYS
+      for (const key of layoutMediaKeys) {
+        const media = offPlanMedia[key]
+        if (media instanceof File) {
+          const uploaded = await handleImageUpload([media])
+          layoutMediaRefs[key] =
+            listingMediaRef(uploaded) ?? listingMediaRef(formData?.[key])
+        } else {
+          layoutMediaRefs[key] = listingMediaRef(formData?.[key])
         }
       }
 
@@ -825,7 +841,7 @@ const Page = () => {
             : '',
         propertyForLease:
           formData.assetType === 'Property For Lease' ? 'Yes' : '',
-        ...(isOffPlan ? offPlanMediaRefs : {}),
+        ...(layoutMediaRefs),
         paymentPlan: sanitizeOffPlanPaymentPlan(
           Array.isArray(formData.paymentPlan) ? formData.paymentPlan : [],
         ),
@@ -1351,6 +1367,15 @@ const Page = () => {
                 listings={listings}
                 handleRadioChange={handleRadioChange}
               />
+              {!isOffPlan ? (
+                <ReadyMarketLayoutDocuments
+                  media={offPlanMedia}
+                  onImageChange={handleOffPlanImageChange}
+                  onImageRemove={handleOffPlanImageRemove}
+                  errors={errors}
+                  disabled={isListingEvaluatorApprovedLocked(formData)}
+                />
+              ) : null}
               {/* input two  */}
               <Facilities
                 formData={formData}

@@ -1,12 +1,9 @@
 'use client'
 
-import RequireAuth from '@/components/auth/RequireAuth'
-
-/** Listing forms: Asset Holder & Deal Hunter only. */
+/**
+ * TEMP: auth disabled so /dashboard/property-listing can be opened without login.
+ * Re-enable RequireAuth before shipping.
+ */
 export default function PropertyListingLayout({ children }) {
-  return (
-    <RequireAuth roles={['AssetHolder', 'DealHunter']} loginPath='/login'>
-      {children}
-    </RequireAuth>
-  )
+  return children
 }
