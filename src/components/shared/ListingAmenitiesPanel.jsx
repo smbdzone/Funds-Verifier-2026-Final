@@ -14,9 +14,6 @@ export default function ListingAmenitiesPanel({
 
   return (
     <div className='px-2 sm:px-4'>
-      <h3 className='mb-3 text-sm font-medium text-prussianBlue md:text-base'>
-        Amenities
-      </h3>
       <div className='grid grid-cols-1 gap-1 sm:grid-cols-2 md:grid-cols-3'>
         {amenities.map((item) => (
           <div

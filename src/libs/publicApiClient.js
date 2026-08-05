@@ -57,8 +57,12 @@ export async function publicApiFetch(path, options = {}) {
   const normalizedPath = path.startsWith('/') ? path : `/${path}`
   const url = path.startsWith('http') ? path : `${baseUrl}${normalizedPath}`
 
+  // Listing analytics (views) must stay fresh — Next fetch cache would freeze counts at 0.
+  const { cache = 'no-store', ...rest } = options
+
   return fetch(url, {
-    ...options,
+    ...rest,
+    cache,
     headers,
   })
 }

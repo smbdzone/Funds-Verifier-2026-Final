@@ -1,10 +1,8 @@
 /* eslint-disable react/no-unescaped-entities */
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Modal2 from '../3dModal/Modal2'
 import 'react-toastify/dist/ReactToastify.css'
-import PhoneInput from 'react-phone-number-input'
-import 'react-phone-number-input/style.css'
 import DropDown from '../DropdownComponent/DropDown'
 import { toast } from 'react-toastify'
 import customAxios from '../../utils/apis/apis'
@@ -14,6 +12,7 @@ import PaymentChoiceModal from '@/components/payments/PaymentChoiceModal'
 import { applyFullPayDiscount } from '@/libs/paymentDiscount'
 import { useProfile } from '../../context/UserContext'
 import { clearServiceAppointmentSelection } from '@/libs/slotBooking'
+import BookingContactPhonePicker from '@/components/booking/BookingContactPhonePicker'
 
 const TechnicalReport = ({
   isOpen,
@@ -27,6 +26,7 @@ const TechnicalReport = ({
   userUUID,
   productTitle,
   productId,
+  listingPhone = '',
 }) => {
   const [isModalOpen, setModalOpen] = useState(false)
   const [isChecked, setIsChecked] = useState(false)
@@ -53,6 +53,20 @@ const TechnicalReport = ({
     value: value,
     price: 0,
   })
+
+  useEffect(() => {
+    if (!isOpen) return
+    const uaePhone = user?.phone || ''
+    setFormData((prev) => ({
+      ...prev,
+      name: user?.displayName || user?.name || prev.name || '',
+      email: user?.email || prev.email || '',
+      phone: uaePhone || listingPhone || '',
+      productId,
+      productTitle,
+      assetType: type,
+    }))
+  }, [isOpen, user, listingPhone, productId, productTitle, type])
 
   if (!isOpen) return null
 
@@ -270,18 +284,14 @@ const TechnicalReport = ({
               userUUID={userUUID}
             />
           </div>
-          <div className='flex flex-col'>
-            <label className='mb-1 text-xl'>Phone Number</label>
-            <PhoneInput
-              international
-              defaultCountry='AE'
-              name='phone'
-              value={formData.phone}
-              onChange={(value) => handleInputChange('phone', value)}
-              className='w-full p-2 border rounded'
-              placeholder='Enter phone number'
-            />
-          </div>
+          <BookingContactPhonePicker
+            idPrefix='technical-phone'
+            uaePassPhone={user?.phone || ''}
+            listingPhone={listingPhone || ''}
+            value={formData.phone}
+            onChange={(phone) => handleInputChange('phone', phone)}
+            assetLabel={type || 'this asset'}
+          />
           <div className='flex flex-col'>
             <label className='mb-1 text-xl'>Asset Type</label>
             <input

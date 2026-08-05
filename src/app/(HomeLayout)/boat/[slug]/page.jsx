@@ -25,7 +25,7 @@ const GetProductData = cache(async ({ slug }) => {
     const boatData = propertyDataResponse?.data
     const relatedProducts = (boatData?.products || []).filter(
       (boat) =>
-        boat?.status === 1 &&
+        Number(boat?.status) === 1 &&
         boat?.uuid !== boatInfo?.uuid &&
         boat?.slug !== boatInfo?.slug,
     )
@@ -85,7 +85,7 @@ export default async function Page({ params }) {
         </div>
         <BoatView data={boatInfo} />
         {boatData?.products?.length > 0 ? (
-          <div className="theme-container">
+          <div className="theme-container mt-8 border-t border-[#d0d5db] pt-10 sm:mt-12 sm:pt-12">
             <h1 className="md:text-2xl text-lg mb-6 font-semibold text-left text-blue">
               Related Boats
             </h1>

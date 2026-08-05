@@ -11,8 +11,6 @@ import { isListingEvaluatorApprovedLocked } from '@/libs/listingEditLock'
 const Facilities = React.memo(
   ({
     formData,
-    listings,
-    handleRadioChange,
     handleCheckboxChange,
     handleChange,
     setFormData,
@@ -26,41 +24,10 @@ const Facilities = React.memo(
     id,
   }) => {
     const fieldsLocked = isListingEvaluatorApprovedLocked(formData)
-    const showListingVisibility =
-      Number(formData?.price) >= 5000000 || Boolean(id) || fieldsLocked
 
     return (
       <div className='pt-[30px]'>
         <div className='px-[19px] space-y-3'>
-          {showListingVisibility ? (
-            <>
-              <h2 className='text-dark-black text-xl font-medium pt-5'>
-                Listing
-              </h2>
-              <form className='mt-[10px] grid xl:grid-cols-5 lg:grid-cols-3 md:grid-cols-2 sm:grid-cols-2 xxs:grid-cols-1  justify-between gap-y-[10px]'>
-                {listings.map((listing, index) => (
-                  <div key={index} className='radio-container flex'>
-                    <input
-                      className='custom-radio visually-hidden custom-checkbox'
-                      type='radio'
-                      name='listing'
-                      value={listing || ''}
-                      id={`listing-${index}`}
-                      checked={formData.listing === listing}
-                      onChange={(e) => handleRadioChange(e, 'listing')}
-                    />
-                    <label
-                      className='custom-label'
-                      htmlFor={`listing-${index}`}
-                    >
-                      {listing}
-                    </label>
-                  </div>
-                ))}
-              </form>
-            </>
-          ) : null}
-
           <FacilitiesChecklist
             title='Facilities'
             presetFacilities={facilities}
@@ -115,7 +82,7 @@ const Facilities = React.memo(
         </div>
       </div>
     )
-  }
+  },
 )
 Facilities.displayName = 'Facilities'
 

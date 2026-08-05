@@ -24,7 +24,7 @@ const GetProductData = cache(async ({ slug }) => {
     const carData = DataResponse?.data
     const relatedProducts = (carData?.products || []).filter(
       (car) =>
-        car?.status === 1 &&
+        Number(car?.status) === 1 &&
         car?.uuid !== carInfo?.uuid &&
         car?.slug !== carInfo?.slug,
     )
@@ -84,7 +84,7 @@ export default async function Page({ params }) {
         </div>
         <CarView data={carInfo} />
         {carData?.products?.length > 0 ? (
-          <div className="theme-container">
+          <div className="theme-container mt-8 border-t border-[#d0d5db] pt-10 sm:mt-12 sm:pt-12">
             <h1 className="md:text-2xl text-lg mb-6 font-semibold text-left text-blue">
               Related Cars
             </h1>

@@ -21,13 +21,16 @@ import { handleFileUpload } from '@/libs/uploadAsset'
 import Loader from './requestCompoenets/Loader'
 import { formatNumberWithCommas } from '../../../utils/global-functions/global'
 import { formatListingCardPrice } from '@/libs/listingPriceDisplay'
-import { IoCheckmarkSharp } from 'react-icons/io5'
 import { getCookie } from 'cookies-next'
 import customAxios from '../../../utils/apis/apis'
 import EvaluatorListingMedia from './requestCompoenets/EvaluatorListingMedia'
 import { useProfile } from '../../../context/UserContext'
 import EvaluatorDateField from './requestCompoenets/EvaluatorDateField'
 import RequestDocumentsActions from './requestCompoenets/RequestDocumentsActions'
+import {
+  EvaluatorAmenitiesList,
+  EvaluatorAssetHolderFields,
+} from './requestCompoenets/EvaluatorListingContactFields'
 import {
   buildEvaluatorUploadedDocuments,
   formatDateForInput,
@@ -402,6 +405,7 @@ export const RequestTab3 = () => {
           <InputField label='Title' value={property.title} />
           <InputField label='Weight' value={property.weight} />
         </div>
+        <EvaluatorAssetHolderFields listing={property} />
         {property?.status !== 1 ? (
           <EvaluatorEditableFields
             variant='pending'
@@ -428,10 +432,6 @@ export const RequestTab3 = () => {
         </div>
         <div className='mb-4 grid sm:grid-cols-2 gap-4'>
           <InputField label='Usage' value={property.usage} />
-          <InputField
-            label='3D embedded link'
-            value={property?.video3DWalkthrough?.link}
-          />
         </div>
         {property?.status === 1 ? (
           <EvaluatorEditableFields
@@ -457,17 +457,7 @@ export const RequestTab3 = () => {
             readOnly
           />
         </div>
-        <div className='mb-4 grid grid-cols-4'>
-          {property?.facilities?.map((item, columnIndex) => (
-            <div key={columnIndex} className='col-span-1'>
-              <div className='text-base font-normal'>
-                <div className='flex flex-row flex-wrap items-center p-2 space-x-2'>
-                  <IoCheckmarkSharp className='mr-4' /> {item}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+        <EvaluatorAmenitiesList listing={property} />
 
         <EvaluatorListingMedia
           property={property}

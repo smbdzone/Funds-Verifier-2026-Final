@@ -4,30 +4,26 @@ import CalendarPopup from '@/components/CalendarPopup/CalendarPopup'
 import Description from '@/components/Product_page/Description'
 import Review from '@/components/Product_page/Review'
 import React, { useMemo, useState } from 'react'
-import Modal from '../product-modal/modal'
-import Modal2 from '../product-modal/modal2'
 import { formatPriceUS } from '@/utils'
-import Open3dModal from '../3dModal/Open3dModal'
 import ListingSocialShare from '@/components/shared/ListingSocialShare'
 import { formatNumberWithCommas } from '../../utils/global-functions/global'
 import { formatPropertySizeValueDisplay } from '@/libs/propertySizeUnits'
 import {
   getListingDetailMediaItems,
-  getListingDocumentSrc,
   getListingQrScanSrc,
-  getTechnicalReportSrc,
 } from '@/libs/listingCardMedia'
 import { getListingRef } from '@/libs/listingRef'
 import ListingQrCodeSection from '@/components/shared/ListingQrCodeSection'
 import ListingDetailsGrid from '@/components/shared/ListingDetailsGrid'
 import ListingDetailMediaColumn from '@/components/shared/ListingDetailMediaColumn'
 import ListingAmenitiesPanel from '@/components/shared/ListingAmenitiesPanel'
+import ListingDetailCertificates from '@/components/shared/ListingDetailCertificates'
 import { getListingAmenities } from '@/libs/listingAmenities'
 import { formatListingLocation } from '@/libs/listingLocationUtils'
 import { isOwnListing } from '@/libs/isOwnListing'
 import { useProfile } from '@/context/UserContext'
 
-const TABS = ['Description', 'Reviews', 'Additional']
+const TABS = ['Description', 'Reviews', 'Amenities']
 
 export default function ProductView({ data }) {
   const { user } = useProfile()
@@ -38,9 +34,6 @@ export default function ProductView({ data }) {
   )
   const [activeTab, setActiveTab] = useState('Description')
   const [showCalendarPopup, setShowCalendarPopup] = useState(false)
-  const [selectedMedia, setSelectedMedia] = useState(false)
-  const [isModalOpen, setIsModalOpen] = useState(false)
-  const [isModal2Open, setIsModal2Open] = useState(false)
 
   const pad = (value) => {
     if (value == null || value === '') return ''
@@ -73,10 +66,6 @@ export default function ProductView({ data }) {
   )
 
   const amenities = useMemo(() => getListingAmenities(data), [data])
-  const technicalReportSrc = getTechnicalReportSrc(data?.technicalReport)
-  const evaluationCertificateSrc = getListingDocumentSrc(
-    data?.evaluationCertificate,
-  )
 
   const tabButtonClass = (tab) =>
     `flex-grow md:text-base text-xs flex justify-center py-1 ${activeTab === tab
@@ -128,69 +117,7 @@ export default function ProductView({ data }) {
               </button>
             ) : null}
 
-            <div className='flex gap-3'>
-              {technicalReportSrc ? (
-                <>
-                  <div className='relative rounded bg-[#E0E0E0] p-1 group'>
-                    <img
-                      src='/icons/card1.png'
-                      className='h-[23px] w-[23px] cursor-pointer'
-                      alt='Technical report'
-                      onClick={() => setIsModalOpen(true)}
-                    />
-                  </div>
-                  <Modal
-                    isOpen={isModalOpen}
-                    onClose={() => setIsModalOpen(false)}
-                    fileUrl={technicalReportSrc}
-                  />
-                </>
-              ) : null}
-
-              {evaluationCertificateSrc ? (
-                <>
-                  <div className='relative rounded bg-[#E0E0E0] p-1 group'>
-                    <img
-                      src='/icons/card2.png'
-                      className='h-[23px] w-[23px] cursor-pointer'
-                      alt='Evaluation certificate'
-                      onClick={() => setIsModal2Open(true)}
-                    />
-                  </div>
-                  <Modal2
-                    isOpen={isModal2Open}
-                    onClose={() => setIsModal2Open(false)}
-                    file2Url={evaluationCertificateSrc}
-                    downloadFileName={
-                      data?.evaluationCertificate?.Certificate?.name
-                    }
-                    modalTitle='Evaluation Certificate'
-                  />
-                </>
-              ) : null}
-
-              {data?.video3DWalkthrough?.link ? (
-                <>
-                  <div
-                    onClick={() => setSelectedMedia(true)}
-                    className='relative rounded bg-[#E0E0E0] p-1 group'
-                  >
-                    <img
-                      src='/icons/3dicon.png'
-                      className='h-[23px] w-[23px] cursor-pointer'
-                      alt='3D Walkthrough'
-                    />
-                  </div>
-                  {selectedMedia ? (
-                    <Open3dModal
-                      selectedMedia={selectedMedia}
-                      setSelectedMedia={setSelectedMedia}
-                      link={data?.video3DWalkthrough?.link}
-                    />
-                  ) : null}
-                </>
-              ) : null}
-            </div>
+            <ListingDetailCertificates listing={data} />
           </div>
 
           <div className='flex w-full flex-col gap-4 border-t border-black/10 pt-5'>
@@ -214,7 +141,7 @@ export default function ProductView({ data }) {
               onClick={() => setActiveTab(tab)}
               className={tabButtonClass(tab)}
             >
-              {tab === 'Additional' ? 'Additional Information' : tab}
+              {tab}
             </button>
           ))}
         </div>
@@ -236,7 +163,7 @@ export default function ProductView({ data }) {
 
         {activeTab === 'Reviews' ? <Review productdata={data} /> : null}
 
-        {activeTab === 'Additional' ? (
+        {activeTab === 'Amenities' ? (
           <ListingAmenitiesPanel amenities={amenities} />
         ) : null}
       </div>

@@ -14,31 +14,49 @@ const wrapUploadError = (error, fileType, maxMB) => {
   throw wrapped
 }
 
-const handleImageUpload = async (images) => {
+const handleImageUpload = async (images, options = {}) => {
   const files = Array.isArray(images) ? images.filter(Boolean) : []
   if (!files.length) return null
 
-  // Upload one file at a time so a multi-image batch cannot trip proxy 413 limits.
-  const mergedImages = []
-  let lastResponse = null
+  const appendToId =
+    options.appendToId ||
+    options.assetId ||
+    (typeof options === 'string' ? options : null)
 
-  for (const image of files) {
+  const postBatch = async (batch, assetId) => {
     const formData = new FormData()
-    formData.append('images', image)
-
-    try {
-      const response = await customAxios.post(`/upload-imgs`, formData)
-      lastResponse = response.data
-      if (Array.isArray(response?.data?.images)) {
-        mergedImages.push(...response.data.images)
-      }
-    } catch (error) {
-      wrapUploadError(error, 'Image', LISTING_IMAGE_MAX_MB)
+    batch.forEach((image) => {
+      formData.append('images', image)
+    })
+    if (assetId) {
+      formData.append('assetId', String(assetId))
     }
+    const response = await customAxios.post(`/upload-imgs`, formData)
+    return response.data
   }
 
-  if (!lastResponse) return null
-  return { ...lastResponse, images: mergedImages }
+  try {
+    // One request → one ImageAsset (listing stores a single pictures ObjectId).
+    return await postBatch(files, appendToId)
+  } catch (error) {
+    // If the combined payload is too large, upload in small chunks and append
+    // into the same ImageAsset so all pictures stay on one gallery document.
+    if (error?.response?.status !== 413 || files.length <= 1) {
+      wrapUploadError(error, 'Image', LISTING_IMAGE_MAX_MB)
+    }
+
+    const chunkSize = 2
+    let asset = null
+    try {
+      for (let i = 0; i < files.length; i += chunkSize) {
+        const chunk = files.slice(i, i + chunkSize)
+        asset = await postBatch(chunk, asset?._id || appendToId || null)
+      }
+      return asset
+    } catch (chunkError) {
+      wrapUploadError(chunkError, 'Image', LISTING_IMAGE_MAX_MB)
+    }
+  }
 }
 
 const handleVideoUpload = async (video) => {

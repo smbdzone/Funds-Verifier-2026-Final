@@ -28,7 +28,6 @@ import {
 } from '@/libs/listingCardMedia'
 import { getListingSharePath } from '@/libs/listingSocialShare'
 import ListingCarouselNavButton from '@/components/cards/ListingCarouselNavButton'
-import ListingWatermarkOverlay from '@/components/shared/ListingWatermarkOverlay'
 import ListingCardViewCount from '@/components/shared/ListingCardViewCount'
 
 const ProductCard = ({
@@ -134,7 +133,6 @@ const ProductCard = ({
                     width={210}
                     alt={title}
                   />
-                  <ListingWatermarkOverlay />
                 </div>
               )}
             </SwiperSlide>

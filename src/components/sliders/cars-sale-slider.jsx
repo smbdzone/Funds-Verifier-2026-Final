@@ -23,7 +23,6 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { swiperCanLoop } from '@/utils/swiperLoop'
 import ListingCardViewCount from '@/components/shared/ListingCardViewCount'
-import ListingWatermarkOverlay from '@/components/shared/ListingWatermarkOverlay'
 
 // Utility function to shuffle an array
 const shuffleArray = (array) => {
@@ -159,7 +158,6 @@ export default function CarForSale() {
                           alt={car?.make || 'Car'}
                           src={imageSrc}
                         />
-                        <ListingWatermarkOverlay />
                       </>
                     ) : (
                       <div className='flex justify-center items-center rounded-md bg-[#f0f4f8] !h-[275px] w-full'>
@@ -175,9 +173,9 @@ export default function CarForSale() {
                   </figure>
                   <div className='listing-card-body w-full'>
                     <div className='flex flex-1 flex-col space-y-3 px-4 py-2'>
-                      <div className='flex flex-row items-center'>
+                      <div className='flex w-full flex-row flex-wrap items-center gap-x-3 gap-y-1'>
                         {/* Render Stars and Rating */}
-                        <div className='rating-container mr-3'>
+                        <div className='rating-container'>
                           <div className='flex flex-row items-center'>
                             {Array.from({ length: 5 }, (_, starIndex) => (
                               <div key={starIndex} className='h-5 w-5'>
@@ -205,6 +203,9 @@ export default function CarForSale() {
                               ? `(${reviewCounts[car.uuid]} Reviews)`
                               : `(${reviewCounts[car.uuid]} Review)`
                             : `(0 Review)`}
+                        </div>
+                        <div className='ml-auto'>
+                          <ListingCardViewCount listing={car} />
                         </div>
                       </div>
                       <div className='listing-card-meta flex w-full items-start justify-between gap-3'>
@@ -263,7 +264,6 @@ export default function CarForSale() {
                           <div className='text-base font-medium text-[#000000]'>
                             Ref: {getListingRef(car)}
                           </div>
-                          <ListingCardViewCount listing={car} />
                         </div>
                         <div className='text-lg font-semibold text-[#000000]'>
                           AED {formatCardPrice(car.price)}

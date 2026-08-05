@@ -15,7 +15,7 @@ const GetProductData = cache(async ({ id }) => {
     const propertyData = await api('/jewelry?statusFilter=1&limit=50', {}, 0)
     const relatedProducts = (propertyData?.products || []).filter(
       (item) =>
-        item?.status === 1 &&
+        Number(item?.status) === 1 &&
         item?.uuid !== propertyInfo?.uuid &&
         item?.slug !== propertyInfo?.slug &&
         String(item?._id) !== String(propertyInfo?._id),
@@ -79,7 +79,7 @@ export default async function page({ params }) {
         </div>
         <JewelleryView data={propertyInfo || {}} />
         {propertyData?.products?.length > 0 ? (
-          <div className='theme-container'>
+          <div className='theme-container mt-8 border-t border-[#d0d5db] pt-10 sm:mt-12 sm:pt-12'>
             <h1 className='md:text-2xl text-lg mb-6 font-semibold text-left text-blue '>
               Related Jewellery
             </h1>

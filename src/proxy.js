@@ -82,7 +82,6 @@ const roleRoutes = {
     '/sub-evaluator-profile/jewellery-evaluation',
     '/sub-evaluator-profile/jewelry-evaluation',
     '/sub-evaluator-profile/edit-profile',
-    '/sub-evaluator-profile/price-list',
   ],
   '3dWalkthrough': [
     '/3d-walkthrough',

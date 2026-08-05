@@ -1,13 +1,13 @@
-"use client";
-import React from "react";
-import PriceListing from "../../../../components/smbDashboard/PriceListing";
+'use client'
 
-const page = () => {
-  return (
-    <div>
-      <PriceListing />
-    </div>
-  );
-};
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 
-export default page;
+/** Price List is evaluator-only — sub-evaluators are redirected away. */
+export default function SubEvaluatorPriceListRemovedPage() {
+  const router = useRouter()
+  useEffect(() => {
+    router.replace('/sub-evaluator-profile')
+  }, [router])
+  return null
+}

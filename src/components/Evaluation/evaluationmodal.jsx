@@ -5,14 +5,13 @@ import { Loader2Icon } from 'lucide-react'
 import 'react-calendar/dist/Calendar.css'
 import '../3dModal/calender.css'
 import FocusLock from 'react-focus-lock'
-import PhoneInput from 'react-phone-number-input'
-import 'react-phone-number-input/style.css'
 import { toast } from 'react-toastify'
 import DropDown from '../DropdownComponent/DropDown'
 import customAxios from '../../utils/apis/apis'
 import { useProfile } from '../../context/UserContext'
 import { NoSlotsAvailable } from '@/components/global/NoSlotsAvailable'
 import { getBookableSlotsForDate } from '@/libs/slotTimeFilters'
+import BookingContactPhonePicker from '@/components/booking/BookingContactPhonePicker'
 
 const getToday = () => {
   const today = new Date()
@@ -79,11 +78,13 @@ const EvaluationModal = ({
 
   useEffect(() => {
     if (!isOpen) return
+    const uaePhone = user?.phone || ''
+    const listingPhone = parentFormData?.phoneNumber || ''
     setModalForm((prev) => ({
       ...prev,
       name: user?.displayName || user?.name || '',
       email: user?.email || '',
-      phone: parentFormData?.phoneNumber || user?.phone || '',
+      phone: uaePhone || listingPhone || '',
       assetType,
     }))
     setSelectedDate(getToday())
@@ -143,9 +144,9 @@ const EvaluationModal = ({
       // Prefer current evaluator, then any other with open slots that day.
       const ordered = evaluator?.uuid
         ? [
-            ...providers.filter((p) => p.uuid === evaluator.uuid),
-            ...providers.filter((p) => p.uuid !== evaluator.uuid),
-          ]
+          ...providers.filter((p) => p.uuid === evaluator.uuid),
+          ...providers.filter((p) => p.uuid !== evaluator.uuid),
+        ]
         : providers
 
       let matchedProvider = null
@@ -308,17 +309,14 @@ const EvaluationModal = ({
                 placeholder='Email'
               />
             </div>
-            <div className='flex flex-col'>
-              <label className='mb-1 text-xl'>Phone Number</label>
-              <PhoneInput
-                international
-                defaultCountry='AE'
-                value={modalForm.phone}
-                onChange={(phoneValue) => handleInputChange('phone', phoneValue)}
-                className='w-full p-2 border rounded'
-                placeholder='Enter phone number'
-              />
-            </div>
+            <BookingContactPhonePicker
+              idPrefix='evaluation-phone'
+              uaePassPhone={user?.phone || ''}
+              listingPhone={parentFormData?.phoneNumber || ''}
+              value={modalForm.phone}
+              onChange={(phone) => handleInputChange('phone', phone)}
+              assetLabel={assetType || 'this asset'}
+            />
             <div className='flex flex-col'>
               <label className='mb-1 text-xl'>Asset Type</label>
               <input

@@ -49,7 +49,12 @@ const OffPlanPaymentPlanDisplay = ({ paymentPlan = [] }) => {
           const iconKey = inferIconKey(step)
           const Icon = ICON_MAP[iconKey]
           const milestone = String(step.milestone || '').trim()
-          const displayLabel = milestone || step.paymentLabel || 'Payment Share'
+          const paymentLabel = String(step.paymentLabel || '').trim()
+          // Ignore 1-char leftovers (e.g. "F") from bad dueLabel mapping
+          const displayLabel =
+            milestone.length > 1
+              ? milestone
+              : paymentLabel || milestone || 'Payment Share'
 
           return (
             <div

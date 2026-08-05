@@ -24,7 +24,6 @@ import { getProfileImageSrc } from '@/utils/global-functions/global'
 import { HomeListingSliderSkeleton } from '@/components/home/HomeSectionSkeletons'
 import { publicApiFetch } from '@/libs/publicApiClient'
 import ListingCardViewCount from '@/components/shared/ListingCardViewCount'
-import ListingWatermarkOverlay from '@/components/shared/ListingWatermarkOverlay'
 
 const APPROVED_JEWELRY_URL = '/jewelry?statusFilter=1&limit=100&sort=-createdAt'
 
@@ -229,7 +228,6 @@ export default function JewelrySaleSlider() {
                           alt={item.title || item.category || 'Jewellery'}
                           src={imageSrc}
                         />
-                        <ListingWatermarkOverlay />
                       </div>
                     ) : (
                       <div className='flex justify-center items-center rounded-md bg-[#f0f4f8] !h-[275px] w-full'>
@@ -245,8 +243,8 @@ export default function JewelrySaleSlider() {
 
                     <div className='listing-card-body w-full'>
                       <div className='flex flex-1 flex-col space-y-3 px-4 py-2'>
-                        <div className='flex flex-row items-center'>
-                          <div className='rating-container mr-3'>
+                        <div className='flex w-full flex-row flex-wrap items-center gap-x-3 gap-y-1'>
+                          <div className='rating-container'>
                             <div className='flex flex-row items-center'>
                               {Array.from({ length: 5 }, (_, starIndex) => (
                                 <div key={starIndex} className='h-5 w-5'>
@@ -272,6 +270,9 @@ export default function JewelrySaleSlider() {
                             {item.reviewCount > 1
                               ? `(${item.reviewCount} Reviews)`
                               : `(${item.reviewCount || 0} Review)`}
+                          </div>
+                          <div className='ml-auto'>
+                            <ListingCardViewCount listing={item} />
                           </div>
                         </div>
                         <div className='listing-card-meta flex w-full items-start justify-between gap-3'>
@@ -333,7 +334,6 @@ export default function JewelrySaleSlider() {
                             <div className='md:text-sm lg:text-base text-xs font-medium text-[#000000]'>
                               Ref: {getListingRef(item)}
                             </div>
-                            <ListingCardViewCount listing={item} />
                           </div>
                           <div className='lg:text-lg md:text-sm text-xs font-semibold text-[#000000]'>
                             AED {formatCardPrice(item.price)}

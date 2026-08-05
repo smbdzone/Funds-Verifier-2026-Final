@@ -395,6 +395,7 @@ const CarListingForm = ({
                 productTitle={formData?.title}
                 productId={formData?.uuid}
                 userUUID={data?.uuid}
+                listingPhone={formData?.phoneNumber || phoneNumber || ''}
               />
             </div>
           </div>
@@ -455,6 +456,7 @@ const CarListingForm = ({
                 dropdown={groupedData}
                 title='Cars'
                 userUUID={data2?.uuid}
+                listingPhone={formData?.phoneNumber || phoneNumber || ''}
               />
             </div>
             <div className='relative-placeholder dropdown-container flex flex-col w-full'>

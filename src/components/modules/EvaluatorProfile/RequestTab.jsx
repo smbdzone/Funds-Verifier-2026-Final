@@ -7,27 +7,26 @@ import { useEffect, useState } from 'react'
 import { toast, ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 import DocumentSection from './requestCompoenets/DocumentSection'
-import InputField from './requestCompoenets/InputField'
 import EvaluatorEditableFields from './requestCompoenets/EvaluatorEditableFields'
-import EvaluatorPriceInput from './requestCompoenets/EvaluatorPriceInput'
+import EvaluatorPropertyEditableDetails from './requestCompoenets/EvaluatorPropertyEditableDetails'
 import {
   buildEvaluatorUpdatePayload,
+  buildPropertyDetailsUpdatePayload,
   formatNumericInput,
   getListingPriceForEvaluator,
-  getListingSizeForEvaluator,
   initFormattedPrice,
+  initPropertyDetailsDraft,
 } from './requestCompoenets/evaluatorPriceHandlers'
 import { handleFileUpload } from '@/libs/uploadAsset'
 import Loader from './requestCompoenets/Loader'
-import { formatNumberWithCommas } from '../../../utils/global-functions/global'
 import { formatListingCardPrice } from '@/libs/listingPriceDisplay'
-import { formatPropertySizeDisplay } from '@/libs/propertySizeUnits'
 import { useProfile } from '../../../context/UserContext'
 import { getCookie } from 'cookies-next'
 import customAxios from '../../../utils/apis/apis'
 import EvaluatorListingMedia from './requestCompoenets/EvaluatorListingMedia'
 import EvaluatorDateField from './requestCompoenets/EvaluatorDateField'
 import RequestDocumentsActions from './requestCompoenets/RequestDocumentsActions'
+import { EvaluatorAssetHolderFields } from './requestCompoenets/EvaluatorListingContactFields'
 import {
   buildEvaluatorUploadedDocuments,
   formatDateForInput,
@@ -53,9 +52,9 @@ export const RequestTab = () => {
   const [requestLoading, setRequestLoading] = useState(false)
   const [listingPrice, setListingPrice] = useState('')
   const [formattedListingPrice, setFormattedListingPrice] = useState('')
-  const [sizeSQFT, setSizeSQFT] = useState('')
-  const [formattedSizeSQFT, setFormattedSizeSQFT] = useState('')
+  const [detailsDraft, setDetailsDraft] = useState(() => initPropertyDetailsDraft({}))
   const [isSavingDetails, setIsSavingDetails] = useState(false)
+  const [isSavingPropertyDetails, setIsSavingPropertyDetails] = useState(false)
 
   const handleFilechange = async (e) => {
     const selectedFile = e.target.files[0]
@@ -122,11 +121,7 @@ export const RequestTab = () => {
         setListingPrice,
         setFormattedListingPrice,
       )
-      initFormattedPrice(
-        getListingSizeForEvaluator(response.data),
-        setSizeSQFT,
-        setFormattedSizeSQFT,
-      )
+      setDetailsDraft(initPropertyDetailsDraft(response.data))
       setFeedback(response.data.feedback || '')
       setCertificateDate(
         formatDateForInput(response.data.evaluationCertificateDate),
@@ -260,8 +255,6 @@ export const RequestTab = () => {
         roi: roi,
         evaluationPrices: evaluationPrice,
       }
-      if (listingPrice !== '') updateData.price = Number(listingPrice)
-      if (sizeSQFT !== '') updateData.sizeSQFT = Number(sizeSQFT)
 
       if (uploadedFileId) {
         uploadedFile = { _id: uploadedFileId }
@@ -353,22 +346,45 @@ export const RequestTab = () => {
     formatNumericInput(e, setListingPrice, setFormattedListingPrice)
   }
 
-  const handleSqftChange = (e) => {
-    formatNumericInput(e, setSizeSQFT, setFormattedSizeSQFT)
-  }
-
-  const handleSaveEvaluationDetails = async () => {
-    const isPending = property?.status !== 1
+  const handleSavePropertyDetails = async () => {
     const isOffPlan = String(property?.assetType || '')
       .toLowerCase()
       .includes('off plan')
-    const updateData = buildEvaluatorUpdatePayload({
-      listingPrice,
-      evaluationPrice: isPending ? '' : evaluationPrice,
-      roi: isPending ? '' : roi,
-      sizeSQFT: isPending ? sizeSQFT : '',
-      includeRoi: !isPending,
+    const updateData = buildPropertyDetailsUpdatePayload(detailsDraft, {
       isOffPlan,
+    })
+
+    if (Object.keys(updateData).length === 0) {
+      toast.error('Enter at least one value to update')
+      return
+    }
+
+    setIsSavingPropertyDetails(true)
+    try {
+      await customAxios.put(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/property/${propertyId}`,
+        updateData,
+      )
+      toast.success('Listing details updated successfully')
+      fetchPropertyData()
+    } catch (error) {
+      console.error('Error updating property details:', error)
+      toast.error(
+        error?.response?.data?.message || 'Failed to update listing details',
+      )
+    } finally {
+      setIsSavingPropertyDetails(false)
+    }
+  }
+
+  const handleSaveEvaluationDetails = async () => {
+    const updateData = buildEvaluatorUpdatePayload({
+      listingPrice: '',
+      evaluationPrice,
+      roi,
+      sizeSQFT: '',
+      includeRoi: true,
+      includeListingPrice: false,
     })
 
     if (Object.keys(updateData).length === 0) {
@@ -417,77 +433,15 @@ export const RequestTab = () => {
       </span>
 
       <div className='gap-2 sm:px-8 px-4 py-4 w-full'>
-        <div className='mb-4 grid sm:grid-cols-2 gap-4'>
-          <InputField label='Title' value={property.title} />
-          <InputField label='Phone Number' value={property.phoneNumber} />
-        </div>
-        {property?.status === 1 ? (
-          <div className='mb-4 grid sm:grid-cols-2 gap-4'>
-            <InputField
-              label='Size'
-              value={formatPropertySizeDisplay(property) || formatNumberWithCommas(property.sizeSQFT)}
-            />
-            <InputField
-              label='Price'
-              value={
-                formatListingCardPrice(property) ||
-                formatNumberWithCommas(property.price)
-              }
-            />
-          </div>
-        ) : null}
+        <EvaluatorAssetHolderFields listing={property} />
 
-        {property?.status !== 1 ? (
-          <EvaluatorEditableFields
-            variant='pending'
-            listingPriceLabel='Price'
-            formattedListingPrice={formattedListingPrice}
-            onListingPriceChange={handleListingPrice}
-            formattedEvaluationPrice={formattedPrice}
-            onEvaluationPriceChange={handleEvaluationPrice}
-            showEvaluationPrice={false}
-            showRoi={false}
-            showSqft
-            formattedSqft={formattedSizeSQFT}
-            onSqftChange={handleSqftChange}
-            onSave={handleSaveEvaluationDetails}
-            isSaving={isSavingDetails}
-          />
-        ) : null}
-
-        {property.assetType == 'Property for lease' && (
-          <div className='mb-4 grid sm:grid-cols-2 gap-4'>
-            <InputField
-              label='Lease Number of cheques'
-              value={property.lease}
-            />
-            <InputField label='Bedrooms' value={property.bedrooms} />
-          </div>
-        )}
-
-        <div className='mb-4 grid sm:grid-cols-2 gap-4'>
-          <InputField label='Bathrooms' value={property.bathrooms} />
-          <InputField label='Developer' value={property.developer} />
-        </div>
-
-        <div className='mb-4 grid sm:grid-cols-2 gap-4'>
-          <InputField
-            label='Is it furnished'
-            value={property.isFurnished ? 'Yes' : 'No'}
-          />
-          <InputField
-            label='Occupancy Status'
-            value={property.occupancyStatus}
-          />
-        </div>
-
-        <div className='mb-4 grid sm:grid-cols-2 gap-4'>
-          <InputField label='Listing' value={property.listing} />
-          <InputField
-            label='3D embedded link'
-            value={property?.video3DWalkthrough?.link}
-          />
-        </div>
+        <EvaluatorPropertyEditableDetails
+          property={property}
+          draft={detailsDraft}
+          onDraftChange={setDetailsDraft}
+          onSave={handleSavePropertyDetails}
+          isSaving={isSavingPropertyDetails}
+        />
 
         {property?.status === 1 ? (
           <EvaluatorEditableFields
@@ -497,23 +451,12 @@ export const RequestTab = () => {
             onEvaluationPriceChange={handleEvaluationPrice}
             roi={roi}
             onRoiChange={setRoi}
+            showListingPrice={false}
             showRoi
             onSave={handleSaveEvaluationDetails}
             isSaving={isSavingDetails}
           />
         ) : null}
-
-        <div className='mb-4'>
-          <label className='block text-sm sm:text-base font-medium text-[#969696]'>
-            Description
-          </label>
-          <textarea
-            rows={3}
-            value={property.description || ''}
-            className='focus:outline-none mt-1 block w-full pl-5 py-3 rounded-md bg-white text-[#969696] text-sm sm:text-base border border-[#969696]'
-            readOnly
-          />
-        </div>
 
         <EvaluatorListingMedia property={property} />
 

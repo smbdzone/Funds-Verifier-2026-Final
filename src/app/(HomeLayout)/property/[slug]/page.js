@@ -88,7 +88,7 @@ export default async function Page({ params }) {
         </div>
         <ProductView data={propertyInfo} />
         {propertyData?.products?.length > 0 ? (
-          <div className='theme-container '>
+          <div className='theme-container mt-8 border-t border-[#d0d5db] pt-10 sm:mt-12 sm:pt-12'>
             <h1 className='md:text-2xl text-lg mb-3 sm:mb-6 font-semibold text-left text-blue'>
               Related Properties
             </h1>

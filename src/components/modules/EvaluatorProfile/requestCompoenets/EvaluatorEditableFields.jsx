@@ -19,6 +19,7 @@ const EvaluatorEditableFields = ({
   lengthOptions = [],
   variant = 'full',
   listingPriceLabel = 'Listing price',
+  showListingPrice = true,
   showEvaluationPrice = true,
   showSqft = false,
   showRoi = true,
@@ -115,7 +116,7 @@ const EvaluatorEditableFields = ({
     return (
       <div className='mb-4'>
         <div className='grid sm:grid-cols-2 gap-4'>
-          {renderPriceField(listingPriceLabel)}
+          {showListingPrice ? renderPriceField(listingPriceLabel) : null}
           {showEvaluationPrice ? renderEvaluationPriceField() : null}
           {showWarranty ? renderWarrantyField() : null}
           {showLength ? renderLengthField() : null}
@@ -141,7 +142,7 @@ const EvaluatorEditableFields = ({
         Update listing values
       </h2>
       <div className='grid sm:grid-cols-2 lg:grid-cols-4 gap-4'>
-        {renderPriceField(listingPriceLabel)}
+        {showListingPrice ? renderPriceField(listingPriceLabel) : null}
         {showEvaluationPrice ? renderEvaluationPriceField() : null}
         {showSqft ? renderSqftField() : null}
         {showRoi ? (

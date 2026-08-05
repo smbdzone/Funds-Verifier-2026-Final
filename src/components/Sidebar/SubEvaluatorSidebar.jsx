@@ -4,7 +4,6 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   PrimaryProfile,
-  PrimaryDocument,
   PrimaryAssetDocument,
   PrimaryLogout,
   DropIcon,
@@ -59,11 +58,6 @@ export default function SuEvaluatorSidebar() {
           link: "/sub-evaluator-profile/jewelry-evaluation",
         },
       ],
-    },
-    {
-      icon: <PrimaryDocument />,
-      name: "Price List",
-      link: "/sub-evaluator-profile/price-list",
     },
   ];
 

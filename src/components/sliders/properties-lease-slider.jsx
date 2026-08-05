@@ -21,7 +21,6 @@ import arrow_right from '@/assets/vector1.svg'
 import Image from 'next/image'
 import Link from 'next/link'
 import ListingCardViewCount from '@/components/shared/ListingCardViewCount'
-import ListingWatermarkOverlay from '@/components/shared/ListingWatermarkOverlay'
 
 export default function PropertyLeaseSlider() {
   const { propertiesForLease } = useAppContext()
@@ -163,7 +162,6 @@ export default function PropertyLeaseSlider() {
                         alt={propertyForLease?.propertyType || 'Property'}
                         src={imageSrc}
                       />
-                      <ListingWatermarkOverlay />
                     </div>
                   ) : (
                     <div className='flex justify-center items-center rounded-md bg-[#f0f4f8] !h-[275px] w-full'>
@@ -179,8 +177,8 @@ export default function PropertyLeaseSlider() {
                 })()}
                 <div className='listing-card-body w-full'>
                   <div className='flex flex-1 flex-col space-y-3 px-4 py-2'>
-                    <div className='flex flex-row items-center'>
-                      <div className='rating-container mr-3'>
+                    <div className='flex w-full flex-row flex-wrap items-center gap-x-3 gap-y-1'>
+                      <div className='rating-container'>
                         <div className='flex flex-row items-end'>
                           {Array.from({ length: 5 }, (_, starIndex) => (
                             <div key={starIndex} className='h-5 w-5'>
@@ -204,10 +202,13 @@ export default function PropertyLeaseSlider() {
                           </div>
                         </div>
                       </div>
-                      <div className='opacity-[50%] md:text-base text-xs ms-3'>
+                      <div className='opacity-[50%] md:text-base text-xs'>
                         {propertyForLease.reviewCount > 1
                           ? `(${propertyForLease.reviewCount} Reviews)`
-                          : `(${propertyForLease.reviewCount} Review)`}
+                          : `(${propertyForLease.reviewCount || 0} Review)`}
+                      </div>
+                      <div className='ml-auto'>
+                        <ListingCardViewCount listing={propertyForLease} />
                       </div>
                     </div>
                     <div className='listing-card-meta flex w-full items-start justify-between gap-3'>
@@ -270,7 +271,6 @@ export default function PropertyLeaseSlider() {
                         <div className='md:text-sm lg:text-base text-xs font-medium text-[#000000]'>
                           Ref: {getListingRef(propertyForLease)}
                         </div>
-                        <ListingCardViewCount listing={propertyForLease} />
                       </div>
                       <div className='lg:text-lg md:text-sm text-xs font-semibold text-[#000000]'>
                         AED {formatCardPrice(propertyForLease.price)}

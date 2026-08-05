@@ -40,7 +40,6 @@ import {
 import { getListingDetailId } from '@/libs/listingSlug'
 import { hasPendingDocumentRequests } from '@/utils/requestDocumentUtils'
 import ListingCarouselNavButton from '@/components/cards/ListingCarouselNavButton'
-import ListingWatermarkOverlay from '@/components/shared/ListingWatermarkOverlay'
 import { useProfile } from '@/context/UserContext'
 
 const renderListingDetails = (listing, hasFeaturedStyling) => {
@@ -450,7 +449,6 @@ const ListingCard = ({
                           width={314}
                           alt={listing.title}
                         />
-                        <ListingWatermarkOverlay />
                       </div>
                     )}
                   </SwiperSlide>
@@ -682,7 +680,7 @@ const ListingCard = ({
                     Analytics
                     <span className='ml-1 text-xs opacity-80'>
                       ({formatNumberWithCommas(
-                        listing?.analytics?.impressions ?? 0,
+                        listing?.analytics?.clicks ?? 0,
                       )}{' '}
                       views)
                     </span>
@@ -711,17 +709,7 @@ const ListingCard = ({
                       <div className='space-y-2'>
                         <div className='flex items-center justify-between'>
                           <span className='text-sm text-dark-grey/80'>
-                            Impressions
-                          </span>
-                          <span className='text-sm font-semibold text-prussianBlue'>
-                            {formatNumberWithCommas(
-                              listing?.analytics?.impressions ?? 0,
-                            )}
-                          </span>
-                        </div>
-                        <div className='flex items-center justify-between'>
-                          <span className='text-sm text-dark-grey/80'>
-                            Clicks
+                            Views
                           </span>
                           <span className='text-sm font-semibold text-prussianBlue'>
                             {formatNumberWithCommas(
@@ -731,8 +719,8 @@ const ListingCard = ({
                         </div>
                       </div>
                       <p className='mt-3 text-[11px] leading-4 text-dark-grey/60'>
-                        Impressions = times shown to visitors. Clicks = times
-                        the listing was opened.
+                        Views count when a visitor opens this listing only —
+                        not when it appears with other cards.
                       </p>
                     </div>
                   </>

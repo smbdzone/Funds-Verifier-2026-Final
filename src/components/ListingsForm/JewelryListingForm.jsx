@@ -380,6 +380,7 @@ const JewelryListingForm = ({
               productTitle={formData?.title}
               productId={formData?.uuid}
               userUUID={data?.uuid}
+              listingPhone={formData?.phoneNumber || phoneNumber || ''}
             />
           </div>
           <div className='relative-placeholder w-full'>
@@ -421,6 +422,7 @@ const JewelryListingForm = ({
               productId={formData?.uuid}
               productTitle={formData?.title}
               userUUID={data2?.uuid}
+              listingPhone={formData?.phoneNumber || phoneNumber || ''}
             />
           </div>
           <div className='w-full col-span-2 flex flex-col gap-5'>

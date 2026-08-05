@@ -12,6 +12,7 @@ import ListingSocialShare from '@/components/shared/ListingSocialShare'
 import ListingQrCodeSection from '@/components/shared/ListingQrCodeSection'
 import ListingMapSection from '@/components/ListingsForm/ListingMapSection'
 import ListingDetailsGrid from '@/components/shared/ListingDetailsGrid'
+import ListingDetailCertificates from '@/components/shared/ListingDetailCertificates'
 import { formatOffPlanPriceRange, formatOffPlanSizeRange } from '@/constants/offPlanDummyListings'
 import { getListingAmenities } from '@/libs/listingAmenities'
 import { formatListingLocation } from '@/libs/listingLocationUtils'
@@ -25,7 +26,7 @@ import { IoCheckmarkSharp } from 'react-icons/io5'
 const TABS = [
   'Description',
   'Reviews',
-  'Additional',
+  'Amenities',
   'Payment Plan',
   'Layout & Floor Plan',
 ]
@@ -133,10 +134,10 @@ export default function OffPlanProductView({ data }) {
             />
           </div>
           <div className='hidden w-full flex-col gap-4 md:flex xl:w-[580px]'>
-            <div className='h-[560px] w-full'>
+            <div className='relative h-[560px] w-full overflow-hidden rounded-lg'>
               <img
                 alt={data?.title || 'Off-plan property'}
-                className='h-full w-full rounded-lg object-cover'
+                className='h-full w-full object-cover'
                 src={previewSrc}
               />
             </div>
@@ -191,6 +192,8 @@ export default function OffPlanProductView({ data }) {
               onArrangeViewing={handleDeveloperRequestClick}
             />
           ) : null}
+
+          <ListingDetailCertificates listing={data} />
 
           <div className='flex w-full flex-col gap-4 border-t border-black/10 pt-5'>
             <div className='flex w-full flex-col gap-4 sm:flex-row sm:items-center sm:justify-between'>
@@ -247,12 +250,9 @@ export default function OffPlanProductView({ data }) {
 
         {activeTab === 'Reviews' ? <Review productdata={data} /> : null}
 
-        {activeTab === 'Additional' ? (
+        {activeTab === 'Amenities' ? (
           amenities.length ? (
             <div className='px-2 sm:px-4'>
-              <h3 className='mb-3 text-sm font-medium text-prussianBlue md:text-base'>
-                Amenities
-              </h3>
               <div className='grid grid-cols-1 gap-1 sm:grid-cols-2 md:grid-cols-3'>
                 {amenities.map((item) => (
                   <div

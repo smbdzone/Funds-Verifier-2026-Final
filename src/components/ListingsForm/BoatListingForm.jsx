@@ -356,6 +356,7 @@ const BoatListingForm = ({
                 userUUID={data?.uuid}
                 productTitle={formData?.title}
                 productId={formData?.uuid}
+                listingPhone={formData?.phoneNumber || phoneNumber || ''}
               />
             </div>
           </div>
@@ -422,6 +423,7 @@ const BoatListingForm = ({
               productId={formData?.uuid}
               productTitle={formData?.title}
               userUUID={data2?.uuid}
+              listingPhone={formData?.phoneNumber || phoneNumber || ''}
             />
           </div>
           <div className='w-full col-span-2'>

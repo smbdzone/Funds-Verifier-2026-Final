@@ -1,3 +1,4 @@
+import { cache } from 'react'
 import { isOffPlanListing } from '@/libs/filterMyListingTab'
 import {
   getListingCarouselItems,
@@ -139,6 +140,9 @@ export function mapApiListingToOffPlanCard(listing) {
     underProcess: Boolean(listing?.underProcess),
     price: listing?.price,
     analytics: listing?.analytics || { impressions: 0, clicks: 0 },
+    evaluationCertificate: listing?.evaluationCertificate || null,
+    technicalReport: listing?.technicalReport || null,
+    video3DWalkthrough: listing?.video3DWalkthrough || null,
     /** Same badge as other marketplace cards (Super Admin approved off-plan → Approved). */
     approvalBadge: approvalBadge || null,
     userUUID: listing?.userUUID,
@@ -188,7 +192,8 @@ export async function fetchApprovedOffPlanListings({
     .map(mapApiListingToOffPlanCard)
 }
 
-export async function fetchOffPlanListingBySlug(slug) {
+/** One fetch per request so metadata + page don't double-count a view. */
+export const fetchOffPlanListingBySlug = cache(async (slug) => {
   if (!slug) return null
 
   const res = await publicApiFetch(`/property/${encodeURIComponent(slug)}`)
@@ -198,4 +203,4 @@ export async function fetchOffPlanListingBySlug(slug) {
   if (!isApprovedOffPlanListing(listing)) return null
 
   return mapApiListingToOffPlanDetail(listing)
-}
+})

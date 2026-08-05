@@ -38,6 +38,9 @@ import DeliveryTimeField from '@/components/property-listing/DeliveryTimeField'
 import OffPlanLayoutFloorPlan from '@/components/property-listing/OffPlanLayoutFloorPlan'
 import OffPlanPaymentPlan from '@/components/property-listing/OffPlanPaymentPlan'
 import OffPlanAgencyAgreementUpload from '@/components/property-listing/OffPlanAgencyAgreementUpload'
+import ListingVisibilityRadios, {
+  shouldShowPropertyListingVisibility,
+} from '@/components/property-listing/ListingVisibilityRadios'
 import {
   deliveryQuarterOptions,
   deliveryYearOptions,
@@ -110,6 +113,8 @@ export const ImageUploadComponent = React.memo(
     agencyAgreementFile,
     onAgencyAgreementChange,
     onAgencyAgreementRemove,
+    listings = ['Private', 'Public'],
+    handleRadioChange,
   }) => {
     const [data, setData] = useState()
     const [data2, setData2] = useState()
@@ -157,6 +162,13 @@ export const ImageUploadComponent = React.memo(
     const [RequestService, setRequestService] = useState('')
     const isEvaluatorApprovedLocked = isListingEvaluatorApprovedLocked(formData)
     const isPriceLocked = isListingPriceLocked(formData)
+    const showListingVisibility = shouldShowPropertyListingVisibility({
+      price: formData?.price,
+      priceFrom: formData?.priceFrom,
+      isOffPlan,
+      listingId: id,
+      fieldsLocked: isEvaluatorApprovedLocked,
+    })
     const canRequestPremium = canRequestPremiumServices(formData)
     const blocksTechnicalReport = blocksPremiumServiceRequest(formData?.technicalReport)
     const blocks3DWalkthrough = blocksPremiumServiceRequest(formData?.video3DWalkthrough)
@@ -319,15 +331,28 @@ export const ImageUploadComponent = React.memo(
                 required
                 disabled={isEvaluatorApprovedLocked}
               />
-              <OffPlanPriceRange
-                priceFrom={totalPriceFrom}
-                priceTo={totalPriceTo}
-                handleChange={handleChange}
-                onBlur={handleBlur}
-                disabled={isPriceLocked}
-                errors={errors.price}
-                errorsMessage={errors.price}
-              />
+              <div className='relative flex w-full flex-col gap-4 dropdown-container sm:flex-row sm:items-end sm:gap-6'>
+                <div className='relative min-w-0 flex-1'>
+                  <OffPlanPriceRange
+                    priceFrom={totalPriceFrom}
+                    priceTo={totalPriceTo}
+                    handleChange={handleChange}
+                    onBlur={handleBlur}
+                    disabled={isPriceLocked}
+                    errors={errors.price}
+                    errorsMessage={errors.price}
+                  />
+                </div>
+                {showListingVisibility ? (
+                  <ListingVisibilityRadios
+                    className='sm:w-auto sm:shrink-0 sm:pb-1'
+                    listings={listings}
+                    value={formData.listing || ''}
+                    onChange={handleRadioChange}
+                    idPrefix='offplan-listing-vis'
+                  />
+                ) : null}
+              </div>
             </div>
             <div className='relative w-full dropdown-container space-y-3'>
               <OffPlanPaymentPlanTypeField
@@ -601,22 +626,33 @@ export const ImageUploadComponent = React.memo(
                 required
                 disabled={isEvaluatorApprovedLocked}
               />
-              <div className='relative w-full dropdown-container'>
-                <ListingFormInput
-                  errors={
-                    (errors.price && parseInt(totalprice) === 0) ||
-                    (!totalprice && errors.price)
-                  }
-                  value={totalprice || ''}
-                  handleChange={handleChange}
-                  onBlur={handleBlur}
-                  required={true}
-                  placeholder='Price'
-                  errorsMessage={errors.price}
-                  name='price'
-                  type='text'
-                  disabled={isPriceLocked}
-                />
+              <div className='relative flex w-full flex-col gap-4 dropdown-container sm:flex-row sm:items-end sm:gap-6'>
+                <div className='relative min-w-0 flex-1'>
+                  <ListingFormInput
+                    errors={
+                      (errors.price && parseInt(totalprice) === 0) ||
+                      (!totalprice && errors.price)
+                    }
+                    value={totalprice || ''}
+                    handleChange={handleChange}
+                    onBlur={handleBlur}
+                    required={true}
+                    placeholder='Price'
+                    errorsMessage={errors.price}
+                    name='price'
+                    type='text'
+                    disabled={isPriceLocked}
+                  />
+                </div>
+                {showListingVisibility ? (
+                  <ListingVisibilityRadios
+                    className='sm:w-auto sm:shrink-0 sm:pb-1'
+                    listings={listings}
+                    value={formData.listing || ''}
+                    onChange={handleRadioChange}
+                    idPrefix='property-listing-vis'
+                  />
+                ) : null}
               </div>
             </div>
             <div className='relative w-full dropdown-container space-y-6'>
@@ -703,6 +739,7 @@ export const ImageUploadComponent = React.memo(
                 bedroomsDropDown={bedroomsOptions}
                 title='Bedrooms'
                 userUUID={data2?.uuid}
+                listingPhone={formData?.phoneNumber || phoneNumber || ''}
               />
             </div>
             {formData.assetType === 'Property For Lease' && (
@@ -798,6 +835,7 @@ export const ImageUploadComponent = React.memo(
                 productTitle={formData?.title}
                 productId={formData?.uuid}
                 userUUID={data?.uuid}
+                listingPhone={formData?.phoneNumber || phoneNumber || ''}
               />
             </div>
             <div className='relative w-full dropdown-container'>

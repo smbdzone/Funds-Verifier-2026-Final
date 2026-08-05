@@ -26,7 +26,7 @@ import { formatListingLocation } from '@/libs/listingLocationUtils'
 import { isOwnListing } from '@/libs/isOwnListing'
 import { useProfile } from '@/context/UserContext'
 
-const TABS = ['Description', 'Reviews', 'Additional']
+const TABS = ['Description', 'Reviews', 'Amenities']
 
 export default function JewelleryView({ data }) {
   const { user } = useProfile()
@@ -196,7 +196,7 @@ export default function JewelleryView({ data }) {
               onClick={() => setActiveTab(tab)}
               className={tabButtonClass(tab)}
             >
-              {tab === 'Additional' ? 'Additional Information' : tab}
+              {tab}
             </button>
           ))}
         </div>
@@ -218,7 +218,7 @@ export default function JewelleryView({ data }) {
 
         {activeTab === 'Reviews' ? <Review productdata={data} /> : null}
 
-        {activeTab === 'Additional' ? (
+        {activeTab === 'Amenities' ? (
           <ListingAmenitiesPanel amenities={amenities} />
         ) : null}
       </div>

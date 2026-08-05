@@ -1348,12 +1348,12 @@ const Page = () => {
                 agencyAgreementFile={agencyAgreementFile}
                 onAgencyAgreementChange={handleAgencyAgreementChange}
                 onAgencyAgreementRemove={handleAgencyAgreementRemove}
+                listings={listings}
+                handleRadioChange={handleRadioChange}
               />
               {/* input two  */}
               <Facilities
                 formData={formData}
-                listings={listings}
-                handleRadioChange={handleRadioChange}
                 handleCheckboxChange={handleCheckboxChange}
                 handleChange={handleChange}
                 handleSubmit={handleSubmit}

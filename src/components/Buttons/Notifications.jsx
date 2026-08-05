@@ -1,8 +1,7 @@
 'use client'
-import { Fragment, useEffect, useState, useRef, useCallback } from 'react'
+import { Fragment, useEffect, useState, useRef, useCallback, useMemo } from 'react'
 import { Menu, Transition } from '@headlessui/react'
 import { NotificationIcon } from '../Icons'
-import axios from 'axios'
 import { useProfile } from '@/context/UserContext'
 import { Loader2Icon } from 'lucide-react'
 import { toast } from 'react-toastify'
@@ -12,65 +11,70 @@ import { useNotificationSocket } from '@/hooks/useNotificationSocket'
 import { formatNotificationTimestamp } from '@/utils/formatNotificationTimestamp'
 import { getAccessToken } from '@/utils/auth/accessTokenStore'
 
+function resolveUserNotificationRole(user) {
+  if (user?.parentEvaluator) return 'SubEvaluator'
+  return user?.role
+}
+
 const NotificationDropdown = ({ className }) => {
   const { user } = useProfile()
   const router = useRouter()
   const pathname = usePathname()
   const [notifications, setNotifications] = useState([])
   const [loading, setLoading] = useState(true)
+  const [clearing, setClearing] = useState(false)
   const lastFetchTimeRef = useRef(Date.now())
 
-  // Socket connection for real-time notifications with reconnection callback
+  const role = resolveUserNotificationRole(user)
+
+  const unreadCount = useMemo(
+    () => notifications.filter((n) => n && !n.isRead).length,
+    [notifications],
+  )
+
   const handleReconnect = useCallback(() => {
-    console.log('Socket reconnected, refreshing notifications...')
-    // Use a small delay to ensure socket is fully ready
     setTimeout(() => {
       fetchNotifications()
     }, 500)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.uuid]) // fetchNotifications is stable, no need to include it
+  }, [user?.uuid])
 
-  const { socket, isConnected, isConnecting } = useNotificationSocket(user, handleReconnect)
-
-  let role
+  const { socket, isConnected, isConnecting } = useNotificationSocket(
+    user,
+    handleReconnect,
+  )
 
   const fetchNotifications = async () => {
     if (!user?.uuid) return
-    if (user?.parentEvaluator) {
-      role = 'SubEvaluator'
-    } else {
-      role = user?.role
-    }
+    const fetchRole = resolveUserNotificationRole(user)
 
     try {
       const { data } = await customAxios.get(
-        `/notifications/role/${role}?limit=50`
+        `/notifications/role/${fetchRole}?limit=50`,
       )
 
       if (data?.success && Array.isArray(data?.notifications)) {
-        // Merge with existing notifications (deduplicate by UUID)
         setNotifications((prev) => {
           const notificationMap = new Map()
 
-          // Add existing notifications to map
           prev.forEach((n) => {
-            if (n?.uuid) {
-              notificationMap.set(n.uuid, n)
-            }
+            if (n?.uuid) notificationMap.set(n.uuid, n)
           })
 
-          // Add/update with new notifications (newer ones take precedence)
           data.notifications.forEach((n) => {
             if (n?.uuid) {
               const existing = notificationMap.get(n.uuid)
-              // Keep the newer version (compare timestamps if available)
-              if (!existing || (n.updatedAt && existing.updatedAt && new Date(n.updatedAt) > new Date(existing.updatedAt))) {
+              if (
+                !existing ||
+                (n.updatedAt &&
+                  existing.updatedAt &&
+                  new Date(n.updatedAt) > new Date(existing.updatedAt))
+              ) {
                 notificationMap.set(n.uuid, n)
               }
             }
           })
 
-          // Convert map back to array and sort by creation time (newest first)
           return Array.from(notificationMap.values()).sort((a, b) => {
             const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0
             const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0
@@ -91,22 +95,15 @@ const NotificationDropdown = ({ className }) => {
   }
 
   const markAsRead = async (id) => {
-    // Optimistic update
     const previousState = [...notifications]
     setNotifications((prev) =>
-      prev.map((n) => (n.uuid === id ? { ...n, isRead: true } : n))
+      prev.map((n) => (n.uuid === id ? { ...n, isRead: true } : n)),
     )
 
-    // Try socket first if connected
     if (socket && isConnected) {
       try {
         socket.emit('notification:markRead', { uuid: id }, (response) => {
-          if (response?.success) {
-            // Success - state already updated optimistically
-            // The socket event will trigger handleReadNotification to sync
-            console.log('Notification marked as read via socket')
-          } else {
-            // Revert optimistic update on error
+          if (!response?.success) {
             setNotifications(previousState)
             toast.error(response?.message || 'Failed to mark as read')
           }
@@ -114,41 +111,28 @@ const NotificationDropdown = ({ className }) => {
         return
       } catch (err) {
         console.error('Socket error marking as read:', err)
-        // Fall through to REST API fallback
       }
     }
 
-    // Fallback to REST API if socket not available
     try {
-      const response = await customAxios.patch(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/notifications/${id}/read`
-      )
+      const response = await customAxios.patch(`/notifications/${id}/read`)
       if (response?.data?.link) {
         router.push(response?.data?.link || pathname)
       }
     } catch (err) {
-      // Revert optimistic update on error
       setNotifications(previousState)
-      console.warn('Failed to mark as read')
       toast.error('Failed to mark notification as read')
     }
   }
 
   const deleteNotification = async (id) => {
-    // Optimistic update
     const previousState = [...notifications]
     setNotifications((prev) => prev.filter((n) => n?.uuid !== id))
 
-    // Try socket first if connected
     if (socket && isConnected) {
       try {
         socket.emit('notification:delete', { uuid: id }, (response) => {
-          if (response?.success) {
-            // Success - state already updated optimistically
-            // The socket event will trigger handleDeletedNotification to sync
-            console.log('Notification deleted via socket')
-          } else {
-            // Revert optimistic update on error
+          if (!response?.success) {
             setNotifications(previousState)
             toast.error(response?.message || 'Failed to delete notification')
           }
@@ -156,26 +140,43 @@ const NotificationDropdown = ({ className }) => {
         return
       } catch (err) {
         console.error('Socket error deleting notification:', err)
-        // Fall through to REST API fallback
       }
     }
 
-    // Fallback to REST API if socket not available
     try {
-      await customAxios.delete(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/notifications/${id}`
-      )
+      await customAxios.delete(`/notifications/${id}`)
     } catch (err) {
-      // Revert optimistic update on error
       setNotifications(previousState)
       toast.error(
         err?.response?.data?.message ||
-        'Failed to delete or notification not found.'
+          'Failed to delete or notification not found.',
       )
     }
   }
 
-  // Initial fetch on mount (wait for access token so we don't hit 401 races)
+  const clearAllNotifications = async (event) => {
+    event?.preventDefault?.()
+    event?.stopPropagation?.()
+    if (!notifications.length || clearing) return
+
+    const previousState = [...notifications]
+    setClearing(true)
+    setNotifications([])
+
+    try {
+      const params = role ? { role } : undefined
+      await customAxios.delete('/notifications/clear', { params })
+      toast.success('All notifications cleared')
+    } catch (err) {
+      setNotifications(previousState)
+      toast.error(
+        err?.response?.data?.message || 'Failed to clear notifications',
+      )
+    } finally {
+      setClearing(false)
+    }
+  }
+
   useEffect(() => {
     if (!user?.uuid) return
     if (!getAccessToken()) {
@@ -185,103 +186,101 @@ const NotificationDropdown = ({ className }) => {
     fetchNotifications()
   }, [user?.uuid])
 
-  // Periodic sync every 5 minutes to prevent stale state
   useEffect(() => {
     if (!user?.uuid) return
 
     const syncInterval = setInterval(() => {
       const timeSinceLastFetch = Date.now() - lastFetchTimeRef.current
-      // Only sync if it's been more than 4.5 minutes (to avoid race conditions)
       if (timeSinceLastFetch > 4.5 * 60 * 1000) {
-        console.log('Periodic sync: Fetching latest notifications...')
         fetchNotifications()
       }
-    }, 5 * 60 * 1000) // 5 minutes
+    }, 5 * 60 * 1000)
 
     return () => clearInterval(syncInterval)
   }, [user?.uuid])
 
-  // Socket event listeners for real-time updates
   useEffect(() => {
-    if (!socket || !isConnected) {
-      return
-    }
+    if (!socket || !isConnected) return
 
-    // Handle new notification
     const handleNewNotification = (eventData) => {
       const newNotification = eventData?.data
-      if (!newNotification || !newNotification.uuid) {
-        return
-      }
+      if (!newNotification || !newNotification.uuid) return
 
-      // Check if notification already exists (deduplication)
       setNotifications((prev) => {
         const exists = prev.some((n) => n.uuid === newNotification.uuid)
         if (exists) {
-          // Update existing notification instead of adding duplicate
           return prev.map((n) =>
-            n.uuid === newNotification.uuid ? newNotification : n
+            n.uuid === newNotification.uuid ? newNotification : n,
           )
         }
-        // Prepend new notification to the list
         return [newNotification, ...prev].sort((a, b) => {
           const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0
           const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0
           return timeB - timeA
         })
       })
-
-      // Optional: Show toast or play sound for new notification
-      // toast.info(newNotification.title)
     }
 
-    // Handle notification marked as read
     const handleReadNotification = (eventData) => {
       const { uuid, isRead } = eventData?.data || {}
-      if (!uuid) {
-        return
-      }
-
+      if (!uuid) return
       setNotifications((prev) =>
-        prev.map((n) => (n.uuid === uuid ? { ...n, isRead: isRead ?? true } : n))
+        prev.map((n) => (n.uuid === uuid ? { ...n, isRead: isRead ?? true } : n)),
       )
     }
 
-    // Handle deleted notification
     const handleDeletedNotification = (eventData) => {
       const { uuid } = eventData?.data || {}
-      if (!uuid) {
-        return
-      }
-
+      if (!uuid) return
       setNotifications((prev) => prev.filter((n) => n.uuid !== uuid))
     }
 
-    // Handle socket errors
+    const handleCleared = () => {
+      setNotifications([])
+    }
+
+    const handleReadAll = () => {
+      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })))
+    }
+
     const handleError = (error) => {
       console.error('Socket error in notifications:', error)
       toast.error('Connection error. Please refresh the page.')
     }
 
-    // Register event listeners
     socket.on('notification:new', handleNewNotification)
     socket.on('notification:read', handleReadNotification)
     socket.on('notification:deleted', handleDeletedNotification)
+    socket.on('notification:cleared', handleCleared)
+    socket.on('notification:read-all', handleReadAll)
     socket.on('error', handleError)
 
-    // Cleanup: Remove all event listeners on unmount or when socket changes
     return () => {
       socket.off('notification:new', handleNewNotification)
       socket.off('notification:read', handleReadNotification)
       socket.off('notification:deleted', handleDeletedNotification)
+      socket.off('notification:cleared', handleCleared)
+      socket.off('notification:read-all', handleReadAll)
       socket.off('error', handleError)
     }
   }, [socket, isConnected])
 
   return (
-    <Menu as='div' className='relative text-left z-100'>
-      <Menu.Button className='btn !min-w-max flex items-center gap-2'>
+    <Menu as='div' className='relative z-100 text-left'>
+      <Menu.Button
+        className='btn relative !min-w-max flex items-center gap-2'
+        aria-label={
+          unreadCount > 0
+            ? `Notifications, ${unreadCount} unread`
+            : 'Notifications'
+        }
+      >
         <NotificationIcon className={`${className || 'text-dark-blue'}`} />
+        {unreadCount > 0 ? (
+          <span className='absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#E82026] px-1 text-[10px] font-semibold leading-none text-white'>
+            {unreadCount > 99 ? '99+' : unreadCount}
+          </span>
+        ) : null}
       </Menu.Button>
       <Transition
         as={Fragment}
@@ -292,54 +291,74 @@ const NotificationDropdown = ({ className }) => {
         leaveFrom='transform opacity-100 scale-100'
         leaveTo='transform opacity-0 scale-95'
       >
-        <Menu.Items className='absolute z-50 right-0 w-[300px] bg-white custom-shadow rounded-lg'>
-          <div className='pt-4 px-6 rounded-t sticky top-0 bg-white left-0 border-b border-gray-300 pb-2 flex items-center justify-between'>
-            <p className='text-sm font-semibold'>Notifications</p>
-            {isConnecting && (
-              <span className='text-xs text-blue-500 flex items-center gap-1'>
-                <Loader2Icon className='w-3 h-3 animate-spin' />
-                Connecting...
-              </span>
-            )}
-            {isConnected && (
-              <span className='text-xs text-green-500'>●</span>
-            )}
+        <Menu.Items className='absolute right-0 z-50 w-[300px] rounded-lg bg-white custom-shadow'>
+          <div className='sticky top-0 left-0 flex items-center justify-between gap-2 rounded-t border-b border-gray-300 bg-white px-4 pb-2 pt-4'>
+            <div className='flex items-center gap-2'>
+              <p className='text-sm font-semibold'>Notifications</p>
+              {unreadCount > 0 ? (
+                <span className='rounded-full bg-[#E82026] px-1.5 py-0.5 text-[10px] font-semibold text-white'>
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              ) : null}
+            </div>
+            <div className='flex items-center gap-2'>
+              {isConnecting ? (
+                <span className='flex items-center gap-1 text-xs text-blue-500'>
+                  <Loader2Icon className='h-3 w-3 animate-spin' />
+                </span>
+              ) : null}
+              {isConnected ? (
+                <span className='text-xs text-green-500'>●</span>
+              ) : null}
+              {notifications.length > 0 ? (
+                <button
+                  type='button'
+                  onClick={clearAllNotifications}
+                  disabled={clearing}
+                  className='text-xs font-medium text-[#E82026] hover:underline disabled:opacity-50'
+                >
+                  {clearing ? 'Clearing…' : 'Clear all'}
+                </button>
+              ) : null}
+            </div>
           </div>
-          <div className='p-4 pb-2 max-h-[300px] overflow-y-auto'>
+          <div className='max-h-[300px] overflow-y-auto p-4 pb-2'>
             {loading ? (
-              <p className='text-xs flex justify-center items-center text-gray-400 h-32'>
+              <p className='flex h-32 items-center justify-center text-xs text-gray-400'>
                 <Loader2Icon className='animate-spin' />
               </p>
             ) : notifications?.length === 0 ? (
-              <p className='text-xs flex justify-center items-center text-gray-400 h-32'>
+              <p className='flex h-32 items-center justify-center text-xs text-gray-400'>
                 No notifications
               </p>
             ) : (
               notifications.map((notification) => (
                 <div
                   key={notification?.uuid}
-                  className={`mb-2 p-2 rounded ${notification?.isRead ? '' : 'bg-gray-3'
-                    }`}
+                  className={`mb-2 rounded p-2 ${
+                    notification?.isRead ? '' : 'bg-gray-3'
+                  }`}
                 >
                   <p
-                    className='text-sm font-medium cursor-pointer'
+                    className='cursor-pointer text-sm font-medium'
                     onClick={() => markAsRead(notification?.uuid)}
                   >
                     {notification?.title}
                   </p>
-                  {notification?.message && (
+                  {notification?.message ? (
                     <p className='text-xs text-gray-600'>
                       {notification?.message}
                     </p>
-                  )}
+                  ) : null}
                   <p className='mt-1 text-[11px] text-gray-400'>
                     {formatNotificationTimestamp(
                       notification?.createdAt || notification?.updatedAt,
                     )}
                   </p>
                   <button
+                    type='button'
                     onClick={() => deleteNotification(notification?.uuid)}
-                    className='text-xs text-red-500 mt-1'
+                    className='mt-1 text-xs text-red-500'
                   >
                     Delete
                   </button>
@@ -354,4 +373,3 @@ const NotificationDropdown = ({ className }) => {
 }
 
 export default NotificationDropdown
-

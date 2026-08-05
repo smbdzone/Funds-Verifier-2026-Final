@@ -6,6 +6,7 @@ import ListingMapSection from '@/components/ListingsForm/ListingMapSection'
 
 /**
  * Off-plan-style left column: thumbs + preview, with Location map under the image.
+ * Watermark is burned into listing photos on upload (no CSS overlay here).
  */
 export default function ListingDetailMediaColumn({
   media = [],

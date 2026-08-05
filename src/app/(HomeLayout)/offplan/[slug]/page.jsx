@@ -8,6 +8,9 @@ import {
   fetchOffPlanListingBySlug,
 } from '@/libs/offPlanListings'
 
+/** View counts on related cards must not be frozen by the Full Route Cache. */
+export const dynamic = 'force-dynamic'
+
 export async function generateMetadata({ params }) {
   const { slug } = await params
   const listing = await fetchOffPlanListingBySlug(slug)
@@ -59,7 +62,7 @@ export default async function OffPlanDetailPage({ params }) {
         <OffPlanProductView data={listing} />
 
         {relatedListings.length ? (
-          <div className='theme-container pb-10'>
+          <div className='theme-container mt-8 border-t border-[#d0d5db] pb-10 pt-10 sm:mt-12 sm:pt-12'>
             <h2 className='mb-6 text-left text-lg font-semibold text-blue md:text-2xl'>
               Related Off-Plan Properties
             </h2>

@@ -227,7 +227,7 @@ export default function CheckoutView({
             <button
               className={`flex-grow lg:w-[264px] lg:h-[50px] px-4 py-2 text-base flex justify-center items-center text-white btn-gradient border-0 focus:outline-none font-medium rounded `}
             >
-              Additional Information
+              Amenities
             </button>
 
             <>
@@ -249,7 +249,7 @@ export default function CheckoutView({
                 </div>
               ) : (
                 <div className='w-full flex items-center justify-center text-prussianBlue text-xl py-5'>
-                  No Additional Facilities!
+                  No amenities listed.
                 </div>
               )}
             </>

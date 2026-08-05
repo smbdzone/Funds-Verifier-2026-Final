@@ -551,7 +551,7 @@ const ListingsProvider = ({ children }) => {
     const validFiles = []
     const checkFile = async (file) => {
       let workingFile = file
-      // Oversized images are compressed locally (or via API if configured).
+      // Pre-compress oversized originals before watermarking.
       if (file.size > LISTING_IMAGE_MAX_BYTES) {
         try {
           workingFile = await ensureWithinSize(file, LISTING_IMAGE_MAX_BYTES)
@@ -568,6 +568,7 @@ const ListingsProvider = ({ children }) => {
           const img = new window.Image()
           img.onload = async () => {
             try {
+              // Watermark + hard compress to <= 2MB (JPEG).
               let stamped = await applyListingWatermark(workingFile, {
                 position: 'center',
                 maxBytes: LISTING_IMAGE_MAX_BYTES,
@@ -578,11 +579,16 @@ const ListingsProvider = ({ children }) => {
                   LISTING_IMAGE_MAX_BYTES,
                 )
               }
+              if (stamped.size > LISTING_IMAGE_MAX_BYTES) {
+                throw new Error(
+                  `Image must be under ${LISTING_IMAGE_MAX_BYTES / (1024 * 1024)}MB after watermark`,
+                )
+              }
               resolve(stamped)
             } catch (err) {
               toast.error(
                 err?.message ||
-                `Could not prepare ${workingFile.name} for upload`,
+                  `Could not prepare ${workingFile.name} for upload`,
               )
               resolve(null)
             }
@@ -591,13 +597,13 @@ const ListingsProvider = ({ children }) => {
             toast.error(
               `The file ${workingFile.name} could not be loaded as an image`,
             )
-            resolve(null) // Invalid file
+            resolve(null)
           }
           img.src = event.target.result
         }
         reader.onerror = () => {
           alert(`The file ${workingFile.name} could not be read`)
-          resolve(null) // Error reading file
+          resolve(null)
         }
         reader.readAsDataURL(workingFile)
       })
@@ -625,23 +631,19 @@ const ListingsProvider = ({ children }) => {
         setImages((prevImages) => [...prevImages, ...validFiles])
 
         try {
-          const imageIDs = await handleImageUpload(validFiles)
+          const existingAssetId =
+            formData?.pictures?._id ||
+            (typeof formData?.pictures === 'string' ? formData.pictures : null)
 
-          setFormData((prevFormData) => {
-            const prevImages = Array.isArray(prevFormData.pictures?.images)
-              ? prevFormData.pictures.images
-              : []
-            const nextImages = Array.isArray(imageIDs?.images)
-              ? imageIDs.images
-              : []
-            return {
-              ...prevFormData,
-              pictures: {
-                ...(imageIDs || {}),
-                images: [...prevImages, ...nextImages],
-              },
-            }
+          const imageIDs = await handleImageUpload(validFiles, {
+            appendToId: existingAssetId || undefined,
           })
+
+          setFormData((prevFormData) => ({
+            ...prevFormData,
+            // Always keep the full ImageAsset from the API (includes every image).
+            pictures: imageIDs,
+          }))
         } catch (error) {
           toast.error(error?.message || 'Image upload failed. Please try again.')
           setImages((prevImages) =>
