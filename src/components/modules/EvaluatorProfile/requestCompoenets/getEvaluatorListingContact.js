@@ -1,6 +1,16 @@
 import { getUserDisplayName } from '@/utils/auth/userDisplayName'
 import { cleanNameSeparators } from '@/utils/auth/parseUaePassName'
 
+function asText(value) {
+  if (value == null) return ''
+  if (typeof value === 'object') {
+    return String(
+      value.fullName || value.name || value.email || value.phone || '',
+    ).trim()
+  }
+  return String(value).trim()
+}
+
 /**
  * Asset-holder contact shown on evaluator evaluation forms.
  * Name is cleaned of commas / dashes (UAE Pass style separators).
@@ -18,19 +28,23 @@ export function getEvaluatorListingContact(listing) {
 
   const rawName =
     getUserDisplayName(holder) ||
-    listing.sellerName ||
-    holder?.name ||
+    asText(listing.sellerName) ||
+    asText(holder?.name) ||
+    asText(holder?.displayName) ||
     ''
 
   const fullName = cleanNameSeparators(rawName)
-  const email = String(holder?.email || listing.sellerEmail || '').trim()
-  const phoneNumber = String(
+  const email = asText(
+    holder?.email || listing.sellerEmail || listing.email || '',
+  )
+  const phoneNumber = asText(
     listing.phoneNumber ||
     holder?.phoneNumber ||
     holder?.phone ||
     holder?.mobile ||
+    listing.phone ||
     '',
-  ).trim()
+  )
 
   return { fullName, email, phoneNumber }
 }

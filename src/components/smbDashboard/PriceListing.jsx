@@ -143,13 +143,12 @@ const PriceListing = () => {
     setIsBedroomsDropdownOpen(false)
   }
   useEffect(() => {
-    // TEMP OPEN: still load shared price list when session is missing.
-    if (loading) return
+    if (loading || !user?.uuid) return
     fetchData()
   }, [user?.uuid, user?.role, loading])
 
   const fetchData = async () => {
-    const ownerUuid = resolvePriceOwnerUuid(user) || EVALUATOR_SHARED_PRICE_UUID
+    const ownerUuid = resolvePriceOwnerUuid(user)
     if (!ownerUuid) return
 
     setIsFetchingPrices(true)
@@ -433,6 +432,15 @@ const PriceListing = () => {
                       className='py-8 px-2 text-center text-gray-500'
                     >
                       Loading prices…
+                    </td>
+                  </tr>
+                ) : !user?.uuid ? (
+                  <tr>
+                    <td
+                      colSpan={6}
+                      className='py-8 px-2 text-center text-gray-500'
+                    >
+                      Sign in again to load the evaluation price list.
                     </td>
                   </tr>
                 ) : fetchError ? (

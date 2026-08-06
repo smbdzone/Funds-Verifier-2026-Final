@@ -4,8 +4,7 @@ import { UserProvider } from '../../../context/UserContext'
 
 import EvaluatorHeader from '@/components/Layout/EvaluatorHeader'
 import Sidebar from '@/components/Sidebar/Sidebar'
-// TEMP OPEN: RequireAuth disabled until user says to close it again.
-// import RequireAuth from '@/components/auth/RequireAuth'
+import RequireAuth from '@/components/auth/RequireAuth'
 import { Suspense, useState } from 'react'
 
 const layout = ({ children }) => {
@@ -16,31 +15,32 @@ const layout = ({ children }) => {
   }
   return (
     <UserProvider>
-      {/* TEMP OPEN: no RequireAuth wrapper */}
-      <div className=''>
-        {/* Header */}
-        <EvaluatorHeader toggleSidebar={toggleSidebar} />
+      <RequireAuth roles={['Evaluator']} loginPath='/login'>
+        <div className=''>
+          {/* Header */}
+          <EvaluatorHeader toggleSidebar={toggleSidebar} />
 
-        {/* Sidebar */}
-        <div className='flex w-full theme-container'>
-          <div className={`xl:block hidden`}>
-            <Sidebar />
+          {/* Sidebar */}
+          <div className='flex w-full theme-container'>
+            <div className={`xl:block hidden`}>
+              <Sidebar />
+            </div>
+
+            {/* Main Content */}
+            <Suspense fallback={<p className='text-center'>Loading...</p>}>
+              <main className='flex-1 w-full p-3 sm:p-5'>{children}</main>
+            </Suspense>
           </div>
 
-          {/* Main Content */}
-          <Suspense fallback={<p className='text-center'>Loading...</p>}>
-            <main className='flex-1 w-full p-3 sm:p-5'>{children}</main>
-          </Suspense>
+          {/* Overlay for small screens */}
+          {isSidebarOpen && (
+            <div
+              className='fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden'
+              onClick={toggleSidebar}
+            ></div>
+          )}
         </div>
-
-        {/* Overlay for small screens */}
-        {isSidebarOpen && (
-          <div
-            className='fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden'
-            onClick={toggleSidebar}
-          ></div>
-        )}
-      </div>
+      </RequireAuth>
     </UserProvider>
   )
 }
