@@ -64,6 +64,8 @@ const PriceListing = () => {
   const [isOpen, setIsOpen] = useState(false)
   const [deleteTargetId, setDeleteTargetId] = useState(null)
   const { user, loading } = useProfile()
+  const [fetchError, setFetchError] = useState('')
+  const [isFetchingPrices, setIsFetchingPrices] = useState(false)
   const toggleBedroomsDropdown = () =>
     setIsBedroomsDropdownOpen(!isBedroomsDropdownOpen)
 
@@ -141,23 +143,29 @@ const PriceListing = () => {
     setIsBedroomsDropdownOpen(false)
   }
   useEffect(() => {
-    if (loading || !user?.uuid) return
+    // TEMP OPEN: still load shared price list when session is missing.
+    if (loading) return
     fetchData()
   }, [user?.uuid, user?.role, loading])
 
   const fetchData = async () => {
-    const ownerUuid = resolvePriceOwnerUuid(user)
+    const ownerUuid = resolvePriceOwnerUuid(user) || EVALUATOR_SHARED_PRICE_UUID
     if (!ownerUuid) return
 
+    setIsFetchingPrices(true)
+    setFetchError('')
     try {
       const res = await customAxios.get(`/price/all/${ownerUuid}`)
       setData(Array.isArray(res?.data) ? res.data : [])
     } catch (error) {
       console.error('Error fetching price data:', error?.message)
-      toast.error(
-        error?.response?.data?.message || 'Could not load saved prices',
-      )
+      const message =
+        error?.response?.data?.message || 'Could not load saved prices'
+      setFetchError(message)
+      toast.error(message)
       setData([])
+    } finally {
+      setIsFetchingPrices(false)
     }
   }
 
@@ -300,7 +308,7 @@ const PriceListing = () => {
                     >
                       {assetType
                         ? assetUpdated?.find((a) => a.value === assetType)
-                            ?.label || assetType
+                          ?.label || assetType
                         : 'Select'}
                       <span className='rotate-90 mt-1'>
                         <SlArrowRight className='text-black/120' />
@@ -418,7 +426,25 @@ const PriceListing = () => {
                 </tr>
               </thead>
               <tbody>
-                {!data?.length ? (
+                {loading || isFetchingPrices ? (
+                  <tr>
+                    <td
+                      colSpan={6}
+                      className='py-8 px-2 text-center text-gray-500'
+                    >
+                      Loading prices…
+                    </td>
+                  </tr>
+                ) : fetchError ? (
+                  <tr>
+                    <td
+                      colSpan={6}
+                      className='py-8 px-2 text-center text-red-600'
+                    >
+                      {fetchError}
+                    </td>
+                  </tr>
+                ) : !data?.length ? (
                   <tr>
                     <td
                       colSpan={6}

@@ -16,6 +16,7 @@ import {
   getListingPriceForEvaluator,
   initFormattedPrice,
   initPropertyDetailsDraft,
+  normalizeListingForEvaluator,
 } from './requestCompoenets/evaluatorPriceHandlers'
 import { handleFileUpload } from '@/libs/uploadAsset'
 import Loader from './requestCompoenets/Loader'
@@ -107,34 +108,33 @@ export const RequestTab = () => {
 
   const fetchPropertyData = async () => {
     try {
-      const response = await customAxios.get(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/property/${propertyId}`,
-      )
-      setProperty(response.data)
-      fetchPrice(response?.data.propertyType, response?.data?.bedrooms)
+      const response = await customAxios.get(`/property/${propertyId}`)
+      const listing = normalizeListingForEvaluator(response.data)
+      setProperty(listing)
+      fetchPrice(listing.propertyType, listing?.bedrooms)
       // Initialize states if available
-      setRoi(response?.data.roi != null ? String(response.data.roi) : '')
+      setRoi(listing?.roi != null ? String(listing.roi) : '')
       initFormattedPrice(
-        response.data.evaluationPrices,
+        listing.evaluationPrices,
         setEvaluationPrice,
         setFormattedPrice,
       )
       initFormattedPrice(
-        getListingPriceForEvaluator(response.data),
+        getListingPriceForEvaluator(listing),
         setListingPrice,
         setFormattedListingPrice,
       )
-      setDetailsDraft(initPropertyDetailsDraft(response.data))
-      setFeedback(response.data.feedback || '')
+      setDetailsDraft(initPropertyDetailsDraft(listing))
+      setFeedback(listing.feedback || '')
       setCertificateDate(
-        formatDateForInput(response.data.evaluationCertificateDate),
+        formatDateForInput(listing.evaluationCertificateDate),
       )
-      if (response.data.evaluationCertificate) {
-        setFileUrl(response.data.evaluationCertificate)
+      if (listing.evaluationCertificate) {
+        setFileUrl(listing.evaluationCertificate)
       }
-      if (response.data.requestDocument) {
+      if (listing.requestDocument) {
         setRequestDocument(
-          normalizeRequestDocuments(response.data.requestDocument),
+          normalizeRequestDocuments(listing.requestDocument),
         )
       }
     } catch (error) {
@@ -146,9 +146,7 @@ export const RequestTab = () => {
   const refreshRequestDocuments = async () => {
     if (!propertyId) return
     try {
-      const response = await customAxios.get(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/property/${propertyId}`,
-      )
+      const response = await customAxios.get(`/property/${propertyId}`)
       setRequestDocument(
         normalizeRequestDocuments(response.data?.requestDocument),
       )
@@ -165,7 +163,7 @@ export const RequestTab = () => {
   const [showTextArea, setShowTextArea] = useState(false)
   const [editIndex, setEditIndex] = useState(null)
   const [editText, setEditText] = useState('')
-  const { user } = useProfile()
+  const { user, loading } = useProfile()
 
   const handleAddDocument = () => {
     if (newDocument.trim() === '') {
@@ -235,10 +233,19 @@ export const RequestTab = () => {
   }
 
   useEffect(() => {
-    if (propertyId) {
-      fetchPropertyData()
-    }
-  }, [propertyId])
+    // Wait for session warm-up so we get the privileged listing payload
+    // (phone/email/docs), not the public stripped response.
+    if (!propertyId || loading) return
+    fetchPropertyData()
+  }, [propertyId, loading, user?.uuid])
+
+  // If property loaded but draft stayed empty, re-seed from property.
+  useEffect(() => {
+    if (!property?.uuid && !property?._id) return
+    if (detailsDraft?.title) return
+    if (!property.title) return
+    setDetailsDraft(initPropertyDetailsDraft(property))
+  }, [property, detailsDraft?.title])
 
   const handleApprove = async () => {
     if (!uploadedFileId && !fileName && property?.status !== 1) {

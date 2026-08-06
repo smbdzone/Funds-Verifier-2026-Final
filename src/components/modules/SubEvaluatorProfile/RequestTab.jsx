@@ -17,6 +17,7 @@ import {
   getListingPriceForEvaluator,
   initFormattedPrice,
   initPropertyDetailsDraft,
+  normalizeListingForEvaluator,
 } from '../EvaluatorProfile/requestCompoenets/evaluatorPriceHandlers'
 import { handleFileUpload } from '@/libs/uploadAsset'
 import Loader from '../EvaluatorProfile/requestCompoenets/Loader'
@@ -81,34 +82,33 @@ export const RequestTab = () => {
 
   const fetchPropertyData = async () => {
     try {
-      const response = await customAxios.get(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/property/${propertyId}`
-      )
-      setProperty(response.data)
-      fetchPrice(response?.data.propertyType, response?.data?.bedrooms)
+      const response = await customAxios.get(`/property/${propertyId}`)
+      const listing = normalizeListingForEvaluator(response.data)
+      setProperty(listing)
+      fetchPrice(listing.propertyType, listing?.bedrooms)
       // Initialize ROI state if available
-      setRoi(response?.data.roi != null ? String(response.data.roi) : '')
+      setRoi(listing?.roi != null ? String(listing.roi) : '')
       initFormattedPrice(
-        response.data.evaluationPrices,
+        listing.evaluationPrices,
         setEvaluationPrice,
         setFormattedPrice,
       )
       initFormattedPrice(
-        getListingPriceForEvaluator(response.data),
+        getListingPriceForEvaluator(listing),
         setListingPrice,
         setFormattedListingPrice,
       )
-      setDetailsDraft(initPropertyDetailsDraft(response.data))
-      setFeedback(response.data.feedback || '')
+      setDetailsDraft(initPropertyDetailsDraft(listing))
+      setFeedback(listing.feedback || '')
       setCertificateDate(
-        formatDateForInput(response.data.evaluationCertificateDate),
+        formatDateForInput(listing.evaluationCertificateDate),
       )
-      if (response.data.evaluationCertificate) {
-        setFileUrl(response.data.evaluationCertificate) // Update URL from API
+      if (listing.evaluationCertificate) {
+        setFileUrl(listing.evaluationCertificate) // Update URL from API
       }
-      if (response.data.requestDocument) {
+      if (listing.requestDocument) {
         setRequestDocument(
-          normalizeRequestDocuments(response.data.requestDocument),
+          normalizeRequestDocuments(listing.requestDocument),
         )
       }
     } catch (error) {
@@ -120,9 +120,7 @@ export const RequestTab = () => {
   const refreshRequestDocuments = async () => {
     if (!propertyId) return
     try {
-      const response = await customAxios.get(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/property/${propertyId}`,
-      )
+      const response = await customAxios.get(`/property/${propertyId}`)
       setRequestDocument(
         normalizeRequestDocuments(response.data?.requestDocument),
       )
@@ -205,10 +203,17 @@ export const RequestTab = () => {
   }
 
   useEffect(() => {
-    if (propertyId) {
-      fetchPropertyData()
-    }
+    if (!propertyId) return
+    fetchPropertyData()
   }, [propertyId])
+
+  // If property loaded but draft stayed empty, re-seed from property.
+  useEffect(() => {
+    if (!property?.uuid && !property?._id) return
+    if (detailsDraft?.title) return
+    if (!property.title) return
+    setDetailsDraft(initPropertyDetailsDraft(property))
+  }, [property, detailsDraft?.title])
 
   const handleApprove = async (fileName) => {
     if (property?.status !== 1 && !certificateDate) {

@@ -1,45 +1,48 @@
 /* eslint-disable react-hooks/rules-of-hooks */
-"use client";
-import { UserProvider } from "../../../context/UserContext";
+'use client'
+import { UserProvider } from '../../../context/UserContext'
 
-import EvaluatorHeader from "@/components/Layout/EvaluatorHeader";
-import Sidebar from "@/components/Sidebar/Sidebar";
-import { Suspense, useState } from "react";
+import EvaluatorHeader from '@/components/Layout/EvaluatorHeader'
+import Sidebar from '@/components/Sidebar/Sidebar'
+// TEMP OPEN: RequireAuth disabled until user says to close it again.
+// import RequireAuth from '@/components/auth/RequireAuth'
+import { Suspense, useState } from 'react'
 
 const layout = ({ children }) => {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
 
   const toggleSidebar = () => {
-    setIsSidebarOpen((prev) => !prev);
-  };
+    setIsSidebarOpen((prev) => !prev)
+  }
   return (
     <UserProvider>
-      <div className="">
+      {/* TEMP OPEN: no RequireAuth wrapper */}
+      <div className=''>
         {/* Header */}
         <EvaluatorHeader toggleSidebar={toggleSidebar} />
 
         {/* Sidebar */}
-        <div className="flex w-full theme-container">
+        <div className='flex w-full theme-container'>
           <div className={`xl:block hidden`}>
             <Sidebar />
           </div>
 
           {/* Main Content */}
-          <Suspense fallback={<p className="text-center">Loading...</p>}>
-            <main className="flex-1 w-full p-3 sm:p-5">{children}</main>
+          <Suspense fallback={<p className='text-center'>Loading...</p>}>
+            <main className='flex-1 w-full p-3 sm:p-5'>{children}</main>
           </Suspense>
         </div>
 
         {/* Overlay for small screens */}
         {isSidebarOpen && (
           <div
-            className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+            className='fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden'
             onClick={toggleSidebar}
           ></div>
         )}
       </div>
     </UserProvider>
-  );
-};
+  )
+}
 
-export default layout;
+export default layout

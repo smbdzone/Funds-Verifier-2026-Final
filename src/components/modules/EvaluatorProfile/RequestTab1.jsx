@@ -106,31 +106,32 @@ export const RequestTab1 = () => {
   const fetchPropertyData = async () => {
     try {
       const response = await customAxios.get(`/car/${propertyId}`)
-      setProperty(response.data)
-      fetchPrice(response?.data.carType)
+      const listing = response.data || {}
+      setProperty(listing)
+      fetchPrice(listing.carType)
 
       initFormattedPrice(
-        response.data.evaluationPrices,
+        listing.evaluationPrices,
         setEvaluationPrice,
         setFormattedPrice,
       )
       initFormattedPrice(
-        response.data.price,
+        listing.price,
         setListingPrice,
         setFormattedListingPrice,
       )
-      setRoi(response.data.roi != null ? String(response.data.roi) : '')
-      setWarranty(response.data.warranty || '')
+      setRoi(listing.roi != null ? String(listing.roi) : '')
+      setWarranty(listing.warranty || '')
       setCertificateDate(
-        formatDateForInput(response.data.evaluationCertificateDate),
+        formatDateForInput(listing.evaluationCertificateDate),
       )
 
-      if (response.data.evaluationCertificate) {
-        setFileUrl(response.data.evaluationCertificate) // Update URL from API
+      if (listing.evaluationCertificate) {
+        setFileUrl(listing.evaluationCertificate) // Update URL from API
       }
-      if (response.data.requestDocument) {
+      if (listing.requestDocument) {
         setRequestDocument(
-          normalizeRequestDocuments(response.data.requestDocument),
+          normalizeRequestDocuments(listing.requestDocument),
         )
       }
     } catch (error) {

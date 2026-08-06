@@ -9,6 +9,7 @@ import {
   occupancyStatusOptions,
 } from '@/constants/listing-data'
 import { getListingAmenities } from '@/libs/listingAmenities'
+import { getListingSizeUnitForEvaluator } from './evaluatorPriceHandlers'
 
 const editInputClass =
   'focus:outline-none mt-1 block w-full px-3 py-3 rounded-md bg-white text-gray-800 text-sm sm:text-base border border-[#8d7c3b]'
@@ -25,6 +26,32 @@ const formatWithCommas = (raw) => {
   return new Intl.NumberFormat('en-US').format(digits)
 }
 
+/** Prefer non-empty draft values; empty string must fall through to property. */
+const pickValue = (...candidates) => {
+  for (const value of candidates) {
+    if (value == null) continue
+    if (typeof value === 'string' && value.trim() === '') continue
+    return value
+  }
+  return ''
+}
+
+const isLeaseAsset = (property = {}) => {
+  const assetType = String(property.assetType || '').toLowerCase()
+  return (
+    assetType.includes('lease') ||
+    String(property.propertyForLease || '').toLowerCase() === 'yes'
+  )
+}
+
+const isFurnishedValue = (draft, property) => {
+  if (draft?.isFurnished != null) return Boolean(draft.isFurnished)
+  const raw = property?.isFurnished
+  if (raw === true || raw === 'Yes' || raw === 'yes') return true
+  const text = String(raw || '').toLowerCase()
+  return text.includes('furnished') && !text.includes('unfurnished')
+}
+
 /**
  * Editable property fields for evaluation (amenities included).
  * Locked contact fields (full name, email, phone) stay outside this component.
@@ -38,7 +65,7 @@ export default function EvaluatorPropertyEditableDetails({
 }) {
   const selectedAmenities = useMemo(() => {
     const fromDraft = Array.isArray(draft?.facilities) ? draft.facilities : null
-    if (fromDraft) return fromDraft
+    if (fromDraft?.length) return fromDraft
     return getListingAmenities(property)
   }, [draft?.facilities, property])
 
@@ -56,14 +83,34 @@ export default function EvaluatorPropertyEditableDetails({
     setField('facilities', next)
   }
 
-  const isLease = property.assetType === 'Property for lease'
-  const bedroomValue = String(draft?.bedrooms ?? property.bedrooms ?? '')
+  const isLease = isLeaseAsset(property)
+  const sizeUnit = getListingSizeUnitForEvaluator(
+    draft?.sizeUnit || draft?.sizeType || property,
+  )
+  const sizeFieldKey = sizeUnit === 'SQM' ? 'sizeSQM' : 'sizeSQFT'
+  const sizeValue = String(
+    pickValue(
+      draft?.[sizeFieldKey],
+      sizeUnit === 'SQM' ? property.sizeSQM : property.sizeSQFT,
+      sizeUnit === 'SQM' ? property.sizeSQMFrom : property.sizeSQFTFrom,
+    ),
+  )
+  const bedroomValue = String(pickValue(draft?.bedrooms, property.bedrooms))
   const bedroomChoices = useMemo(() => {
     if (bedroomValue && !bedroomsOptions.includes(bedroomValue)) {
       return [bedroomValue, ...bedroomsOptions]
     }
     return bedroomsOptions
   }, [bedroomValue])
+
+  const leaseValue = String(
+    pickValue(
+      draft?.leaseNumberofCheques,
+      draft?.lease,
+      property.leaseNumberofCheques,
+      property.lease,
+    ),
+  )
 
   return (
     <section className='mb-6 rounded-lg border border-[#8d7c3b]/40 bg-[#faf8f3] p-4 sm:p-5'>
@@ -77,8 +124,28 @@ export default function EvaluatorPropertyEditableDetails({
           <input
             type='text'
             className={editInputClass}
-            value={draft?.title ?? property.title ?? ''}
+            value={pickValue(draft?.title, property.title)}
             onChange={(e) => setField('title', e.target.value)}
+          />
+        </div>
+
+        <div>
+          <label className={labelClass}>Asset Type</label>
+          <input
+            type='text'
+            className={`${editInputClass} bg-gray-50`}
+            value={pickValue(draft?.assetType, property.assetType)}
+            readOnly
+          />
+        </div>
+
+        <div>
+          <label className={labelClass}>Property Type</label>
+          <input
+            type='text'
+            className={editInputClass}
+            value={pickValue(draft?.propertyType, property.propertyType)}
+            onChange={(e) => setField('propertyType', e.target.value)}
           />
         </div>
 
@@ -88,7 +155,9 @@ export default function EvaluatorPropertyEditableDetails({
             type='text'
             inputMode='numeric'
             className={editInputClass}
-            value={formatWithCommas(draft?.price ?? property.price ?? '')}
+            value={formatWithCommas(
+              pickValue(draft?.price, property.price, property.priceFrom),
+            )}
             onChange={(e) => {
               const raw = e.target.value.replace(/[^\d]/g, '')
               setField('price', raw)
@@ -117,7 +186,7 @@ export default function EvaluatorPropertyEditableDetails({
           <label className={labelClass}>Bathrooms</label>
           <select
             className={editInputClass}
-            value={String(draft?.bathrooms ?? property.bathrooms ?? '')}
+            value={String(pickValue(draft?.bathrooms, property.bathrooms))}
             onChange={(e) => setField('bathrooms', e.target.value)}
           >
             <option value=''>Select bathrooms</option>
@@ -134,7 +203,7 @@ export default function EvaluatorPropertyEditableDetails({
           <input
             type='text'
             className={editInputClass}
-            value={draft?.developer ?? property.developer ?? ''}
+            value={pickValue(draft?.developer, property.developer)}
             onChange={(e) => setField('developer', e.target.value)}
           />
         </div>
@@ -143,17 +212,7 @@ export default function EvaluatorPropertyEditableDetails({
           <label className={labelClass}>Is it furnished</label>
           <select
             className={editInputClass}
-            value={
-              draft?.isFurnished != null
-                ? draft.isFurnished
-                  ? 'Yes'
-                  : 'No'
-                : property.isFurnished === true ||
-                    property.isFurnished === 'Yes' ||
-                    property.isFurnished === 'yes'
-                  ? 'Yes'
-                  : 'No'
-            }
+            value={isFurnishedValue(draft, property) ? 'Yes' : 'No'}
             onChange={(e) =>
               setField('isFurnished', e.target.value === 'Yes')
             }
@@ -170,9 +229,7 @@ export default function EvaluatorPropertyEditableDetails({
           <label className={labelClass}>Occupancy Status</label>
           <select
             className={editInputClass}
-            value={
-              draft?.occupancyStatus ?? property.occupancyStatus ?? ''
-            }
+            value={pickValue(draft?.occupancyStatus, property.occupancyStatus)}
             onChange={(e) => setField('occupancyStatus', e.target.value)}
           >
             <option value=''>Select status</option>
@@ -188,7 +245,7 @@ export default function EvaluatorPropertyEditableDetails({
           <label className={labelClass}>Listing</label>
           <select
             className={editInputClass}
-            value={draft?.listing ?? property.listing ?? ''}
+            value={pickValue(draft?.listing, property.listing)}
             onChange={(e) => setField('listing', e.target.value)}
           >
             <option value=''>Select listing</option>
@@ -206,23 +263,86 @@ export default function EvaluatorPropertyEditableDetails({
             <input
               type='text'
               className={editInputClass}
-              value={draft?.lease ?? property.lease ?? ''}
-              onChange={(e) => setField('lease', e.target.value)}
+              value={leaseValue}
+              onChange={(e) => {
+                const raw = e.target.value.replace(/[^\d]/g, '')
+                onDraftChange?.({
+                  ...(draft || {}),
+                  lease: raw,
+                  leaseNumberofCheques: raw,
+                })
+              }}
             />
           </div>
         ) : null}
 
         <div>
-          <label className={labelClass}>Size (SQFT)</label>
+          <label className={labelClass}>Size ({sizeUnit})</label>
           <input
             type='text'
             inputMode='numeric'
             className={editInputClass}
-            value={draft?.sizeSQFT ?? property.sizeSQFT ?? ''}
+            value={sizeValue}
+            placeholder={sizeUnit === 'SQM' ? 'Size in SQM' : 'Size in SQFT'}
             onChange={(e) => {
               const raw = e.target.value.replace(/[^\d.]/g, '')
-              setField('sizeSQFT', raw)
+              onDraftChange?.({
+                ...(draft || {}),
+                [sizeFieldKey]: raw,
+                sizeUnit,
+                sizeType: sizeUnit,
+              })
             }}
+          />
+        </div>
+
+        <div>
+          <label className={labelClass}>Country</label>
+          <input
+            type='text'
+            className={editInputClass}
+            value={pickValue(draft?.country, property.country)}
+            onChange={(e) => setField('country', e.target.value)}
+          />
+        </div>
+
+        <div>
+          <label className={labelClass}>City</label>
+          <input
+            type='text'
+            className={editInputClass}
+            value={pickValue(draft?.city, property.city)}
+            onChange={(e) => setField('city', e.target.value)}
+          />
+        </div>
+
+        <div>
+          <label className={labelClass}>Neighbourhood</label>
+          <input
+            type='text'
+            className={editInputClass}
+            value={pickValue(draft?.neighbourhood, property.neighbourhood)}
+            onChange={(e) => setField('neighbourhood', e.target.value)}
+          />
+        </div>
+
+        <div>
+          <label className={labelClass}>DLD Number</label>
+          <input
+            type='text'
+            className={editInputClass}
+            value={pickValue(draft?.dldNumber, property.dldNumber)}
+            onChange={(e) => setField('dldNumber', e.target.value)}
+          />
+        </div>
+
+        <div className='sm:col-span-2'>
+          <label className={labelClass}>Map URL</label>
+          <input
+            type='text'
+            className={editInputClass}
+            value={pickValue(draft?.mapUrl, property.mapUrl)}
+            onChange={(e) => setField('mapUrl', e.target.value)}
           />
         </div>
       </div>
@@ -232,8 +352,21 @@ export default function EvaluatorPropertyEditableDetails({
         <textarea
           rows={3}
           className={editInputClass}
-          value={draft?.description ?? property.description ?? ''}
+          value={pickValue(draft?.description, property.description)}
           onChange={(e) => setField('description', e.target.value)}
+        />
+      </div>
+
+      <div className='mt-4'>
+        <label className={labelClass}>Additional Description</label>
+        <textarea
+          rows={3}
+          className={editInputClass}
+          value={pickValue(
+            draft?.additionalDescription,
+            property.additionalDescription,
+          )}
+          onChange={(e) => setField('additionalDescription', e.target.value)}
         />
       </div>
 
