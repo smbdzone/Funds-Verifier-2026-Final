@@ -87,7 +87,7 @@ export default async function Page({ params }) {
         </div>
         <BoatView data={boatInfo} />
         {boatData?.products?.length > 0 ? (
-          <div className="theme-container mt-8 border-t border-[#d0d5db] pt-10 sm:mt-12 sm:pt-12">
+          <div className="theme-container mt-8 border-t border-reefGold pt-10 sm:mt-12 sm:pt-12">
             <h1 className="md:text-2xl text-lg mb-6 font-semibold text-left text-blue">
               Related Boats
             </h1>
