@@ -149,7 +149,7 @@ const NotificationDropdown = ({ className }) => {
       setNotifications(previousState)
       toast.error(
         err?.response?.data?.message ||
-          'Failed to delete or notification not found.',
+        'Failed to delete or notification not found.',
       )
     }
   }
@@ -277,7 +277,7 @@ const NotificationDropdown = ({ className }) => {
       >
         <NotificationIcon className={`${className || 'text-dark-blue'}`} />
         {unreadCount > 0 ? (
-          <span className='absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#E82026] px-1 text-[10px] font-semibold leading-none text-white'>
+          <span className='absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#002D4F] px-1 text-[10px] font-semibold leading-none text-white'>
             {unreadCount > 99 ? '99+' : unreadCount}
           </span>
         ) : null}
@@ -296,7 +296,7 @@ const NotificationDropdown = ({ className }) => {
             <div className='flex items-center gap-2'>
               <p className='text-sm font-semibold'>Notifications</p>
               {unreadCount > 0 ? (
-                <span className='rounded-full bg-[#E82026] px-1.5 py-0.5 text-[10px] font-semibold text-white'>
+                <span className='rounded-full bg-[#002D4F] px-1.5 py-0.5 text-[10px] font-semibold text-white'>
                   {unreadCount > 99 ? '99+' : unreadCount}
                 </span>
               ) : null}
@@ -335,9 +335,8 @@ const NotificationDropdown = ({ className }) => {
               notifications.map((notification) => (
                 <div
                   key={notification?.uuid}
-                  className={`mb-2 rounded p-2 ${
-                    notification?.isRead ? '' : 'bg-gray-3'
-                  }`}
+                  className={`mb-2 rounded p-2 ${notification?.isRead ? '' : 'bg-gray-3'
+                    }`}
                 >
                   <p
                     className='cursor-pointer text-sm font-medium'

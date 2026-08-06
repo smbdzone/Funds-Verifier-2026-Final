@@ -18,6 +18,9 @@ import DeleteModal from '../Modals/DeleteModal'
 import { useProfile } from '../../context/UserContext'
 import customAxios from '../../utils/apis/apis'
 
+/** Must match backend EVALUATOR_SHARED_PRICE_UUID */
+const EVALUATOR_SHARED_PRICE_UUID = 'EVALUATOR_SHARED'
+
 function isPositivePrice(value) {
   const num = Number(value)
   return Number.isFinite(num) && num > 0
@@ -31,6 +34,14 @@ function handlePriceInputChange(value, setFormData) {
   const num = Number(value)
   if (!Number.isFinite(num) || num < 0) return
   setFormData((prev) => ({ ...prev, price: value }))
+}
+
+function resolvePriceOwnerUuid(user) {
+  const role = String(user?.role || '')
+    .replace(/[\s-_]/g, '')
+    .toLowerCase()
+  if (role === 'evaluator') return EVALUATOR_SHARED_PRICE_UUID
+  return user?.uuid
 }
 
 const PriceListing = () => {
@@ -132,13 +143,14 @@ const PriceListing = () => {
   useEffect(() => {
     if (loading || !user?.uuid) return
     fetchData()
-  }, [user?.uuid, loading])
+  }, [user?.uuid, user?.role, loading])
 
   const fetchData = async () => {
-    if (!user?.uuid) return
+    const ownerUuid = resolvePriceOwnerUuid(user)
+    if (!ownerUuid) return
 
     try {
-      const res = await customAxios.get(`/price/all/${user.uuid}`)
+      const res = await customAxios.get(`/price/all/${ownerUuid}`)
       setData(Array.isArray(res?.data) ? res.data : [])
     } catch (error) {
       console.error('Error fetching price data:', error?.message)
@@ -178,7 +190,7 @@ const PriceListing = () => {
         try {
           const res = await customAxios.post('/price', {
             ...formData,
-            userUUID: user?.uuid,
+            userUUID: resolvePriceOwnerUuid(user),
           })
 
           setFormData({
@@ -206,7 +218,7 @@ const PriceListing = () => {
             price: formData.price,
             category: formData.category,
             assetType: formData.assetType,
-            userUUID: user?.uuid,
+            userUUID: resolvePriceOwnerUuid(user),
           })
 
           setFormData({
@@ -476,7 +488,7 @@ const PriceListing = () => {
                           handleCloseModal={handleCloseModal}
                           id={item.uuid}
                           fetchData={fetchData}
-                          userUUID={user?.uuid}
+                          userUUID={resolvePriceOwnerUuid(user)}
                         />
                       )}
                     </tr>
