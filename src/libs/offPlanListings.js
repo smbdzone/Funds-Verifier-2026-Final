@@ -15,7 +15,7 @@ import { formatListingLocation } from '@/libs/listingLocationUtils'
 const OFF_PLAN_PLACEHOLDER = '/offplan/image1.svg'
 const OFF_PLAN_ASSET_TYPE = 'Property Off Plan For Sale'
 
-function resolveLayoutImageSrc(field) {
+export function resolveLayoutImageSrc(field) {
   if (!field) return null
   if (typeof field === 'string') {
     return field.startsWith('http') || field.startsWith('/')
@@ -116,6 +116,7 @@ export function mapApiListingToOffPlanCard(listing) {
     bedrooms: listing?.bedrooms,
     bathrooms: listing?.bathrooms,
     sizeUnit: listing?.sizeUnit || listing?.sizeType || 'SQFT',
+    sizeType: listing?.sizeType || listing?.sizeUnit || 'SQFT',
     sizeSQFT: listing?.sizeSQFT,
     sizeSQM: listing?.sizeSQM,
     sizeSQFTFrom: listing?.sizeSQFTFrom ?? listing?.sizeSQFT,

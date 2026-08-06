@@ -9,6 +9,8 @@ import { buildListingPageMetadata } from '@/libs/listingMetadata'
 import { isOffPlanListing } from '@/libs/filterMyListingTab'
 import { cache } from 'react'
 
+export const dynamic = 'force-dynamic'
+
 const GetProductData = cache(async ({ slug }) => {
   try {
     const headers = await getPublicApiHeaders()

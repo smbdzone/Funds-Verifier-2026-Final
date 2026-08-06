@@ -82,7 +82,7 @@ export function getListingCitiesForCountry(countryCityMap, country) {
   return countryCityMap[countryKey] || []
 }
 
-/** Human-readable location: neighbourhood, city, country. */
+/** Human-readable location: neighbourhood, country. */
 export function formatListingLocation(listing) {
   if (!listing || typeof listing !== 'object') return ''
 
@@ -91,12 +91,11 @@ export function formatListingLocation(listing) {
   }
 
   const neighbourhood = String(listing.neighbourhood || '').trim()
-  const city = formatCityLabel(listing.city)
   const country =
     toUnitedArabEmiratesListingCountryName(listing.country) ||
     String(listing.country || '').trim()
 
-  return [neighbourhood, city, country].filter(Boolean).join(', ')
+  return [neighbourhood, country].filter(Boolean).join(', ')
 }
 
 export const UAE_ONLY_COUNTRY_OPTIONS = [LISTING_COUNTRY_UAE_LABEL]

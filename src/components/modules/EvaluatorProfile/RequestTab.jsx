@@ -25,6 +25,7 @@ import { getCookie } from 'cookies-next'
 import customAxios from '../../../utils/apis/apis'
 import EvaluatorListingMedia from './requestCompoenets/EvaluatorListingMedia'
 import EvaluatorDateField from './requestCompoenets/EvaluatorDateField'
+import EvaluatorPriceInput from './requestCompoenets/EvaluatorPriceInput'
 import RequestDocumentsActions from './requestCompoenets/RequestDocumentsActions'
 import { EvaluatorAssetHolderFields } from './requestCompoenets/EvaluatorListingContactFields'
 import {
@@ -52,6 +53,8 @@ export const RequestTab = () => {
   const [requestLoading, setRequestLoading] = useState(false)
   const [listingPrice, setListingPrice] = useState('')
   const [formattedListingPrice, setFormattedListingPrice] = useState('')
+  const [evaluationPrice, setEvaluationPrice] = useState('')
+  const [formattedPrice, setFormattedPrice] = useState('')
   const [detailsDraft, setDetailsDraft] = useState(() => initPropertyDetailsDraft({}))
   const [isSavingDetails, setIsSavingDetails] = useState(false)
   const [isSavingPropertyDetails, setIsSavingPropertyDetails] = useState(false)
@@ -327,16 +330,13 @@ export const RequestTab = () => {
     }
   }
 
-  if (!property) {
+  if (!property?.uuid && !property?._id) {
     return <div>Loading...</div>
   }
 
   const handleOpenDoc = (url, fileName = 'document.pdf') => {
     openListingDocumentInNewTab(url, fileName)
   }
-
-  const [evaluationPrice, setEvaluationPrice] = useState('')
-  const [formattedPrice, setFormattedPrice] = useState('')
 
   const handleEvaluationPrice = (e) => {
     formatNumericInput(e, setEvaluationPrice, setFormattedPrice)

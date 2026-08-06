@@ -12,7 +12,6 @@ import { FaStar } from 'react-icons/fa'
 import { formatCardPrice } from '@/libs/listingPriceDisplay'
 import {
   getListingCardImageSrc,
-  getListingQrScanSrc,
   PLACEHOLDER,
 } from '@/libs/listingCardMedia'
 import { getListingRef } from '@/libs/listingRef'
@@ -22,6 +21,7 @@ import { getProfileImageSrc } from '@/utils/global-functions/global'
 import { HomeListingSliderSkeleton } from '@/components/home/HomeSectionSkeletons'
 import { publicApiFetch } from '@/libs/publicApiClient'
 import ListingCardViewCount from '@/components/shared/ListingCardViewCount'
+import ListingCardQrThumb from '@/components/shared/ListingCardQrThumb'
 
 const APPROVED_CARS_URL = '/car?statusFilter=1&limit=100&sort=-createdAt'
 
@@ -301,16 +301,7 @@ export default function CarSaleSliderStatic() {
                               </div>
                             </div>
                           </div>
-                          {getListingQrScanSrc(carForSale) ? (
-                            <Image
-                              src={getListingQrScanSrc(carForSale)}
-                              width={72}
-                              height={72}
-                              alt='QR code'
-                              className='listing-qr-thumb ml-auto h-[72px] w-[72px] shrink-0 rounded border border-gray-200 bg-white object-contain'
-                              unoptimized
-                            />
-                          ) : null}
+                          <ListingCardQrThumb listing={carForSale} className='ml-auto' />
                         </div>
                       </div>
                       <div className='listing-card-footer'>

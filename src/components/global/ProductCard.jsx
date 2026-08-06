@@ -7,7 +7,6 @@ import {
   getListingWalkthroughUrl,
 } from '@/libs/listingPremiumStatus'
 import ListingSocialShare from '@/components/shared/ListingSocialShare'
-import Modal2 from '../product-modal/modal2'
 import { Pagination, Scrollbar, A11y } from 'swiper/modules'
 import { Swiper, SwiperSlide } from 'swiper/react'
 import 'swiper/css'
@@ -16,19 +15,17 @@ import 'swiper/css/pagination'
 import '@/components/modules/style.css'
 import { formatCardPrice, formatListingCardPrice } from '@/libs/listingPriceDisplay'
 import { swiperCanLoop } from '@/utils/swiperLoop'
-import Open3dModal from '../3dModal/Open3dModal'
-import { formatNumberWithCommas } from '@/utils/global-functions/global'
 import {
   getListingCarouselItems,
-  getListingDocumentSrc,
-  getListingQrScanSrc,
-  getTechnicalReportSrc,
   isListingCarouselPlaceholderSlide,
   PLACEHOLDER,
 } from '@/libs/listingCardMedia'
 import { getListingSharePath } from '@/libs/listingSocialShare'
+import { formatListingLocation } from '@/libs/listingLocationUtils'
 import ListingCarouselNavButton from '@/components/cards/ListingCarouselNavButton'
 import ListingCardViewCount from '@/components/shared/ListingCardViewCount'
+import ListingCardQrThumb from '@/components/shared/ListingCardQrThumb'
+import ListingCardCertificates from '@/components/shared/ListingCardCertificates'
 
 const ProductCard = ({
   type,
@@ -45,42 +42,46 @@ const ProductCard = ({
   if (item?.status !== 1) return
   const {
     title,
-    price,
     evaluationPrices,
     roi,
-    country,
-    technicalReport,
-    evaluationCertificate,
   } = item
 
   const [showROI, setShowROI] = useState(false)
-  const [selectedMedia, setSelectedMedia] = useState(false)
+  const [qrHovered, setQrHovered] = useState(false)
 
   useState(() => {
     if (type === 'property') setShowROI(true)
   })
 
-  const technicalReportSrc = getTechnicalReportSrc(technicalReport)
-  const evaluationCertificateSrc = getListingDocumentSrc(evaluationCertificate)
-  const walkthroughUrl = getListingWalkthroughUrl(item)
-
   const { badge: premiumBadge } = getListingPremiumDisplay(item)
 
   const carouselSlides = getListingCarouselItems(item)
   const listingHref = getListingSharePath({ ...item, type })
+  const locationLabel = formatListingLocation(item)
+  const walkthroughUrl = getListingWalkthroughUrl(item)
+  const detailsVisibleClass = qrHovered
+    ? 'max-h-[480px] opacity-100'
+    : 'max-h-0 opacity-0 pointer-events-none'
 
   return (
     <div
       key={item.uuid}
-      className='relative flex p-3 md:pr-0 flex-col gap-4 xl:gap-5 items-center md:flex-row rounded-[12px] bg-white shadow-xl'
+      className='group relative flex flex-col items-center gap-4 rounded-[12px] bg-white p-3 shadow-xl md:flex-row md:pr-0 xl:gap-5'
     >
-      {premiumBadge && (
-        <button
-          className='z-30 absolute top-2 right-2 border rounded px-1 gradient text-white'
-        >
-          {premiumBadge}
-        </button>
-      )}
+      <div className='absolute right-2 top-2 z-30 flex flex-col items-end gap-1.5'>
+        {premiumBadge ? (
+          <button
+            type='button'
+            className='rounded border px-1 gradient text-white'
+          >
+            {premiumBadge}
+          </button>
+        ) : null}
+        <ListingCardQrThumb
+          listing={item}
+          onHoverChange={setQrHovered}
+        />
+      </div>
       <div className='w-full xl:w-1/2 relative'>
         {carouselSlides.length > 1 ? (
           <ListingCarouselNavButton
@@ -100,7 +101,8 @@ const ProductCard = ({
           modules={[Pagination, Scrollbar, A11y]}
           onSwiper={(swiper) => {
             swiperRefs.current[item.uuid] = swiper
-          }}
+          }
+          }
         >
           {carouselSlides.map((slide, index) => (
             <SwiperSlide key={`slide-${index}-${slide.type}`}>
@@ -157,164 +159,70 @@ const ProductCard = ({
           />
         ) : null}
       </div>
-      <div
-        className={`w-full text-base text-reef-gold`}
-      >
-        <div className='listing-card-meta flex w-full items-start justify-between gap-3'>
-          <div className='min-w-0 flex-1 break-words text-left'>
-            <Link
-              href={listingHref}
-              className='listing-card-title block w-full break-words text-left'
-            >
-              <h2 className='break-words xl:text-xl md:text-lg text-base font-semibold capitalize text-black'>
-                {title}
-              </h2>
-            </Link>
-          </div>
-          {getListingQrScanSrc(item) ? (
-            <Image
-              src={getListingQrScanSrc(item)}
-              width={72}
-              height={72}
-              alt='QR code'
-              className='listing-qr-thumb ml-auto h-[72px] w-[72px] shrink-0 rounded border border-gray-200 bg-white object-contain'
-              unoptimized
-            />
-          ) : null}
-        </div>
-        <div className='w-full flex flex-wrap items-center gap-x-2 my-2'>
-          <p
-            className={`lg:text-base md:text-sm text-xs text-reef-gold`}
+      <div className='flex w-full flex-col gap-2.5 text-base text-reef-gold'>
+        <div className='flex flex-wrap items-center gap-2 text-left'>
+          <Link
+            href={listingHref}
+            className='min-w-0 max-w-full break-words text-left'
           >
-            Selling Price: AED {formatListingCardPrice(item)}
-          </p>
+            <h2 className='break-words text-lg font-semibold capitalize leading-snug text-black md:text-xl xl:text-2xl'>
+              {title}
+            </h2>
+          </Link>
           <ListingCardViewCount listing={item} />
-          <p
-            className={`lg:text-base md:text-sm text-xs text-reef-gold`}
-          >
-            Market Price: AED {formatCardPrice(evaluationPrices)}
-          </p>
-          {showROI && (
-            <p
-              className={`lg:text-base md:text-sm text-xs text-reef-gold`}
-            >
-              ROI: {roi ? roi : 5}%
-            </p>
-          )}
         </div>
-        <div className='flex flex-wrap gap-3 items-center md:mb-3 mb-1'>
-          {attributes?.map((attr, index) => (
-            <div
-              key={index}
-              className='flex w-fit flex-wrap items-center gap-1'
-            >
-              <span className='bg-gradient-to-r from-[#a2913e] to-[#d7c590] rounded-full h-[16px] w-[16px] shrink-0'></span>
-              <span
-                className={`lg:text-base md:text-sm text-xs text-reef-gold`}
-              >
-                {attr}
-              </span>
+
+        <div
+          className={`overflow-hidden transition-all duration-300 ease-out ${detailsVisibleClass}`}
+          aria-hidden={!qrHovered}
+        >
+          <div className='flex flex-col gap-2.5 pb-1'>
+            <div className='flex w-full flex-wrap items-center gap-x-3 gap-y-1'>
+              <p className='text-xs font-semibold text-reef-gold md:text-sm lg:text-base'>
+                Selling Price: AED {formatListingCardPrice(item)}
+              </p>
+              <p className='text-xs font-semibold text-reef-gold md:text-sm lg:text-base'>
+                Market Price: AED {formatCardPrice(evaluationPrices)}
+              </p>
+              {showROI && (
+                <p className='text-xs font-semibold text-reef-gold md:text-sm lg:text-base'>
+                  ROI: {roi ? roi : 5}%
+                </p>
+              )}
             </div>
-          ))}
-        </div>
-        <div className='flex'>
-          <div className='flex md:gap-3 gap-1 items-center mb-3'>
-            <LocationIcon
-              className={` text-reef-gold`}
-            />
-            <p
-              className={`lg:text-base md:mt-0 mt-2 md:text-sm text-xs text-reef-gold`}
-            >
-              {country}
-            </p>
-          </div>
-          <div className='flex justify-center items-center gap-3 ml-3'>
-            {evaluationCertificateSrc ? (
-              <>
-                <div className='bg-[#E0E0E0] p-1 rounded relative group'>
-                  <img
-                    src='/icons/card2.png'
-                    className='w-[23px] h-[23px] cursor-pointer'
-                    alt='Evaluation certificate'
-                    onClick={() => openModal(evaluationCertificate?.uuid)}
-                  />
-                  <div className='absolute w-fit text-nowrap right-0 -top-12 transform -translate-y-1/2 bg-white text-black text-sm p-2 text-center rounded-lg shadow-lg opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-300'>
-                    Evaluation Certificate
-                  </div>
-                </div>
-                <Modal2
-                  isOpen={modalCardId === evaluationCertificate?.uuid}
-                  onClose={closeModal}
-                  file2Url={evaluationCertificateSrc}
-                  downloadFileName={evaluationCertificate?.Certificate?.name}
-                  modalTitle='Evaluation Certificate'
-                />
-              </>
-            ) : (
-              ' '
-            )}
-            {technicalReportSrc ? (
-              <>
-                <div className='bg-[#E0E0E0] p-1 rounded relative group'>
-                  <img
-                    src='/icons/card1.png'
-                    className='w-[23px] h-[23px] cursor-pointer'
-                    alt='Technical report'
-                    onClick={() =>
-                      openModal(`tr-${item?.uuid || technicalReport?.uuid}`)
-                    }
-                  />
-                  <div className='absolute w-fit text-nowrap right-0 -top-12 transform -translate-y-1/2 bg-white text-black text-sm p-2 text-center rounded-lg shadow-lg opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-300'>
-                    Technical Report
-                  </div>
-                </div>
-                <Modal2
-                  isOpen={modalCardId === `tr-${item?.uuid || technicalReport?.uuid}`}
-                  onClose={closeModal}
-                  file2Url={technicalReportSrc}
-                  downloadFileName={
-                    technicalReport?.reportFile?.Certificate?.name ||
-                    'technical-report.pdf'
-                  }
-                  modalTitle='Technical Report'
-                />
-              </>
-            ) : null}
-            {walkthroughUrl ? (
-              <>
+            <div className='flex flex-wrap items-center gap-x-3 gap-y-1.5'>
+              {attributes?.map((attr, index) => (
                 <div
-                  onClick={() => {
-                    setSelectedMedia(true)
-                  }}
-                  className='bg-[#E0E0E0] p-1 rounded relative group'
+                  key={index}
+                  className='flex w-fit flex-wrap items-center gap-1'
                 >
-                  <img
-                    src='/icons/3dicon.png'
-                    className='w-[23px] h-[23px] cursor-pointer'
-                  />
-                  <div className='absolute w-fit text-nowrap right-0 -top-12 transform -translate-y-1/2 bg-white text-black text-sm p-2 text-center rounded-lg shadow-lg opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-300'>
-                    3D Walkthrough
-                  </div>
+                  <span className='h-[16px] w-[16px] shrink-0 rounded-full bg-gradient-to-r from-[#a2913e] to-[#d7c590]'></span>
+                  <span className='text-xs font-normal text-reef-gold/80 md:text-sm lg:text-base'>
+                    {attr}
+                  </span>
                 </div>
-                {selectedMedia && (
-                  <Open3dModal
-                    selectedMedia={selectedMedia}
-                    setSelectedMedia={setSelectedMedia}
-                    link={walkthroughUrl}
-                  />
-                )}
-              </>
-            ) : null}
+              ))}
+            </div>
+            <div className='flex flex-wrap items-center gap-3'>
+              <div className='flex items-center gap-1 md:gap-3'>
+                <LocationIcon className='text-reef-gold/80' />
+                <p className='text-xs font-normal text-reef-gold/80 md:text-sm lg:text-base'>
+                  {locationLabel || '—'}
+                </p>
+              </div>
+              <ListingCardCertificates listing={item} />
+            </div>
+
+            <ListingSocialShare
+              listing={{ ...item, type }}
+              label='Share With:'
+              labelClassName='mb-0 font-normal lg:text-base md:text-sm text-xs text-reef-gold/80'
+              iconClassName='h-5 w-5'
+              iconGapClassName='gap-3'
+              stacked
+            />
           </div>
         </div>
-        <ListingSocialShare
-          listing={{ ...item, type }}
-          label='Share With:'
-          labelClassName='md:mb-3 mb-1 lg:text-base md:text-sm text-xs'
-          iconClassName='h-5 w-5'
-          iconGapClassName='gap-3'
-          stacked
-        />
       </div>
     </div>
   )

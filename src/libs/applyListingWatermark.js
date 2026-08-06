@@ -1,5 +1,5 @@
 /**
- * Burn a light white centered "FUNDS VERIFIER" text watermark onto listing photos.
+ * Burn a centered "FUNDS VERIFIER / VERIFIED LISTING" text watermark onto listing photos.
  * Always outputs JPEG and aggressively compresses until the file is under maxBytes (2MB).
  */
 
@@ -48,27 +48,39 @@ function canvasToJpegFile(canvas, sourceFile, quality) {
 
 /**
  * Centered translucent white text — similar to agency listing watermarks.
+ * Two lines: "FUNDS VERIFIER" over "VERIFIED LISTING".
  */
 export function drawFundsVerifierTextWatermark(ctx, width, height, opts = {}) {
   const title = String(opts.title || 'FUNDS VERIFIER').toUpperCase()
-  const opacity = Number.isFinite(opts.opacity) ? opts.opacity : 0.38
+  const subtitle = String(
+    opts.subtitle == null ? 'VERIFIED LISTING' : opts.subtitle,
+  ).toUpperCase()
+  const opacity = Number.isFinite(opts.opacity) ? opts.opacity : 0.62
 
   const minSide = Math.min(width, height)
   const titleSize = Math.max(18, Math.round(minSide * 0.055))
+  const subtitleSize = Math.max(10, Math.round(titleSize * 0.42))
+  const gap = Math.round(titleSize * 0.45)
+  const blockHeight = titleSize + (subtitle ? gap + subtitleSize : 0)
   const cx = width / 2
-  const cy = height / 2
+  const top = height / 2 - blockHeight / 2
 
   ctx.save()
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
   ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`
-  ctx.shadowColor = 'rgba(0, 0, 0, 0.18)'
-  ctx.shadowBlur = Math.max(2, Math.round(minSide * 0.008))
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.35)'
+  ctx.shadowBlur = Math.max(3, Math.round(minSide * 0.012))
   ctx.shadowOffsetX = 0
   ctx.shadowOffsetY = Math.max(1, Math.round(minSide * 0.002))
 
   ctx.font = `600 ${titleSize}px Georgia, "Times New Roman", Times, serif`
-  ctx.fillText(title, cx, cy)
+  ctx.fillText(title, cx, top + titleSize / 2)
+
+  if (subtitle) {
+    ctx.font = `500 ${subtitleSize}px Georgia, "Times New Roman", Times, serif`
+    ctx.fillText(subtitle, cx, top + titleSize + gap + subtitleSize / 2)
+  }
 
   ctx.restore()
 }
@@ -85,6 +97,8 @@ function drawWatermarkedCanvas(photo, width, height, options = {}) {
   ctx.drawImage(photo, 0, 0, width, height)
   drawFundsVerifierTextWatermark(ctx, width, height, {
     opacity: options.opacity,
+    title: options.title,
+    subtitle: options.subtitle,
   })
   return canvas
 }

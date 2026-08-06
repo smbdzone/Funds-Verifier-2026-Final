@@ -331,6 +331,14 @@ html {
   flex-shrink: 0 !important;
 }
 
+.listing-qr-thumb-lg {
+  width: 96px !important;
+  height: 96px !important;
+  max-width: 96px !important;
+  max-height: 96px !important;
+  min-width: 96px !important;
+}
+
 /* Equal-height listing cards in home/category swipers */
 .listing-cards-swiper.swiper,
 .listing-cards-swiper {

@@ -6,7 +6,6 @@ import { formatCardPrice } from '@/libs/listingPriceDisplay'
 import { ucFirst } from '@/utils'
 import {
   getListingCardImageSrc,
-  getListingQrScanSrc,
   PLACEHOLDER,
 } from '@/libs/listingCardMedia'
 import { getListingRef } from '@/libs/listingRef'
@@ -21,6 +20,7 @@ import arrow_right from '@/assets/vector1.svg'
 import Image from 'next/image'
 import Link from 'next/link'
 import ListingCardViewCount from '@/components/shared/ListingCardViewCount'
+import ListingCardQrThumb from '@/components/shared/ListingCardQrThumb'
 
 export default function PropertyLeaseSlider() {
   const { propertiesForLease } = useAppContext()
@@ -239,16 +239,7 @@ export default function PropertyLeaseSlider() {
                           </div>
                         </div>
                       </div>
-                      {getListingQrScanSrc(propertyForLease) ? (
-                        <Image
-                          src={getListingQrScanSrc(propertyForLease)}
-                          width={72}
-                          height={72}
-                          alt='QR code'
-                          className='listing-qr-thumb ml-auto h-[72px] w-[72px] shrink-0 rounded border border-gray-200 bg-white object-contain'
-                          unoptimized
-                        />
-                      ) : null}
+                      <ListingCardQrThumb listing={propertyForLease} className='ml-auto' />
                     </div>
                   </div>
                   <div className='listing-card-footer'>

@@ -7,6 +7,7 @@ import { FaMapMarkerAlt, FaStar } from 'react-icons/fa'
 import { formatOffPlanPriceRange } from '@/constants/offPlanDummyListings'
 import { getProfileImageSrc } from '@/utils/global-functions/global'
 import ListingCardViewCount from '@/components/shared/ListingCardViewCount'
+import ListingCardQrThumb from '@/components/shared/ListingCardQrThumb'
 
 const OffPlanPropertyCard = ({
   title,
@@ -28,6 +29,9 @@ const OffPlanPropertyCard = ({
   approvalBadge = 'Approved',
   /** Optional analytics for view count ({ clicks, impressions }) */
   analytics = null,
+  slug = '',
+  uuid = '',
+  assetType = 'Property Off Plan For Sale',
 }) => {
   const imageList = useMemo(
     () => (Array.isArray(images) && images.length ? images : ['/assets/images/property.jpg']),
@@ -41,6 +45,10 @@ const OffPlanPropertyCard = ({
   const reviewLabel =
     reviewCount === 1 ? '(1 Review)' : `(${reviewCount || 0} Reviews)`
   const viewListing = {
+    title,
+    slug,
+    uuid,
+    assetType,
     analytics: {
       clicks: Number(analytics?.clicks) || 0,
       impressions: Number(analytics?.impressions) || 0,
@@ -178,18 +186,11 @@ const OffPlanPropertyCard = ({
                 </div>
               </div>
 
-              {qrScanSrc ? (
-                <Image
-                  src={qrScanSrc}
-                  width={72}
-                  height={72}
-                  alt='QR code'
-                  className='listing-qr-thumb ml-auto h-[72px] w-[72px] shrink-0 rounded border border-gray-200 bg-white object-contain'
-                  unoptimized
-                />
-              ) : (
-                <div className='ml-auto h-[72px] w-[72px] shrink-0' aria-hidden='true' />
-              )}
+              <ListingCardQrThumb
+                listing={viewListing}
+                src={qrScanSrc || undefined}
+                className='ml-auto'
+              />
             </div>
           </div>
 

@@ -8,6 +8,8 @@ import { getPublicApiHeaders } from '@/libs/publicApiClient'
 import { buildListingPageMetadata } from '@/libs/listingMetadata'
 import { cache } from 'react'
 
+export const dynamic = 'force-dynamic'
+
 const GetProductData = cache(async ({ slug }) => {
   try {
     const headers = await getPublicApiHeaders()

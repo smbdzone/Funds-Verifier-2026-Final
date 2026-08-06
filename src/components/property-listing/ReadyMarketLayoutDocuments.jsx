@@ -2,14 +2,18 @@
 
 import React from 'react'
 import OffPlanImageUploadBox from '@/components/property-listing/OffPlanImageUploadBox'
+import TitleDeedPdfUpload from '@/components/property-listing/TitleDeedPdfUpload'
 import { OFF_PLAN_LAYOUT_IMAGE_FORMATS_LABEL } from '@/constants/listing-data'
 
 /**
- * Ready-market property docs section: Title Deed, Unit Layout, Floor Plan.
- * Placed before amenities on the property listing page.
+ * Ready-market property docs section: Title Deed (PDF), Unit Layout, Floor Plan.
  */
 const ReadyMarketLayoutDocuments = ({
   media = {},
+  titleDeedFile = null,
+  existingTitleDeed = null,
+  onTitleDeedChange,
+  onTitleDeedRemove,
   onImageChange,
   onImageRemove,
   errors = {},
@@ -22,13 +26,13 @@ const ReadyMarketLayoutDocuments = ({
       </h3>
 
       <div className='flex w-full flex-col gap-5'>
-        <OffPlanImageUploadBox
-          formats={OFF_PLAN_LAYOUT_IMAGE_FORMATS_LABEL}
-          inputId='ready-market-title-deed'
-          label='Upload Title Deed'
-          image={media?.titleDeed}
-          onChange={onImageChange?.('titleDeed')}
-          onRemove={() => onImageRemove?.('titleDeed')}
+        <TitleDeedPdfUpload
+          file={titleDeedFile}
+          existingDoc={
+            titleDeedFile instanceof File ? null : existingTitleDeed
+          }
+          onChange={onTitleDeedChange}
+          onRemove={onTitleDeedRemove}
           disabled={disabled}
           errors={errors.titleDeed}
           errorMessage={errors.titleDeed}

@@ -60,6 +60,7 @@ import customAxios from '../../../../utils/apis/apis'
 import {
   applyPremiumServiceRefs,
   listingMediaRef,
+  listingCertificateRef,
   premiumServiceRequestId,
   stripEmptyObjectIdRefs,
 } from '@/libs/listingMediaRef'
@@ -85,11 +86,15 @@ const dropdownData = {
   numberOfFloors: false,
 }
 
-const emptyOffPlanMedia = () =>
-  READY_MARKET_LAYOUT_MEDIA_KEYS.reduce((acc, key) => {
+const emptyOffPlanMedia = () => {
+  const keys = [
+    ...new Set([...OFF_PLAN_MEDIA_KEYS, ...READY_MARKET_LAYOUT_MEDIA_KEYS]),
+  ]
+  return keys.reduce((acc, key) => {
     acc[key] = null
     return acc
   }, {})
+}
 
 const formatPriceDisplay = (rawValue) => {
   if (!rawValue) return ''
@@ -103,6 +108,7 @@ const Page = () => {
   const [totalPriceTo, setTotalPriceTo] = useState('')
   const [offPlanMedia, setOffPlanMedia] = useState(emptyOffPlanMedia)
   const [agencyAgreementFile, setAgencyAgreementFile] = useState(null)
+  const [titleDeedFile, setTitleDeedFile] = useState(null)
   const { user } = useProfile()
 
   const {
@@ -398,8 +404,6 @@ const Page = () => {
   useEffect(() => {
     if (!id) return
     setOffPlanMedia({
-      titleDeed:
-        formData?.titleDeed?.images?.[0] ?? formData?.titleDeed ?? null,
       unitLayout:
         formData?.unitLayout?.images?.[0] ?? formData?.unitLayout ?? null,
       floorPlan:
@@ -408,14 +412,18 @@ const Page = () => {
     if (formData?.agencyAgreement && !(agencyAgreementFile instanceof File)) {
       setAgencyAgreementFile(null)
     }
+    if (formData?.titleDeed && !(titleDeedFile instanceof File)) {
+      setTitleDeedFile(null)
+    }
   }, [
     id,
     isOffPlan,
-    formData?.titleDeed,
     formData?.unitLayout,
     formData?.floorPlan,
     formData?.agencyAgreement,
+    formData?.titleDeed,
     agencyAgreementFile,
+    titleDeedFile,
   ])
 
   const handleAgencyAgreementChange = (event) => {
@@ -434,6 +442,22 @@ const Page = () => {
     setFormData((prev) => ({ ...prev, agencyAgreement: null }))
   }
 
+  const handleTitleDeedChange = (event) => {
+    const selectedFile = event.target.files?.[0]
+    event.target.value = null
+    if (!selectedFile) return
+    if (selectedFile.type !== 'application/pdf') {
+      toast.error('Please upload a PDF file for the title deed.')
+      return
+    }
+    setTitleDeedFile(selectedFile)
+  }
+
+  const handleTitleDeedRemove = () => {
+    setTitleDeedFile(null)
+    setFormData((prev) => ({ ...prev, titleDeed: null }))
+  }
+
   const handleOffPlanImageChange = (key) => async (event) => {
     let selectedFile = event.target.files?.[0]
     event.target.value = null
@@ -446,15 +470,18 @@ const Page = () => {
           LISTING_IMAGE_MAX_BYTES,
         )
       }
-      selectedFile = await applyListingWatermark(selectedFile, {
-        position: 'center',
-        maxBytes: LISTING_IMAGE_MAX_BYTES,
-      })
-      if (selectedFile.size > LISTING_IMAGE_MAX_BYTES) {
-        selectedFile = await ensureWithinSize(
-          selectedFile,
-          LISTING_IMAGE_MAX_BYTES,
-        )
+      // Layout/floor plans get the listing watermark; never burn it onto QR.
+      if (key !== 'qrScan') {
+        selectedFile = await applyListingWatermark(selectedFile, {
+          position: 'center',
+          maxBytes: LISTING_IMAGE_MAX_BYTES,
+        })
+        if (selectedFile.size > LISTING_IMAGE_MAX_BYTES) {
+          selectedFile = await ensureWithinSize(
+            selectedFile,
+            LISTING_IMAGE_MAX_BYTES,
+          )
+        }
       }
       setOffPlanMedia((prev) => ({ ...prev, [key]: selectedFile }))
     } catch (err) {
@@ -720,6 +747,7 @@ const Page = () => {
       let fileID = formData?.evaluationCertificate
       let qrScanID = formData?.qrScan
       let agencyAgreementID = formData?.agencyAgreement
+      let titleDeedID = formData?.titleDeed
 
       // Upload new files only if creating a new property (no id)
       if (!id) {
@@ -748,6 +776,9 @@ const Page = () => {
         if (agencyAgreementFile instanceof File) {
           agencyAgreementID = await handleFileUpload(agencyAgreementFile)
         }
+        if (!isOffPlan && titleDeedFile instanceof File) {
+          titleDeedID = await handleFileUpload(titleDeedFile)
+        }
       } else {
         // For updates: only re-upload media that changed
         if (videos.length) videoID = await handleVideoUpload(videos)
@@ -760,6 +791,9 @@ const Page = () => {
         }
         if (agencyAgreementFile instanceof File) {
           agencyAgreementID = await handleFileUpload(agencyAgreementFile)
+        }
+        if (!isOffPlan && titleDeedFile instanceof File) {
+          titleDeedID = await handleFileUpload(titleDeedFile)
         }
       }
 
@@ -831,8 +865,12 @@ const Page = () => {
         qrScan:
           listingMediaRef(qrScanID) ?? listingMediaRef(formData?.qrScan),
         agencyAgreement: isOffPlan
-          ? listingMediaRef(agencyAgreementID) ??
-          listingMediaRef(formData?.agencyAgreement)
+          ? listingCertificateRef(agencyAgreementID) ??
+          listingCertificateRef(formData?.agencyAgreement)
+          : undefined,
+        titleDeed: !isOffPlan
+          ? listingCertificateRef(titleDeedID) ??
+          listingCertificateRef(formData?.titleDeed)
           : undefined,
         propertyForSale:
           formData.assetType === 'Property For Sale' ||
@@ -904,6 +942,8 @@ const Page = () => {
         // Reset everything
         setDropdowns(dropdownData)
         setOffPlanMedia(emptyOffPlanMedia())
+        setTitleDeedFile(null)
+        setAgencyAgreementFile(null)
         if (!id) {
           resetForm()
           setFormData(initialFormData)
@@ -1370,6 +1410,10 @@ const Page = () => {
               {!isOffPlan ? (
                 <ReadyMarketLayoutDocuments
                   media={offPlanMedia}
+                  titleDeedFile={titleDeedFile}
+                  existingTitleDeed={formData?.titleDeed}
+                  onTitleDeedChange={handleTitleDeedChange}
+                  onTitleDeedRemove={handleTitleDeedRemove}
                   onImageChange={handleOffPlanImageChange}
                   onImageRemove={handleOffPlanImageRemove}
                   errors={errors}

@@ -37,9 +37,11 @@ const FilterSection = ({ title, options, updateSorting }) => {
   const handleSelect = (value, e) => {
     e.preventDefault()
     switch (title) {
+      case 'Ready Property For Sale':
       case 'Property For Sale':
         updateSorting('property for sale', e, value)
         break
+      case 'Ready Property For Lease':
       case 'Property For Lease':
         updateSorting('property for lease', e, value)
         break
@@ -373,23 +375,6 @@ export const ListingSidebar = ({ initialData, isSidebarVisible }) => {
     // window.history.pushState(null, "", `?${params.toString()}`);
   }
 
-  const [sortOrder, setSortOrder] = useState(
-    searchParams ? searchParams.get('propertyType') : '',
-  )
-
-  useEffect(() => {
-    if (!sortOrder) return
-
-    const params = new URLSearchParams(searchParams)
-
-    // ✅ prevent unnecessary router.push
-    if (params.get('propertyType') === sortOrder) return
-
-    params.set('propertyType', sortOrder)
-
-    router.push(`${pathname}?${params.toString()}`, { scroll: false })
-  }, [sortOrder])
-
   //   useEffect(() => {
   //     setApiData(initialData)
   //     // Update search params when sortOrder changes
@@ -628,32 +613,49 @@ export const ListingSidebar = ({ initialData, isSidebarVisible }) => {
   ])
 
   const handleClick = (value, e, item, make) => {
-    // e.preventDefault();
     setCategory(value)
     localStorage.removeItem('filterData')
     switch (value) {
       case 'property for sale':
         router.push(
           `/property${
-            item ? `?propertyType=${item}&assetType=Property For Sale` : ''
+            item ? `?propertyType=${encodeURIComponent(item)}&assetType=${encodeURIComponent('Property For Sale')}` : ''
           }`,
         )
         break
       case 'property for lease':
         router.push(
           `/property${
-            item ? `?propertyType=${item}&assetType=Property For Lease` : ''
+            item ? `?propertyType=${encodeURIComponent(item)}&assetType=${encodeURIComponent('Property For Lease')}` : ''
           }`,
         )
         break
       case 'car':
-        router.push(`/${value}${item ? `?make=${make}&model=${item}` : ''}`)
+        router.push(
+          `/${value}${
+            item
+              ? `?make=${encodeURIComponent(make || '')}&model=${encodeURIComponent(item)}`
+              : ''
+          }`,
+        )
         break
       case 'boat':
-        router.push(`/${value}${item ? `?category=${make}&model=${item}` : ''}`)
+        router.push(
+          `/${value}${
+            item
+              ? `?category=${encodeURIComponent(make || '')}&model=${encodeURIComponent(item)}`
+              : ''
+          }`,
+        )
         break
       case 'jewelry':
-        router.push(`/${value}${item ? `?category=${make}&model=${item}` : ''}`)
+        router.push(
+          `/${value}${
+            item
+              ? `?category=${encodeURIComponent(make || '')}&model=${encodeURIComponent(item)}`
+              : ''
+          }`,
+        )
         break
       default:
         router.push(`/${value}`)
@@ -706,7 +708,6 @@ export const ListingSidebar = ({ initialData, isSidebarVisible }) => {
   const updateSortingForGrams = (sortOrder) => {
     updateSearchParams('grams', sortOrder)
   }
-  console.log('new URL =>', `${pathname}?${searchParams.toString()}`)
 
   return (
     <div className='rounded-[12px] w-[300px] sm:w-[385px] flex flex-wrap lg:flex-nowrap gap-5 px-0 shadow-xl'>

@@ -24,6 +24,7 @@ import { formatListingCardPrice } from '@/libs/listingPriceDisplay'
 import customAxios from '../../../utils/apis/apis'
 import EvaluatorListingMedia from '../EvaluatorProfile/requestCompoenets/EvaluatorListingMedia'
 import EvaluatorDateField from '../EvaluatorProfile/requestCompoenets/EvaluatorDateField'
+import EvaluatorPriceInput from '../EvaluatorProfile/requestCompoenets/EvaluatorPriceInput'
 import RequestDocumentsActions from '../EvaluatorProfile/requestCompoenets/RequestDocumentsActions'
 import { EvaluatorAssetHolderFields } from '../EvaluatorProfile/requestCompoenets/EvaluatorListingContactFields'
 import {
@@ -48,6 +49,11 @@ export const RequestTab = () => {
   const [data, setData] = useState()
   const [listingPrice, setListingPrice] = useState('')
   const [formattedListingPrice, setFormattedListingPrice] = useState('')
+  const [evaluationPrice, setEvaluationPrice] = useState('')
+  const [formattedPrice, setFormattedPrice] = useState('')
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [pdfUrl, setPdfUrl] = useState('')
+  const [pdfFileName, setPdfFileName] = useState('')
   const [detailsDraft, setDetailsDraft] = useState(() => initPropertyDetailsDraft({}))
   const [isSavingDetails, setIsSavingDetails] = useState(false)
   const [isSavingPropertyDetails, setIsSavingPropertyDetails] = useState(false)
@@ -277,12 +283,9 @@ export const RequestTab = () => {
     }
   }
 
-  if (!property) {
-    return <div>Loading...</div> // Show a loading state while fetching data
+  if (!property?.uuid && !property?._id) {
+    return <div>Loading...</div>
   }
-  const [isModalOpen, setIsModalOpen] = useState(false)
-  const [pdfUrl, setPdfUrl] = useState('')
-  const [pdfFileName, setPdfFileName] = useState('')
 
   const handleOpenDoc = (url, fileName = 'document.pdf') => {
     openListingDocumentInNewTab(url, fileName)
@@ -294,8 +297,6 @@ export const RequestTab = () => {
     setPdfFileName('')
   }
 
-  const [evaluationPrice, setEvaluationPrice] = useState()
-  const [formattedPrice, setFormattedPrice] = useState('')
   const handleEvaluationPrice = (e) => {
     formatNumericInput(e, setEvaluationPrice, setFormattedPrice)
   }

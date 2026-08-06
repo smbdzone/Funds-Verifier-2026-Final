@@ -160,6 +160,9 @@ export default function OffPlanPage() {
                       developerAvatar={listing.developerAvatar}
                       approvalBadge={listing.approvalBadge}
                       analytics={listing.analytics}
+                      slug={listing.slug}
+                      uuid={listing.uuid}
+                      assetType={listing.assetType}
                       className='max-w-none'
                     />
                   </div>
@@ -220,6 +223,9 @@ export default function OffPlanPage() {
                       developerAvatar={mobileVisibleCard.developerAvatar}
                       approvalBadge={mobileVisibleCard.approvalBadge}
                       analytics={mobileVisibleCard.analytics}
+                      slug={mobileVisibleCard.slug}
+                      uuid={mobileVisibleCard.uuid}
+                      assetType={mobileVisibleCard.assetType}
                     />
                   </>
                 ) : null}

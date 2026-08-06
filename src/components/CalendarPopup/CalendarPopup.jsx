@@ -9,6 +9,8 @@ import customAxios from '../../utils/apis/apis'
 import { NoSlotsAvailable } from '@/components/global/NoSlotsAvailable'
 import { getBookableSlotsForDate } from '@/libs/slotTimeFilters'
 import { isOwnListing } from '@/libs/isOwnListing'
+import { setPostLoginRedirect } from '@/utils/auth/postLoginRedirect'
+import { usePathname, useRouter } from 'next/navigation'
 
 const resolveTrusteeFromListing = (product) => {
   if (!product) return null
@@ -39,8 +41,24 @@ const CalendarPopup = ({ onClose, productData }) => {
   /** While we ask the API for slots for the selected calendar day */
   const [fetchingSlots, setFetchingSlots] = useState(false)
   const [slotsFetchError, setSlotsFetchError] = useState(null)
-  const { user } = useProfile()
+  const { user, isAuthenticated, loading } = useProfile()
+  const pathname = usePathname()
+  const router = useRouter()
   const ownsListing = isOwnListing(productData, user)
+
+  useEffect(() => {
+    if (loading || (isAuthenticated && user)) return
+
+    const returnTo =
+      typeof window !== 'undefined'
+        ? `${window.location.pathname}${window.location.search}`
+        : pathname
+
+    setPostLoginRedirect(returnTo)
+    toast.info('Please sign in with UAE Pass to arrange a viewing.')
+    onClose?.()
+    router.push(`/login?redirect=${encodeURIComponent(returnTo)}`)
+  }, [isAuthenticated, loading, onClose, pathname, router, user])
 
   useEffect(() => {
     if (!ownsListing) return
@@ -79,8 +97,9 @@ const CalendarPopup = ({ onClose, productData }) => {
   }, [productData])
 
   useEffect(() => {
+    if (loading || !isAuthenticated || !user) return
     loadTrustee()
-  }, [loadTrustee])
+  }, [isAuthenticated, loadTrustee, loading, user])
 
   const fetchAppointments = useCallback(async (date, ownerUUID) => {
     if (!ownerUUID) return
@@ -145,6 +164,17 @@ const CalendarPopup = ({ onClose, productData }) => {
 
   const handleSubmit = async (event) => {
     event.preventDefault()
+    if (!isAuthenticated || !user) {
+      const returnTo =
+        typeof window !== 'undefined'
+          ? `${window.location.pathname}${window.location.search}`
+          : pathname
+      setPostLoginRedirect(returnTo)
+      toast.info('Please sign in with UAE Pass to arrange a viewing.')
+      onClose?.()
+      router.push(`/login?redirect=${encodeURIComponent(returnTo)}`)
+      return
+    }
     if (ownsListing) {
       toast.error('You cannot request a viewing for your own listing.')
       return
@@ -206,7 +236,7 @@ const CalendarPopup = ({ onClose, productData }) => {
     onClose()
   }
 
-  if (ownsListing) return null
+  if (loading || !isAuthenticated || !user || ownsListing) return null
 
   return (
     <>

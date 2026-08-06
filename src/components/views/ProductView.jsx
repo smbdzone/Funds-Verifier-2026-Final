@@ -7,7 +7,7 @@ import React, { useMemo, useState } from 'react'
 import { formatPriceUS } from '@/utils'
 import ListingSocialShare from '@/components/shared/ListingSocialShare'
 import { formatNumberWithCommas } from '../../utils/global-functions/global'
-import { formatPropertySizeValueDisplay } from '@/libs/propertySizeUnits'
+import { formatPropertySizeDisplay } from '@/libs/propertySizeUnits'
 import {
   getListingDetailMediaItems,
   getListingQrScanSrc,
@@ -18,12 +18,17 @@ import ListingDetailsGrid from '@/components/shared/ListingDetailsGrid'
 import ListingDetailMediaColumn from '@/components/shared/ListingDetailMediaColumn'
 import ListingAmenitiesPanel from '@/components/shared/ListingAmenitiesPanel'
 import ListingDetailCertificates from '@/components/shared/ListingDetailCertificates'
+import ListingDetailTitleRow from '@/components/shared/ListingDetailTitleRow'
+import ListingDetailsHeading from '@/components/shared/ListingDetailsHeading'
+import ArrangeViewingButton from '@/components/shared/ArrangeViewingButton'
+import OffPlanLayoutFloorPlanDisplay from '@/components/offplan/OffPlanLayoutFloorPlanDisplay'
 import { getListingAmenities } from '@/libs/listingAmenities'
 import { formatListingLocation } from '@/libs/listingLocationUtils'
 import { isOwnListing } from '@/libs/isOwnListing'
+import { resolveLayoutImageSrc } from '@/libs/offPlanListings'
 import { useProfile } from '@/context/UserContext'
 
-const TABS = ['Description', 'Reviews', 'Amenities']
+const TABS = ['Description', 'Reviews', 'Amenities', 'Layout & Floor Plan']
 
 export default function ProductView({ data }) {
   const { user } = useProfile()
@@ -34,6 +39,23 @@ export default function ProductView({ data }) {
   )
   const [activeTab, setActiveTab] = useState('Description')
   const [showCalendarPopup, setShowCalendarPopup] = useState(false)
+
+  const unitLayoutSrc = useMemo(
+    () => resolveLayoutImageSrc(data?.unitLayout),
+    [data?.unitLayout],
+  )
+  const floorPlanSrc = useMemo(
+    () => resolveLayoutImageSrc(data?.floorPlan),
+    [data?.floorPlan],
+  )
+  const hasLayoutMedia = Boolean(unitLayoutSrc || floorPlanSrc)
+  const visibleTabs = useMemo(
+    () =>
+      hasLayoutMedia
+        ? TABS
+        : TABS.filter((tab) => tab !== 'Layout & Floor Plan'),
+    [hasLayoutMedia],
+  )
 
   const pad = (value) => {
     if (value == null || value === '') return ''
@@ -50,8 +72,8 @@ export default function ProductView({ data }) {
       { label: 'Bedrooms', value: pad(data?.bedrooms) },
       { label: 'Bathrooms', value: pad(data?.bathrooms) },
       {
-        label: data?.sizeUnit || 'SQFT',
-        value: formatPropertySizeValueDisplay(data),
+        label: 'Size',
+        value: formatPropertySizeDisplay(data),
       },
       { label: 'Furnished', value: data?.isFurnished },
       { label: 'Occupancy Status', value: data?.occupancyStatus },
@@ -85,36 +107,30 @@ export default function ProductView({ data }) {
         />
 
         <div className='relative mt-6 flex w-full flex-col items-start gap-5 sm:mt-0'>
-          <h1 className='w-[90%] truncate text-wrap text-xl font-semibold capitalize text-blue md:text-2xl lg:text-3xl'>
-            {data?.title}
-          </h1>
+          <ListingDetailTitleRow listing={data} />
 
           <div className='flex w-full flex-col gap-3'>
-            <h2 className='text-sm font-medium md:text-base'>Details</h2>
+            <ListingDetailsHeading listing={data} />
             <ListingDetailsGrid rows={detailRows} />
           </div>
 
           <div className='flex w-full flex-wrap gap-x-4 gap-y-1'>
-            <p className='text-sm text-reefGold md:text-base'>
+            <p className='text-sm font-semibold text-reefGold md:text-base'>
               Selling Price: AED {formatPriceUS(data?.price)}
             </p>
-            <p className='text-sm text-reefGold md:text-base'>
+            <p className='text-sm font-semibold text-reefGold md:text-base'>
               Market Price: AED {formatNumberWithCommas(data?.evaluationPrices)}
             </p>
-            <p className='text-sm text-reefGold md:text-base'>
+            <p className='text-sm font-semibold text-reefGold md:text-base'>
               ROI: {data?.roi ? data.roi : 0}%
             </p>
           </div>
 
           <div className='flex w-full flex-wrap items-center gap-3'>
             {!ownsListing ? (
-              <button
-                type='button'
-                className='btn-gradient flex w-full justify-center rounded border-0 px-5 py-3 text-xs font-medium text-white focus:outline-none sm:w-auto md:text-sm'
-                onClick={() => setShowCalendarPopup(true)}
-              >
-                Arrange Viewing
-              </button>
+              <ArrangeViewingButton
+                onAuthenticated={() => setShowCalendarPopup(true)}
+              />
             ) : null}
 
             <ListingDetailCertificates listing={data} />
@@ -127,14 +143,14 @@ export default function ProductView({ data }) {
               </span>
               <ListingSocialShare listing={data} linkedinIcon='white' />
             </div>
-            <ListingQrCodeSection src={getListingQrScanSrc(data)} />
+            <ListingQrCodeSection listing={data} src={getListingQrScanSrc(data)} />
           </div>
         </div>
       </div>
 
       <div className='rounded-md bg-light-gray sm:p-5'>
         <div className='flex flex-wrap justify-center gap-2 pb-4 md:gap-4'>
-          {TABS.map((tab) => (
+          {visibleTabs.map((tab) => (
             <button
               key={tab}
               type='button'
@@ -165,6 +181,13 @@ export default function ProductView({ data }) {
 
         {activeTab === 'Amenities' ? (
           <ListingAmenitiesPanel amenities={amenities} />
+        ) : null}
+
+        {activeTab === 'Layout & Floor Plan' && hasLayoutMedia ? (
+          <OffPlanLayoutFloorPlanDisplay
+            unitLayout={unitLayoutSrc}
+            floorPlan={floorPlanSrc}
+          />
         ) : null}
       </div>
 

@@ -19,15 +19,15 @@ export function parsePropertySizeInput(rawValue) {
 }
 
 export function getPropertySizeValue(property, unit) {
-  const selectedUnit = unit || property?.sizeUnit || 'SQFT'
+  const selectedUnit = unit || property?.sizeUnit || property?.sizeType || 'SQFT'
   if (selectedUnit === 'SQM') {
-    const sqm = property?.sizeSQM
-    if (sqm !== '' && sqm != null && Number(sqm) > 0) return sqm
-    return property?.sizeSQFT ?? ''
+    const from = property?.sizeSQMFrom ?? property?.sizeSQM
+    if (from !== '' && from != null && Number(from) > 0) return from
+    return ''
   }
-  const sqft = property?.sizeSQFT
-  if (sqft !== '' && sqft != null && Number(sqft) > 0) return sqft
-  return property?.sizeSQM ?? ''
+  const from = property?.sizeSQFTFrom ?? property?.sizeSQFT
+  if (from !== '' && from != null && Number(from) > 0) return from
+  return ''
 }
 
 /**
@@ -35,14 +35,16 @@ export function getPropertySizeValue(property, unit) {
  * Falls back to the single size value when no range was entered.
  */
 export function getPropertySizeRange(property, unit) {
-  const selectedUnit = unit || property?.sizeUnit || 'SQFT'
+  const selectedUnit = unit || property?.sizeUnit || property?.sizeType || 'SQFT'
   const from =
     selectedUnit === 'SQM'
       ? property?.sizeSQMFrom ?? property?.sizeSQM
       : property?.sizeSQFTFrom ?? property?.sizeSQFT
   const to =
-    selectedUnit === 'SQM' ? property?.sizeSQMTo : property?.sizeSQFTTo
-  return { from, to, unit: selectedUnit }
+    selectedUnit === 'SQM'
+      ? property?.sizeSQMTo ?? property?.sizeSQM
+      : property?.sizeSQFTTo ?? property?.sizeSQFT
+  return { from, to, unit: selectedUnit === 'SQM' ? 'SQM' : 'SQFT' }
 }
 
 /**
@@ -50,7 +52,8 @@ export function getPropertySizeRange(property, unit) {
  * From only → "50,000 SQFT"; from + to → "50,000 - 60,000 SQFT".
  */
 export function formatPropertySizeDisplay(property) {
-  const unit = property?.sizeUnit || 'SQFT'
+  const unit =
+    property?.sizeUnit === 'SQM' || property?.sizeType === 'SQM' ? 'SQM' : 'SQFT'
   const { from, to } = getPropertySizeRange(property, unit)
   const fromFormatted = formatPropertySizeNumber(from)
   const toFormatted = formatPropertySizeNumber(to)

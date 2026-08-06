@@ -8,6 +8,8 @@ import GlobalLoader from '@/utils/GlobalLoader'
 import { buildListingPageMetadata } from '@/libs/listingMetadata'
 import { cache } from 'react'
 
+export const dynamic = 'force-dynamic'
+
 const GetProductData = cache(async ({ id }) => {
   try {
     const propertyInfo = await api(`/jewelry/${id}`)

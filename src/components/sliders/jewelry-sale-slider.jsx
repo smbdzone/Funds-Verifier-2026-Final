@@ -12,7 +12,6 @@ import { formatCardPrice } from '@/libs/listingPriceDisplay'
 import { ucFirst } from '@/utils'
 import {
   getListingCardImageSrc,
-  getListingQrScanSrc,
   PLACEHOLDER,
 } from '@/libs/listingCardMedia'
 import { getListingRef } from '@/libs/listingRef'
@@ -24,6 +23,7 @@ import { getProfileImageSrc } from '@/utils/global-functions/global'
 import { HomeListingSliderSkeleton } from '@/components/home/HomeSectionSkeletons'
 import { publicApiFetch } from '@/libs/publicApiClient'
 import ListingCardViewCount from '@/components/shared/ListingCardViewCount'
+import ListingCardQrThumb from '@/components/shared/ListingCardQrThumb'
 
 const APPROVED_JEWELRY_URL = '/jewelry?statusFilter=1&limit=100&sort=-createdAt'
 
@@ -302,16 +302,7 @@ export default function JewelrySaleSlider() {
                               </div>
                             </div>
                           </div>
-                          {getListingQrScanSrc(item) ? (
-                            <Image
-                              src={getListingQrScanSrc(item)}
-                              width={72}
-                              height={72}
-                              alt='QR code'
-                              className='listing-qr-thumb ml-auto h-[72px] w-[72px] shrink-0 rounded border border-gray-200 bg-white object-contain'
-                              unoptimized
-                            />
-                          ) : null}
+                          <ListingCardQrThumb listing={item} className='ml-auto' />
                         </div>
                       </div>
                       <div className='listing-card-footer'>

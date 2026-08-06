@@ -23,11 +23,11 @@ import Open3dModal from '@/components/3dModal/Open3dModal'
 import {
   getListingCarouselItems,
   getListingDocumentSrc,
-  getListingQrScanSrc,
   getTechnicalReportSrc,
   isListingCarouselPlaceholderSlide,
   PLACEHOLDER,
 } from '@/libs/listingCardMedia'
+import ListingCardQrThumb from '@/components/shared/ListingCardQrThumb'
 import {
   getListingPremiumDisplay,
   getListingWalkthroughUrl,
@@ -184,6 +184,7 @@ const ListingCard = ({
   const [walkthroughLink, setWalkthroughLink] = useState('')
   const [modalCardId, setModalCardId] = useState(null)
   const [analyticsCardId, setAnalyticsCardId] = useState(null)
+  const [qrHoveredById, setQrHoveredById] = useState({})
 
   const getDynamicLink = (assetType, slug) => {
     if (usePendingEvaluation) {
@@ -296,11 +297,15 @@ const ListingCard = ({
         'technical-report.pdf'
 
       const isOffPlan = isOffPlanListing(listing)
+      const qrHovered = Boolean(qrHoveredById[listing.uuid])
+      const detailsVisibleClass = qrHovered
+        ? 'max-h-[480px] opacity-100'
+        : 'max-h-0 opacity-0 pointer-events-none'
 
       return (
         <>
           <div
-            className={`relative flex md:p-5 p-2 flex-col md:gap-4 gap-2 xl:gap-10 my-5 rounded-lg items-center md:flex-row custom-shadow overflow-x-hidden ${hasFeaturedStyling ? '' : 'bg-white'
+            className={`group relative flex md:p-5 p-2 flex-col md:gap-4 gap-2 xl:gap-10 my-5 rounded-lg items-center md:flex-row custom-shadow overflow-x-hidden ${hasFeaturedStyling ? '' : 'bg-white'
               }`}
             style={
               hasFeaturedStyling
@@ -308,92 +313,103 @@ const ListingCard = ({
                 : undefined
             }
           >
-            <div className='md:absolute top-2 w-full right-2 z-50 items-center justify-end flex gap-2'>
-              {documentRequestedPending ? (
-                <div className='relative group'>
-                  <span className='inline-flex items-center rounded bg-yellow-400 px-2.5 py-1 text-xs font-semibold text-black shadow-sm'>
-                    Document Requested
-                  </span>
-                  <span className='absolute top-full left-1/2 z-50 mt-1 hidden -translate-x-1/2 whitespace-nowrap rounded bg-white px-2 py-1 text-xs text-black shadow-md group-hover:flex'>
-                    Upload requested documents in Documents Storage
-                  </span>
-                </div>
-              ) : null}
-              {String(listing?.offPlanApprovalFeeStatus || '') === 'requested' ? (
-                <div className='relative group'>
-                  <span className='inline-flex items-center rounded bg-sky-500 px-2.5 py-1 text-xs font-semibold text-white shadow-sm'>
-                    Approval Fee Due
-                  </span>
-                  <span className='absolute top-full left-1/2 z-50 mt-1 hidden -translate-x-1/2 whitespace-nowrap rounded bg-white px-2 py-1 text-xs text-black shadow-md group-hover:flex'>
-                    Pay the optional off-plan approval fee under Invoices
-                  </span>
-                </div>
-              ) : null}
-              {String(listing?.offPlanApprovalFeeStatus || '') === 'paid' ? (
-                <div className='relative group'>
-                  <span className='inline-flex items-center rounded bg-emerald-600 px-2.5 py-1 text-xs font-semibold text-white shadow-sm'>
-                    Invoice
-                  </span>
-                  <span className='absolute top-full left-1/2 z-50 mt-1 hidden -translate-x-1/2 whitespace-nowrap rounded bg-white px-2 py-1 text-xs text-black shadow-md group-hover:flex'>
-                    Off-plan approval fee paid — view under Invoices
-                  </span>
-                </div>
-              ) : null}
-              {/* status */}
-              {listing.status === 0 ? (
-                <>
+            <div className='md:absolute top-2 w-full right-2 z-50 flex flex-col items-end gap-1.5'>
+              <div className='flex w-full items-center justify-end gap-2'>
+                {documentRequestedPending ? (
                   <div className='relative group'>
-                    <button className='bg-blue-500 text-black py-2 rounded'>
-                      <Image
-                        src='/icons/pending1.svg'
-                        height={20}
-                        width={20}
-                        alt='Pending'
-                        className='cursor-pointer'
-                      />
-                    </button>
-                    <span className='absolute top-full left-1/2 transform bg-white shadow-md rounded -translate-x-1/2 mt-0 hidden group-hover:flex whitespace-nowrap bg-gray-800 text-black text-xs py-1 px-2'>
-                      Pending
+                    <span className='inline-flex items-center rounded bg-yellow-400 px-2.5 py-1 text-xs font-semibold text-black shadow-sm'>
+                      Document Requested
+                    </span>
+                    <span className='absolute top-full left-1/2 z-50 mt-1 hidden -translate-x-1/2 whitespace-nowrap rounded bg-white px-2 py-1 text-xs text-black shadow-md group-hover:flex'>
+                      Upload requested documents in Documents Storage
                     </span>
                   </div>
-                </>
-              ) : (
-                <button
-                  className='border rounded px-2 py-0.5 gradient text-white text-sm'
-                >
-                  {premiumBadge || 'Approved'}
-                </button>
-              )}
-
-              {/* Edit — hidden for Super Admin / Admin */}
-              {canEdit ? (
-                <Link href={getEditLink(listing.assetType, listing.uuid)}>
-                  <IconButton
-                    style={{
-                      background: 'transparent',
-                    }}
-                    onClick={(e) => {
-                      e.stopPropagation()
-                    }}
+                ) : null}
+                {String(listing?.offPlanApprovalFeeStatus || '') === 'requested' ? (
+                  <div className='relative group'>
+                    <span className='inline-flex items-center rounded bg-sky-500 px-2.5 py-1 text-xs font-semibold text-white shadow-sm'>
+                      Approval Fee Due
+                    </span>
+                    <span className='absolute top-full left-1/2 z-50 mt-1 hidden -translate-x-1/2 whitespace-nowrap rounded bg-white px-2 py-1 text-xs text-black shadow-md group-hover:flex'>
+                      Pay the optional off-plan approval fee under Invoices
+                    </span>
+                  </div>
+                ) : null}
+                {String(listing?.offPlanApprovalFeeStatus || '') === 'paid' ? (
+                  <div className='relative group'>
+                    <span className='inline-flex items-center rounded bg-emerald-600 px-2.5 py-1 text-xs font-semibold text-white shadow-sm'>
+                      Invoice
+                    </span>
+                    <span className='absolute top-full left-1/2 z-50 mt-1 hidden -translate-x-1/2 whitespace-nowrap rounded bg-white px-2 py-1 text-xs text-black shadow-md group-hover:flex'>
+                      Off-plan approval fee paid — view under Invoices
+                    </span>
+                  </div>
+                ) : null}
+                {/* status */}
+                {listing.status === 0 ? (
+                  <>
+                    <div className='relative group'>
+                      <button className='bg-blue-500 text-black py-2 rounded'>
+                        <Image
+                          src='/icons/pending1.svg'
+                          height={20}
+                          width={20}
+                          alt='Pending'
+                          className='cursor-pointer'
+                        />
+                      </button>
+                      <span className='absolute top-full left-1/2 transform bg-white shadow-md rounded -translate-x-1/2 mt-0 hidden group-hover:flex whitespace-nowrap bg-gray-800 text-black text-xs py-1 px-2'>
+                        Pending
+                      </span>
+                    </div>
+                  </>
+                ) : (
+                  <button
+                    className='border rounded px-2 py-0.5 gradient text-white text-sm'
                   >
-                    <EditIcon className='py-1 text-[#8D7C3B]' />
-                  </IconButton>
-                </Link>
-              ) : null}
-              {typeof handleDeleteClick === 'function' &&
-                !usePendingEvaluation && (
-                  <IconButton
-                    aria-label='Delete listing'
-                    style={{ background: 'transparent' }}
-                    onClick={(e) => {
-                      e.preventDefault()
-                      e.stopPropagation()
-                      handleDeleteClick(listing)
-                    }}
-                  >
-                    <DeleteIcon className='py-1 text-[#8D7C3B]' />
-                  </IconButton>
+                    {premiumBadge || 'Approved'}
+                  </button>
                 )}
+
+                {/* Edit — hidden for Super Admin / Admin */}
+                {canEdit ? (
+                  <Link href={getEditLink(listing.assetType, listing.uuid)}>
+                    <IconButton
+                      style={{
+                        background: 'transparent',
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                      }}
+                    >
+                      <EditIcon className='py-1 text-[#8D7C3B]' />
+                    </IconButton>
+                  </Link>
+                ) : null}
+                {typeof handleDeleteClick === 'function' &&
+                  !usePendingEvaluation && (
+                    <IconButton
+                      aria-label='Delete listing'
+                      style={{ background: 'transparent' }}
+                      onClick={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        handleDeleteClick(listing)
+                      }}
+                    >
+                      <DeleteIcon className='py-1 text-[#8D7C3B]' />
+                    </IconButton>
+                  )}
+              </div>
+              <ListingCardQrThumb
+                listing={listing}
+                onHoverChange={(hovered) =>
+                  setQrHoveredById((prev) => ({
+                    ...prev,
+                    [listing.uuid]: hovered,
+                  }))
+                }
+              />
             </div>
 
             <div className='xl:!max-w-[350px] relative'>
@@ -499,159 +515,156 @@ const ListingCard = ({
                     )}
                   </Link>
                 </div>
-                {getListingQrScanSrc(listing) ? (
-                  <Image
-                    src={getListingQrScanSrc(listing)}
-                    width={72}
-                    height={72}
-                    alt='QR code'
-                    className='listing-qr-thumb relative z-10 ml-auto h-[72px] w-[72px] shrink-0 rounded border border-gray-200 bg-white object-contain'
-                    unoptimized
-                  />
-                ) : null}
               </div>
-              <div className='flex flex-wrap items-center space-x-4'>
-                <p
-                  className={`text-prussianBlue mb-2 lg:text-base text-sm font-medium ${hasFeaturedStyling ? 'text-gradient-custom' : 'text-blue'
-                    }`}
-                >
-                  {isOffPlan ? 'Price Range:' : 'Price:'}{' '}
-                  {formatListingCardPrice(listing)}
-                </p>
-                {!isOffPlan ? (
-                  <p
-                    className={`mb-2 lg:text-base text-sm font-medium ${hasFeaturedStyling
-                      ? 'text-gradient-custom'
-                      : 'text-prussianBlue'
-                      }`}
-                  >
-                    Market Price:
-                    {formatCardPrice(listing.evaluationPrices)}
-                  </p>
-                ) : null}
-                {assetTypeText === 'property' && !isOffPlan && (
-                  <p
-                    className={`mb-2 lg:text-base text-sm font-medium ${hasFeaturedStyling
-                      ? 'text-gradient-custom'
-                      : 'text-prussianBlue'
-                      }`}
-                  >
-                    Roi: {listing?.roi || 0}%
-                  </p>
-                )}
-              </div>
-
-              {renderListingDetails(listing, hasFeaturedStyling)}
-
-              <div className='flex'>
-                <div
-                  className={`flex gap-3 items-center mb-3 ${hasFeaturedStyling
-                    ? 'text-gradient-custom'
-                    : 'text-prussianBlue'
-                    }`}
-                >
-                  <LocationIcon
-                    className={
-                      hasFeaturedStyling ? 'text-light-gold' : 'text-blue'
-                    }
-                  />
-
-                  <p className='whitespace-normal lg:text-base text-sm'>
-                    {listing.country}
-                  </p>
-                </div>
-                <div className='flex gap-3 ml-3 flex-wrap items-center'>
-                  {showDocIcons && technicalReportSrc ? (
-                    <>
-                      <div className='bg-[#E0E0E0] p-1 rounded relative group'>
-                        <img
-                          src='/icons/card1.png'
-                          className='w-[23px] h-[23px] cursor-pointer'
-                          alt='Technical report'
-                          onClick={() => openModal(technicalModalKey)}
-                        />
-                        <div className='absolute w-[200px] right-0 -top-12 transform -translate-y-1/2 bg-white text-black text-sm p-5 rounded-lg shadow-lg opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-300 z-50'>
-                          Technical Report
-                        </div>
-                      </div>
-                      <Modal2
-                        isOpen={modalCardId === technicalModalKey}
-                        onClose={closeModal}
-                        file2Url={technicalReportSrc}
-                        downloadFileName={technicalDownloadName}
-                        modalTitle='Technical Report'
-                      />
-                    </>
-                  ) : null}
-                  {showDocIcons && technicalReportPending ? (
-                    <div
-                      className='bg-[#E0E0E0] p-1 rounded relative group opacity-50 cursor-default'
-                      title='Technical report requested — PDF will appear when ready'
+              <div
+                className={`overflow-hidden transition-all duration-300 ease-out ${detailsVisibleClass}`}
+                aria-hidden={!qrHovered}
+              >
+                <div className='flex flex-col'>
+                  <div className='flex flex-wrap items-center space-x-4'>
+                    <p
+                      className={`text-prussianBlue mb-2 lg:text-base text-sm font-medium ${hasFeaturedStyling ? 'text-gradient-custom' : 'text-blue'
+                        }`}
                     >
-                      <img
-                        src='/icons/card1.png'
-                        alt='Technical report pending'
-                        className='w-[23px] h-[23px]'
-                      />
-                      <div className='absolute w-[220px] right-0 -top-12 transform -translate-y-1/2 bg-white text-black text-sm p-3 rounded-lg shadow-lg opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-300 z-50'>
-                        Technical report requested — awaiting PDF upload
-                      </div>
-                    </div>
-                  ) : null}
-
-                  {showDocIcons && evaluationCertificateSrc ? (
-                    <>
-                      <div className='bg-[#E0E0E0] p-1 rounded relative group'>
-                        <img
-                          src='/icons/card2.png'
-                          className='w-[23px] h-[23px] cursor-pointer'
-                          alt='Evaluation certificate'
-                          onClick={() => openModal(evalModalKey)}
-                        />
-                        <div className='absolute w-[200px] right-0 -top-12 transform -translate-y-1/2 bg-white text-black text-sm p-5 rounded-lg shadow-lg opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-300 z-50'>
-                          Evaluation Certificate
-                        </div>
-                      </div>
-                      <Modal2
-                        isOpen={modalCardId === evalModalKey}
-                        onClose={closeModal}
-                        file2Url={evaluationCertificateSrc}
-                        downloadFileName={
-                          listing?.evaluationCertificate?.Certificate?.name
-                        }
-                        modalTitle='Evaluation Certificate'
-                      />
-                    </>
-                  ) : null}
-                  {showDocIcons && hasWalkthrough ? (
-                    <>
-                      <div
-                        onClick={() => {
-                          setWalkthroughListingId(listing.uuid)
-                          setWalkthroughLink(walkthroughUrl)
-                        }}
-                        className='bg-[#E0E0E0] p-1 rounded relative group'
+                      {isOffPlan ? 'Price Range:' : 'Price:'}{' '}
+                      {formatListingCardPrice(listing)}
+                    </p>
+                    {!isOffPlan ? (
+                      <p
+                        className={`mb-2 lg:text-base text-sm font-medium ${hasFeaturedStyling
+                          ? 'text-gradient-custom'
+                          : 'text-prussianBlue'
+                          }`}
                       >
-                        <img
-                          src='/icons/3dicon.png'
-                          className='w-[23px] h-[23px] cursor-pointer'
-                        />
-                        <div className='absolute w-[200px] right-0 -top-12 transform -translate-y-1/2 bg-white text-black lg:text-base text-sm p-5 rounded-lg shadow-lg opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-300 z-50'>
-                          3D Walkthrough
+                        Market Price:
+                        {formatCardPrice(listing.evaluationPrices)}
+                      </p>
+                    ) : null}
+                    {assetTypeText === 'property' && !isOffPlan && (
+                      <p
+                        className={`mb-2 lg:text-base text-sm font-medium ${hasFeaturedStyling
+                          ? 'text-gradient-custom'
+                          : 'text-prussianBlue'
+                          }`}
+                      >
+                        Roi: {listing?.roi || 0}%
+                      </p>
+                    )}
+                  </div>
+
+                  {renderListingDetails(listing, hasFeaturedStyling)}
+
+                  <div className='flex'>
+                    <div
+                      className={`flex gap-3 items-center mb-3 ${hasFeaturedStyling
+                        ? 'text-gradient-custom'
+                        : 'text-prussianBlue'
+                        }`}
+                    >
+                      <LocationIcon
+                        className={
+                          hasFeaturedStyling ? 'text-light-gold' : 'text-blue'
+                        }
+                      />
+
+                      <p className='whitespace-normal lg:text-base text-sm'>
+                        {listing.country}
+                      </p>
+                    </div>
+                    <div className='flex gap-3 ml-3 flex-wrap items-center'>
+                      {showDocIcons && technicalReportSrc ? (
+                        <>
+                          <div className='bg-[#E0E0E0] p-1 rounded relative group'>
+                            <img
+                              src='/icons/card1.png'
+                              className='w-[23px] h-[23px] cursor-pointer'
+                              alt='Technical report'
+                              onClick={() => openModal(technicalModalKey)}
+                            />
+                            <div className='absolute w-[200px] right-0 -top-12 transform -translate-y-1/2 bg-white text-black text-sm p-5 rounded-lg shadow-lg opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-300 z-50'>
+                              Technical Report
+                            </div>
+                          </div>
+                          <Modal2
+                            isOpen={modalCardId === technicalModalKey}
+                            onClose={closeModal}
+                            file2Url={technicalReportSrc}
+                            downloadFileName={technicalDownloadName}
+                            modalTitle='Technical Report'
+                          />
+                        </>
+                      ) : null}
+                      {showDocIcons && technicalReportPending ? (
+                        <div
+                          className='bg-[#E0E0E0] p-1 rounded relative group opacity-50 cursor-default'
+                          title='Technical report requested — PDF will appear when ready'
+                        >
+                          <img
+                            src='/icons/card1.png'
+                            alt='Technical report pending'
+                            className='w-[23px] h-[23px]'
+                          />
+                          <div className='absolute w-[220px] right-0 -top-12 transform -translate-y-1/2 bg-white text-black text-sm p-3 rounded-lg shadow-lg opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-300 z-50'>
+                            Technical report requested — awaiting PDF upload
+                          </div>
                         </div>
-                      </div>
-                      {walkthroughListingId === listing.uuid && (
-                        <Open3dModal
-                          selectedMedia={true}
-                          setSelectedMedia={() => {
-                            setWalkthroughListingId(null)
-                            setWalkthroughLink('')
-                          }}
-                          link={walkthroughLink}
-                        />
-                      )}
-                    </>
-                  ) : null}
+                      ) : null}
+
+                      {showDocIcons && evaluationCertificateSrc ? (
+                        <>
+                          <div className='bg-[#E0E0E0] p-1 rounded relative group'>
+                            <img
+                              src='/icons/card2.png'
+                              className='w-[23px] h-[23px] cursor-pointer'
+                              alt='Evaluation certificate'
+                              onClick={() => openModal(evalModalKey)}
+                            />
+                            <div className='absolute w-[200px] right-0 -top-12 transform -translate-y-1/2 bg-white text-black text-sm p-5 rounded-lg shadow-lg opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-300 z-50'>
+                              Evaluation Certificate
+                            </div>
+                          </div>
+                          <Modal2
+                            isOpen={modalCardId === evalModalKey}
+                            onClose={closeModal}
+                            file2Url={evaluationCertificateSrc}
+                            downloadFileName={
+                              listing?.evaluationCertificate?.Certificate?.name
+                            }
+                            modalTitle='Evaluation Certificate'
+                          />
+                        </>
+                      ) : null}
+                      {showDocIcons && hasWalkthrough ? (
+                        <>
+                          <div
+                            onClick={() => {
+                              setWalkthroughListingId(listing.uuid)
+                              setWalkthroughLink(walkthroughUrl)
+                            }}
+                            className='bg-[#E0E0E0] p-1 rounded relative group'
+                          >
+                            <img
+                              src='/icons/3dicon.png'
+                              className='w-[23px] h-[23px] cursor-pointer'
+                            />
+                            <div className='absolute w-[200px] right-0 -top-12 transform -translate-y-1/2 bg-white text-black lg:text-base text-sm p-5 rounded-lg shadow-lg opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-300 z-50'>
+                              3D Walkthrough
+                            </div>
+                          </div>
+                          {walkthroughListingId === listing.uuid && (
+                            <Open3dModal
+                              selectedMedia={true}
+                              setSelectedMedia={() => {
+                                setWalkthroughListingId(null)
+                                setWalkthroughLink('')
+                              }}
+                              link={walkthroughLink}
+                            />
+                          )}
+                        </>
+                      ) : null}
+                    </div>
+                  </div>
                 </div>
               </div>
 

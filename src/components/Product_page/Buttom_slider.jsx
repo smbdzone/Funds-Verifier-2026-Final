@@ -17,7 +17,6 @@ import {
 } from '@/libs/listingPriceDisplay'
 import {
   getListingCardImageSrc,
-  getListingQrScanSrc,
   PLACEHOLDER,
 } from '@/libs/listingCardMedia'
 import { getListingDetailId } from '@/libs/listingSlug'
@@ -25,6 +24,7 @@ import { getListingRef } from '@/libs/listingRef'
 import { getProfileImageSrc } from '@/utils/global-functions/global'
 import { isOffPlanListing } from '@/libs/filterMyListingTab'
 import ListingCardViewCount from '@/components/shared/ListingCardViewCount'
+import ListingCardQrThumb from '@/components/shared/ListingCardQrThumb'
 
 function truncateTitle(title) {
   const text = String(title || '').trim()
@@ -243,16 +243,7 @@ const ButtomSlider = ({ data }) => {
                             </div>
                           )}
                         </div>
-                        {getListingQrScanSrc(listing) ? (
-                          <Image
-                            src={getListingQrScanSrc(listing)}
-                            width={72}
-                            height={72}
-                            alt='QR code'
-                            className='listing-qr-thumb ml-auto h-[72px] w-[72px] shrink-0 rounded border border-gray-200 bg-white object-contain'
-                            unoptimized
-                          />
-                        ) : null}
+                        <ListingCardQrThumb listing={listing} className='ml-auto' />
                       </div>
                     </div>
 

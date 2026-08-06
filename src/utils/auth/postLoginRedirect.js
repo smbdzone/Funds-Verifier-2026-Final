@@ -16,6 +16,12 @@ const ALLOWED_PREFIXES = [
   '/trustee',
   '/profile',
   '/advertiser-dashboard',
+  '/property',
+  '/offplan',
+  '/car',
+  '/boat',
+  '/jewelry',
+  '/jewellery',
 ]
 
 export function isSafePostLoginPath(path) {

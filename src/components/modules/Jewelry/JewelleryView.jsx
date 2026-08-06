@@ -20,6 +20,9 @@ import { getListingRef } from '@/libs/listingRef'
 import ListingQrCodeSection from '@/components/shared/ListingQrCodeSection'
 import ListingDetailsGrid from '@/components/shared/ListingDetailsGrid'
 import ListingDetailMediaColumn from '@/components/shared/ListingDetailMediaColumn'
+import ListingDetailTitleRow from '@/components/shared/ListingDetailTitleRow'
+import ListingDetailsHeading from '@/components/shared/ListingDetailsHeading'
+import ArrangeViewingButton from '@/components/shared/ArrangeViewingButton'
 import ListingAmenitiesPanel from '@/components/shared/ListingAmenitiesPanel'
 import { getListingAmenities } from '@/libs/listingAmenities'
 import { formatListingLocation } from '@/libs/listingLocationUtils'
@@ -67,10 +70,9 @@ export default function JewelleryView({ data }) {
   )
 
   const tabButtonClass = (tab) =>
-    `flex-grow md:text-base text-xs flex justify-center py-1 ${
-      activeTab === tab
-        ? 'text-lightBlue bg-gradient-to-r text-white sm:text-black from-[#a2913e] via-[#d7c590] to-[#a2913e] md:bg-none md:border-b-2 md:border-gold-800'
-        : 'text-black'
+    `flex-grow md:text-base text-xs flex justify-center py-1 ${activeTab === tab
+      ? 'text-lightBlue bg-gradient-to-r text-white sm:text-black from-[#a2913e] via-[#d7c590] to-[#a2913e] md:bg-none md:border-b-2 md:border-gold-800'
+      : 'text-black'
     }`
 
   return (
@@ -85,33 +87,27 @@ export default function JewelleryView({ data }) {
         />
 
         <div className='relative mt-6 flex w-full flex-col items-start gap-5 sm:mt-0'>
-          <h1 className='w-[90%] truncate text-wrap text-xl font-semibold capitalize text-blue md:text-2xl lg:text-3xl'>
-            {data?.title}
-          </h1>
+          <ListingDetailTitleRow listing={data} />
 
           <div className='flex w-full flex-col gap-3'>
-            <h2 className='text-sm font-medium md:text-base'>Details</h2>
+            <ListingDetailsHeading listing={data} />
             <ListingDetailsGrid rows={detailRows} />
           </div>
 
           <div className='flex w-full flex-wrap gap-x-4 gap-y-1'>
-            <p className='text-sm text-reefGold md:text-base'>
+            <p className='text-sm font-semibold text-reefGold md:text-base'>
               Selling Price: AED {formatPriceUS(data?.price)}
             </p>
-            <p className='text-sm text-reefGold md:text-base'>
+            <p className='text-sm font-semibold text-reefGold md:text-base'>
               Market Price: AED {formatNumberWithCommas(data?.evaluationPrices)}
             </p>
           </div>
 
           <div className='flex w-full flex-wrap items-center gap-3'>
             {!ownsListing ? (
-              <button
-                type='button'
-                onClick={() => setShowCalendarPopup(true)}
-                className='btn-gradient flex w-full justify-center rounded border-0 px-5 py-3 text-xs font-medium text-white focus:outline-none sm:w-auto md:text-sm'
-              >
-                Arrange Viewing
-              </button>
+              <ArrangeViewingButton
+                onAuthenticated={() => setShowCalendarPopup(true)}
+              />
             ) : null}
             <div className='flex gap-3'>
               {technicalReportSrc ? (
@@ -182,7 +178,7 @@ export default function JewelleryView({ data }) {
               </span>
               <ListingSocialShare listing={data} linkedinIcon='white' />
             </div>
-            <ListingQrCodeSection src={getListingQrScanSrc(data)} />
+            <ListingQrCodeSection listing={data} src={getListingQrScanSrc(data)} />
           </div>
         </div>
       </div>
@@ -205,7 +201,7 @@ export default function JewelleryView({ data }) {
           <div className='space-y-4'>
             {data?.description ? <Description text={data.description} /> : null}
             {data?.additionalDescription &&
-            data.additionalDescription !== data?.description ? (
+              data.additionalDescription !== data?.description ? (
               <Description text={data.additionalDescription} />
             ) : null}
             {!data?.description && !data?.additionalDescription ? (

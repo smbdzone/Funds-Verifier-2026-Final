@@ -5,7 +5,6 @@ import { formatCardPrice } from '@/libs/listingPriceDisplay'
 import { ucFirst } from '@/utils'
 import {
   getListingCardImageSrc,
-  getListingQrScanSrc,
   PLACEHOLDER,
 } from '@/libs/listingCardMedia'
 import { getListingRef } from '@/libs/listingRef'
@@ -23,6 +22,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { swiperCanLoop } from '@/utils/swiperLoop'
 import ListingCardViewCount from '@/components/shared/ListingCardViewCount'
+import ListingCardQrThumb from '@/components/shared/ListingCardQrThumb'
 
 // Utility function to shuffle an array
 const shuffleArray = (array) => {
@@ -233,16 +233,7 @@ export default function CarForSale() {
                             </div>
                           </div>
                         </div>
-                        {getListingQrScanSrc(car) ? (
-                          <Image
-                            src={getListingQrScanSrc(car)}
-                            width={72}
-                            height={72}
-                            alt='QR code'
-                            className='listing-qr-thumb ml-auto h-[72px] w-[72px] shrink-0 rounded border border-gray-200 bg-white object-contain'
-                            unoptimized
-                          />
-                        ) : null}
+                        <ListingCardQrThumb listing={car} className='ml-auto' />
                       </div>
                     </div>
                     <div className='listing-card-footer'>

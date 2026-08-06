@@ -810,6 +810,7 @@ const ListingsProvider = ({ children }) => {
   }
 
   const handleQrScanChange = async (event) => {
+    // Do not watermark QR images — text overlays break scanability.
     let selectedFile = event.target.files[0]
     if (selectedFile) {
       if (selectedFile.size > LISTING_IMAGE_MAX_BYTES) {

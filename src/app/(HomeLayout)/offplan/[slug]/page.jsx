@@ -85,6 +85,9 @@ export default async function OffPlanDetailPage({ params }) {
                   developerAvatar={item.developerAvatar}
                   approvalBadge={item.approvalBadge}
                   analytics={item.analytics}
+                  slug={item.slug}
+                  uuid={item.uuid}
+                  assetType={item.assetType}
                 />
               ))}
             </div>

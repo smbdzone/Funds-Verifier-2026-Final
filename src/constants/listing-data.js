@@ -1496,9 +1496,8 @@ export const OFF_PLAN_MEDIA_KEYS = [
   "floorPlan",
 ];
 
-/** Ready-market property listing: title deed + layout docs before amenities. */
+/** Ready-market property listing: layout images (title deed is PDF separately). */
 export const READY_MARKET_LAYOUT_MEDIA_KEYS = [
-  "titleDeed",
   "unitLayout",
   "floorPlan",
 ];

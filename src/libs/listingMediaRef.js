@@ -1,5 +1,4 @@
-/**
- * Listing APIs expect Mongo ObjectIds for populated media fields;
+/** Listing APIs expect Mongo ObjectIds for populated media fields;
  * upload handlers return full documents with `_id`.
  * Empty strings must not be sent — Mongoose rejects Cast to ObjectId for "".
  */
@@ -10,6 +9,23 @@ export function listingMediaRef(uploadOrExisting) {
     uploadOrExisting._id != null
   ) {
     return uploadOrExisting._id
+  }
+  if (typeof uploadOrExisting === 'string' && !uploadOrExisting.trim()) {
+    return undefined
+  }
+  return uploadOrExisting
+}
+
+/** Resolve ObjectId from /upload-certificate (or populated EvaluationCertificate). */
+export function listingCertificateRef(uploadOrExisting) {
+  if (uploadOrExisting == null || uploadOrExisting === '') return undefined
+  if (typeof uploadOrExisting === 'object') {
+    const id =
+      uploadOrExisting.certificate?._id ||
+      uploadOrExisting._id ||
+      uploadOrExisting.certificate?.id ||
+      uploadOrExisting.id
+    if (id != null && id !== '') return id
   }
   if (typeof uploadOrExisting === 'string' && !uploadOrExisting.trim()) {
     return undefined
