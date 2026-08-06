@@ -266,10 +266,12 @@ export const RequestTab3 = () => {
         return
       }
 
-      const approvalPayload = {
-        evaluationPrices: evaluationPrice,
-        invoice: invoiceUpload?._id || property?.invoice || null,
-      }
+      const approvalPayload = buildEvaluatorUpdatePayload({
+        listingPrice,
+        evaluationPrice,
+        roi,
+        includeRoi: true,
+      })
       if (certificateId) {
         approvalPayload.evaluationCertificate = certificateId
       }
@@ -278,6 +280,7 @@ export const RequestTab3 = () => {
           certificateDate,
         ).toISOString()
       }
+      approvalPayload.invoice = invoiceUpload?._id || property?.invoice || null
       if (certificateId || property?.status === 1) {
         approvalPayload.status = 1
       }
@@ -290,6 +293,7 @@ export const RequestTab3 = () => {
 
         setProperty((prevProperty) => ({
           ...prevProperty,
+          ...approvalPayload,
           evaluationPrices: evaluationPrice,
           evaluationCertificate: fileUpload._id,
           status: 1,

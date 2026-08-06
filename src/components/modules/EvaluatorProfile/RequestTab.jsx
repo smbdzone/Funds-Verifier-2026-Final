@@ -12,6 +12,7 @@ import EvaluatorPropertyEditableDetails from './requestCompoenets/EvaluatorPrope
 import {
   buildEvaluatorUpdatePayload,
   buildPropertyDetailsUpdatePayload,
+  buildEvaluatorFinalizeDetailsPayload,
   formatNumericInput,
   getListingPriceForEvaluator,
   initFormattedPrice,
@@ -261,7 +262,17 @@ export const RequestTab = () => {
     setIsLoading(true)
     try {
       let uploadedFile = null
+      const isOffPlan = String(property?.assetType || '')
+        .toLowerCase()
+        .includes('off plan')
+      // Persist evaluator-edited listing details with approval so the
+      // asset-holder / public listing shows the finalized values.
+      const finalizedDetails = buildEvaluatorFinalizeDetailsPayload(
+        detailsDraft,
+        { isOffPlan },
+      )
       let updateData = {
+        ...finalizedDetails,
         roi: roi,
         evaluationPrices: evaluationPrice,
       }

@@ -328,3 +328,12 @@ export const buildPropertyDetailsUpdatePayload = (
   }
   return payload
 }
+
+/**
+ * Listing-detail fields to persist when the evaluator finalizes/approves,
+ * so the public + asset-holder listing show the evaluator's edits.
+ */
+export const buildEvaluatorFinalizeDetailsPayload = (
+  draft = {},
+  { isOffPlan = false } = {},
+) => buildPropertyDetailsUpdatePayload(draft, { isOffPlan })

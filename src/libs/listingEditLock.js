@@ -24,3 +24,33 @@ export function isListingPriceLocked(formData) {
 export function canRequestPremiumServices(formData) {
   return canRequestPremiumServicesFromStatus(formData)
 }
+
+const APPROVED_ASSET_HOLDER_UPDATE_KEYS = [
+  'price',
+  'priceFrom',
+  'priceTo',
+  'listing',
+  'video3DWalkthrough',
+  'technicalReport',
+  'uploadDocument',
+  'fulfillRequestDocument',
+  'customerId',
+  'paymentMethod',
+  'payment_provider',
+  'clozer_transaction_id',
+]
+
+/**
+ * After evaluator approval, strip locked fields so asset-holder saves cannot
+ * overwrite evaluator-finalized listing details (property/car/boat/jewelry).
+ */
+export function buildApprovedAssetHolderUpdatePayload(listingPayload = {}) {
+  if (!listingPayload || typeof listingPayload !== 'object') return {}
+  const out = {}
+  for (const key of APPROVED_ASSET_HOLDER_UPDATE_KEYS) {
+    if (listingPayload[key] !== undefined) {
+      out[key] = listingPayload[key]
+    }
+  }
+  return out
+}

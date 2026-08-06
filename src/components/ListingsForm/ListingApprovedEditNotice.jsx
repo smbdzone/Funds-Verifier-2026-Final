@@ -26,9 +26,10 @@ export default function ListingApprovedEditNotice({ formData }) {
         </>
       ) : (
         <>
-          This listing is approved with an evaluation certificate. You can update
-          the price, Public/Private listing, request a 3D walkthrough, or request
-          a technical report. Other fields are locked.
+          This listing was finalized by the evaluator. The approved details are
+          shown here and stay locked. You can still update the price,
+          Public/Private listing, request a 3D walkthrough, or request a
+          technical report.
         </>
       )}
     </p>

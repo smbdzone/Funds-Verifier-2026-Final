@@ -13,6 +13,7 @@ import EvaluatorPropertyEditableDetails from '../EvaluatorProfile/requestCompoen
 import {
   buildEvaluatorUpdatePayload,
   buildPropertyDetailsUpdatePayload,
+  buildEvaluatorFinalizeDetailsPayload,
   formatNumericInput,
   getListingPriceForEvaluator,
   initFormattedPrice,
@@ -231,10 +232,19 @@ export const RequestTab = () => {
         fileUpload = await handleFileUpload(fileName)
       }
 
+      const isOffPlan = String(property?.assetType || '')
+        .toLowerCase()
+        .includes('off plan')
+      const finalizedDetails = buildEvaluatorFinalizeDetailsPayload(
+        detailsDraft,
+        { isOffPlan },
+      )
+
       if (fileUpload?._id || invoiceUpload?._id) {
         await customAxios.put(
           `${process.env.NEXT_PUBLIC_BASE_URL}/property/${propertyId}`,
           {
+            ...finalizedDetails,
             roi: roi,
             evaluationPrices: evaluationPrice,
             feedback: feedback,
@@ -254,6 +264,7 @@ export const RequestTab = () => {
 
         setProperty((prevProperty) => ({
           ...prevProperty,
+          ...finalizedDetails,
           roi: roi,
           evaluationPrices: evaluationPrice,
           feedback: feedback,
@@ -272,6 +283,7 @@ export const RequestTab = () => {
         await customAxios.put(
           `${process.env.NEXT_PUBLIC_BASE_URL}/property/${propertyId}`,
           {
+            ...finalizedDetails,
             roi: roi,
             evaluationPrices: evaluationPrice,
             feedback: feedback,

@@ -54,6 +54,10 @@ import {
   hasPendingListingDraft,
   isPendingDraftForListingRoute,
 } from '@/libs/pendingListingDraft'
+import {
+  isListingEvaluatorApprovedLocked,
+  buildApprovedAssetHolderUpdatePayload,
+} from '@/libs/listingEditLock'
 import customAxios from '../../../../utils/apis/apis'
 
 const initialFormData = {
@@ -530,11 +534,17 @@ function Page() {
       const listingPayload = stripEmptyObjectIdRefs(
         stripEvaluationBookingMeta(updatedFormData),
       )
+      const payloadToSave =
+        id && isListingEvaluatorApprovedLocked(formData)
+          ? stripEmptyObjectIdRefs(
+            buildApprovedAssetHolderUpdatePayload(listingPayload),
+          )
+          : listingPayload
 
       if (id) {
         await customAxios.put(
           `${process.env.NEXT_PUBLIC_BASE_URL}/car/${id}`,
-          listingPayload
+          payloadToSave
         )
         toast.success('Updated successfully.')
       } else {

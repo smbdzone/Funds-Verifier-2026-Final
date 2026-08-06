@@ -69,7 +69,7 @@ import {
   bookEvaluationTimeslotFromFormData,
   stripEvaluationBookingMeta,
 } from '@/libs/evaluationBooking'
-import { isListingEvaluatorApprovedLocked } from '@/libs/listingEditLock'
+import { isListingEvaluatorApprovedLocked, buildApprovedAssetHolderUpdatePayload } from '@/libs/listingEditLock'
 
 const dropdownData = {
   leaseNumberofCheques: false,
@@ -906,11 +906,21 @@ const Page = () => {
           stripEvaluationBookingMeta(updatedFormData),
         )
 
+        // After evaluator approval, only send fields the asset holder may
+        // still change — keeps evaluator-finalized details intact.
+        const approvedLocked = isListingEvaluatorApprovedLocked(formData)
+        const payloadToSave =
+          id && approvedLocked
+            ? stripEmptyObjectIdRefs(
+              buildApprovedAssetHolderUpdatePayload(listingPayload),
+            )
+            : listingPayload
+
         if (id) {
           requests.push(
             customAxios.put(
               `${process.env.NEXT_PUBLIC_BASE_URL}/property/${id}`,
-              listingPayload
+              payloadToSave
             )
           )
         } else {

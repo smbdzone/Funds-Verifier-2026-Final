@@ -15,6 +15,10 @@ import {
   stripEmptyObjectIdRefs,
 } from '@/libs/listingMediaRef'
 import {
+  isListingEvaluatorApprovedLocked,
+  buildApprovedAssetHolderUpdatePayload,
+} from '@/libs/listingEditLock'
+import {
   hasConfirmedEvaluationPayment,
   bookEvaluationTimeslotFromFormData,
   stripEvaluationBookingMeta,
@@ -664,6 +668,12 @@ function Page() {
       const listingPayload = stripEmptyObjectIdRefs(
         stripEvaluationBookingMeta(updatedFormData),
       )
+      const payloadToSave =
+        id && isListingEvaluatorApprovedLocked(formData)
+          ? stripEmptyObjectIdRefs(
+            buildApprovedAssetHolderUpdatePayload(listingPayload),
+          )
+          : listingPayload
 
       if (!id) {
         await bookEvaluationTimeslotFromFormData(formData)
@@ -673,7 +683,7 @@ function Page() {
         requests.push(
           customAxios.put(
             `${process.env.NEXT_PUBLIC_BASE_URL}/boat/${id}`,
-            listingPayload
+            payloadToSave
           )
         )
       } else {
