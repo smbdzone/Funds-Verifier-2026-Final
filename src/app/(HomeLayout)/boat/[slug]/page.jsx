@@ -25,12 +25,14 @@ const GetProductData = cache(async ({ slug }) => {
 
     const boatInfo = propertyResponse?.data
     const boatData = propertyDataResponse?.data
-    const relatedProducts = (boatData?.products || []).filter(
-      (boat) =>
-        Number(boat?.status) === 1 &&
-        boat?.uuid !== boatInfo?.uuid &&
-        boat?.slug !== boatInfo?.slug,
-    )
+    const relatedProducts = (boatData?.products || []).filter((boat) => {
+      if (Number(boat?.status) !== 1) return false
+      if (boatInfo?.uuid && boat?.uuid === boatInfo.uuid) return false
+      if (boatInfo?.slug && boat?.slug && boat.slug === boatInfo.slug) {
+        return false
+      }
+      return true
+    })
 
     return {
       boatInfo,

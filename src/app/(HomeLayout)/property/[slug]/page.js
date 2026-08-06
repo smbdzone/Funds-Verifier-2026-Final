@@ -25,13 +25,19 @@ const GetProductData = cache(async ({ slug }) => {
 
     const propertyInfo = propertyResponse?.data
     const propertyData = propertyDataResponse?.data
-    const relatedProducts = (propertyData?.products || []).filter(
-      (item) =>
-        Number(item?.status) === 1 &&
-        item?.uuid !== propertyInfo?.uuid &&
-        item?.slug !== propertyInfo?.slug &&
-        !isOffPlanListing(item),
-    )
+    const relatedProducts = (propertyData?.products || []).filter((item) => {
+      if (Number(item?.status) !== 1) return false
+      if (isOffPlanListing(item)) return false
+      if (propertyInfo?.uuid && item?.uuid === propertyInfo.uuid) return false
+      if (
+        propertyInfo?.slug &&
+        item?.slug &&
+        item.slug === propertyInfo.slug
+      ) {
+        return false
+      }
+      return true
+    })
 
     return {
       propertyInfo,

@@ -24,12 +24,12 @@ const GetProductData = cache(async ({ slug }) => {
 
     const carInfo = Response?.data
     const carData = DataResponse?.data
-    const relatedProducts = (carData?.products || []).filter(
-      (car) =>
-        Number(car?.status) === 1 &&
-        car?.uuid !== carInfo?.uuid &&
-        car?.slug !== carInfo?.slug,
-    )
+    const relatedProducts = (carData?.products || []).filter((car) => {
+      if (Number(car?.status) !== 1) return false
+      if (carInfo?.uuid && car?.uuid === carInfo.uuid) return false
+      if (carInfo?.slug && car?.slug && car.slug === carInfo.slug) return false
+      return true
+    })
 
     return {
       carInfo,

@@ -15,13 +15,27 @@ const GetProductData = cache(async ({ id }) => {
     const propertyInfo = await api(`/jewelry/${id}`)
     // Only evaluator-approved jewellery (status = 1) in Related Jewellery
     const propertyData = await api('/jewelry?statusFilter=1&limit=50', {}, 0)
-    const relatedProducts = (propertyData?.products || []).filter(
-      (item) =>
-        Number(item?.status) === 1 &&
-        item?.uuid !== propertyInfo?.uuid &&
-        item?.slug !== propertyInfo?.slug &&
-        String(item?._id) !== String(propertyInfo?._id),
-    )
+    // Only exclude the current listing by real ids — empty slug/undefined
+    // must not be treated as equal (undefined !== undefined is false).
+    const relatedProducts = (propertyData?.products || []).filter((item) => {
+      if (Number(item?.status) !== 1) return false
+      if (propertyInfo?.uuid && item?.uuid === propertyInfo.uuid) return false
+      if (
+        propertyInfo?.slug &&
+        item?.slug &&
+        item.slug === propertyInfo.slug
+      ) {
+        return false
+      }
+      if (
+        propertyInfo?._id &&
+        item?._id &&
+        String(item._id) === String(propertyInfo._id)
+      ) {
+        return false
+      }
+      return true
+    })
     return {
       propertyInfo,
       propertyData: { ...propertyData, products: relatedProducts },

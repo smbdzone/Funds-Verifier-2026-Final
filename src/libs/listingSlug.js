@@ -9,5 +9,7 @@ export function generateListingSlug(title) {
 }
 
 export function getListingDetailId(listing = {}) {
-  return listing.slug || listing.uuid || listing._id || ''
+  // Prefer uuid so duplicate title-slugs never open the wrong listing
+  // (e.g. ready property layout/floor plan missing on detail).
+  return listing.uuid || listing.slug || listing._id || ''
 }

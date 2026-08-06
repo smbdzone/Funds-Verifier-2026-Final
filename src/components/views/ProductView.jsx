@@ -3,7 +3,7 @@
 import CalendarPopup from '@/components/CalendarPopup/CalendarPopup'
 import Description from '@/components/Product_page/Description'
 import Review from '@/components/Product_page/Review'
-import React, { useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { formatPriceUS } from '@/utils'
 import ListingSocialShare from '@/components/shared/ListingSocialShare'
 import { formatNumberWithCommas } from '../../utils/global-functions/global'
@@ -48,6 +48,7 @@ export default function ProductView({ data }) {
     () => resolveLayoutImageSrc(data?.floorPlan),
     [data?.floorPlan],
   )
+  // Show Layout & Floor Plan like off-plan whenever either image was uploaded
   const hasLayoutMedia = Boolean(unitLayoutSrc || floorPlanSrc)
   const visibleTabs = useMemo(
     () =>
@@ -56,6 +57,12 @@ export default function ProductView({ data }) {
         : TABS.filter((tab) => tab !== 'Layout & Floor Plan'),
     [hasLayoutMedia],
   )
+
+  useEffect(() => {
+    if (!hasLayoutMedia && activeTab === 'Layout & Floor Plan') {
+      setActiveTab('Description')
+    }
+  }, [hasLayoutMedia, activeTab])
 
   const pad = (value) => {
     if (value == null || value === '') return ''
