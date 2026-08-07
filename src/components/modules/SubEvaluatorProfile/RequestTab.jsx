@@ -38,6 +38,7 @@ import {
   requestDocumentsMissingDate,
   serializeRequestDocuments,
 } from '@/utils/requestDocumentUtils'
+import { isOffPlanListing } from '@/libs/filterMyListingTab'
 
 export const RequestTab = () => {
   const path = usePathname()
@@ -470,8 +471,10 @@ export const RequestTab = () => {
             requestDocument,
             property.uploadDocument,
             {
-              titleDeed: property.titleDeed,
-              agencyAgreement: property.agencyAgreement,
+              // Ready property only — off-plan Agency Agreement is on Super Admin
+              titleDeed: isOffPlanListing(property)
+                ? null
+                : property.titleDeed,
             },
           )}
           handleOpenDoc={handleOpenDoc}

@@ -333,8 +333,8 @@ export async function resolveRequestDocumentFile(entry) {
 
   const fromUuid = certificateStreamUrlFromUuid(
     entry?.documentUuid ||
-      (typeof entry?.document === 'object' ? entry?.document?.uuid : '') ||
-      (typeof entry?.document === 'string' ? entry.document : ''),
+    (typeof entry?.document === 'object' ? entry?.document?.uuid : '') ||
+    (typeof entry?.document === 'string' ? entry.document : ''),
   )
   if (fromUuid) {
     return { url: fromUuid, fileName: fallbackName }
@@ -402,7 +402,7 @@ export async function resolveEvaluatorListingDocument(
   const inline = fileFromDocument(
     doc,
     (typeof doc === 'object' && (doc?.Certificate?.name || doc?.name)) ||
-      'document.pdf',
+    'document.pdf',
   )
   if (inline?.url) return inline
 
@@ -461,15 +461,10 @@ export async function resolveEvaluatorListingDocument(
       }
     }
 
-    // Asset-holder listing docs (Title Deed / Agency Agreement) live on their own fields
-    const listingFieldDocs = [
-      { field: 'titleDeed', label: 'Title Deed' },
-      { field: 'agencyAgreement', label: 'Agency Agreement' },
-    ]
-    for (const { field, label } of listingFieldDocs) {
-      const listingDoc = res.data?.[field]
-      if (!listingDoc) continue
-
+    // Ready-market Title Deed (Agency Agreement is handled on Super Admin for off-plan)
+    const listingDoc = res.data?.titleDeed
+    if (listingDoc) {
+      const label = 'Title Deed'
       const labelMatch =
         typeof doc === 'object' &&
         (doc?.listingDocLabel === label ||
