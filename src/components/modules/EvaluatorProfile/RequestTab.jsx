@@ -512,6 +512,10 @@ export const RequestTab = () => {
           documents={buildEvaluatorUploadedDocuments(
             requestDocument,
             property.uploadDocument,
+            {
+              titleDeed: property.titleDeed,
+              agencyAgreement: property.agencyAgreement,
+            },
           )}
           handleOpenDoc={handleOpenDoc}
           listingContext={{ listingType: 'Property', listingId: propertyId }}

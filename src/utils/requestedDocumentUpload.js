@@ -461,6 +461,31 @@ export async function resolveEvaluatorListingDocument(
       }
     }
 
+    // Asset-holder listing docs (Title Deed / Agency Agreement) live on their own fields
+    const listingFieldDocs = [
+      { field: 'titleDeed', label: 'Title Deed' },
+      { field: 'agencyAgreement', label: 'Agency Agreement' },
+    ]
+    for (const { field, label } of listingFieldDocs) {
+      const listingDoc = res.data?.[field]
+      if (!listingDoc) continue
+
+      const labelMatch =
+        typeof doc === 'object' &&
+        (doc?.listingDocLabel === label ||
+          doc?.Certificate?.name === label ||
+          doc?.name === label)
+
+      if (labelMatch || documentRefsMatch(listingDoc, doc)) {
+        const fromListing = fileFromDocument(listingDoc, `${label}.pdf`)
+        if (fromListing?.url) return fromListing
+        const url = getListingDocumentSrc(listingDoc)
+        if (url) {
+          return { url, fileName: `${label}.pdf` }
+        }
+      }
+    }
+
     for (const req of requests) {
       if (!isRequestDocumentFulfilled(req)) continue
 

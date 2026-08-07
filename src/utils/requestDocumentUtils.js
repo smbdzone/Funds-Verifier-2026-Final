@@ -113,7 +113,37 @@ export function documentRefsMatch(a, b) {
 export function buildEvaluatorUploadedDocuments(
   requestDocument = [],
   uploadDocument = [],
+  listingDocuments = {},
 ) {
+  const listingExtras = []
+
+  const pushListingDoc = (doc, label) => {
+    if (!doc) return
+    if (typeof doc === 'string') {
+      if (!doc.trim()) return
+      listingExtras.push({
+        _id: doc,
+        Certificate: { name: label },
+        listingDocLabel: label,
+      })
+      return
+    }
+    if (typeof doc !== 'object') return
+    listingExtras.push({
+      ...doc,
+      Certificate: {
+        ...(doc.Certificate || {}),
+        name: label,
+      },
+      listingDocLabel: label,
+      uploadedAt: doc.uploadedAt || doc.createdAt || doc.updatedAt,
+    })
+  }
+
+  // Asset-holder docs from Add Listing (ready = Title Deed, off-plan = Agency Agreement)
+  pushListingDoc(listingDocuments?.titleDeed, 'Title Deed')
+  pushListingDoc(listingDocuments?.agencyAgreement, 'Agency Agreement')
+
   const fromRequests = normalizeRequestDocuments(requestDocument)
     .filter(isRequestDocumentFulfilled)
     .map((req) => {
@@ -139,11 +169,11 @@ export function buildEvaluatorUploadedDocuments(
       }
     })
 
-  const seen = new Set(
-    fromRequests
-      .map((doc) => String(doc?._id || doc?.uuid || ''))
-      .filter(Boolean),
-  )
+  const seen = new Set()
+  for (const doc of [...listingExtras, ...fromRequests]) {
+    const id = String(doc?._id || doc?.uuid || '')
+    if (id) seen.add(id)
+  }
 
   const extras = (Array.isArray(uploadDocument) ? uploadDocument : []).filter(
     (doc) => {
@@ -152,7 +182,7 @@ export function buildEvaluatorUploadedDocuments(
     },
   )
 
-  return [...fromRequests, ...extras]
+  return [...listingExtras, ...fromRequests, ...extras]
 }
 
 export function requestDocumentsMissingDate(docs) {
