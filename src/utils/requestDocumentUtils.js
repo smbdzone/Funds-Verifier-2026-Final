@@ -80,6 +80,9 @@ export function hasPendingDocumentRequests(listingOrDocs) {
 /**
  * Evaluator "Uploaded documents" list: fulfilled request docs first,
  * then other uploadDocument files not already represented.
+ * Prefer getDocumentRefId / documentRefsMatch when comparing refs.
+ * Use buildEvaluatorUploadedDocuments() to build the visible list
+ * (includes Title Deed / Agency Agreement from Add Listing).
  */
 export function getDocumentRefId(value) {
   if (!value) return ''
@@ -140,9 +143,8 @@ export function buildEvaluatorUploadedDocuments(
     })
   }
 
-  // Asset-holder docs from Add Listing (ready = Title Deed, off-plan = Agency Agreement)
+  // Ready-market Title Deed only (off-plan Agency Agreement is shown on Super Admin)
   pushListingDoc(listingDocuments?.titleDeed, 'Title Deed')
-  pushListingDoc(listingDocuments?.agencyAgreement, 'Agency Agreement')
 
   const fromRequests = normalizeRequestDocuments(requestDocument)
     .filter(isRequestDocumentFulfilled)
