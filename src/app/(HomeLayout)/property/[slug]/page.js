@@ -6,7 +6,6 @@ import ProductView from '@/components/views/ProductView'
 import GlobalLoader from '@/utils/GlobalLoader'
 import { getPublicApiHeaders } from '@/libs/publicApiClient'
 import { buildListingPageMetadata } from '@/libs/listingMetadata'
-import { isOffPlanListing } from '@/libs/filterMyListingTab'
 import { cache } from 'react'
 
 export const dynamic = 'force-dynamic'
@@ -14,20 +13,29 @@ export const dynamic = 'force-dynamic'
 const GetProductData = cache(async ({ slug }) => {
   try {
     const headers = await getPublicApiHeaders()
-    const propertyResponse = await axios.get(
-      `${process.env.NEXT_PUBLIC_BASE_URL}/property/${slug}`,
-      { headers },
-    )
-    const propertyDataResponse = await axios.get(
-      `${process.env.NEXT_PUBLIC_BASE_URL}/property?statusFilter=1&limit=50&sort=-createdAt`,
-      { headers },
-    )
+    const [propertyResponse, relatedResponse] = await Promise.all([
+      axios.get(`${process.env.NEXT_PUBLIC_BASE_URL}/property/${slug}`, {
+        headers,
+      }),
+      axios.get(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/property/related-property`,
+        {
+          headers,
+          params: {
+            statusFilter: 1,
+            limit: 12,
+            excludeSlug: slug,
+            excludeOffPlan: true,
+          },
+        },
+      ),
+    ])
 
     const propertyInfo = propertyResponse?.data
-    const propertyData = propertyDataResponse?.data
-    const relatedProducts = (propertyData?.products || []).filter((item) => {
-      if (Number(item?.status) !== 1) return false
-      if (isOffPlanListing(item)) return false
+    const relatedProducts = relatedResponse?.data?.products || []
+
+    // Extra safety: drop current listing if exclude missed for any reason.
+    const products = relatedProducts.filter((item) => {
       if (propertyInfo?.uuid && item?.uuid === propertyInfo.uuid) return false
       if (
         propertyInfo?.slug &&
@@ -41,7 +49,7 @@ const GetProductData = cache(async ({ slug }) => {
 
     return {
       propertyInfo,
-      propertyData: { ...propertyData, products: relatedProducts },
+      propertyData: { products },
     }
   } catch (error) {
     console.error('Failed to load property:', slug, error?.message)

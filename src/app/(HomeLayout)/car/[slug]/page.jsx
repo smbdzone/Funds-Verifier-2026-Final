@@ -13,19 +13,23 @@ export const dynamic = 'force-dynamic'
 const GetProductData = cache(async ({ slug }) => {
   try {
     const headers = await getPublicApiHeaders()
-    const Response = await axios.get(
-      `${process.env.NEXT_PUBLIC_BASE_URL}/car/${slug}`,
-      { headers },
-    )
-    const DataResponse = await axios.get(
-      `${process.env.NEXT_PUBLIC_BASE_URL}/car?statusFilter=1&limit=50`,
-      { headers },
-    )
+    const [Response, relatedResponse] = await Promise.all([
+      axios.get(`${process.env.NEXT_PUBLIC_BASE_URL}/car/${slug}`, {
+        headers,
+      }),
+      axios.get(`${process.env.NEXT_PUBLIC_BASE_URL}/car/related-car`, {
+        headers,
+        params: {
+          statusFilter: 1,
+          limit: 12,
+          excludeSlug: slug,
+        },
+      }),
+    ])
 
     const carInfo = Response?.data
-    const carData = DataResponse?.data
-    const relatedProducts = (carData?.products || []).filter((car) => {
-      if (Number(car?.status) !== 1) return false
+    const relatedProducts = relatedResponse?.data?.products || []
+    const products = relatedProducts.filter((car) => {
       if (carInfo?.uuid && car?.uuid === carInfo.uuid) return false
       if (carInfo?.slug && car?.slug && car.slug === carInfo.slug) return false
       return true
@@ -33,7 +37,7 @@ const GetProductData = cache(async ({ slug }) => {
 
     return {
       carInfo,
-      carData: { ...carData, products: relatedProducts },
+      carData: { products },
     }
   } catch (error) {
     return null

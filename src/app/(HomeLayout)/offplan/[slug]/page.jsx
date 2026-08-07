@@ -27,7 +27,11 @@ export async function generateMetadata({ params }) {
 
 export default async function OffPlanDetailPage({ params }) {
   const { slug } = await params
-  const listing = await fetchOffPlanListingBySlug(slug)
+
+  const [listing, relatedCandidates] = await Promise.all([
+    fetchOffPlanListingBySlug(slug),
+    fetchApprovedOffPlanListings({ limit: 4 }),
+  ])
 
   if (!listing) {
     return (
@@ -37,8 +41,7 @@ export default async function OffPlanDetailPage({ params }) {
     )
   }
 
-  const allListings = await fetchApprovedOffPlanListings({ limit: 50 })
-  const relatedListings = allListings
+  const relatedListings = relatedCandidates
     .filter((item) => item.slug !== listing.slug)
     .slice(0, 3)
 

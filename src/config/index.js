@@ -36,8 +36,8 @@ export async function api(url, options = {}, cacheTime = 20000) {
         'Content-Type': 'application/json',
         ...authHeaders,
       },
-      // Optional: only if using App Router
-      next: { revalidate: 10 },
+      // Align with HomeLayout ISR (60s) unless caller overrides.
+      next: { revalidate: 60, ...(options.next || {}) },
     })
 
     if (!response.ok) {

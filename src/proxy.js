@@ -139,7 +139,7 @@ function getCookieOptions() {
 function clearAuthCookiesOnResponse(response) {
   const isProd = process.env.NODE_ENV === 'production'
   const domain = process.env.COOKIE_DOMAIN || '.fundsverifier.com'
-  const names = ['refreshToken', 'accessToken', 'role']
+  const names = ['refreshToken', 'accessToken', 'role', 'fv_session']
   const scopes = [
     getCookieOptions(),
     {

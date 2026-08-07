@@ -18,6 +18,7 @@ import {
   applyFullPayDiscount,
   formatAed,
   getFullPayDiscountPercent,
+  loadFullPayDiscountPercent,
 } from '@/libs/paymentDiscount'
 import { clearAbandonedEvaluationPaymentDraft } from '@/libs/evaluationBooking'
 import { savePendingListingDraft } from '@/libs/pendingListingDraft'
@@ -45,6 +46,11 @@ const PaymentModal = ({
   const [loading, setLoading] = useState(false)
   const [paymentStep, setPaymentStep] = useState('choice')
   const [clozerLoading, setClozerLoading] = useState(false)
+
+  useEffect(() => {
+    if (!show) return
+    loadFullPayDiscountPercent().catch(() => {})
+  }, [show])
 
   useEffect(() => {
     if (!show || !formData) return

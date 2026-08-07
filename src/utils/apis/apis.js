@@ -4,8 +4,21 @@ import { globalLogout } from '../../context/UserContext'
 import { getAccessToken, setAccessToken } from '../auth/accessTokenStore'
 import { getPublicApiHeaders } from '@/libs/publicApiClient'
 import { getCsrfHeaders } from '@/utils/csrf'
+
 let isRefreshing = false
 let failedQueue = []
+
+const SAFE_HTTP_METHODS = new Set(['get', 'head', 'options'])
+
+/** Auth endpoints authenticate via cookies/Bearer — do not fetch a public token for them. */
+const SKIP_PUBLIC_TOKEN_PATHS = [
+  '/user/me',
+  '/user/refresh',
+  '/user/logout',
+  '/user/login',
+  '/csrf-token',
+  '/public/get-public-token',
+]
 
 const normalizeRole = (role) => {
   if (!role) return role
@@ -30,6 +43,16 @@ const processQueue = (error, token = null) => {
   failedQueue = []
 }
 
+function requestNeedsCsrf(config) {
+  const method = String(config?.method || 'get').toLowerCase()
+  return !SAFE_HTTP_METHODS.has(method)
+}
+
+function requestNeedsPublicToken(config) {
+  const url = String(config?.url || '')
+  return !SKIP_PUBLIC_TOKEN_PATHS.some((path) => url.includes(path))
+}
+
 const customAxios = axios.create({
   baseURL: (process.env.NEXT_PUBLIC_BASE_URL || '').trim(),
   withCredentials: true, // refresh token cookie
@@ -37,8 +60,10 @@ const customAxios = axios.create({
 
 /* ================= REQUEST ================= */
 customAxios.interceptors.request.use(async (config) => {
-  const csrfHeaders = await getCsrfHeaders()
-  Object.assign(config.headers, csrfHeaders)
+  if (requestNeedsCsrf(config)) {
+    const csrfHeaders = await getCsrfHeaders()
+    Object.assign(config.headers, csrfHeaders)
+  }
 
   const token = getAccessToken()
   if (token) {
@@ -46,10 +71,14 @@ customAxios.interceptors.request.use(async (config) => {
     delete config.headers['x-public-token']
   } else {
     delete config.headers.Authorization
-    try {
-      const publicHeaders = await getPublicApiHeaders()
-      config.headers['x-public-token'] = publicHeaders['x-public-token']
-    } catch {
+    if (requestNeedsPublicToken(config)) {
+      try {
+        const publicHeaders = await getPublicApiHeaders()
+        config.headers['x-public-token'] = publicHeaders['x-public-token']
+      } catch {
+        delete config.headers['x-public-token']
+      }
+    } else {
       delete config.headers['x-public-token']
     }
   }

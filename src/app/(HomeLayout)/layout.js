@@ -12,10 +12,9 @@ import { UserProvider } from '../../context/UserContext'
 import { PublicTokenProvider } from '../../utils/PublicTokenProvider.'
 import { resolveSiteOrigin } from '@/libs/listingSocialShare'
 
-// ✅ CRITICAL: Add these to prevent prerendering of ALL pages in this layout
-export const dynamic = 'force-dynamic'
+// Cache public pages (ISR). Listing/home data refreshes every 60s.
+export const revalidate = 60
 export const dynamicParams = true
-export const revalidate = 0
 
 const siteOrigin = resolveSiteOrigin()
 
@@ -28,7 +27,6 @@ export const metadata = {
   },
 }
 
-// ✅ Remove 'async' - not needed and causes issues
 export default function RootLayout({ children }) {
   return (
     <html lang='en' className={montserrat.className}>

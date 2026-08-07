@@ -24,8 +24,12 @@ import {
   isUaePassCallback,
   POST_LOGIN_BOOTSTRAP_KEY,
 } from '../utils/auth/uaePass'
-import { ensureCsrfToken } from '../utils/csrf'
-import { loadFullPayDiscountPercent } from '../libs/paymentDiscount'
+import {
+  clearSessionHintCookieClient,
+  hasSessionHintCookie,
+  markAuthChecked,
+  shouldProbeUserSession,
+} from '../utils/auth/sessionHint'
 import { SessionIdleProvider } from './SessionIdleContext'
 
 export let globalLogout = () => { }
@@ -97,6 +101,15 @@ export const UserProvider = ({ children }) => {
       setAccessTokenState(bootstrapToken)
     }
 
+    if (!freshLogin && !shouldProbeUserSession()) {
+      setUser(null)
+      setIsAuthenticated(false)
+      setAccessTokenState(null)
+      clearAccessToken()
+      setIsLoading(false)
+      return
+    }
+
     try {
       let response
       try {
@@ -117,6 +130,19 @@ export const UserProvider = ({ children }) => {
         }
       } catch (meError) {
         if (meError.response?.status !== 401) throw meError
+
+        // Anonymous / expired: skip refresh when there is no session hint.
+        const canRefresh =
+          hadBootstrap || Boolean(getAccessToken()) || hasSessionHintCookie()
+        if (!canRefresh) {
+          markAuthChecked()
+          setUser(null)
+          setIsAuthenticated(false)
+          setAccessTokenState(null)
+          clearAccessToken()
+          return
+        }
+
         const newToken = await refreshAccessToken()
         setAccessToken(newToken)
         setAccessTokenState(newToken)
@@ -126,6 +152,7 @@ export const UserProvider = ({ children }) => {
       }
 
       const userData = response.data
+      markAuthChecked()
 
       if (isSessionIdleExpired(userData.uuid)) {
         await endSession({ callBackend: true })
@@ -156,6 +183,7 @@ export const UserProvider = ({ children }) => {
         setAccessTokenState(response.data.accessToken)
       }
     } catch (error) {
+      markAuthChecked()
       if (error.response?.status !== 401) {
         console.error('Error loading user:', error)
       }
@@ -168,11 +196,6 @@ export const UserProvider = ({ children }) => {
       setIsLoading(false)
     }
   }
-
-  useEffect(() => {
-    ensureCsrfToken().catch(() => { })
-    loadFullPayDiscountPercent().catch(() => { })
-  }, [])
 
   useEffect(() => {
     if (isUaePassCallback()) {
@@ -211,6 +234,8 @@ export const UserProvider = ({ children }) => {
       setUser(null)
       setIsAuthenticated(false)
       setAccessTokenState(null)
+      clearSessionHintCookieClient()
+      markAuthChecked()
 
       if (
         typeof window !== 'undefined' &&
@@ -222,6 +247,8 @@ export const UserProvider = ({ children }) => {
       console.error('Logout failed:', err)
       clearSessionIdle()
       clearClientAuthStorage()
+      clearSessionHintCookieClient()
+      markAuthChecked()
       setUser(null)
       setIsAuthenticated(false)
       setAccessTokenState(null)

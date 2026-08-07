@@ -30,7 +30,17 @@ export async function ensureCsrfToken() {
   return cachedCsrfToken
 }
 
+/** Attach CSRF header for unsafe methods. Uses cookie when present (no network). */
 export async function getCsrfHeaders(extraHeaders = {}) {
+  const fromCookie = getCsrfTokenFromCookie()
+  if (fromCookie) {
+    cachedCsrfToken = fromCookie
+    return {
+      ...extraHeaders,
+      [CSRF_HEADER_NAME]: fromCookie,
+    }
+  }
+
   const token = cachedCsrfToken || (await ensureCsrfToken())
   if (!token) return extraHeaders
   return {

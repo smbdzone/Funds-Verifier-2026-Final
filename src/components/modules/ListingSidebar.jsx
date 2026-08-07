@@ -468,25 +468,38 @@ export const ListingSidebar = ({ initialData, isSidebarVisible }) => {
   //------------------------------------
   // const propertytype1 = searchParams.get("propertyType");
 
+  const assetTypeParam = searchParams.get('assetType')
+
   useEffect(() => {
     const fetchCountries = async () => {
       try {
-        let response
-        if (category === 'Boat') {
-          response = await customAxios.get('/boat')
+        let endpoint = null
+        const params = { statusFilter: 1 }
+
+        if (check === 'boat' || category === 'Boat') {
+          endpoint = '/boat/locations'
         } else if (
+          check === 'property' ||
+          check === 'offplan' ||
           category === 'Property For Sale' ||
           category === 'Property For Lease'
         ) {
-          response = await customAxios.get('/property')
-        } else if (category === 'Car') {
-          response = await customAxios.get('/car')
-        } else if (category === 'Jewelry') {
-          response = await customAxios.get('/jewelry')
+          endpoint = '/property/locations'
+          const assetType =
+            assetTypeParam ||
+            (check === 'offplan' ? 'Property Off Plan For Sale' : null)
+          if (assetType) params.assetType = assetType
+        } else if (check === 'car' || category === 'Car') {
+          endpoint = '/car/locations'
+        } else if (check === 'jewelry' || category === 'Jewelry') {
+          endpoint = '/jewelry/locations'
         }
 
-        const products = response?.data?.products || []
-        const formattedMap = buildCountryCityNeighbourhoodMap(products)
+        if (!endpoint) return
+
+        const response = await customAxios.get(endpoint, { params })
+        const locations = response?.data?.locations || []
+        const formattedMap = buildCountryCityNeighbourhoodMap(locations)
 
         setCountries(UAE_ONLY_COUNTRY_OPTIONS)
         setCountryCityMap(formattedMap)
@@ -498,7 +511,7 @@ export const ListingSidebar = ({ initialData, isSidebarVisible }) => {
     }
 
     fetchCountries()
-  }, [filterData])
+  }, [check, category, assetTypeParam])
 
   const fetchCities = async (countryName) => {
     try {

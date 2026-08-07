@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useMemo, useRef } from 'react'
 import { Swiper, SwiperSlide } from 'swiper/react'
 import 'swiper/css'
 import 'swiper/css/pagination'
@@ -18,12 +18,15 @@ import { FaStar } from 'react-icons/fa'
 import location from '@/assets/vector2.svg'
 import arrow_right from '@/assets/vector1.svg'
 import { getProfileImageSrc } from '@/utils/global-functions/global'
-import { HomeListingSliderSkeleton } from '@/components/home/HomeSectionSkeletons'
-import { publicApiFetch } from '@/libs/publicApiClient'
 import ListingCardViewCount from '@/components/shared/ListingCardViewCount'
 import ListingCardQrThumb from '@/components/shared/ListingCardQrThumb'
+import { useAppContext } from '@/context/AppContext'
 
-const APPROVED_BOATS_URL = '/boat?statusFilter=1&limit=100&sort=-createdAt'
+function getProducts(payload) {
+  if (Array.isArray(payload)) return payload
+  if (Array.isArray(payload?.products)) return payload.products
+  return []
+}
 
 function filterApprovedBoats(products) {
   if (!Array.isArray(products)) return []
@@ -36,57 +39,20 @@ function truncateTitle(title) {
 }
 
 export default function BoatsSaleSlider() {
-  const [approvedBoats, setApprovedBoats] = useState([])
-  const [isLoading, setIsLoading] = useState(true)
+  const { boatsForSale } = useAppContext()
   const swiperRef = useRef(null)
 
-  useEffect(() => {
-    let cancelled = false
-
-    const fetchApprovedBoats = async () => {
-      setIsLoading(true)
-      try {
-        const response = await publicApiFetch(APPROVED_BOATS_URL, {
-          cache: 'no-store',
-        })
-
-        if (!response.ok) {
-          throw new Error(`Request failed: ${response.status}`)
-        }
-
-        const data = await response.json()
-        if (!cancelled) {
-          setApprovedBoats(filterApprovedBoats(data?.products))
-        }
-      } catch (error) {
-        console.error('Failed to load verified boats for sale:', error)
-        if (!cancelled) {
-          setApprovedBoats([])
-        }
-      } finally {
-        if (!cancelled) {
-          setIsLoading(false)
-        }
-      }
-    }
-
-    fetchApprovedBoats()
-
-    return () => {
-      cancelled = true
-    }
-  }, [])
+  const approvedBoats = useMemo(
+    () => filterApprovedBoats(getProducts(boatsForSale)),
+    [boatsForSale],
+  )
 
   const handlePrevSlide = () => {
-    if (swiperRef.current?.swiper) {
-      swiperRef.current.swiper.slidePrev()
-    }
+    swiperRef.current?.swiper?.slidePrev()
   }
 
   const handleNextSlide = () => {
-    if (swiperRef.current?.swiper) {
-      swiperRef.current.swiper.slideNext()
-    }
+    swiperRef.current?.swiper?.slideNext()
   }
 
   const hasListings = approvedBoats.length > 0
@@ -137,15 +103,13 @@ export default function BoatsSaleSlider() {
         ) : null}
       </div>
 
-      {isLoading ? <HomeListingSliderSkeleton count={3} /> : null}
-
-      {!isLoading && !hasListings ? (
+      {!hasListings ? (
         <p className='text-center text-sm text-[#002D4F]/70 py-12'>
           No evaluator-approved boats for sale yet.
         </p>
       ) : null}
 
-      {!isLoading && hasListings ? (
+      {hasListings ? (
         <div className='flex flex-row gap-3 items-center relative'>
           <div className='hidden md:block space-x-5 pb-5'>
             <div

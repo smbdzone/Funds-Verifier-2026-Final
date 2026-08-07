@@ -21,7 +21,13 @@ const AUTH_LOCAL_STORAGE_KEYS = [
   'fv.session.idleUserUuid',
 ]
 
-const AUTH_COOKIE_NAMES = ['accessToken', 'refreshToken', 'role', 'userUUID']
+const AUTH_COOKIE_NAMES = [
+  'accessToken',
+  'refreshToken',
+  'role',
+  'userUUID',
+  'fv_session',
+]
 
 /**
  * Clear in-memory token, legacy localStorage, and any non-HttpOnly cookies

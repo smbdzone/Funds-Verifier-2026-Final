@@ -12,13 +12,21 @@ export const dynamic = 'force-dynamic'
 
 const GetProductData = cache(async ({ id }) => {
   try {
-    const propertyInfo = await api(`/jewelry/${id}`)
-    // Only evaluator-approved jewellery (status = 1) in Related Jewellery
-    const propertyData = await api('/jewelry?statusFilter=1&limit=50', {}, 0)
-    // Only exclude the current listing by real ids — empty slug/undefined
-    // must not be treated as equal (undefined !== undefined is false).
-    const relatedProducts = (propertyData?.products || []).filter((item) => {
-      if (Number(item?.status) !== 1) return false
+    const relatedQuery = new URLSearchParams({
+      statusFilter: '1',
+      limit: '12',
+      excludeSlug: id,
+      excludeUuid: id,
+      excludeId: id,
+    })
+
+    const [propertyInfo, relatedData] = await Promise.all([
+      api(`/jewelry/${id}`),
+      api(`/jewelry/related-jewelry?${relatedQuery.toString()}`, {}, 0),
+    ])
+
+    const relatedProducts = relatedData?.products || []
+    const products = relatedProducts.filter((item) => {
       if (propertyInfo?.uuid && item?.uuid === propertyInfo.uuid) return false
       if (
         propertyInfo?.slug &&
@@ -36,9 +44,10 @@ const GetProductData = cache(async ({ id }) => {
       }
       return true
     })
+
     return {
       propertyInfo,
-      propertyData: { ...propertyData, products: relatedProducts },
+      propertyData: { products },
     }
   } catch (error) {
     return null

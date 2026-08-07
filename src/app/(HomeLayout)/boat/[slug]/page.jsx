@@ -13,20 +13,23 @@ export const dynamic = 'force-dynamic'
 const GetProductData = cache(async ({ slug }) => {
   try {
     const headers = await getPublicApiHeaders()
-    const propertyResponse = await axios.get(
-      `${process.env.NEXT_PUBLIC_BASE_URL}/boat/${slug}`,
-      { headers },
-    )
-    // Only evaluator-approved boats (status = 1) appear in Related Boats
-    const propertyDataResponse = await axios.get(
-      `${process.env.NEXT_PUBLIC_BASE_URL}/boat?statusFilter=1&limit=50`,
-      { headers },
-    )
+    const [propertyResponse, relatedResponse] = await Promise.all([
+      axios.get(`${process.env.NEXT_PUBLIC_BASE_URL}/boat/${slug}`, {
+        headers,
+      }),
+      axios.get(`${process.env.NEXT_PUBLIC_BASE_URL}/boat/related-boat`, {
+        headers,
+        params: {
+          statusFilter: 1,
+          limit: 12,
+          excludeSlug: slug,
+        },
+      }),
+    ])
 
     const boatInfo = propertyResponse?.data
-    const boatData = propertyDataResponse?.data
-    const relatedProducts = (boatData?.products || []).filter((boat) => {
-      if (Number(boat?.status) !== 1) return false
+    const relatedProducts = relatedResponse?.data?.products || []
+    const products = relatedProducts.filter((boat) => {
       if (boatInfo?.uuid && boat?.uuid === boatInfo.uuid) return false
       if (boatInfo?.slug && boat?.slug && boat.slug === boatInfo.slug) {
         return false
@@ -36,7 +39,7 @@ const GetProductData = cache(async ({ slug }) => {
 
     return {
       boatInfo,
-      boatData: { ...boatData, products: relatedProducts },
+      boatData: { products },
     }
   } catch (error) {
     return null

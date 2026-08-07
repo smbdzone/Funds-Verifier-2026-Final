@@ -21,7 +21,8 @@ async function fetchPublicToken() {
   }
 
   const res = await fetch(`${baseUrl}/public/get-public-token`, {
-    cache: 'no-store',
+    // Allow ISR for public pages — in-memory cache still refreshes near JWT expiry.
+    next: { revalidate: 240 },
   })
 
   if (!res.ok) {
@@ -42,6 +43,11 @@ async function fetchPublicToken() {
   }
 
   return token
+}
+
+/** Shared public-token fetch (in-memory cache). Used by SSR + client providers. */
+export async function getPublicToken() {
+  return fetchPublicToken()
 }
 
 export async function getPublicApiHeaders(extraHeaders = {}) {

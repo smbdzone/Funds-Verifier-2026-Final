@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useMemo, useRef } from 'react'
 import { Swiper, SwiperSlide } from 'swiper/react'
 import 'swiper/css'
 import 'swiper/css/navigation'
@@ -19,14 +19,10 @@ import { getListingRef } from '@/libs/listingRef'
 import { getProfileImageSrc } from '@/utils/global-functions/global'
 import location from '@/assets/vector2.svg'
 import arrow_right from '@/assets/vector1.svg'
-import { HomeListingSliderSkeleton } from '@/components/home/HomeSectionSkeletons'
-import { publicApiFetch } from '@/libs/publicApiClient'
 import { isOffPlanListing } from '@/libs/filterMyListingTab'
 import ListingCardViewCount from '@/components/shared/ListingCardViewCount'
 import ListingCardQrThumb from '@/components/shared/ListingCardQrThumb'
-
-const APPROVED_PROPERTIES_URL =
-  '/property?statusFilter=1&limit=100&sort=-createdAt'
+import { useAppContext } from '@/context/AppContext'
 
 function isYes(value) {
   return String(value ?? '')
@@ -34,11 +30,16 @@ function isYes(value) {
     .toLowerCase() === 'yes'
 }
 
+function getProducts(payload) {
+  if (Array.isArray(payload)) return payload
+  if (Array.isArray(payload?.products)) return payload.products
+  return []
+}
+
 function filterApprovedForSale(products) {
   if (!Array.isArray(products)) return []
   return products.filter((item) => {
     if (Number(item?.status) !== 1) return false
-    // Off-plan listings belong on /offplan only — never on home verified properties.
     if (isOffPlanListing(item)) return false
 
     const assetType = String(item?.assetType || '').toLowerCase()
@@ -58,68 +59,21 @@ function truncateTitle(title) {
   return String(title)
 }
 
-function getPropertyCardImageSrc(property) {
-  const items = getListingCarouselItems(property)
-  const slide = items.find(
-    (item) => item.type === 'image' && !isListingCarouselPlaceholderSlide(item),
-  )
-  if (slide?.src) return slide.src
-  const thumb = getListingThumbSrc(property)
-  return thumb !== PLACEHOLDER ? thumb : ''
-}
-
 export default function PropertySaleSlider() {
-  const [approvedProperties, setApprovedProperties] = useState([])
-  const [isLoading, setIsLoading] = useState(true)
+  const { propertiesForSale } = useAppContext()
   const swiperRef = useRef(null)
 
-  useEffect(() => {
-    let cancelled = false
-
-    const fetchApprovedProperties = async () => {
-      setIsLoading(true)
-      try {
-        const response = await publicApiFetch(APPROVED_PROPERTIES_URL, {
-          cache: 'no-store',
-        })
-
-        if (!response.ok) {
-          throw new Error(`Request failed: ${response.status}`)
-        }
-
-        const data = await response.json()
-        if (!cancelled) {
-          setApprovedProperties(filterApprovedForSale(data?.products))
-        }
-      } catch (error) {
-        console.error('Failed to load verified properties for sale:', error)
-        if (!cancelled) {
-          setApprovedProperties([])
-        }
-      } finally {
-        if (!cancelled) {
-          setIsLoading(false)
-        }
-      }
-    }
-
-    fetchApprovedProperties()
-
-    return () => {
-      cancelled = true
-    }
-  }, [])
+  const approvedProperties = useMemo(
+    () => filterApprovedForSale(getProducts(propertiesForSale)),
+    [propertiesForSale],
+  )
 
   const handlePrevSlide = () => {
-    if (swiperRef.current?.swiper) {
-      swiperRef.current.swiper.slidePrev()
-    }
+    swiperRef.current?.swiper?.slidePrev()
   }
 
   const handleNextSlide = () => {
-    if (swiperRef.current?.swiper) {
-      swiperRef.current.swiper.slideNext()
-    }
+    swiperRef.current?.swiper?.slideNext()
   }
 
   const hasListings = approvedProperties.length > 0
@@ -171,15 +125,11 @@ export default function PropertySaleSlider() {
         ) : null}
       </div>
 
-      {isLoading ? <HomeListingSliderSkeleton count={3} /> : null}
-
-      {!isLoading && !hasListings ? (
+      {!hasListings ? (
         <p className='text-center text-sm text-[#002D4F]/70 py-12'>
           No evaluator-approved properties for sale yet.
         </p>
-      ) : null}
-
-      {!isLoading && hasListings ? (
+      ) : (
         <div className='flex md:flex-row flex-col items-center relative overflow-visible'>
           <div className='hidden md:block space-x-5 pb-5'>
             <div
@@ -363,7 +313,7 @@ export default function PropertySaleSlider() {
             })}
           </Swiper>
         </div>
-      ) : null}
+      )}
     </div>
   )
 }

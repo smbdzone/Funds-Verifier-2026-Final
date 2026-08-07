@@ -16,12 +16,12 @@ import {
   UAE_ONLY_COUNTRY_OPTIONS,
 } from '@/libs/listingLocationUtils'
 
-const CATEGORY_ENDPOINTS = {
-  Boat: '/boat',
-  'Property For Sale': '/property',
-  'Property Off Plan For Sale': '/offplan',
-  Car: '/car',
-  Jewelry: '/jewelry',
+const CATEGORY_LOCATION_ENDPOINTS = {
+  Boat: '/boat/locations',
+  'Property For Sale': '/property/locations',
+  'Property Off Plan For Sale': '/property/locations',
+  Car: '/car/locations',
+  Jewelry: '/jewelry/locations',
 }
 
 const CATEGORY_OPTIONS = [
@@ -77,7 +77,7 @@ const SearchInputs = ({ setIsOpen, variant = 'hero' }) => {
     setIsLoading(false)
   }
 
-  // Fetch listing cities from backend when category changes (UAE only).
+  // Fetch cities via lightweight /locations facets (not full listing catalogs).
   useEffect(() => {
     if (!category) return
 
@@ -102,7 +102,7 @@ const SearchInputs = ({ setIsOpen, variant = 'hero' }) => {
     setCountries(UAE_ONLY_COUNTRY_OPTIONS)
     setSelectedCountry(LISTING_COUNTRY_UAE_LABEL)
 
-    const endpoint = CATEGORY_ENDPOINTS[category]
+    const endpoint = CATEGORY_LOCATION_ENDPOINTS[category]
     if (!endpoint) return
 
     let cancelled = false
@@ -110,31 +110,23 @@ const SearchInputs = ({ setIsOpen, variant = 'hero' }) => {
     const fetchLocations = async () => {
       setCountryLoading(true)
       try {
-        let products = []
-
-        if (category === 'Property Off Plan For Sale') {
-          const response = await customAxios.get(
-            `${process.env.NEXT_PUBLIC_BASE_URL}/property`,
-            {
-              params: {
-                limit: 500,
-                statusFilter: 1,
-                assetType: 'Property Off Plan For Sale',
-              },
-            },
-          )
-          products = response?.data?.products || []
-        } else {
-          const response = await customAxios.get(
-            `${process.env.NEXT_PUBLIC_BASE_URL}${endpoint}`,
-            { params: { limit: 500, statusFilter: 1 } },
-          )
-          products = response?.data?.products || []
+        const params = { statusFilter: 1 }
+        if (
+          category === 'Property For Sale' ||
+          category === 'Property Off Plan For Sale'
+        ) {
+          params.assetType = category
         }
+
+        const response = await customAxios.get(
+          `${process.env.NEXT_PUBLIC_BASE_URL}${endpoint}`,
+          { params },
+        )
+        const locations = response?.data?.locations || []
 
         if (cancelled) return
 
-        const formattedMap = buildCountryToCitiesMap(products)
+        const formattedMap = buildCountryToCitiesMap(locations)
 
         locationCacheRef.current[category] = {
           countries: UAE_ONLY_COUNTRY_OPTIONS,

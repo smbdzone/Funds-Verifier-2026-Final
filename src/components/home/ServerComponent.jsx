@@ -29,63 +29,55 @@ async function safeApi(url, fallback = null) {
 }
 
 export default async function ServerComponent({ children }) {
-  const villaTypeProperty =
-    withoutOffPlanListings(
-      (await safeApi(
-        '/property?propertyType=Villa&statusFilter=1&limit=10',
-        [],
-      )) || [],
-    )
-  const apartmentTypeProperty =
-    withoutOffPlanListings(
-      (await safeApi(
-        '/property?propertyType=Apartment&statusFilter=1&limit=10',
-        [],
-      )) || [],
-    )
-  const townhouseTypeProperty =
-    withoutOffPlanListings(
-      (await safeApi(
-        '/property?propertyType=Townhouse&statusFilter=1&limit=10',
-        [],
-      )) || [],
-    )
-  const getPropertyPrice = await safeApi('/property/price', EMPTY_PRICE)
-  const getCarPrice = await safeApi('/car/price', EMPTY_PRICE)
-  const getBoatPrice = await safeApi('/boat/price', EMPTY_PRICE)
-  const getJewellryPrice = await safeApi('/jewelry/price', EMPTY_PRICE)
-
-  const propertyTypeData = [
+  // Fetch all home layout data in parallel — sequential awaits were blocking TTFB.
+  const [
     villaTypeProperty,
     apartmentTypeProperty,
     townhouseTypeProperty,
-  ].flat()
-  const propertiesForSale =
-    withoutOffPlanListings(
-      (await safeApi('/property?limit=100&statusFilter=1', EMPTY_LIST, 0)) ||
-        EMPTY_LIST,
-    )
-  const propertiesForLease =
-    withoutOffPlanListings(
-      (await safeApi(
-        '/property?propertyForLease=Yes&limit=100&statusFilter=1',
-        EMPTY_LIST,
-        0,
-      )) || EMPTY_LIST,
-    )
+    getPropertyPrice,
+    getCarPrice,
+    getBoatPrice,
+    getJewellryPrice,
+    propertiesForSaleRaw,
+    propertiesForLeaseRaw,
+    carsForSale,
+    boatsForSale,
+    jewelryForSale,
+  ] = await Promise.all([
+    safeApi('/property?propertyType=Villa&statusFilter=1&limit=10', []),
+    safeApi('/property?propertyType=Apartment&statusFilter=1&limit=10', []),
+    safeApi('/property?propertyType=Townhouse&statusFilter=1&limit=10', []),
+    safeApi('/property/price', EMPTY_PRICE),
+    safeApi('/car/price', EMPTY_PRICE),
+    safeApi('/boat/price', EMPTY_PRICE),
+    safeApi('/jewelry/price', EMPTY_PRICE),
+    safeApi('/property?limit=100&statusFilter=1&sort=-createdAt', EMPTY_LIST),
+    safeApi(
+      '/property?propertyForLease=Yes&limit=100&statusFilter=1&sort=-createdAt',
+      EMPTY_LIST,
+    ),
+    safeApi('/car?limit=100&statusFilter=1&sort=-createdAt', EMPTY_LIST),
+    safeApi('/boat?limit=100&statusFilter=1&sort=-createdAt', EMPTY_LIST),
+    safeApi('/jewelry?limit=100&statusFilter=1&sort=-createdAt', EMPTY_LIST),
+  ])
 
-  const carsForSale =
-    (await safeApi('/car?limit=10&statusFilter=1', EMPTY_LIST, 0)) || EMPTY_LIST
-  const boatsForSale =
-    (await safeApi('/boat?limit=100&statusFilter=1', EMPTY_LIST, 0)) ||
-    EMPTY_LIST
+  const propertyTypeData = [
+    withoutOffPlanListings(villaTypeProperty || []),
+    withoutOffPlanListings(apartmentTypeProperty || []),
+    withoutOffPlanListings(townhouseTypeProperty || []),
+  ].flat()
 
   const contextValue = {
     propertyTypeData,
-    propertiesForSale,
-    propertiesForLease,
-    carsForSale,
-    boatsForSale,
+    propertiesForSale: withoutOffPlanListings(
+      propertiesForSaleRaw || EMPTY_LIST,
+    ),
+    propertiesForLease: withoutOffPlanListings(
+      propertiesForLeaseRaw || EMPTY_LIST,
+    ),
+    carsForSale: carsForSale || EMPTY_LIST,
+    boatsForSale: boatsForSale || EMPTY_LIST,
+    jewelryForSale: jewelryForSale || EMPTY_LIST,
     getPropertyPrice,
     getCarPrice,
     getBoatPrice,
