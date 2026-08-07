@@ -514,7 +514,6 @@ export const RequestTab = () => {
             property.uploadDocument,
             {
               titleDeed: property.titleDeed,
-              agencyAgreement: property.agencyAgreement,
             },
           )}
           handleOpenDoc={handleOpenDoc}
