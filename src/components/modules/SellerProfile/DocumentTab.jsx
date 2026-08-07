@@ -141,11 +141,13 @@ export const DocumentTab = () => {
     try {
       const file = await resolveRequestDocumentFile(entry)
       if (!file?.url) {
-        toast.error('Unable to open this document.')
+        toast.error(
+          'Unable to open this document. Try downloading again or re-upload the file.',
+        )
         return
       }
       setPdfUrl(file.url)
-      setPdfFileName(file.fileName)
+      setPdfFileName(file.fileName || entry.name || 'document.pdf')
       setIsModalOpen(true)
     } catch (error) {
       console.error(error)
