@@ -90,6 +90,26 @@ export function getDocumentRefId(value) {
   return ''
 }
 
+/** True when two document refs point at the same file (_id and/or uuid). */
+export function documentRefsMatch(a, b) {
+  if (!a || !b) return false
+  if (typeof a === 'string' || typeof b === 'string') {
+    const aId = getDocumentRefId(a)
+    const bId = getDocumentRefId(b)
+    if (aId && bId && aId === bId) return true
+    if (typeof a === 'object' && a.uuid && String(a.uuid) === String(b)) {
+      return true
+    }
+    if (typeof b === 'object' && b.uuid && String(b.uuid) === String(a)) {
+      return true
+    }
+    return false
+  }
+  const aIds = [a._id, a.id, a.uuid].filter(Boolean).map(String)
+  const bIds = [b._id, b.id, b.uuid].filter(Boolean).map(String)
+  return aIds.some((id) => bIds.includes(id))
+}
+
 export function buildEvaluatorUploadedDocuments(
   requestDocument = [],
   uploadDocument = [],

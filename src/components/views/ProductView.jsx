@@ -33,12 +33,30 @@ const TABS = ['Description', 'Reviews', 'Amenities', 'Layout & Floor Plan']
 export default function ProductView({ data }) {
   const { user } = useProfile()
   const ownsListing = isOwnListing(data, user)
-  const combinedMedia = getListingDetailMediaItems(data)
-  const [previewMedia, setPreviewMedia] = useState(
-    () => combinedMedia[0] || null,
+  const combinedMedia = useMemo(
+    () => getListingDetailMediaItems(data),
+    [data],
   )
+  const [previewMedia, setPreviewMedia] = useState(() => {
+    const media = getListingDetailMediaItems(data)
+    return media.find((item) => item.type === 'image') || media[0] || null
+  })
   const [activeTab, setActiveTab] = useState('Description')
   const [showCalendarPopup, setShowCalendarPopup] = useState(false)
+
+  useEffect(() => {
+    const next =
+      combinedMedia.find((item) => item.type === 'image') ||
+      combinedMedia[0] ||
+      null
+    setPreviewMedia((prev) => {
+      if (!next) return null
+      if (prev?.src && combinedMedia.some((item) => item.src === prev.src)) {
+        return prev
+      }
+      return next
+    })
+  }, [combinedMedia])
 
   const unitLayoutSrc = useMemo(
     () => resolveLayoutImageSrc(data?.unitLayout),

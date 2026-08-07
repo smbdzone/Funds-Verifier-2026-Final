@@ -35,10 +35,14 @@ export default function BoatView({ data: boatData }) {
   const { user } = useProfile()
   const data = boatData ?? {}
   const ownsListing = isOwnListing(data, user)
-  const combinedMedia = getListingDetailMediaItems(data)
-  const [previewMedia, setPreviewMedia] = useState(
-    () => combinedMedia[0] || null,
+  const combinedMedia = useMemo(
+    () => getListingDetailMediaItems(data),
+    [data],
   )
+  const [previewMedia, setPreviewMedia] = useState(() => {
+    const media = getListingDetailMediaItems(data)
+    return media.find((item) => item.type === 'image') || media[0] || null
+  })
   const [activeTab, setActiveTab] = useState('Description')
   const [showCalendarPopup, setShowCalendarPopup] = useState(false)
   const [isModalOpen, setIsModalOpen] = useState(false)

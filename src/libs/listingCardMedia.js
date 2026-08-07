@@ -120,19 +120,32 @@ export function isListingCarouselPlaceholderSlide(slide) {
 
 /**
  * Items for product detail page (e.g. /property/[slug]):
- * pictures + listing videos + thumbnail + 3D walkthrough link, in display order.
+ * thumbnail cover first, then gallery pictures, videos, 3D walkthrough.
+ * Prefer images ahead of video so the main preview is never an empty black player.
  * Always resolves the freshest URL (signedUrl > url) so previews don't break
  * after the original CloudFront signature expires.
  */
 export function getListingDetailMediaItems(listing) {
   const items = []
+  const seen = new Set()
+
+  const pushImage = (img) => {
+    const src = getListingImageSrc(img)
+    if (!src || src === PLACEHOLDER || seen.has(src)) return
+    seen.add(src)
+    items.push({ type: 'image', src })
+  }
+
+  const thumbs = listing?.thumbnailImg?.images
+  if (Array.isArray(thumbs) && thumbs.length) {
+    for (const thumb of thumbs) pushImage(thumb)
+  } else if (listing?.thumbnailImg && !listing.thumbnailImg.images) {
+    pushImage(listing.thumbnailImg)
+  }
 
   const pics = listing?.pictures?.images
   if (Array.isArray(pics)) {
-    for (const img of pics) {
-      const src = getListingImageSrc(img)
-      if (src && src !== PLACEHOLDER) items.push({ type: 'image', src })
-    }
+    for (const img of pics) pushImage(img)
   }
 
   const vids = listing?.video?.videos
@@ -140,14 +153,6 @@ export function getListingDetailMediaItems(listing) {
     for (const v of vids) {
       const src = getListingVideoSrc(v)
       if (src) items.push({ type: 'video', src })
-    }
-  }
-
-  const thumbs = listing?.thumbnailImg?.images
-  if (Array.isArray(thumbs)) {
-    for (const t of thumbs) {
-      const src = getListingImageSrc(t)
-      if (src && src !== PLACEHOLDER) items.push({ type: 'image', src })
     }
   }
 
@@ -298,10 +303,9 @@ export function getListingDocumentSrc(doc) {
     return reportUrl
   }
 
-  const hasCertificateFile =
-    doc?.Certificate &&
-    (doc.Certificate.name || doc.Certificate.encrypted === true)
-  if (certUuid && hasCertificateFile) {
+  // Prefer decrypt/stream endpoint whenever we have a certificate uuid —
+  // works even if Certificate metadata was stripped from a lean list payload.
+  if (certUuid) {
     const streamUrl = certificatePdfStreamUrl(certUuid)
     if (streamUrl) return streamUrl
   }

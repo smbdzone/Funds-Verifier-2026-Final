@@ -4,6 +4,7 @@ import { fetchCertificateUrlByPublicId } from '@/libs/uploadAsset'
 import { isOffPlanListing } from '@/libs/filterMyListingTab'
 import { fetchAllDashboardProducts } from '@/libs/fetchAllDashboardProducts'
 import {
+  documentRefsMatch,
   formatRequestDocumentDate,
   getDocumentRefId,
   isRequestDocumentFulfilled,
@@ -128,6 +129,9 @@ function mapListingDocumentRequests(listing) {
     requestDate: request.date,
     uploadedAt: request.uploadedAt,
     document: request.document,
+    documentUuid:
+      (typeof request.document === 'object' && request.document?.uuid) ||
+      '',
     source: 'request',
   }))
 }
@@ -165,6 +169,7 @@ function mapListingUploadDocuments(listing) {
       requestDate: '',
       uploadedAt: doc?.uploadedAt || doc?.createdAt || '',
       document: doc,
+      documentUuid: doc?.uuid || '',
       source: 'upload',
     }))
 }
@@ -255,15 +260,91 @@ export async function saveListingDocumentRequests({
   })
 }
 
-export async function resolveRequestDocumentFile(entry) {
-  const inlineSrc = getListingDocumentSrc(entry?.document)
-  if (inlineSrc) {
+function certificateStreamUrlFromUuid(uuid) {
+  const certUuid = typeof uuid === 'string' ? uuid.trim() : ''
+  if (!certUuid) return ''
+  if (
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+      certUuid,
+    )
+  ) {
+    return ''
+  }
+  const base = (process.env.NEXT_PUBLIC_BASE_URL || '').trim().replace(/\/$/, '')
+  if (!base) return ''
+  return `${base}/evaluation-certificate/${encodeURIComponent(certUuid)}/pdf`
+}
+
+function fileFromDocument(doc, fallbackName = 'document.pdf') {
+  if (!doc) return null
+
+  if (typeof doc === 'string') {
+    const stream = certificateStreamUrlFromUuid(doc)
+    if (stream) {
+      return { url: stream, fileName: fallbackName }
+    }
+    return null
+  }
+
+  if (typeof doc !== 'object') return null
+
+  const url = getListingDocumentSrc(doc)
+  if (url) {
     return {
-      url: inlineSrc,
+      url,
       fileName:
-        entry.document?.Certificate?.name || entry.name || 'document.pdf',
+        doc?.Certificate?.name || doc?.name || fallbackName || 'document.pdf',
     }
   }
+
+  const stream = certificateStreamUrlFromUuid(doc.uuid)
+  if (stream) {
+    return {
+      url: stream,
+      fileName:
+        doc?.Certificate?.name || doc?.name || fallbackName || 'document.pdf',
+    }
+  }
+
+  return null
+}
+
+function findUploadMatch(uploads, entry) {
+  const targetName = String(entry?.name || '').trim().toLowerCase()
+
+  return (
+    uploads.find((doc) => documentRefsMatch(doc, entry?.document)) ||
+    uploads.find(
+      (doc) =>
+        targetName &&
+        String(doc?.Certificate?.name || doc?.name || '')
+          .trim()
+          .toLowerCase() === targetName,
+    ) ||
+    null
+  )
+}
+
+export async function resolveRequestDocumentFile(entry) {
+  const fallbackName = entry?.name || 'document.pdf'
+
+  const inline = fileFromDocument(entry?.document, fallbackName)
+  if (inline?.url) return inline
+
+  const fromUuid = certificateStreamUrlFromUuid(
+    entry?.documentUuid ||
+      (typeof entry?.document === 'object' ? entry?.document?.uuid : '') ||
+      (typeof entry?.document === 'string' ? entry.document : ''),
+  )
+  if (fromUuid) {
+    return { url: fromUuid, fileName: fallbackName }
+  }
+
+  const viaEvaluator = await resolveEvaluatorListingDocument(entry?.document, {
+    listingType: entry?.listingType,
+    listingId: entry?.listingId,
+  })
+  if (viaEvaluator?.url) return viaEvaluator
 
   const endpoint = ASSET_ENDPOINTS[entry?.listingType]
   if (!endpoint || !entry?.listingId) return null
@@ -274,17 +355,8 @@ export async function resolveRequestDocumentFile(entry) {
     const uploads = Array.isArray(res.data?.uploadDocument)
       ? res.data.uploadDocument
       : []
-    const match =
-      uploads.find((doc) => docId(doc) === docId(entry.document)) ||
-      uploads.find((doc) => (doc?.Certificate?.name || doc?.name) === entry.name)
-    if (!match) return null
-    const url = getListingDocumentSrc(match)
-    if (!url) return null
-    return {
-      url,
-      fileName:
-        match?.Certificate?.name || match?.name || entry.name || 'document.pdf',
-    }
+    const match = findUploadMatch(uploads, entry)
+    return fileFromDocument(match, fallbackName)
   }
 
   const requests = normalizeRequestDocuments(res.data?.requestDocument)
@@ -293,15 +365,33 @@ export async function resolveRequestDocumentFile(entry) {
       ? requests[entry.requestIndex]
       : requests.find((item) => item.name === entry.name)
 
-  if (!match?.document) return null
-
-  const url = getListingDocumentSrc(match.document)
-  if (!url) return null
-
-  return {
-    url,
-    fileName: match.document?.Certificate?.name || `${entry.name}.pdf`,
+  if (!match?.document) {
+    // Last resort: search all uploads for this request name/id
+    const uploads = Array.isArray(res.data?.uploadDocument)
+      ? res.data.uploadDocument
+      : []
+    return fileFromDocument(findUploadMatch(uploads, entry), fallbackName)
   }
+
+  const fromMatch = fileFromDocument(match.document, fallbackName)
+  if (fromMatch?.url) return fromMatch
+
+  const nestedPublicId =
+    typeof match.document === 'object'
+      ? match.document?.Certificate?.public_id || match.document?.public_id
+      : ''
+  if (nestedPublicId) {
+    const url = await fetchCertificateUrlByPublicId(nestedPublicId)
+    if (url) {
+      return {
+        url,
+        fileName:
+          match.document?.Certificate?.name || `${entry.name || 'document'}.pdf`,
+      }
+    }
+  }
+
+  return null
 }
 
 /** Resolve a listing document URL for evaluator/trustee document viewers. */
@@ -309,6 +399,13 @@ export async function resolveEvaluatorListingDocument(
   doc,
   { listingType, listingId } = {},
 ) {
+  const inline = fileFromDocument(
+    doc,
+    (typeof doc === 'object' && (doc?.Certificate?.name || doc?.name)) ||
+      'document.pdf',
+  )
+  if (inline?.url) return inline
+
   const direct = getListingDocumentSrc(doc)
   if (direct) {
     return {
@@ -349,10 +446,12 @@ export async function resolveEvaluatorListingDocument(
       : []
     const requests = normalizeRequestDocuments(res.data?.requestDocument)
 
-    const matchUpload = uploads.find(
-      (item) => getDocumentRefId(item) === targetId,
-    )
+    const matchUpload =
+      uploads.find((item) => documentRefsMatch(item, doc)) ||
+      uploads.find((item) => getDocumentRefId(item) === targetId)
     if (matchUpload) {
+      const fromMatch = fileFromDocument(matchUpload, 'document.pdf')
+      if (fromMatch?.url) return fromMatch
       const url = getListingDocumentSrc(matchUpload)
       if (url) {
         return {
@@ -365,10 +464,19 @@ export async function resolveEvaluatorListingDocument(
     for (const req of requests) {
       if (!isRequestDocumentFulfilled(req)) continue
 
-      const refId = getDocumentRefId(req.document)
-      if (targetId && refId && refId !== targetId) continue
+      const matchesTarget =
+        !targetId ||
+        documentRefsMatch(req.document, doc) ||
+        getDocumentRefId(req.document) === targetId
+      if (!matchesTarget) continue
 
       if (typeof req.document === 'object' && req.document) {
+        const fromReq = fileFromDocument(
+          req.document,
+          req.name || 'document.pdf',
+        )
+        if (fromReq?.url) return fromReq
+
         const url = getListingDocumentSrc(req.document)
         if (url) {
           return {
@@ -389,6 +497,9 @@ export async function resolveEvaluatorListingDocument(
             }
           }
         }
+      } else if (typeof req.document === 'string') {
+        const fromReq = fileFromDocument(req.document, req.name || 'document.pdf')
+        if (fromReq?.url) return fromReq
       }
     }
 

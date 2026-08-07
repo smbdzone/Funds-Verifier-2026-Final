@@ -62,6 +62,11 @@ export function openUrlInNewTab(href) {
 export function openPdfInNewTab(url) {
   const src = getPdfOriginalSrc(url)
   if (!src) return false
+  // Decrypt stream is already a public API PDF — open it directly.
+  // Routing through /api/pdf-preview can fail when origins/env differ.
+  if (isEvaluationCertificateStreamUrl(src)) {
+    return openUrlInNewTab(src)
+  }
   const openUrl = getPdfProxyFetchUrl(url) || src
   return openUrlInNewTab(openUrl)
 }
@@ -70,12 +75,18 @@ export async function downloadPdfFile(url, filename = 'document.pdf') {
   const original = getPdfOriginalSrc(url)
   if (!original) return false
 
-  const proxyUrl = getPdfProxyFetchUrl(url)
   const safeName =
     typeof filename === 'string' && filename.trim() ? filename.trim() : 'document.pdf'
 
+  const fetchUrl = isEvaluationCertificateStreamUrl(original)
+    ? original
+    : getPdfProxyFetchUrl(url) || original
+
   try {
-    const res = await fetch(proxyUrl || original, { cache: 'no-store' })
+    const res = await fetch(fetchUrl, {
+      cache: 'no-store',
+      credentials: 'include',
+    })
     if (!res.ok) throw new Error(`HTTP ${res.status}`)
 
     const blob = await res.blob()
