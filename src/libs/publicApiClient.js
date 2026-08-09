@@ -20,9 +20,13 @@ async function fetchPublicToken() {
     return cached.token
   }
 
+  // Never cache the mint request. The token lives only 5 minutes, and any HTTP/ISR
+  // caching (Next data cache, stale-while-revalidate, browser cache) can hand back
+  // a token that is already past its 5-min life — which the API then rejects with
+  // "jwt expired", 401-ing every public listing call. The in-memory `cached`
+  // object above is the only cache we want, and it refreshes 30s before real expiry.
   const res = await fetch(`${baseUrl}/public/get-public-token`, {
-    // Allow ISR for public pages — in-memory cache still refreshes near JWT expiry.
-    next: { revalidate: 240 },
+    cache: 'no-store',
   })
 
   if (!res.ok) {

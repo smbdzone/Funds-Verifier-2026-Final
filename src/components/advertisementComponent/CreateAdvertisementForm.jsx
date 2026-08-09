@@ -28,6 +28,10 @@ const CreateAdvertisementForm = ({ onCreated }) => {
   const [isPending, startTransition] = useTransition(false)
   const [mediaFile, setMediaFile] = useState(null)
   const [selectedCities, setSelectedCities] = useState([])
+  // No city constraint. An ad that constrains no dimension (city, age, gender)
+  // is the only kind logged-out visitors can be shown, since there's no profile
+  // to match them against.
+  const [allEmirates, setAllEmirates] = useState(false)
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
   const [ageGroup, setAgeGroup] = useState('')
@@ -39,15 +43,26 @@ const CreateAdvertisementForm = ({ onCreated }) => {
   const token = getTokenFromCookie() || user?.accessToken
 
   const toggleCity = (city) => {
+    setAllEmirates(false)
     setSelectedCities((prev) =>
       prev.includes(city) ? prev.filter((c) => c !== city) : [...prev, city],
     )
   }
 
+  const toggleAllEmirates = () => {
+    setAllEmirates((prev) => {
+      if (!prev) setSelectedCities([])
+      return !prev
+    })
+  }
+
+  // Reaches logged-out visitors only when nothing at all is targeted.
+  const isUntargeted = allEmirates && !ageGroup && (!gender || gender === 'all')
+
   const handleSubmit = async () => {
     if (!mediaFile) return toast.error('Please upload an ad media.')
     if (!token) return toast.error('Please login to continue')
-    if (selectedCities.length === 0)
+    if (!allEmirates && selectedCities.length === 0)
       return toast.error('Please select at least one city.')
     if (!startDate || !endDate)
       return toast.error('Please select start and end dates.')
@@ -60,7 +75,7 @@ const CreateAdvertisementForm = ({ onCreated }) => {
     startTransition(async () => {
       if (!mediaFile) return toast.error('Please upload an advertisement image.')
       if (!token) return toast.error('Please login to continue')
-      if (selectedCities.length === 0)
+      if (!allEmirates && selectedCities.length === 0)
         return toast.error('Please select at least one city.')
       if (!startDate || !endDate)
         return toast.error('Please select start and end dates.')
@@ -90,7 +105,8 @@ const CreateAdvertisementForm = ({ onCreated }) => {
         ],
         targetedAudience: {
           country: [AD_COUNTRY],
-          city: selectedCities,
+          // Empty = no city constraint (all emirates).
+          city: allEmirates ? [] : selectedCities,
           gender,
           ageGroup,
           startAt: [startDate],
@@ -246,7 +262,27 @@ const CreateAdvertisementForm = ({ onCreated }) => {
             <label className={labelClass}>
               Cities (select one or more)
             </label>
-            <div className='grid grid-cols-2 sm:grid-cols-3 gap-2'>
+
+            <button
+              type='button'
+              onClick={toggleAllEmirates}
+              className={`flex items-center justify-between gap-2 w-full rounded-md border px-3 h-[44px] text-sm mb-2 transition-colors ${
+                allEmirates
+                  ? 'border-[#A2913E] bg-[#A2913E]/10 text-[#002D4F] font-medium'
+                  : 'border-[#8D7C3B]/50 text-[#8D7C3B] hover:bg-[#002D4F]/5'
+              }`}
+            >
+              <span className='truncate'>All Emirates (no city targeting)</span>
+              {allEmirates && (
+                <CheckIcon className='size-4 text-[#A2913E] shrink-0' />
+              )}
+            </button>
+
+            <div
+              className={`grid grid-cols-2 sm:grid-cols-3 gap-2 ${
+                allEmirates ? 'opacity-40' : ''
+              }`}
+            >
               {EMIRATES.map((city) => {
                 const active = selectedCities.includes(city)
                 return (
@@ -310,6 +346,20 @@ const CreateAdvertisementForm = ({ onCreated }) => {
               </select>
             </div>
           </div>
+
+          {/* Reach hint: only a fully unconstrained ad can be shown to visitors
+              who aren't signed in, since there's no profile to match them on. */}
+          <p
+            className={`text-sm rounded-md px-3 py-2 ${
+              isUntargeted
+                ? 'bg-[#A2913E]/10 text-[#002D4F]'
+                : 'bg-[#002D4F]/5 text-[#8D7C3B]'
+            }`}
+          >
+            {isUntargeted
+              ? 'Reach: everyone, including visitors who are not signed in.'
+              : 'Reach: signed-in users matching your targeting only. To also reach logged-out visitors, select All Emirates with no age and no gender targeting.'}
+          </p>
 
           {/* Row 2: Start Date + End Date */}
           <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
