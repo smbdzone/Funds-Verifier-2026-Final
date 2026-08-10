@@ -47,6 +47,12 @@ export async function POST(req) {
           },
         ],
         mode: 'payment',
+        // Lets an advertiser enter a promotion code at checkout (e.g. a 100%-off
+        // house/campaign coupon). A code that zeroes the total makes Stripe skip
+        // card collection and complete the session with
+        // payment_status: 'no_payment_required', so the normal success_url flow
+        // still marks the ad paid. Mutually exclusive with `discounts`.
+        allow_promotion_codes: true,
         metadata: {
           // Mongo _id so the confirmation handler's findById works.
           id: responseData?.data?._id || responseData?.data?.uuid,
