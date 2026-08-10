@@ -53,7 +53,12 @@ export async function GET(request) {
   try {
     const upstream = await fetch(target, {
       method: 'GET',
-      headers: { Accept: 'image/*,*/*' },
+      redirect: 'follow',
+      headers: {
+        Accept: 'image/avif,image/webp,image/apng,image/*,*/*;q=0.8',
+        'User-Agent':
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+      },
       cache: 'no-store',
     })
 

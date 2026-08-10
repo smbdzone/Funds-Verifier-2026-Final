@@ -1,15 +1,20 @@
 'use client'
 
 /**
- * Decode the actual payload from a QR image (browser only).
- * Prefers native BarcodeDetector, falls back to jsQR.
- * Uses same-origin proxy when remote images block canvas CORS.
+ * Decode the actual payload from a QR image.
+ * Prefers server decode (/api/qr-decode) so CloudFront CORS/403 don't block reads.
+ * Falls back to in-browser BarcodeDetector / jsQR.
  */
 
 const decodeCache = new Map()
 
 function isRemoteHttpUrl(src) {
   return typeof src === 'string' && /^https?:\/\//i.test(src.trim())
+}
+
+function decodeApiUrlFor(src) {
+  if (typeof window === 'undefined') return ''
+  return `${window.location.origin}/api/qr-decode?url=${encodeURIComponent(src)}`
 }
 
 function proxyUrlFor(src) {
@@ -32,24 +37,22 @@ function loadImageElement(src, { useCors = true } = {}) {
 async function fetchProxyBlob(src) {
   const proxyUrl = proxyUrlFor(src)
   if (!proxyUrl) throw new Error('Proxy unavailable')
-
   const res = await fetch(proxyUrl, { cache: 'no-store' })
   if (!res.ok) throw new Error('QR image proxy failed')
-
   const blob = await res.blob()
   if (!blob || blob.size === 0) throw new Error('Empty QR image')
   return blob
 }
 
-function getImageData(img) {
+function getImageData(img, scale = 1) {
+  const width = Math.max(1, Math.round((img.naturalWidth || img.width) * scale))
+  const height = Math.max(1, Math.round((img.naturalHeight || img.height) * scale))
   const canvas = document.createElement('canvas')
-  const width = img.naturalWidth || img.width
-  const height = img.naturalHeight || img.height
-  if (!width || !height) throw new Error('QR image has no dimensions')
   canvas.width = width
   canvas.height = height
   const ctx = canvas.getContext('2d', { willReadFrequently: true })
   if (!ctx) throw new Error('Canvas unavailable')
+  ctx.imageSmoothingEnabled = false
   ctx.drawImage(img, 0, 0, width, height)
   return ctx.getImageData(0, 0, width, height)
 }
@@ -81,13 +84,33 @@ async function decodeImageElement(img) {
   const fromNative = await decodeWithBarcodeDetector(img)
   if (fromNative) return fromNative
 
-  const imageData = getImageData(img)
-  return decodeWithJsQR(imageData)
+  for (const scale of [1, 2, 3]) {
+    try {
+      const imageData = getImageData(img, scale)
+      const decoded = await decodeWithJsQR(imageData)
+      if (decoded) return decoded
+    } catch {
+      /* next scale */
+    }
+  }
+  return null
+}
+
+async function decodeViaServer(src) {
+  if (!isRemoteHttpUrl(src)) return null
+  const apiUrl = decodeApiUrlFor(src)
+  if (!apiUrl) return null
+
+  const res = await fetch(apiUrl, { cache: 'no-store' })
+  if (!res.ok) return null
+  const data = await res.json().catch(() => null)
+  const payload = data?.payload
+  return typeof payload === 'string' && payload.trim() ? payload.trim() : null
 }
 
 /**
  * @param {string} src
- * @returns {Promise<string|null>} decoded QR text, or null if unreadable
+ * @returns {Promise<string|null>}
  */
 export async function decodeQrFromImageSrc(src) {
   if (!src || typeof window === 'undefined') return null
@@ -97,7 +120,13 @@ export async function decodeQrFromImageSrc(src) {
   }
 
   const pending = (async () => {
-    // Same-origin / blob / data — decode directly
+    try {
+      const fromServer = await decodeViaServer(src)
+      if (fromServer) return fromServer
+    } catch {
+      /* fall through */
+    }
+
     if (!isRemoteHttpUrl(src)) {
       try {
         const img = await loadImageElement(src, { useCors: false })
@@ -107,7 +136,6 @@ export async function decodeQrFromImageSrc(src) {
       }
     }
 
-    // Remote URL — proxy first so canvas is not CORS-tainted
     let objectUrl = ''
     try {
       const blob = await fetchProxyBlob(src)
@@ -128,6 +156,10 @@ export async function decodeQrFromImageSrc(src) {
 
   decodeCache.set(src, pending)
   const value = await pending
-  decodeCache.set(src, Promise.resolve(value))
+  if (value) {
+    decodeCache.set(src, Promise.resolve(value))
+  } else {
+    decodeCache.delete(src)
+  }
   return value
 }
