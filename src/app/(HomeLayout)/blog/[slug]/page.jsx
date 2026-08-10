@@ -68,39 +68,39 @@ export default function ClientInsight() {
           <div className='w-full lg:w-2/3 min-w-0'>
             {detailData ? (
               <>
-                <h1 className='text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900 leading-snug sm:leading-tight text-balance mb-4 sm:mb-5'>
+                <h1 className='mb-3 text-base font-bold leading-snug text-balance text-gray-900 md:mb-4 md:text-lg lg:mb-5 lg:text-3xl lg:leading-tight xl:text-4xl'>
                   {detailData.title}
                 </h1>
 
-                <div className='flex flex-wrap items-center gap-x-3 sm:gap-x-4 gap-y-2 mb-5 sm:mb-6 text-xs sm:text-sm text-gray-600'>
-                  <div className='flex items-center gap-2'>
-                    <div className='w-7 h-7 sm:w-8 sm:h-8 bg-reefGold rounded-full flex items-center justify-center shrink-0'>
-                      <span className='text-white text-xs sm:text-sm font-semibold'>A</span>
+                <div className='mb-4 flex flex-wrap items-center gap-x-2.5 gap-y-1.5 text-[11px] text-gray-600 md:mb-5 md:gap-x-3 md:text-xs lg:mb-6 lg:gap-x-4 lg:text-sm'>
+                  <div className='flex items-center gap-1.5 md:gap-2'>
+                    <div className='flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-reefGold md:h-7 md:w-7 lg:h-8 lg:w-8'>
+                      <span className='text-[10px] font-semibold text-white md:text-xs lg:text-sm'>A</span>
                     </div>
                     <span className='font-medium text-gray-800'>Admin</span>
                   </div>
-                  <span className='hidden xsm:inline text-gray-300' aria-hidden>|</span>
-                  <time dateTime={detailData.createdAt} className='text-gray-600 whitespace-nowrap'>
+                  <span className='hidden text-gray-300 xsm:inline' aria-hidden>|</span>
+                  <time dateTime={detailData.createdAt} className='whitespace-nowrap text-gray-600'>
                     {formatDate(detailData.createdAt)}
                   </time>
                   <span className='text-gray-300' aria-hidden>|</span>
-                  <span className='text-gray-600 whitespace-nowrap'>5 min read</span>
+                  <span className='whitespace-nowrap text-gray-600'>5 min read</span>
                 </div>
 
-                <article className='bg-white min-w-0'>
-                  <div className='mb-5 sm:mb-6 -mx-0 sm:mx-0 overflow-hidden rounded-lg sm:rounded-xl'>
+                <article className='min-w-0 bg-white'>
+                  <div className='-mx-0 mb-4 overflow-hidden rounded-lg sm:mx-0 sm:rounded-xl md:mb-5 lg:mb-6'>
                     <Image
                       src={detailData.banner}
                       height={400}
                       width={800}
-                      className='w-full h-48 xsm:h-56 sm:h-64 md:h-80 lg:h-[400px] object-cover'
+                      className='h-48 w-full object-cover xsm:h-56 sm:h-64 md:h-80 lg:h-[400px]'
                       priority
                       sizes='(max-width: 640px) 100vw, (max-width: 1024px) 66vw, 800px'
                       alt={detailData?.SEO?.imageAlt || detailData?.title}
                     />
                   </div>
 
-                  <div className='blog-article-prose prose prose-sm sm:prose-base lg:prose-lg max-w-none text-gray-700 leading-relaxed break-words'>
+                  <div className='blog-article-prose prose prose-sm max-w-none break-words text-gray-700 leading-relaxed lg:prose-base xl:prose-lg'>
                     {parse(sanitizeHTML(detailData?.services))}
                   </div>
                 </article>

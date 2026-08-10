@@ -94,7 +94,7 @@ export default function OffPlanProductView({ data }) {
   const amenities = useMemo(() => getListingAmenities(data), [data])
 
   const tabButtonClass = (tab) =>
-    `flex-grow md:text-base text-xs flex justify-center py-1 ${activeTab === tab
+    `flex-grow px-1.5 py-1 text-[10px] leading-tight sm:px-2 sm:text-xs md:text-base md:leading-normal flex justify-center ${activeTab === tab
       ? 'text-lightBlue bg-gradient-to-r text-white sm:text-black from-[#a2913e] via-[#d7c590] to-[#a2913e] md:bg-none md:border-b-2 md:border-gold-800'
       : 'text-black'
     }`
@@ -108,16 +108,19 @@ export default function OffPlanProductView({ data }) {
   }
 
   return (
-    <div className='theme-container'>
-      <div className='flex flex-wrap gap-6 pb-5 pt-4 sm:pt-10 lg:flex-nowrap lg:gap-12 lg:pt-24'>
-        <div className='flex w-full flex-col items-stretch gap-4 sm:flex-row'>
-          <div className='hidden w-full shrink-0 sm:block sm:w-[160px] md:block'>
+    <div className='theme-container !max-w-none w-full px-4 sm:px-6 md:px-8 lg:px-10 xl:px-12'>
+      <div className='flex w-full flex-col gap-6 pb-5 pt-4 sm:pt-10 min-[700px]:pt-12 xl:flex-row xl:flex-nowrap xl:gap-12 xl:pt-24'>
+        {/* Media: full width through tablet/1024; beside details only on xl+ */}
+        <div className='flex w-full min-w-0 flex-col items-stretch gap-4 min-[700px]:flex-row xl:max-w-[740px] xl:shrink-0'>
+          {/* Detail preview thumbs — 700px+ */}
+          <div className='hidden w-full shrink-0 min-[700px]:block min-[700px]:w-[110px] lg:w-[140px] xl:w-[160px]'>
             <LiftSlider
               setPreviewMedia={(item) => setPreviewSrc(item?.src)}
               media={media}
             />
           </div>
-          <div className='block w-full shrink-0 sm:hidden md:hidden'>
+          {/* Mobile only (&lt;700): carousel */}
+          <div className='block w-full shrink-0 min-[700px]:hidden'>
             <ImageSlider media={media} />
             <ListingMapSection
               mapUrl={data?.mapUrl}
@@ -125,11 +128,12 @@ export default function OffPlanProductView({ data }) {
               title='Location'
               showEmptyPlaceholder
               className='mt-4 w-full'
-              iframeClassName='h-[240px] w-full rounded-[5px]'
+              iframeClassName='h-[240px] w-full rounded-[5px] sm:h-[280px]'
             />
           </div>
-          <div className='hidden w-full flex-col gap-4 md:flex xl:w-[580px]'>
-            <div className='relative h-[560px] w-full overflow-hidden rounded-lg'>
+          {/* 700px+: main preview + map (full width until xl) */}
+          <div className='hidden w-full min-w-0 flex-col gap-4 min-[700px]:flex min-[700px]:flex-1'>
+            <div className='relative h-[360px] w-full overflow-hidden rounded-lg lg:h-[420px] xl:h-[560px]'>
               <img
                 alt={data?.title || 'Off-plan property'}
                 className='h-full w-full object-cover'
@@ -142,17 +146,22 @@ export default function OffPlanProductView({ data }) {
               title='Location'
               showEmptyPlaceholder
               className='w-full'
-              iframeClassName='h-[280px] w-full rounded-[5px] sm:h-[320px]'
+              iframeClassName='h-[260px] w-full rounded-[5px] sm:h-[300px] lg:h-[320px]'
             />
           </div>
         </div>
 
-        <div className='relative mt-6 flex w-full flex-col items-start gap-5 sm:mt-0'>
+        {/* Details: below map through 1024; side column only on xl+ (large screen) */}
+        <div className='relative mt-2 flex w-full min-w-0 flex-col items-start gap-5 xl:mt-0 xl:flex-1'>
           <ListingDetailTitleRow listing={data} />
 
-          <div className='flex w-full flex-col gap-3'>
+          <div className='flex w-full min-w-0 flex-col gap-3'>
             <ListingDetailsHeading listing={data} />
-            <ListingDetailsGrid rows={detailRows} />
+            <ListingDetailsGrid
+              rows={detailRows}
+              className='grid w-full grid-cols-1 gap-3 rounded-md border border-black/10 bg-white p-4 shadow min-[700px]:grid-cols-2 min-[700px]:gap-4 min-[700px]:p-5'
+              itemClassName='flex min-w-0 items-start break-words text-xs sm:text-sm'
+            />
           </div>
 
           {data?.deliveryLabel ? (

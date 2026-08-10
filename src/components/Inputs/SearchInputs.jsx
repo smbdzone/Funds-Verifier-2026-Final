@@ -235,7 +235,7 @@ const SearchInputs = ({ setIsOpen, variant = 'hero' }) => {
   return (
     <div className={barClassName}>
       <h1
-        className={`mb-1 block w-full text-base font-semibold md:text-lg lg:hidden ${variant === 'modal' ? 'text-prussianBlue' : 'text-white'}`}
+        className={`mb-1 block w-full text-base font-semibold md:hidden ${variant === 'modal' ? 'text-prussianBlue' : 'text-white'}`}
       >
         Filter
       </h1>

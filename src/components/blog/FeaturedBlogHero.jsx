@@ -24,14 +24,14 @@ export default function FeaturedBlogHero({ blog }) {
   const href = blog.slug ? `/blog/${blog.slug}` : '#'
 
   return (
-    <section className='mb-8'>
+    <section className='mb-6 md:mb-8'>
       <Link
         href={href}
-        className='group block overflow-hidden rounded-2xl border border-reefGold/25 bg-white shadow-[0_8px_32px_rgba(0,45,79,0.12)]'
+        className='group mx-auto block max-w-5xl overflow-hidden rounded-2xl border border-reefGold/25 bg-white shadow-[0_8px_32px_rgba(0,45,79,0.12)] xl:max-w-none'
       >
-        <div className='flex flex-col md:min-h-[360px] md:flex-row md:items-stretch'>
-          {/* Image — left on desktop */}
-          <figure className='relative m-0 aspect-[16/10] w-full shrink-0 overflow-hidden bg-prussianBlue/5 md:aspect-auto md:min-h-[360px] md:w-1/2'>
+        <div className='flex flex-col md:min-h-[260px] md:flex-row md:items-stretch lg:min-h-[300px] xl:min-h-[360px]'>
+          {/* Image — left on tablet/desktop; slightly shorter on big tablet */}
+          <figure className='relative m-0 aspect-[16/10] w-full shrink-0 overflow-hidden bg-prussianBlue/5 md:aspect-auto md:min-h-[260px] md:w-1/2 lg:min-h-[300px] xl:min-h-[360px]'>
             {blog.banner ? (
               <img
                 src={blog.banner}
@@ -45,34 +45,34 @@ export default function FeaturedBlogHero({ blog }) {
               </div>
             )}
             <span
-              className={`absolute left-4 top-4 z-10 rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wider text-white ${GOLD_GRADIENT}`}
+              className={`absolute left-3 top-3 z-10 rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-white md:left-4 md:top-4 md:px-3 md:text-xs ${GOLD_GRADIENT}`}
             >
               Featured
             </span>
           </figure>
 
-          {/* Content — right on desktop */}
-          <div className='primary-gradient flex min-h-[260px] w-full flex-col justify-center px-6 py-8 md:min-h-[360px] md:w-1/2 md:px-10 md:py-10'>
-            <h2 className='mb-2 text-xl font-bold leading-snug text-white sm:text-2xl md:text-3xl'>
+          {/* Content — right on tablet/desktop */}
+          <div className='primary-gradient flex min-h-[180px] w-full flex-col justify-center px-4 py-4 md:min-h-[220px] md:w-1/2 md:px-5 md:py-5 lg:min-h-[260px] lg:px-6 xl:min-h-[360px] xl:px-10 xl:py-10'>
+            <h2 className='mb-1.5 text-sm font-bold leading-snug text-white md:mb-2 md:text-[15px] lg:text-base xl:text-3xl xl:leading-snug'>
               {blog.title}
             </h2>
 
-            <time className='mb-3 text-sm font-medium text-white/75'>
+            <time className='mb-1.5 text-[10px] font-medium text-white/75 md:mb-2 md:text-[11px] xl:mb-3 xl:text-sm'>
               {formatDate(blog.createdAt)}
             </time>
 
             {description ? (
-              <p className='mb-4 line-clamp-3 text-sm leading-relaxed text-white/90 sm:text-base'>
+              <p className='mb-2.5 line-clamp-2 text-xs leading-relaxed text-white/90 md:mb-3 md:line-clamp-2 md:text-xs lg:line-clamp-3 xl:mb-4 xl:text-base'>
                 {description}
               </p>
             ) : null}
 
             {(blog.category || []).length > 0 ? (
-              <div className='mb-6 flex flex-wrap gap-2'>
+              <div className='mb-3 flex flex-wrap gap-1.5 md:mb-4 xl:mb-6 xl:gap-2'>
                 {(blog.category || []).slice(0, 2).map((cat, index) => (
                   <span
                     key={`${cat}-${index}`}
-                    className='rounded-full border border-white/30 bg-white/10 px-3 py-1 text-xs font-medium capitalize text-white'
+                    className='rounded-full border border-white/30 bg-white/10 px-2 py-0.5 text-[10px] font-medium capitalize text-white md:text-[11px] xl:px-3 xl:py-1 xl:text-xs'
                   >
                     {formatCategory(cat)}
                   </span>
@@ -81,7 +81,7 @@ export default function FeaturedBlogHero({ blog }) {
             ) : null}
 
             <span
-              className={`inline-flex w-fit items-center gap-2 rounded-md px-5 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 ${GOLD_GRADIENT}`}
+              className={`inline-flex w-fit items-center gap-1.5 rounded-md px-3 py-1.5 text-[11px] font-semibold text-white transition hover:opacity-90 md:px-3.5 md:py-2 md:text-xs xl:gap-2 xl:px-5 xl:py-2.5 xl:text-sm ${GOLD_GRADIENT}`}
             >
               Read article
               <span

@@ -723,13 +723,18 @@ export const ListingSidebar = ({ initialData, isSidebarVisible }) => {
   }
 
   return (
-    <div className='rounded-[12px] w-[300px] sm:w-[385px] flex flex-wrap lg:flex-nowrap gap-5 px-0 shadow-xl'>
-      <aside className='custom-shadow w-full lg:w-[385px]'>
-        <div className='flex justify-between border-b items-center px-5'>
-          <span className=' block px-5 py-4 text-lg md:text-xl text-darkGray '>
+    <div className='w-full rounded-[12px] shadow-xl sm:flex sm:flex-wrap lg:flex-nowrap'>
+      <aside className='custom-shadow w-full min-[1200px]:w-[385px]'>
+        <div className='flex items-center justify-between border-b px-5'>
+          <span className='block px-2 py-4 text-lg text-darkGray md:text-xl sm:px-5'>
             Side Menu
           </span>
-          <button className='text-base lg:hidden' onClick={isSidebarVisible}>
+          <button
+            type='button'
+            className='text-base min-[1200px]:hidden'
+            onClick={isSidebarVisible}
+            aria-label='Close filters'
+          >
             x
           </button>
         </div>
@@ -747,7 +752,7 @@ export const ListingSidebar = ({ initialData, isSidebarVisible }) => {
         <div className='border-b p-3 px-5'>
           <div className=''>Filter by Price</div>
           <div className='pl-1'>
-            <Box sx={{ width: 300 }}>
+            <Box sx={{ width: '100%', maxWidth: 300 }}>
               <Slider
                 getAriaLabel={() => 'Minimum distance'}
                 value={value}

@@ -130,7 +130,7 @@ export default function Login() {
           <p className='mt-3 max-w-sm text-sm leading-snug tracking-wide text-white/95 sm:mt-4 sm:max-w-md md:mt-5 md:max-w-none md:text-2xl md:leading-normal'>
             Simplify asset transactions with confidence on our trusted platform
           </p>
-          <div className='lg:block hidden mt-5'>
+          <div className='mt-5 block w-full max-w-full'>
             <SearchInputs />
           </div>
         </div>

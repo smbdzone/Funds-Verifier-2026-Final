@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { Suspense } from 'react'
 import OffPlanProductView from '@/components/offplan/OffPlanProductView'
-import OffPlanPropertyCard from '@/components/offplan/OffPlanPropertyCard'
+import RelatedOffPlanListings from '@/components/offplan/RelatedOffPlanListings'
 import GlobalLoader from '@/utils/GlobalLoader'
 import {
   fetchApprovedOffPlanListings,
@@ -30,7 +30,7 @@ export default async function OffPlanDetailPage({ params }) {
 
   const [listing, relatedCandidates] = await Promise.all([
     fetchOffPlanListingBySlug(slug),
-    fetchApprovedOffPlanListings({ limit: 4 }),
+    fetchApprovedOffPlanListings({ limit: 24 }),
   ])
 
   if (!listing) {
@@ -41,20 +41,20 @@ export default async function OffPlanDetailPage({ params }) {
     )
   }
 
-  const relatedListings = relatedCandidates
-    .filter((item) => item.slug !== listing.slug)
-    .slice(0, 3)
+  const relatedListings = relatedCandidates.filter(
+    (item) => item.slug !== listing.slug,
+  )
 
   return (
     <div className='w-full sm:pb-8'>
       <Suspense fallback={<GlobalLoader />}>
-        <div className='valuesBg flex w-full flex-col py-10 sm:py-24 md:px-20'>
+        <div className='valuesBg flex w-full flex-col justify-end px-4 py-5 sm:px-6 sm:py-10 md:px-20 md:py-14 lg:py-20'>
           <div className='container mx-auto'>
-            <h1 className='heading fs-60 text-lg font-semibold text-white md:text-2xl'>
+            <h1 className='max-w-[18ch] text-[15px] font-semibold leading-snug text-white sm:max-w-none sm:text-xl sm:leading-tight md:text-2xl lg:text-3xl'>
               Property Off Plan For Sale
             </h1>
-            <p className='mt-2 text-[12px] capitalize text-white md:text-2xl'>
-              <span className='text-[#9b9b9b7c]'>
+            <p className='mt-1.5 text-[10px] capitalize leading-normal text-white/90 sm:mt-2 sm:text-xs md:text-sm'>
+              <span className='text-white/50'>
                 <Link href='/'>Home</Link> / <Link href='/offplan'>Off Plan</Link> /
               </span>{' '}
               Listing details
@@ -64,38 +64,7 @@ export default async function OffPlanDetailPage({ params }) {
 
         <OffPlanProductView data={listing} />
 
-        {relatedListings.length ? (
-          <div className='theme-container mt-8 border-t border-reefGold pb-10 pt-10 sm:mt-12 sm:pt-12'>
-            <h2 className='mb-6 text-left text-lg font-semibold text-blue md:text-2xl'>
-              Related Off-Plan Properties
-            </h2>
-            <div className='grid grid-cols-1 justify-items-center gap-6 sm:grid-cols-2 xl:grid-cols-3'>
-              {relatedListings.map((item) => (
-                <OffPlanPropertyCard
-                  key={item.id}
-                  href={`/offplan/${item.slug}`}
-                  title={item.title}
-                  location={item.location}
-                  deliveryLabel={item.deliveryLabel}
-                  paymentPlanLabel={item.paymentPlanLabel}
-                  rating={item.rating}
-                  reviewCount={item.reviewCount}
-                  listingRef={item.ref}
-                  qrScanSrc={item.qrScanSrc}
-                  priceFrom={item.priceFrom}
-                  priceTo={item.priceTo}
-                  images={item.images}
-                  developerAvatar={item.developerAvatar}
-                  approvalBadge={item.approvalBadge}
-                  analytics={item.analytics}
-                  slug={item.slug}
-                  uuid={item.uuid}
-                  assetType={item.assetType}
-                />
-              ))}
-            </div>
-          </div>
-        ) : null}
+        <RelatedOffPlanListings listings={relatedListings} />
       </Suspense>
     </div>
   )

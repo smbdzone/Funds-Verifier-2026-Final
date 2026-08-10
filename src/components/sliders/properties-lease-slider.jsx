@@ -89,7 +89,7 @@ export default function PropertyLeaseSlider() {
           </p>
         </div>
       </div>
-      <div className='flex w-full md:flex-row flex-col gap-3 md:px-0 items-center relative'>
+      <div className='home-listing-slider-row relative flex w-full flex-col items-center gap-3 md:flex-row md:px-0'>
         <div className='hidden md:block space-x-5 pb-5'>
           <div
             onClick={handlePrevSlide}
@@ -133,11 +133,11 @@ export default function PropertyLeaseSlider() {
             disableOnInteraction: false,
           }}
           breakpoints={{
-            700: {
+            900: {
               slidesPerView: 2,
               spaceBetween: 14,
             },
-            1024: {
+            1400: {
               slidesPerView: 3,
               spaceBetween: 16,
             },
@@ -154,7 +154,7 @@ export default function PropertyLeaseSlider() {
                 {(() => {
                   const imageSrc = getListingCardImageSrc(propertyForLease)
                   return imageSrc ? (
-                    <div className='relative shrink-0 overflow-hidden rounded-md !h-[275px] w-full'>
+                    <div className='listing-card-image relative h-[190px] w-full shrink-0 overflow-hidden rounded-md md:h-[240px] lg:h-[275px]'>
                       <Image
                         width={414}
                         height={275}
@@ -164,7 +164,7 @@ export default function PropertyLeaseSlider() {
                       />
                     </div>
                   ) : (
-                    <div className='flex justify-center items-center rounded-md bg-[#f0f4f8] !h-[275px] w-full'>
+                    <div className='listing-card-image flex h-[190px] w-full shrink-0 items-center justify-center rounded-md bg-[#f0f4f8] md:h-[240px] lg:h-[275px]'>
                       <Image
                         width={64}
                         height={64}

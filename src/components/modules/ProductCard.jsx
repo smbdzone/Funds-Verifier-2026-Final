@@ -69,13 +69,14 @@ const ProductCard = ({
     getListingDocumentSrc(technicalReport) &&
     getListingDocumentSrc(evaluationCertificate) &&
     video3DWalkthrough?.link
+  // Below 1200px: details always visible. 1200px+: reveal on QR hover.
   const detailsVisibleClass = qrHovered
     ? 'max-h-[480px] opacity-100'
-    : 'max-h-0 opacity-0 pointer-events-none'
+    : 'max-h-[480px] opacity-100 min-[1200px]:max-h-0 min-[1200px]:opacity-0 min-[1200px]:pointer-events-none'
   return (
     <div
       key={item.uuid}
-      className={`group relative flex p-3 pr-0 flex-col gap-4 xl:gap-5 items-center sm:flex-row rounded-[12px] ${hasAdditionalContent ? 'custom-shadow' : 'bg-white'
+      className={`group relative flex w-full flex-col items-stretch gap-3 rounded-[12px] p-3 sm:flex-row sm:items-center sm:gap-4 sm:pr-0 xl:gap-5 ${hasAdditionalContent ? 'custom-shadow' : 'bg-white shadow-xl'
         }`}
       style={{
         background: hasAdditionalContent
@@ -95,9 +96,10 @@ const ProductCard = ({
         <ListingCardQrThumb
           listing={item}
           onHoverChange={setQrHovered}
+          className='hidden sm:block'
         />
       </div>
-      <div className='w-full sm:w-1/2 relative' style={{ maxWidth: '350px' }}>
+      <div className='relative w-full shrink-0 sm:w-[280px] md:w-[312px] xl:w-auto xl:max-w-[350px]'>
         {carouselSlides.length > 1 ? (
           <ListingCarouselNavButton
             direction='prev'
@@ -112,7 +114,8 @@ const ProductCard = ({
           pagination={{ clickable: true }}
           scrollbar={{ draggable: true }}
           navigation={false}
-          style={{ maxWidth: '312px', width: '100%', height: '220px' }}
+          className='!h-[200px] w-full sm:!h-[220px]'
+          style={{ width: '100%', maxWidth: '100%' }}
           modules={[Pagination, Scrollbar, A11y]}
           onSwiper={(swiper) => {
             swiperRefs.current[item.uuid] = swiper
@@ -122,7 +125,7 @@ const ProductCard = ({
             <SwiperSlide key={`slide-${index}-${slide.type}`}>
               {slide.type === 'video' ? (
                 <video
-                  className='rounded-lg !w-[314px] !h-[220px] bg-black'
+                  className='h-[200px] w-full rounded-lg bg-black object-cover sm:h-[220px]'
                   controls
                   playsInline
                   preload='metadata'
@@ -134,7 +137,7 @@ const ProductCard = ({
                   Your browser does not support the video tag.
                 </video>
               ) : isListingCarouselPlaceholderSlide(slide) ? (
-                <div className='listing-carousel-placeholder listing-carousel-placeholder-frame flex h-[220px] min-h-[220px] w-full max-w-[314px] shrink-0 items-center justify-center overflow-hidden rounded-lg bg-gradient-to-br from-[#eef0f3] to-[#e2e6ec]'>
+                <div className='listing-carousel-placeholder listing-carousel-placeholder-frame flex h-[200px] min-h-[200px] w-full shrink-0 items-center justify-center overflow-hidden rounded-lg bg-gradient-to-br from-[#eef0f3] to-[#e2e6ec] sm:h-[220px] sm:min-h-[220px]'>
                   <img
                     src={PLACEHOLDER}
                     alt=''
@@ -144,23 +147,25 @@ const ProductCard = ({
                   />
                 </div>
               ) : (
-                <Image
-                  className='rounded-lg !w-[314px] !h-[220px]'
-                  src={slide.src}
-                  height={210}
-                  width={210}
-                  alt={title}
-                />
+                <div className='relative h-[200px] w-full overflow-hidden rounded-lg sm:h-[220px]'>
+                  <Image
+                    className='h-full w-full rounded-lg object-cover'
+                    src={slide.src}
+                    height={220}
+                    width={314}
+                    alt={title}
+                  />
+                </div>
               )}
             </SwiperSlide>
           ))}
           {video3DWalkthrough?.link && (
             <SwiperSlide key='walkthrough-3d'>
-              <div className='rounded-lg !w-[314px] !h-[220px] flex items-center justify-center bg-gray-800 text-white'>
+              <div className='flex h-[200px] w-full items-center justify-center rounded-lg bg-gray-800 text-white sm:h-[220px]'>
                 <iframe
                   src={video3DWalkthrough.link}
                   title='3D Video'
-                  className='rounded-lg !w-[314px] !h-[220px] border-none'
+                  className='h-full w-full rounded-lg border-none'
                   allowFullScreen
                 ></iframe>
               </div>
@@ -175,23 +180,23 @@ const ProductCard = ({
         ) : null}
       </div>
       <div
-        className={`flex w-full flex-col gap-2.5 text-base ${hasAdditionalContent ? 'text-white' : 'text-reef-gold'
+        className={`flex min-w-0 flex-1 flex-col gap-2.5 pr-2 text-base sm:pr-24 ${hasAdditionalContent ? 'text-white' : 'text-reef-gold'
           }`}
       >
-        <div className='flex flex-wrap items-center gap-2 text-left'>
-          <Link href={listingHref} className='min-w-0 max-w-full'>
+        <div className='flex min-w-0 flex-col gap-1.5 text-left'>
+          <Link href={listingHref} className='min-w-0 max-w-full break-words'>
             <h2
-              className={`text-2xl font-semibold capitalize leading-snug ${hasAdditionalContent ? 'text-white' : 'text-black'
+              className={`break-words text-lg font-semibold capitalize leading-snug md:text-xl xl:text-2xl ${hasAdditionalContent ? 'text-white' : 'text-black'
                 }`}
             >
-              {getShortTitle(title)}
+              {title}
             </h2>
           </Link>
           <ListingCardViewCount listing={item} />
         </div>
         <div
           className={`overflow-hidden transition-all duration-300 ease-out ${detailsVisibleClass}`}
-          aria-hidden={!qrHovered}
+          aria-hidden={false}
         >
           <div className='flex flex-col gap-2.5 pb-1'>
             <div className='flex w-full flex-wrap gap-x-3 gap-y-1'>
@@ -242,7 +247,15 @@ const ProductCard = ({
                   {locationLabel || '—'}
                 </p>
               </div>
-              <ListingCardCertificates listing={item} />
+              <div className='flex flex-wrap items-center gap-2'>
+                <ListingCardQrThumb
+                  listing={item}
+                  onHoverChange={setQrHovered}
+                  size={48}
+                  className='sm:hidden'
+                />
+                <ListingCardCertificates listing={item} />
+              </div>
             </div>
             <ListingSocialShare
               listing={{ ...item, type }}

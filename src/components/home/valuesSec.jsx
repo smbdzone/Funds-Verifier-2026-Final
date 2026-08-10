@@ -1,5 +1,5 @@
 const STATS = [
-  { value: '7000+', label: 'Deal Unters' },
+  { value: '7000+', label: 'Deal Hunters' },
   { value: '2500+', label: 'Available Assets' },
   { value: '3000+', label: 'Bought Items' },
   { value: '1500+', label: 'Sold Items' },
@@ -16,10 +16,14 @@ function StatBlock({ value, label, className = '', mobile = false }) {
   }
 
   return (
-    <div className={`text-center text-white px-4 ${className}`}>
-      <b className='text-xl md:text-3xl lg:text-4xl xl:text-5xl'>{value}</b>
-      <div className='mt-2 text-xs font-medium sm:mt-5 md:text-xl xl:text-3xl'>
-        {label}
+    <div
+      className={`flex h-full min-h-[7.5rem] w-full flex-col items-center justify-center px-2 text-center text-white md:min-h-[9rem] lg:min-h-[10rem] ${className}`}
+    >
+      <b className='block text-xl leading-none md:text-3xl lg:text-4xl xl:text-5xl'>
+        {value}
+      </b>
+      <div className='mt-2 flex min-h-[2.5rem] items-center justify-center text-xs font-medium leading-tight sm:mt-4 sm:min-h-[3rem] md:min-h-[3.5rem] md:text-xl xl:min-h-[4rem] xl:text-3xl'>
+        <span className='max-w-[12ch] md:max-w-none'>{label}</span>
       </div>
     </div>
   )
@@ -49,13 +53,12 @@ export default function ValuesSec() {
           </div>
         </div>
 
-        <div className='hidden flex-row items-center justify-between sm:flex'>
+        <div className='hidden grid-cols-4 items-stretch gap-2 sm:grid md:gap-4'>
           {STATS.map((stat) => (
             <StatBlock
               key={stat.label}
               value={stat.value}
               label={stat.label}
-              className='md:w-1/4'
             />
           ))}
         </div>

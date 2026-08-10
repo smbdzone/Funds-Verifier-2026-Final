@@ -105,7 +105,7 @@ export default function CarForSale() {
 
   return (
     <div className='container mx-auto'>
-      <div className='flex flex-row gap-3 items-center relative'>
+      <div className='home-listing-slider-row relative flex flex-row items-center gap-3'>
         <div
           onClick={handlePrevSlide}
           className='cursor-pointer absolute top-[50%] -left-12 z-40'
@@ -122,11 +122,11 @@ export default function CarForSale() {
           slidesPerView={1}
           spaceBetween={10}
           breakpoints={{
-            700: {
+            900: {
               slidesPerView: 2,
               spaceBetween: 14,
             },
-            1024: {
+            1400: {
               slidesPerView: 3,
               spaceBetween: 16,
             },
@@ -148,19 +148,17 @@ export default function CarForSale() {
             return (
               <SwiperSlide className='listing-card-slide !h-auto' key={car.uuid || index}>
                 <div className='listing-card mx-1 my-1 h-full w-full rounded-md bg-white'>
-                  <figure className='relative overflow-hidden rounded-md'>
+                  <figure className='listing-card-image relative h-[190px] w-full overflow-hidden rounded-md md:h-[240px] lg:h-[275px]'>
                     {imageSrc ? (
-                      <>
-                        <Image
-                          width={414}
-                          height={275}
-                          className='rounded-md object-cover !h-[275px] w-full'
-                          alt={car?.make || 'Car'}
-                          src={imageSrc}
-                        />
-                      </>
+                      <Image
+                        width={414}
+                        height={275}
+                        className='h-full w-full rounded-md object-cover'
+                        alt={car?.make || 'Car'}
+                        src={imageSrc}
+                      />
                     ) : (
-                      <div className='flex justify-center items-center rounded-md bg-[#f0f4f8] !h-[275px] w-full'>
+                      <div className='flex h-full w-full items-center justify-center rounded-md bg-[#f0f4f8]'>
                         <Image
                           width={64}
                           height={64}

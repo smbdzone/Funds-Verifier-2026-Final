@@ -134,7 +134,7 @@ export const CarListingCard = () => {
   const hasFilters = hasListingSearchFilters(searchParams)
 
   return (
-    <div className='flex flex-col w-full xl:me-20 gap-6'>
+    <div className='flex w-full flex-col gap-6'>
       {loading ? (
         <ListingCardSkeleton count={3} />
       ) : listings.length === 0 ? (

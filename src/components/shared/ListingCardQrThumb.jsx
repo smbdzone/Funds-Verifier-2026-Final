@@ -18,11 +18,14 @@ export default function ListingCardQrThumb({
   onHoverChange,
 }) {
   const qrSrc = src || getListingQrScanSrc(listing)
-  const thumbPx = Number(size) === 96 ? 96 : 72
+  const thumbPx =
+    Number(size) === 96 ? 96 : Number(size) === 48 ? 48 : 72
   const thumbClass =
     thumbPx === 96
       ? 'listing-qr-thumb listing-qr-thumb-lg h-24 w-24 shrink-0 object-contain'
-      : 'listing-qr-thumb h-[72px] w-[72px] shrink-0 object-contain'
+      : thumbPx === 48
+        ? 'listing-qr-thumb h-12 w-12 shrink-0 object-contain'
+        : 'listing-qr-thumb h-[72px] w-[72px] shrink-0 object-contain'
 
   const listingPath = useMemo(
     () => (listing ? getListingSharePath(listing) : ''),

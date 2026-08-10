@@ -1,8 +1,8 @@
 import React, { Suspense } from 'react'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import ButtomSlider from '@/components/Product_page/Buttom_slider'
 import JewelleryView from '@/components/modules/Jewelry/JewelleryView'
+import RelatedAssetListings from '@/components/shared/RelatedAssetListings'
 import { api } from '@/config'
 import GlobalLoader from '@/utils/GlobalLoader'
 import { buildListingPageMetadata } from '@/libs/listingMetadata'
@@ -14,7 +14,7 @@ const GetProductData = cache(async ({ id }) => {
   try {
     const relatedQuery = new URLSearchParams({
       statusFilter: '1',
-      limit: '12',
+      limit: '24',
       excludeSlug: id,
       excludeUuid: id,
       excludeId: id,
@@ -47,7 +47,7 @@ const GetProductData = cache(async ({ id }) => {
 
     return {
       propertyInfo,
-      propertyData: { products },
+      relatedListings: products,
     }
   } catch (error) {
     return null
@@ -73,13 +73,13 @@ export default async function page({ params }) {
   const data = await GetProductData({ id })
   if (!data || !data.propertyInfo) {
     return (
-      <div className='w-full h-[500px] flex items-center justify-center'>
+      <div className='flex h-[500px] w-full items-center justify-center'>
         <h1 className='text-2xl font-semibold'>Jewelry not found</h1>
       </div>
     )
   }
 
-  const { propertyInfo, propertyData } = data
+  const { propertyInfo, relatedListings } = data
 
   if (propertyInfo?.slug && id === propertyInfo.uuid) {
     redirect(`/jewelry/${propertyInfo.slug}`)
@@ -88,29 +88,27 @@ export default async function page({ params }) {
   return (
     <div className='w-full pb-8'>
       <Suspense fallback={<GlobalLoader />}>
-        <div className='w-full valuesBg flex py-24 md:px-20 flex-col'>
+        <div className='valuesBg flex w-full flex-col justify-end px-4 py-5 sm:px-6 sm:py-10 md:px-20 md:py-14 lg:py-20'>
           <div className='container mx-auto'>
-            <h1 className='heading text-white fs-60 md:text-2xl text-xl font-semibold'>
-              {propertyInfo?.assetType}
+            <h1 className='max-w-[18ch] text-[15px] font-semibold leading-snug text-white sm:max-w-none sm:text-xl sm:leading-tight md:text-2xl lg:text-3xl'>
+              {propertyInfo?.assetType || 'Jewellery For Sale'}
             </h1>
-            <p className='md:text-2xl text-base text-white mt-2'>
-              <span className='text-[#9b9b9b7c]'>
-                <Link href='/'>Home</Link> /
+            <p className='mt-1.5 text-[10px] capitalize leading-normal text-white/90 sm:mt-2 sm:text-xs md:text-sm'>
+              <span className='text-white/50'>
+                <Link href='/'>Home</Link> /{' '}
                 <Link href='/jewelry'>Jewellery</Link> /
               </span>{' '}
               Listing details
             </p>
           </div>
         </div>
+
         <JewelleryView data={propertyInfo || {}} />
-        {propertyData?.products?.length > 0 ? (
-          <div className='theme-container mt-8 border-t border-reefGold pt-10 sm:mt-12 sm:pt-12'>
-            <h1 className='md:text-2xl text-lg mb-6 font-semibold text-left text-blue '>
-              Related Jewellery
-            </h1>
-            <ButtomSlider data={propertyData} />
-          </div>
-        ) : null}
+
+        <RelatedAssetListings
+          title='Related Jewellery'
+          listings={relatedListings}
+        />
       </Suspense>
     </div>
   )

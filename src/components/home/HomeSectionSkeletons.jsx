@@ -38,13 +38,13 @@ export function HomeHeroSkeleton() {
           <Shimmer variant='light' className='h-[31px] w-full max-w-[320px] rounded-lg sm:h-9 sm:max-w-lg md:h-14 md:max-w-xl' />
         </div>
         <Shimmer variant='light' className='mt-3 h-4 w-full max-w-sm rounded sm:mt-4 md:mt-5 md:h-6 md:max-w-md' />
-        <div className='mt-5 hidden flex-wrap gap-3 lg:flex'>
-          <Shimmer className='h-[46px] w-36 rounded-lg' />
-          <Shimmer className='h-[46px] w-32 rounded-lg' />
-          <Shimmer className='h-[46px] w-28 rounded-lg' />
-          <Shimmer className='h-[46px] w-32 rounded-lg' />
-          <Shimmer className='h-[46px] w-32 rounded-lg' />
-          <Shimmer variant='gold' className='h-[46px] w-28 rounded-lg' />
+        <div className='mt-5 flex flex-wrap gap-3'>
+          <Shimmer className='h-[46px] w-full max-w-[160px] flex-1 rounded-lg sm:w-36' />
+          <Shimmer className='h-[46px] w-full max-w-[160px] flex-1 rounded-lg sm:w-32' />
+          <Shimmer className='h-[46px] w-full max-w-[160px] flex-1 rounded-lg sm:w-28' />
+          <Shimmer className='h-[46px] w-full max-w-[160px] flex-1 rounded-lg sm:w-32' />
+          <Shimmer className='h-[46px] w-full max-w-[160px] flex-1 rounded-lg sm:w-32' />
+          <Shimmer variant='gold' className='h-[46px] w-full max-w-[160px] flex-1 rounded-lg sm:w-28' />
         </div>
       </div>
     </div>

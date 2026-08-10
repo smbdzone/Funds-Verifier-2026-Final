@@ -130,7 +130,7 @@ export default function PropertySaleSlider() {
           No evaluator-approved properties for sale yet.
         </p>
       ) : (
-        <div className='flex md:flex-row flex-col items-center relative overflow-visible'>
+        <div className='home-listing-slider-row relative flex flex-col items-center overflow-visible md:flex-row'>
           <div className='hidden md:block space-x-5 pb-5'>
             <div
               onClick={handlePrevSlide}
@@ -172,11 +172,11 @@ export default function PropertySaleSlider() {
               disableOnInteraction: false,
             }}
             breakpoints={{
-              700: {
+              900: {
                 slidesPerView: 2,
                 spaceBetween: 14,
               },
-              1024: {
+              1400: {
                 slidesPerView: 3,
                 spaceBetween: 16,
               },
@@ -191,7 +191,7 @@ export default function PropertySaleSlider() {
                 <SwiperSlide className='listing-card-slide !h-auto w-full' key={propertyForSale.uuid}>
                   <div className='listing-card mx-1 my-1 h-full w-full rounded-md bg-white'>
                     {imageSrc ? (
-                      <div className='relative shrink-0 overflow-hidden rounded-md !h-[275px] w-full'>
+                      <div className='listing-card-image relative h-[190px] w-full shrink-0 overflow-hidden rounded-md md:h-[240px] lg:h-[275px]'>
                         <Image
                           className='h-full w-full rounded-md object-cover'
                           alt={propertyForSale.title || 'Property'}
@@ -201,7 +201,7 @@ export default function PropertySaleSlider() {
                         />
                       </div>
                     ) : (
-                      <div className='flex shrink-0 justify-center items-center rounded-md bg-[#f0f4f8] !h-[275px] w-full'>
+                      <div className='listing-card-image flex h-[190px] w-full shrink-0 items-center justify-center rounded-md bg-[#f0f4f8] md:h-[240px] lg:h-[275px]'>
                         <Image
                           width={64}
                           height={64}

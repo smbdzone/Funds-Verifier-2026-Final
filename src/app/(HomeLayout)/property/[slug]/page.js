@@ -1,10 +1,10 @@
 import axios from 'axios'
 import Link from 'next/link'
 import { Suspense } from 'react'
-import ButtomSlider from '@/components/Product_page/Buttom_slider'
 import ProductView from '@/components/views/ProductView'
+import RelatedAssetListings from '@/components/shared/RelatedAssetListings'
 import GlobalLoader from '@/utils/GlobalLoader'
-import { getPublicApiHeaders } from '@/libs/publicApiClient'
+import { withPublicApiRetry } from '@/libs/publicApiClient'
 import { buildListingPageMetadata } from '@/libs/listingMetadata'
 import { cache } from 'react'
 
@@ -12,29 +12,30 @@ export const dynamic = 'force-dynamic'
 
 const GetProductData = cache(async ({ slug }) => {
   try {
-    const headers = await getPublicApiHeaders()
-    const [propertyResponse, relatedResponse] = await Promise.all([
-      axios.get(`${process.env.NEXT_PUBLIC_BASE_URL}/property/${slug}`, {
-        headers,
-      }),
-      axios.get(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/property/related-property`,
-        {
-          headers,
-          params: {
-            statusFilter: 1,
-            limit: 12,
-            excludeSlug: slug,
-            excludeOffPlan: true,
-          },
-        },
-      ),
-    ])
+    const [propertyResponse, relatedResponse] = await withPublicApiRetry(
+      (headers) =>
+        Promise.all([
+          axios.get(`${process.env.NEXT_PUBLIC_BASE_URL}/property/${slug}`, {
+            headers,
+          }),
+          axios.get(
+            `${process.env.NEXT_PUBLIC_BASE_URL}/property/related-property`,
+            {
+              headers,
+              params: {
+                statusFilter: 1,
+                limit: 24,
+                excludeSlug: slug,
+                excludeOffPlan: true,
+              },
+            },
+          ),
+        ]),
+    )
 
     const propertyInfo = propertyResponse?.data
     const relatedProducts = relatedResponse?.data?.products || []
 
-    // Extra safety: drop current listing if exclude missed for any reason.
     const products = relatedProducts.filter((item) => {
       if (propertyInfo?.uuid && item?.uuid === propertyInfo.uuid) return false
       if (
@@ -49,7 +50,7 @@ const GetProductData = cache(async ({ slug }) => {
 
     return {
       propertyInfo,
-      propertyData: { products },
+      relatedListings: products,
     }
   } catch (error) {
     console.error('Failed to load property:', slug, error?.message)
@@ -77,40 +78,38 @@ export default async function Page({ params }) {
 
   if (!data || !data.propertyInfo) {
     return (
-      <div className='w-full h-[500px] flex items-center justify-center'>
+      <div className='flex h-[500px] w-full items-center justify-center'>
         <h1 className='text-2xl font-semibold'>Property not found</h1>
       </div>
     )
   }
 
-  const { propertyData, propertyInfo } = data
+  const { relatedListings, propertyInfo } = data
 
   return (
     <div className='w-full sm:pb-8'>
       <Suspense fallback={<GlobalLoader />}>
-        <div className='w-full valuesBg flex py-10 sm:py-24 md:px-20 flex-col'>
+        <div className='valuesBg flex w-full flex-col justify-end px-4 py-5 sm:px-6 sm:py-10 md:px-20 md:py-14 lg:py-20'>
           <div className='container mx-auto'>
-            <h1 className='heading text-white  md:text-2xl text-lg fs-60 font-semibold'>
-              {propertyInfo?.assetType}
+            <h1 className='max-w-[18ch] text-[15px] font-semibold leading-snug text-white sm:max-w-none sm:text-xl sm:leading-tight md:text-2xl lg:text-3xl'>
+              {propertyInfo?.assetType || 'Properties For Sale'}
             </h1>
-            <p className='md:text-2xl text-[12px] text-white mt-2 capitalize'>
-              <span className='text-[#9b9b9b7c]'>
+            <p className='mt-1.5 text-[10px] capitalize leading-normal text-white/90 sm:mt-2 sm:text-xs md:text-sm'>
+              <span className='text-white/50'>
                 <Link href='/'>Home</Link> /{' '}
                 <Link href='/property'>Properties</Link> /
-              </span>
+              </span>{' '}
               Listing details
             </p>
           </div>
         </div>
+
         <ProductView data={propertyInfo} />
-        {propertyData?.products?.length > 0 ? (
-          <div className='theme-container mt-8 border-t border-reefGold pt-10 sm:mt-12 sm:pt-12'>
-            <h1 className='md:text-2xl text-lg mb-3 sm:mb-6 font-semibold text-left text-blue'>
-              Related Properties
-            </h1>
-            <ButtomSlider data={propertyData} />
-          </div>
-        ) : null}
+
+        <RelatedAssetListings
+          title='Related Properties'
+          listings={relatedListings}
+        />
       </Suspense>
     </div>
   )

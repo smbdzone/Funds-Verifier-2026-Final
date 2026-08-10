@@ -25,8 +25,8 @@ const ImageSlider = ({ media = [] }) => {
   }
 
   return (
-    <div className='container mx-auto  md:hidden'>
-      <div className='flex flex-col h-[350px] gap-3 items-center relative'>
+    <div className='mx-auto w-full'>
+      <div className='relative flex h-[280px] flex-col items-center gap-3 sm:h-[350px] md:h-[420px]'>
         {/* Swiper */}
         <Swiper
           slidesPerView={1}

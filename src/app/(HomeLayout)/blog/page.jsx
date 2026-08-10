@@ -1,12 +1,7 @@
 'use client'
 import { Banner } from '@/components/modules/Banner'
 import { useEffect, useState, useRef, useMemo } from 'react'
-import 'swiper/css'
-import 'swiper/css/pagination'
-import { Swiper, SwiperSlide } from 'swiper/react'
-import { Autoplay } from 'swiper/modules'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
-import { swiperCanLoop } from '@/utils/swiperLoop'
 import BlogPageSkeleton from '@/components/blog/BlogPageSkeleton'
 import FeaturedBlogHero from '@/components/blog/FeaturedBlogHero'
 import BlogArticleCard from '@/components/blog/BlogArticleCard'
@@ -17,7 +12,8 @@ import {
   sortBlogsForDisplay,
 } from '@/utils/blogVisibility'
 
-const DESKTOP_PAGE_SIZE = 3
+const DESKTOP_PAGE_SIZE = 6
+const TABLET_STEP = 2
 const GOLD_GRADIENT =
   '[background:linear-gradient(90deg,_#a2913e,_#d7c590_35.28%,_#a2913e_68.99%,_#d7c58f)]'
 
@@ -26,6 +22,8 @@ export default function Insight() {
   const [data, setData] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [desktopPage, setDesktopPage] = useState(1)
+  const [mobilePage, setMobilePage] = useState(1)
+  const [tabletVisibleCount, setTabletVisibleCount] = useState(TABLET_STEP)
   const [query, setQuery] = useState({
     page: 1,
     limit: 20,
@@ -33,7 +31,6 @@ export default function Insight() {
   const [noDataMessage, setNoDataMessage] = useState(null)
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const [activeDropdown, setActiveDropdown] = useState(null)
-  const swiperRef = useRef()
   const dropdownRef = useRef()
 
   // Categories data as shown in the image
@@ -99,6 +96,8 @@ export default function Insight() {
 
   useEffect(() => {
     setDesktopPage(1)
+    setMobilePage(1)
+    setTabletVisibleCount(TABLET_STEP)
   }, [selectedCategories, data.length])
 
   const isAllFilter = selectedCategories.length === 0
@@ -120,9 +119,25 @@ export default function Insight() {
     )
     : listData
 
+  const totalMobilePages = Math.max(1, data.length)
+  const mobileCard = data[mobilePage - 1] ?? null
+
+  const tabletVisibleData = listData.slice(0, tabletVisibleCount)
+  const hasMoreTablet = tabletVisibleCount < listData.length
+
   const goToDesktopPage = (page) => {
     const nextPage = Math.min(Math.max(1, page), totalDesktopPages)
     setDesktopPage(nextPage)
+  }
+
+  const goToMobilePage = (page) => {
+    setMobilePage(Math.min(Math.max(1, page), totalMobilePages))
+  }
+
+  const handleSeeMoreTablet = () => {
+    setTabletVisibleCount((count) =>
+      Math.min(count + TABLET_STEP, listData.length),
+    )
   }
 
   // Close dropdown when clicking outside
@@ -139,18 +154,6 @@ export default function Insight() {
       document.removeEventListener('mousedown', handleClickOutside)
     }
   }, [])
-
-  const handleMouseEnter = () => {
-    if (swiperRef.current?.swiper) {
-      swiperRef.current.swiper.autoplay.stop()
-    }
-  }
-
-  const handleMouseLeave = () => {
-    if (swiperRef.current?.swiper) {
-      swiperRef.current.swiper.autoplay.start()
-    }
-  }
 
   const handleDropdownClick = (dropdownType) => {
     if (activeDropdown === dropdownType) {
@@ -187,18 +190,18 @@ export default function Insight() {
 
       <div className='theme-container px-4 pb-16 md:pb-24'>
         <div
-          className='relative my-6 flex flex-wrap items-center justify-between gap-3'
+          className='relative my-6 flex flex-nowrap items-center justify-between gap-3 min-[800px]:gap-4'
           ref={dropdownRef}
         >
           <div className='relative'>
             <button
               type='button'
               onClick={() => handleDropdownClick('first')}
-              className={`flex h-11 w-[120px] items-center justify-center rounded-l-sm font-medium text-white transition-opacity hover:opacity-90 ${GOLD_GRADIENT}`}
+              className={`flex h-8 w-[88px] items-center justify-center rounded-l-sm text-xs font-medium text-white transition-opacity hover:opacity-90 md:h-11 md:w-[120px] md:text-sm ${GOLD_GRADIENT}`}
             >
               ALL
               <svg
-                className={`ml-2 h-4 w-4 transition-transform ${isDropdownOpen && activeDropdown === 'first' ? 'rotate-180' : ''}`}
+                className={`ml-1.5 h-3 w-3 transition-transform md:ml-2 md:h-4 md:w-4 ${isDropdownOpen && activeDropdown === 'first' ? 'rotate-180' : ''}`}
                 fill='none'
                 stroke='currentColor'
                 viewBox='0 0 24 24'
@@ -221,11 +224,10 @@ export default function Insight() {
                         key={category.value}
                         type='button'
                         onClick={() => handleCategorySelect(category.value)}
-                        className={`mb-2 w-full rounded-md px-3 py-2 text-left text-sm font-medium transition-colors ${
-                          selectedCategories.includes(category.value)
+                        className={`mb-2 w-full rounded-md px-3 py-2 text-left text-sm font-medium transition-colors ${selectedCategories.includes(category.value)
                             ? `text-white ${GOLD_GRADIENT}`
                             : 'border border-gray-200 text-prussianBlue hover:bg-reefGold/5'
-                        }`}
+                          }`}
                       >
                         {category.label}
                       </button>
@@ -237,11 +239,10 @@ export default function Insight() {
                         key={category.value}
                         type='button'
                         onClick={() => handleCategorySelect(category.value)}
-                        className={`mb-2 w-full rounded-md px-3 py-2 text-left text-sm font-medium transition-colors ${
-                          selectedCategories.includes(category.value)
+                        className={`mb-2 w-full rounded-md px-3 py-2 text-left text-sm font-medium transition-colors ${selectedCategories.includes(category.value)
                             ? `text-white ${GOLD_GRADIENT}`
                             : 'border border-gray-200 text-prussianBlue hover:bg-reefGold/5'
-                        }`}
+                          }`}
                       >
                         {category.label}
                       </button>
@@ -261,47 +262,55 @@ export default function Insight() {
             ) : null}
           </div>
 
-          <div className='flex items-center gap-2 lg:hidden'>
+          {/* Arrows: mobile only */}
+          <div className='ml-auto flex shrink-0 items-center gap-1.5 md:hidden'>
             <button
               type='button'
               aria-label='Previous article'
-              onClick={() => swiperRef.current?.swiper?.slidePrev()}
-              className={`flex h-10 w-10 items-center justify-center rounded-l-sm text-white transition-opacity hover:opacity-90 ${GOLD_GRADIENT}`}
+              disabled={mobilePage <= 1 || data.length === 0}
+              onClick={() => goToMobilePage(mobilePage - 1)}
+              className={`flex h-8 w-8 items-center justify-center rounded-l-sm text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 ${GOLD_GRADIENT}`}
             >
-              <ChevronLeft size={22} />
+              <ChevronLeft size={16} />
             </button>
             <button
               type='button'
               aria-label='Next article'
-              onClick={() => swiperRef.current?.swiper?.slideNext()}
-              className={`flex h-10 w-10 items-center justify-center rounded-l-sm text-white transition-opacity hover:opacity-90 ${GOLD_GRADIENT}`}
+              disabled={mobilePage >= totalMobilePages || data.length === 0}
+              onClick={() => goToMobilePage(mobilePage + 1)}
+              className={`flex h-8 w-8 items-center justify-center rounded-l-sm text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 ${GOLD_GRADIENT}`}
             >
-              <ChevronRight size={22} />
+              <ChevronRight size={16} />
             </button>
           </div>
-
-          {selectedCategories.length > 0 ? (
-            <div className='flex w-full flex-wrap gap-2 pt-1'>
-              {selectedCategories.map((category) => (
-                <span
-                  key={category}
-                  className='inline-flex items-center rounded-full border border-reefGold/30 bg-reefGold/10 px-3 py-1 text-xs font-medium capitalize text-prussianBlue'
-                >
-                  {category.replace(/-/g, ' ')}
-                  <button
-                    type='button'
-                    onClick={() => handleCategorySelect(category)}
-                    className='ml-2 text-prussianBlue/60 hover:text-prussianBlue'
-                  >
-                    ×
-                  </button>
-                </span>
-              ))}
-            </div>
-          ) : null}
         </div>
 
-        {featuredBlog ? <FeaturedBlogHero blog={featuredBlog} /> : null}
+        {selectedCategories.length > 0 ? (
+          <div className='mb-4 flex flex-wrap gap-2'>
+            {selectedCategories.map((category) => (
+              <span
+                key={category}
+                className='inline-flex items-center rounded-full border border-reefGold/30 bg-reefGold/10 px-3 py-1 text-xs font-medium capitalize text-prussianBlue'
+              >
+                {category.replace(/-/g, ' ')}
+                <button
+                  type='button'
+                  onClick={() => handleCategorySelect(category)}
+                  className='ml-2 text-prussianBlue/60 hover:text-prussianBlue'
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+          </div>
+        ) : null}
+
+        {/* Featured: tablet & PC only — mobile shows 1 card via arrows */}
+        {featuredBlog ? (
+          <div className='hidden md:block'>
+            <FeaturedBlogHero blog={featuredBlog} />
+          </div>
+        ) : null}
 
         {noDataMessage ? (
           <div className='flex flex-col items-center justify-center rounded-2xl border border-reefGold/20 bg-white py-16 shadow-sm'>
@@ -310,8 +319,35 @@ export default function Insight() {
           </div>
         ) : (
           <>
-            <div className='hidden lg:block'>
-              <div className='grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3'>
+            <div>
+              {/* Mobile: exactly 1 card + arrows */}
+              <div className='mx-auto grid max-w-md grid-cols-1 gap-5 md:hidden'>
+                {mobileCard ? (
+                  <BlogArticleCard key={mobileCard.uuid} item={mobileCard} />
+                ) : null}
+              </div>
+
+              {/* Tablet: 2 cards + See more */}
+              <div className='hidden grid-cols-2 gap-6 md:grid xl:hidden'>
+                {tabletVisibleData.map((item) => (
+                  <BlogArticleCard key={item.uuid} item={item} />
+                ))}
+              </div>
+
+              {hasMoreTablet ? (
+                <div className='mt-8 hidden justify-center md:flex xl:hidden'>
+                  <button
+                    type='button'
+                    onClick={handleSeeMoreTablet}
+                    className={`rounded-l-sm px-8 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 ${GOLD_GRADIENT}`}
+                  >
+                    See more
+                  </button>
+                </div>
+              ) : null}
+
+              {/* PC: 3-col grid + page pagination (no header arrows) */}
+              <div className='hidden gap-6 xl:grid xl:grid-cols-3'>
                 {paginatedDesktopData.map((item) => (
                   <BlogArticleCard key={item.uuid} item={item} />
                 ))}
@@ -319,7 +355,7 @@ export default function Insight() {
 
               {showDesktopPagination ? (
                 <nav
-                  className='mt-10 flex flex-wrap items-center justify-center gap-2'
+                  className='mt-10 hidden flex-wrap items-center justify-center gap-2 xl:flex'
                   aria-label='Blog pagination'
                 >
                   <button
@@ -342,11 +378,10 @@ export default function Insight() {
                         aria-label={`Page ${pageNumber}`}
                         aria-current={isActive ? 'page' : undefined}
                         onClick={() => goToDesktopPage(pageNumber)}
-                        className={`flex h-10 min-w-[40px] items-center justify-center rounded-sm px-3 text-sm font-semibold transition-colors ${
-                          isActive
+                        className={`flex h-10 min-w-[40px] items-center justify-center rounded-sm px-3 text-sm font-semibold transition-colors ${isActive
                             ? `text-white ${GOLD_GRADIENT}`
                             : 'border border-reefGold/40 bg-white text-prussianBlue hover:bg-reefGold/10'
-                        }`}
+                          }`}
                       >
                         {pageNumber}
                       </button>
@@ -364,28 +399,6 @@ export default function Insight() {
                   </button>
                 </nav>
               ) : null}
-            </div>
-
-            <div className='lg:hidden'>
-              <Swiper
-                ref={swiperRef}
-                modules={[Autoplay]}
-                slidesPerView={1}
-                speed={1200}
-                autoplay={{ delay: 4000, disableOnInteraction: false }}
-                spaceBetween={16}
-                loop={swiperCanLoop(listData.length, 1)}
-                pagination={{ clickable: true }}
-                className='blog-mobile-swiper !overflow-hidden'
-                onMouseEnter={handleMouseEnter}
-                onMouseLeave={handleMouseLeave}
-              >
-                {listData.map((item, i) => (
-                  <SwiperSlide key={item.uuid || i} className='!h-auto'>
-                    <BlogArticleCard item={item} />
-                  </SwiperSlide>
-                ))}
-              </Swiper>
             </div>
           </>
         )}

@@ -59,14 +59,15 @@ const ProductCard = ({
   const listingHref = getListingSharePath({ ...item, type })
   const locationLabel = formatListingLocation(item)
   const walkthroughUrl = getListingWalkthroughUrl(item)
+  // Below 1200px: details always visible. 1200px+: reveal on QR hover.
   const detailsVisibleClass = qrHovered
     ? 'max-h-[480px] opacity-100'
-    : 'max-h-0 opacity-0 pointer-events-none'
+    : 'max-h-[480px] opacity-100 min-[1200px]:max-h-0 min-[1200px]:opacity-0 min-[1200px]:pointer-events-none'
 
   return (
     <div
       key={item.uuid}
-      className='group relative flex flex-col items-center gap-4 rounded-[12px] bg-white p-3 shadow-xl md:flex-row md:pr-0 xl:gap-5'
+      className='group relative flex w-full flex-col items-stretch gap-3 rounded-[12px] bg-white p-3 shadow-xl sm:flex-row sm:items-center sm:gap-4 sm:pr-0 xl:gap-5'
     >
       <div className='absolute right-2 top-2 z-30 flex flex-col items-end gap-1.5'>
         {premiumBadge ? (
@@ -77,12 +78,14 @@ const ProductCard = ({
             {premiumBadge}
           </button>
         ) : null}
+        {/* Desktop/tablet: QR top-right. Mobile: shown beside certificates */}
         <ListingCardQrThumb
           listing={item}
           onHoverChange={setQrHovered}
+          className='hidden sm:block'
         />
       </div>
-      <div className='w-full xl:w-1/2 relative'>
+      <div className='relative w-full shrink-0 sm:w-[280px] md:w-[312px] xl:w-auto xl:max-w-[350px]'>
         {carouselSlides.length > 1 ? (
           <ListingCarouselNavButton
             direction='prev'
@@ -97,18 +100,18 @@ const ProductCard = ({
           pagination={{ clickable: true }}
           scrollbar={{ draggable: true }}
           navigation={false}
-          style={{ maxWidth: '312px', width: '100%', height: '220px' }}
+          className='!h-[200px] w-full sm:!h-[220px]'
+          style={{ width: '100%', maxWidth: '100%' }}
           modules={[Pagination, Scrollbar, A11y]}
           onSwiper={(swiper) => {
             swiperRefs.current[item.uuid] = swiper
-          }
-          }
+          }}
         >
           {carouselSlides.map((slide, index) => (
             <SwiperSlide key={`slide-${index}-${slide.type}`}>
               {slide.type === 'video' ? (
                 <video
-                  className='rounded-lg !w-[314px] !h-[220px] bg-black'
+                  className='h-[200px] w-full rounded-lg bg-black object-cover sm:h-[220px]'
                   controls
                   playsInline
                   preload='metadata'
@@ -117,7 +120,7 @@ const ProductCard = ({
                   Your browser does not support the video tag.
                 </video>
               ) : isListingCarouselPlaceholderSlide(slide) ? (
-                <div className='listing-carousel-placeholder listing-carousel-placeholder-frame flex h-[220px] min-h-[220px] w-full max-w-[314px] shrink-0 items-center justify-center overflow-hidden rounded-lg bg-gradient-to-br from-[#eef0f3] to-[#e2e6ec]'>
+                <div className='listing-carousel-placeholder listing-carousel-placeholder-frame flex h-[200px] min-h-[200px] w-full shrink-0 items-center justify-center overflow-hidden rounded-lg bg-gradient-to-br from-[#eef0f3] to-[#e2e6ec] sm:h-[220px] sm:min-h-[220px]'>
                   <img
                     src={PLACEHOLDER}
                     alt=''
@@ -127,12 +130,12 @@ const ProductCard = ({
                   />
                 </div>
               ) : (
-                <div className='relative !h-[220px] !w-[314px] overflow-hidden rounded-lg'>
+                <div className='relative h-[200px] w-full overflow-hidden rounded-lg sm:h-[220px]'>
                   <Image
-                    className='rounded-lg !w-[314px] !h-[220px]'
+                    className='h-full w-full rounded-lg object-cover'
                     src={slide.src}
-                    height={210}
-                    width={210}
+                    height={220}
+                    width={314}
                     alt={title}
                   />
                 </div>
@@ -141,11 +144,11 @@ const ProductCard = ({
           ))}
           {walkthroughUrl && (
             <SwiperSlide key='walkthrough-3d'>
-              <div className='rounded-lg !w-[314px] !h-[220px] flex items-center justify-center bg-gray-800 text-white'>
+              <div className='flex h-[200px] w-full items-center justify-center rounded-lg bg-gray-800 text-white sm:h-[220px]'>
                 <iframe
                   src={walkthroughUrl}
                   title='3D Video'
-                  className='rounded-lg !w-[314px] !h-[220px] border-none'
+                  className='h-full w-full rounded-lg border-none'
                   allowFullScreen
                 ></iframe>
               </div>
@@ -159,8 +162,8 @@ const ProductCard = ({
           />
         ) : null}
       </div>
-      <div className='flex w-full flex-col gap-2.5 text-base text-reef-gold'>
-        <div className='flex flex-wrap items-center gap-2 text-left'>
+      <div className='flex min-w-0 flex-1 flex-col gap-2.5 pr-2 text-base text-reef-gold sm:pr-24'>
+        <div className='flex min-w-0 flex-col gap-1.5 text-left'>
           <Link
             href={listingHref}
             className='min-w-0 max-w-full break-words text-left'
@@ -174,7 +177,7 @@ const ProductCard = ({
 
         <div
           className={`overflow-hidden transition-all duration-300 ease-out ${detailsVisibleClass}`}
-          aria-hidden={!qrHovered}
+          aria-hidden={false}
         >
           <div className='flex flex-col gap-2.5 pb-1'>
             <div className='flex w-full flex-wrap items-center gap-x-3 gap-y-1'>
@@ -210,7 +213,15 @@ const ProductCard = ({
                   {locationLabel || '—'}
                 </p>
               </div>
-              <ListingCardCertificates listing={item} />
+              <div className='flex flex-wrap items-center gap-2'>
+                <ListingCardQrThumb
+                  listing={item}
+                  onHoverChange={setQrHovered}
+                  size={48}
+                  className='sm:hidden'
+                />
+                <ListingCardCertificates listing={item} />
+              </div>
             </div>
 
             <ListingSocialShare

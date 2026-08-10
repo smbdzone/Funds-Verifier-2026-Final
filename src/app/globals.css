@@ -213,6 +213,53 @@ form .relative-placeholder input:valid+.custom-placeholder {
   -webkit-overflow-scrolling: touch;
 }
 
+/* Smaller blog body copy on mobile + tablet; desktop keeps prose size */
+@media (max-width: 1023px) {
+  .blog-article-prose {
+    font-size: 0.8125rem;
+    line-height: 1.65;
+  }
+
+  .blog-article-prose :where(p, li, td, th, blockquote, span, a) {
+    font-size: inherit;
+    line-height: inherit;
+  }
+
+  .blog-article-prose :where(h1) {
+    font-size: 1.125rem;
+    line-height: 1.35;
+  }
+
+  .blog-article-prose :where(h2) {
+    font-size: 1.05rem;
+    line-height: 1.35;
+  }
+
+  .blog-article-prose :where(h3, h4) {
+    font-size: 0.95rem;
+    line-height: 1.4;
+  }
+}
+
+@media (max-width: 767px) {
+  .blog-article-prose {
+    font-size: 0.75rem;
+    line-height: 1.6;
+  }
+
+  .blog-article-prose :where(h1) {
+    font-size: 1rem;
+  }
+
+  .blog-article-prose :where(h2) {
+    font-size: 0.9375rem;
+  }
+
+  .blog-article-prose :where(h3, h4) {
+    font-size: 0.875rem;
+  }
+}
+
 .swiper-button-prev {
   width: 20px !important;
   height: 20px !important;
@@ -347,6 +394,52 @@ html {
   /* Vertical padding so top/bottom shadows still appear */
   padding-top: 12px !important;
   padding-bottom: 16px !important;
+}
+
+/* Below 900px: one wider card, less side gutter */
+@media (max-width: 899px) {
+  .home-listing-slider-row {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+    justify-content: center;
+  }
+
+  .listing-cards-swiper.swiper,
+  .listing-cards-swiper {
+    width: 100% !important;
+    max-width: 26rem;
+    /* ~416px — wider than before relative to viewport */
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+
+  .listing-cards-swiper .swiper-slide,
+  .listing-cards-swiper .listing-card-slide {
+    justify-content: center !important;
+  }
+
+  /* Shorter image on mobile/tablet so cards are less tall */
+  .listing-cards-swiper .listing-card-image {
+    height: 190px !important;
+    max-height: 190px !important;
+    min-height: 190px !important;
+  }
+
+  .listing-cards-swiper .listing-card-meta {
+    min-height: 72px;
+  }
+
+  .listing-cards-swiper .listing-card-body .space-y-3 {
+    row-gap: 0.5rem;
+  }
+
+  .listing-cards-swiper .listing-qr-thumb {
+    height: 56px !important;
+    width: 56px !important;
+    max-height: 56px !important;
+    max-width: 56px !important;
+    min-width: 56px !important;
+  }
 }
 
 .listing-cards-swiper .swiper-wrapper {
@@ -524,7 +617,8 @@ html {
   width: 100%;
 }
 
-@media (max-width: 1279px) {
+/* Stacked / wrapped filters on small phones only */
+@media (max-width: 767px) {
   .hero-search-bar .select-wrapper {
     flex: 1 1 calc(50% - 5px);
     min-width: 0;
@@ -543,11 +637,80 @@ html {
   }
 }
 
-@media (min-width: 1280px) {
+/* 768px and above: one horizontal row */
+@media (min-width: 768px) {
   .hero-search-bar {
     flex-wrap: nowrap;
     align-items: center;
+    gap: 6px;
+  }
+
+  .hero-search-bar>h1 {
+    display: none !important;
+  }
+
+  .hero-search-bar .select-wrapper {
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: none;
+  }
+
+  .hero-search-bar .select-wrapper-country {
+    flex: 1.15 1 0;
+    min-width: 0;
+    max-width: none;
+  }
+
+  .hero-search-bar .select-wrapper-city {
+    flex: 1.1 1 0;
+    min-width: 0;
+    max-width: none;
+  }
+
+  .hero-search-bar .select-wrapper-roi {
+    flex: 0.7 1 0;
+    min-width: 0;
+    max-width: 96px;
+  }
+
+  .hero-search-bar .hero-search-bar__action {
+    flex: 0 0 auto;
+    display: flex;
+    justify-content: center;
+  }
+
+  .hero-search-bar .select-custom {
+    height: 42px;
+    padding: 0 24px 0 8px;
+    font-size: 0.6875rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .hero-search-bar {
+    gap: 8px;
+  }
+
+  .hero-search-bar .select-wrapper-roi {
+    max-width: 110px;
+  }
+
+  .hero-search-bar .select-custom {
+    height: 44px;
+    padding: 0 28px 0 10px;
+    font-size: 0.75rem;
+  }
+}
+
+@media (min-width: 1280px) {
+  .hero-search-bar {
     gap: 12px;
+  }
+
+  .hero-search-bar .select-custom {
+    height: 46px;
+    padding: 0 36px 0 14px;
+    font-size: 0.875rem;
   }
 }
 
@@ -561,6 +724,26 @@ html {
 .select-wrapper-country .hero-filter-select__menu li {
   font-size: 0.8125rem;
   letter-spacing: 0;
+}
+
+@media (min-width: 768px) {
+  .select-wrapper-city {
+    min-width: 0;
+    max-width: none;
+  }
+
+  .select-wrapper-country .hero-filter-select__value,
+  .select-wrapper-country .hero-filter-select__menu li {
+    font-size: 0.6875rem;
+  }
+}
+
+@media (min-width: 1024px) {
+
+  .select-wrapper-country .hero-filter-select__value,
+  .select-wrapper-country .hero-filter-select__menu li {
+    font-size: 0.75rem;
+  }
 }
 
 @media (min-width: 1280px) {

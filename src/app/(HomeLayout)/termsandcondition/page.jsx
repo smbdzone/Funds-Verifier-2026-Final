@@ -2,10 +2,10 @@
 function page() {
   return (
     <div>
-      <div className="w-full valuesBg flex py-24 md:px-20 flex-col">
+      <div className="w-full valuesBg flex flex-col px-4 py-10 sm:px-6 sm:py-14 md:px-20 md:py-16 lg:py-20">
         <div className="container mx-auto text-[#ffffff]">
-          <h1 className="heading text-white md:text-[70px] text-xl fs-60 font-semibold">
-            Term & Conditions
+          <h1 className="max-w-[18ch] text-[22px] font-semibold leading-snug text-white sm:max-w-none sm:text-3xl sm:leading-tight md:text-4xl lg:text-5xl xl:text-[56px] xl:leading-[1.15]">
+            Terms & Conditions
           </h1>
         </div>
       </div>{" "}

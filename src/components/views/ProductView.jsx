@@ -115,14 +115,14 @@ export default function ProductView({ data }) {
   const amenities = useMemo(() => getListingAmenities(data), [data])
 
   const tabButtonClass = (tab) =>
-    `flex-grow md:text-base text-xs flex justify-center py-1 ${activeTab === tab
+    `flex-grow px-1.5 py-1 text-[10px] leading-tight sm:px-2 sm:text-xs md:text-base md:leading-normal flex justify-center ${activeTab === tab
       ? 'text-lightBlue bg-gradient-to-r text-white sm:text-black from-[#a2913e] via-[#d7c590] to-[#a2913e] md:bg-none md:border-b-2 md:border-gold-800'
       : 'text-black'
     }`
 
   return (
-    <div className='theme-container'>
-      <div className='flex flex-wrap gap-6 pb-5 pt-4 sm:pt-10 lg:flex-nowrap lg:gap-12 lg:pt-24'>
+    <div className='theme-container !max-w-none w-full px-4 sm:px-6 md:px-8 lg:px-10 xl:px-12'>
+      <div className='flex w-full flex-col gap-6 pb-5 pt-4 sm:pt-10 min-[700px]:pt-12 xl:flex-row xl:flex-nowrap xl:gap-12 xl:pt-24'>
         <ListingDetailMediaColumn
           media={combinedMedia}
           previewMedia={previewMedia}
@@ -131,12 +131,16 @@ export default function ProductView({ data }) {
           imageAlt={data?.title || 'Property'}
         />
 
-        <div className='relative mt-6 flex w-full flex-col items-start gap-5 sm:mt-0'>
+        <div className='relative mt-2 flex w-full min-w-0 flex-col items-start gap-5 xl:mt-0 xl:flex-1'>
           <ListingDetailTitleRow listing={data} />
 
-          <div className='flex w-full flex-col gap-3'>
+          <div className='flex w-full min-w-0 flex-col gap-3'>
             <ListingDetailsHeading listing={data} />
-            <ListingDetailsGrid rows={detailRows} />
+            <ListingDetailsGrid
+              rows={detailRows}
+              className='grid w-full grid-cols-1 gap-3 rounded-md border border-black/10 bg-white p-4 shadow min-[700px]:grid-cols-2 min-[700px]:gap-4 min-[700px]:p-5'
+              itemClassName='flex min-w-0 items-start break-words text-xs sm:text-sm'
+            />
           </div>
 
           <div className='flex w-full flex-wrap gap-x-4 gap-y-1'>

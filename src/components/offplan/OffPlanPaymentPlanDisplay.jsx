@@ -43,8 +43,8 @@ const OffPlanPaymentPlanDisplay = ({ paymentPlan = [] }) => {
   }
 
   return (
-    <div className='px-4 py-6 sm:px-8 lg:px-[156px]'>
-      <div className='mx-auto flex w-full max-w-[1198px] flex-wrap justify-center gap-x-5 gap-y-8'>
+    <div className='px-3 py-4 sm:px-6 sm:py-5 lg:px-[156px] lg:py-6'>
+      <div className='mx-auto flex w-full max-w-[1198px] flex-wrap justify-center gap-x-3 gap-y-5 sm:gap-x-5 sm:gap-y-6 lg:gap-y-8'>
         {steps.map((step) => {
           const iconKey = inferIconKey(step)
           const Icon = ICON_MAP[iconKey]
@@ -59,18 +59,21 @@ const OffPlanPaymentPlanDisplay = ({ paymentPlan = [] }) => {
           return (
             <div
               key={`${step.step}-${displayLabel}-${step.sharePercent}`}
-              className='flex w-[calc(50%-10px)] max-w-[180px] flex-col items-center gap-3 sm:w-[calc(33.333%-14px)] md:w-[calc(20%-16px)]'
+              className='flex w-[calc(50%-6px)] max-w-[130px] flex-col items-center gap-2 sm:w-[calc(50%-10px)] sm:max-w-[150px] sm:gap-2.5 md:w-[calc(25%-12px)] md:max-w-[160px] lg:w-[calc(20%-16px)] lg:max-w-[180px] lg:gap-3'
             >
               <div
-                className='flex h-14 w-14 flex-none items-center justify-center rounded-full'
+                className='flex h-9 w-9 flex-none items-center justify-center rounded-full sm:h-11 sm:w-11 lg:h-14 lg:w-14'
                 style={{ background: GOLDEN_GRADIENT }}
               >
-                <Icon className='text-white' size={24} strokeWidth={1.75} />
+                <Icon
+                  className='h-4 w-4 text-white sm:h-5 sm:w-5 lg:h-6 lg:w-6'
+                  strokeWidth={1.75}
+                />
               </div>
 
               <div className='flex w-full flex-col items-center gap-0.5'>
                 <span
-                  className='text-center text-2xl font-semibold leading-[29px]'
+                  className='text-center text-base font-semibold leading-tight sm:text-xl sm:leading-6 lg:text-2xl lg:leading-[29px]'
                   style={{
                     background: GOLDEN_GRADIENT,
                     WebkitBackgroundClip: 'text',
@@ -83,7 +86,7 @@ const OffPlanPaymentPlanDisplay = ({ paymentPlan = [] }) => {
                     .trim() || '0'}
                   %
                 </span>
-                <span className='whitespace-normal break-words text-center text-base font-medium leading-5 text-prussianBlue'>
+                <span className='whitespace-normal break-words text-center text-[11px] font-medium leading-4 text-prussianBlue sm:text-sm sm:leading-5 lg:text-base'>
                   {displayLabel}
                 </span>
               </div>

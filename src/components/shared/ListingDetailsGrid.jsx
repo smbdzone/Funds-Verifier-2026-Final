@@ -30,7 +30,7 @@ export default function ListingDetailsGrid({
           className={`${itemClassName} ${row.fullWidth ? 'sm:col-span-2' : ''}`.trim()}
         >
           <GoDotFill className='mr-2 mt-0.5 flex shrink-0 text-gold-800' />
-          <span>
+          <span className='min-w-0 break-words'>
             {row.label}: {row.value}
           </span>
         </span>

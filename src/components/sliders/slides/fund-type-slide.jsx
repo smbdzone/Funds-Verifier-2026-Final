@@ -30,16 +30,16 @@ export default function FundTypeSlide({ data }) {
   };
 
   return (
-    <div className="flex md:flex-row flex-col gap-4 my-2 sm:my-10 py-3 px-1">
-      <div className="flex flex-col sm:pt-5 items-start">
-        <div className="flex font-medium text-[#010101] text-xs md:text-xl">
+    <div className="my-2 flex flex-col gap-4 px-1 py-3 sm:my-10 md:flex-row md:items-start">
+      <div className="flex w-full shrink-0 flex-col items-start md:w-[220px] lg:w-[280px] xl:w-[350px]">
+        <div className="flex text-xs font-medium text-[#010101] md:text-base xl:text-xl">
           Explore by
         </div>
-        <div className="flex w-full justify-between items-center">
-          <div className="flex md:text-4xl text-xl font-semibold text-[#002D4F] mt-2">
+        <div className="flex w-full items-center justify-between">
+          <div className="mt-2 flex text-xl font-semibold text-[#002D4F] md:text-2xl lg:text-3xl xl:text-4xl">
             {data.slide_title}
           </div>
-          <div className="flex md:hidden flex-row mt-3 space-x-5">
+          <div className="mt-3 flex flex-row space-x-5 md:hidden">
             <div onClick={() => swiper.slidePrev()} className="cursor-pointer">
               <div className="btn-gradient box-border rounded">
                 <svg
@@ -77,56 +77,57 @@ export default function FundTypeSlide({ data }) {
             </div>
           </div>
         </div>
-        <div className="flex flex-row gap-2 my-5">
-          <div className="rounded-2xl bg-[#002D4F] w-[31.8px] h-[5.6px]" />
-          <div className="rounded-lg bg-[#8D7C3B] w-[84.9px] h-[5.6px]" />
+        <div className="my-4 flex flex-row gap-2 md:my-5">
+          <div className="h-[5.6px] w-[31.8px] rounded-2xl bg-[#002D4F]" />
+          <div className="h-[5.6px] w-[84.9px] rounded-lg bg-[#8D7C3B]" />
         </div>
-        <div className="md:text-lg text-sm text-left leading-[30px] text-black inline-block md:w-[350px]">
+        <div className="inline-block text-left text-sm leading-6 text-black md:text-sm md:leading-6 lg:text-base xl:text-lg xl:leading-[30px]">
           {data.slide_description}
         </div>
-        <div className="hidden md:flex flex-row mt-5 space-x-8">
+        <div className="mt-5 hidden flex-row space-x-8 md:flex">
           <div onClick={() => swiper.slidePrev()} className="cursor-pointer">
-            <div className="btn-gradient px-2 py-1 rounded">
+            <div className="btn-gradient rounded px-2 py-1">
               <Image
                 src={arrow_right}
                 alt="previous"
-                className="transform rotate-180"
+                className="rotate-180 transform"
               />
             </div>
           </div>
           <div onClick={() => swiper.slideNext()} className="cursor-pointer">
-            <div className="btn-gradient px-2 py-1 rounded">
+            <div className="btn-gradient rounded px-2 py-1">
               <Image src={arrow_right} alt="next" />
             </div>
           </div>
         </div>
       </div>
 
-      <div className="w-full min-w-0 overflow-x-auto">
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3 min-w-0">
+      {/* Mobile: 1 col. Tablet+: all 3 on one row with compact text. */}
+      <div className="min-w-0 w-full flex-1">
+        <div className="grid grid-cols-1 gap-4 min-[480px]:grid-cols-3 min-[480px]:gap-2 md:gap-3 xl:gap-6">
           {data.context_types.map((type, index) => (
             <div
               key={type}
-              className="shadow-[0px_0px_8px_rgba(0,_0,_0,_0.15)] rounded-md bg-white h-full"
+              className="h-full rounded-md bg-white shadow-[0px_0px_8px_rgba(0,_0,_0,_0.15)]"
             >
-              <div className="flex w-full h-[170px]">
+              <div className="flex h-[150px] w-full min-[480px]:h-[110px] md:h-[130px] xl:h-[170px]">
                 <Image
                   width={350}
                   height={350}
-                  className="rounded-md object-cover w-full h-[170px]"
+                  className="h-full w-full rounded-md object-cover"
                   alt={type}
                   src={data.photos[index]}
                 />
               </div>
-              <div className="px-2 pb-4">
-                <div className="text-[#002D4F] mt-4 mb-2 text-center text-xl font-medium w-full inline-block">
+              <div className="px-1.5 pb-3 min-[480px]:px-1 md:px-2 xl:pb-4">
+                <div className="mb-1 mt-2 w-full text-center text-base font-medium text-[#002D4F] min-[480px]:text-sm md:text-base xl:mb-2 xl:mt-4 xl:text-xl">
                   {type}
                 </div>
-                <div className="text-xs leading-[22px] w-full text-center text-black inline-block px-3 min-h-[44px]">
+                <div className="min-h-[40px] w-full px-1 text-center text-[11px] leading-4 text-black min-[480px]:min-h-[48px] min-[480px]:px-0.5 min-[480px]:text-[10px] min-[480px]:leading-[14px] md:text-[11px] md:leading-4 xl:min-h-[44px] xl:px-3 xl:text-xs xl:leading-[22px]">
                   {data.context_descriptions?.[index] || data.slide_description}
                 </div>
                 <Link href={generateUrl(data.slide_title, type)}>
-                  <span className="text-sm my-3 cursor-pointer text-[#002D4F] [text-decoration:underline] font-medium inline-block w-full text-center">
+                  <span className="my-2 inline-block w-full cursor-pointer text-center text-xs font-medium text-[#002D4F] underline min-[480px]:text-[11px] md:text-xs xl:my-3 xl:text-sm">
                     View All
                   </span>
                 </Link>

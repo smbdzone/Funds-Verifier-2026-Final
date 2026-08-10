@@ -298,14 +298,15 @@ const ListingCard = ({
 
       const isOffPlan = isOffPlanListing(listing)
       const qrHovered = Boolean(qrHoveredById[listing.uuid])
+      // Below 1200px: details always visible. 1200px+: reveal on QR hover.
       const detailsVisibleClass = qrHovered
         ? 'max-h-[480px] opacity-100'
-        : 'max-h-0 opacity-0 pointer-events-none'
+        : 'max-h-[480px] opacity-100 min-[1200px]:max-h-0 min-[1200px]:opacity-0 min-[1200px]:pointer-events-none'
 
       return (
         <>
           <div
-            className={`group relative flex md:p-5 p-2 flex-col md:gap-4 gap-2 xl:gap-10 my-5 rounded-lg items-center md:flex-row custom-shadow overflow-x-hidden ${hasFeaturedStyling ? '' : 'bg-white'
+            className={`group relative my-5 flex w-full flex-col items-stretch gap-2 rounded-lg p-2 custom-shadow overflow-x-hidden sm:flex-row sm:items-center sm:gap-4 md:gap-4 md:p-5 xl:gap-10 ${hasFeaturedStyling ? '' : 'bg-white'
               }`}
             style={
               hasFeaturedStyling
@@ -313,7 +314,7 @@ const ListingCard = ({
                 : undefined
             }
           >
-            <div className='md:absolute top-2 w-full right-2 z-50 flex flex-col items-end gap-1.5'>
+            <div className='absolute top-2 right-2 z-50 flex w-auto flex-col items-end gap-1.5'>
               <div className='flex w-full items-center justify-end gap-2'>
                 {documentRequestedPending ? (
                   <div className='relative group'>
@@ -478,7 +479,7 @@ const ListingCard = ({
               ) : null}
             </div>
             {/* Details section */}
-            <div className='xl:!max-w-[450px] flex w-full min-w-0 flex-1 flex-col md:pt-10'>
+            <div className='flex w-full min-w-0 flex-1 flex-col pr-14 sm:pr-20 sm:pt-8 xl:!max-w-[450px] xl:pt-10'>
               <span
                 className={`capitalize lg:text-base text-sm${hasFeaturedStyling
                   ? 'text-gradient-custom text-light-gold capitalize'
@@ -518,7 +519,7 @@ const ListingCard = ({
               </div>
               <div
                 className={`overflow-hidden transition-all duration-300 ease-out ${detailsVisibleClass}`}
-                aria-hidden={!qrHovered}
+                aria-hidden={false}
               >
                 <div className='flex flex-col'>
                   <div className='flex flex-wrap items-center space-x-4'>

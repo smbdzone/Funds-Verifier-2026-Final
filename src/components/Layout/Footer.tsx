@@ -1,188 +1,254 @@
+'use client'
+
 import Image from 'next/image'
 import Link from 'next/link'
-import React from 'react'
+import React, { useMemo } from 'react'
+import { Disclosure } from '@headlessui/react'
 import {
-  EmailIcon,
-  FaceBookIcon,
-  InstaIcon,
-  LinkdInIcon,
   LocationIcon,
-  PhoneIcon,
-  TickTokIcon,
-  TwitterIcon,
+  OpenDisclosure,
+  CloseDisclosure,
 } from '../Icons'
-// import dynamic from 'next/dynamic'
 import { Phone, Mail } from 'lucide-react'
-import { Facebook, Instagram, Linkedin, Twitter } from 'lucide-react'
+import { Instagram, Twitter } from 'lucide-react'
 import { FaTiktok, FaFacebookF, FaLinkedinIn } from 'react-icons/fa'
+import { useProfile } from '@/context/UserContext'
 
 const FOOTER_DESCRIPTION =
   'Funds Verifier helps buyers and sellers complete secure asset transactions with evaluator-approved listings and trusted fund verification.'
 
+const socialClass =
+  'p-1.5 rounded bg-[linear-gradient(135deg,_rgba(162,145,62,1),_rgba(215,197,144,1),_rgba(162,145,62,1))]'
+
+const DEAL_HUNTER_PATH = '/profile'
+const ASSET_HOLDER_PATH = '/seller-profile'
+const UAE_PASS_LOGIN = '/login'
+
+const OPPORTUNITIES = [
+  { href: '/property', label: 'Properties For Sale' },
+  { href: '/offplan', label: 'Off Plan Properties' },
+  { href: '/car', label: 'Cars For Sale' },
+  { href: '/boat', label: 'Boats For Sale' },
+  { href: '/jewelry', label: 'Jewelleries For Sale' },
+  { href: '/advertise-with-us', label: 'Advertise with us' },
+]
+
+const LEGAL_LINKS = [
+  { href: '/termsandcondition', label: 'Terms & Conditions' },
+  { href: '/cookies', label: 'Cookie Policy' },
+  { href: '/privacy-policy', label: 'Privacy Policy' },
+  { href: '/disclaimer', label: 'Disclaimer' },
+]
+
+function buildUaePassLoginHref(redirectPath: string) {
+  return `${UAE_PASS_LOGIN}?redirect=${encodeURIComponent(redirectPath)}`
+}
+
+function SocialLinks({ compact = false }: { compact?: boolean }) {
+  const icon = compact ? 'w-3 h-3' : 'w-5 h-5'
+  const wrap = compact ? socialClass : `${socialClass} p-2`
+
+  return (
+    <div className={`flex ${compact ? 'gap-2' : 'gap-3'}`}>
+      <Link
+        href='https://www.facebook.com/fundsverifier'
+        target='_blank'
+        rel='noopener noreferrer'
+        className={wrap}
+        aria-label='Facebook'
+      >
+        <FaFacebookF className={`text-black ${icon}`} />
+      </Link>
+      <Link
+        href='https://www.instagram.com/fundsverifier'
+        target='_blank'
+        rel='noopener noreferrer'
+        className={wrap}
+        aria-label='Instagram'
+      >
+        <Instagram className={`text-black ${icon}`} />
+      </Link>
+      <Link
+        href='https://www.linkedin.com/company/fundsverifier'
+        target='_blank'
+        rel='noopener noreferrer'
+        className={wrap}
+        aria-label='LinkedIn'
+      >
+        <FaLinkedinIn className={`text-black ${icon}`} />
+      </Link>
+      <Link
+        href='https://twitter.com/fundsverifier'
+        target='_blank'
+        rel='noopener noreferrer'
+        className={wrap}
+        aria-label='X (Twitter)'
+      >
+        <Twitter className={`text-black ${icon}`} />
+      </Link>
+      <Link
+        href='https://www.tiktok.com/@fundsverifier'
+        target='_blank'
+        rel='noopener noreferrer'
+        className={wrap}
+        aria-label='TikTok'
+      >
+        <FaTiktok className={`text-black ${icon}`} />
+      </Link>
+    </div>
+  )
+}
+
+function FooterAccordion({
+  title,
+  children,
+}: {
+  title: string
+  children: React.ReactNode
+}) {
+  return (
+    <Disclosure as='div' className='w-full border-b border-white/10'>
+      {({ open }) => (
+        <>
+          <Disclosure.Button className='flex w-full items-center justify-between py-3 text-left'>
+            <span className='text-base font-semibold sm:text-xl'>{title}</span>
+            <span className='shrink-0'>
+              {open ? (
+                <OpenDisclosure className='text-[#B7A55E]' />
+              ) : (
+                <CloseDisclosure className='text-[#B7A55E]' />
+              )}
+            </span>
+          </Disclosure.Button>
+          <Disclosure.Panel className='pb-4'>
+            {children}
+          </Disclosure.Panel>
+        </>
+      )}
+    </Disclosure>
+  )
+}
+
 const Footer = () => {
+  const { user } = useProfile()
+
+  const quickLinks = useMemo(() => {
+    const role = String(user?.role || '')
+    const dealHunterHref = user
+      ? role === 'DealHunter'
+        ? DEAL_HUNTER_PATH
+        : buildUaePassLoginHref(DEAL_HUNTER_PATH)
+      : buildUaePassLoginHref(DEAL_HUNTER_PATH)
+    const assetHolderHref = user
+      ? role === 'AssetHolder'
+        ? ASSET_HOLDER_PATH
+        : buildUaePassLoginHref(ASSET_HOLDER_PATH)
+      : buildUaePassLoginHref(ASSET_HOLDER_PATH)
+
+    return [
+      { href: '/aboutus', label: 'About Us' },
+      { href: dealHunterHref, label: 'Deal Hunter' },
+      { href: assetHolderHref, label: 'Asset Holder' },
+      { href: '/blog', label: 'News & Trends' },
+    ]
+  }, [user])
+
   return (
     <>
       <footer
         style={{ backgroundImage: `url('/assets/images/footer-bg.png')` }}
-        className='text-white py-4 p-2 bg-cover lg:pb-7 lg:pt-10 lg:py-5'
+        className='bg-cover p-2 py-4 text-white min-[1200px]:pb-7 min-[1200px]:pt-10'
       >
         <div className='theme-container'>
-          {/* Mobile Layout */}
-          <div className='flex flex-wrap lg:hidden gap-1 sm:gap-5'>
-            {/* Logo & Description */}
+          {/* Below 1200px — brand + accordion dropdowns */}
+          <div className='flex flex-col gap-4 min-[1200px]:hidden'>
             <div className='w-full'>
-              <div className='flex items-center gap-2 sm:mb-3'>
-                <figure className='mb-3'>
+              <div className='mb-2 flex items-center gap-2 sm:mb-3'>
+                <figure className='mb-1'>
                   <Image
                     src='/assets/images/Group.png'
                     height={78}
                     width={305}
                     alt='Footer Logo'
-                    className='sm:h-[50px] sm:w-[70px] h-[40px] w-[50px]'
+                    className='h-[40px] w-[50px] sm:h-[50px] sm:w-[70px]'
                   />
                 </figure>
-                <h1 className='text-sm sm:text-lg font-semibold'>
+                <h2 className='text-sm font-semibold sm:text-lg'>
                   Funds Verifier
-                </h1>
+                </h2>
               </div>
-              <p className='text-white text-[10px] sm:text-[20px] mb-2 sm:mb-5'>
+              <p className='mb-3 text-[12px] leading-relaxed text-white sm:mb-5 sm:text-base'>
                 {FOOTER_DESCRIPTION}
               </p>
-
-              <div className='flex gap-2'>
-                <Link
-                  href='https://facebook.com'
-                  target='_blank'
-                  className='p-1 rounded bg-[linear-gradient(135deg,_rgba(162,145,62,1),_rgba(215,197,144,1),_rgba(162,145,62,1))]'
-                >
-                  <FaFacebookF className='text-black w-3 h-3' />
-                </Link>
-                <Link
-                  href='https://instagram.com'
-                  target='_blank'
-                  className='p-1 rounded bg-[linear-gradient(135deg,_rgba(162,145,62,1),_rgba(215,197,144,1),_rgba(162,145,62,1))]'
-                >
-                  <Instagram className='text-black w-3 h-3' />
-                </Link>
-                <Link
-                  href='https://linkedin.com'
-                  target='_blank'
-                  className='p-1 rounded bg-[linear-gradient(135deg,_rgba(162,145,62,1),_rgba(215,197,144,1),_rgba(162,145,62,1))]'
-                >
-                  <FaLinkedinIn className='text-black w-3 h-3' />
-                </Link>
-                <Link
-                  href='https://twitter.com'
-                  target='_blank'
-                  className='p-1 rounded bg-[linear-gradient(135deg,_rgba(162,145,62,1),_rgba(215,197,144,1),_rgba(162,145,62,1))]'
-                >
-                  <Twitter className='text-black w-3 h-3' />
-                </Link>
-                <Link
-                  href='https://tiktok.com'
-                  target='_blank'
-                  className='p-1 rounded bg-[linear-gradient(135deg,_rgba(162,145,62,1),_rgba(215,197,144,1),_rgba(162,145,62,1))]'
-                >
-                  <FaTiktok className='text-black w-3 h-3' />
-                </Link>
-              </div>
+              <SocialLinks compact />
             </div>
 
-            {/* Quick Links + Opportunities */}
-            <div className='flex justify-between w-full gap-10'>
-              <div>
-                <h3 className='text-[14px] sm:text-xl font-medium mb-2 sm:mb-5'>
-                  Quick Links
-                </h3>
-                <ul>
-                  <li className='text-[12px] sm:text-base mb-2'>
-                    <Link href='/aboutus'>About Us</Link>
+            <FooterAccordion title='Quick Links'>
+              <ul className='space-y-2 pl-0.5'>
+                {quickLinks.map((item) => (
+                  <li key={`${item.label}-${item.href}`} className='text-sm sm:text-base'>
+                    <Link href={item.href}>{item.label}</Link>
                   </li>
-                  <li className='text-[12px] sm:text-base mb-2'>
-                    <Link href='/profile'>Deal Hunter</Link>
-                  </li>
-                  <li className='text-[12px] sm:text-base mb-2'>
-                    <Link href='/seller-profile'>Asset Holder</Link>
-                  </li>
-                  <li className='text-[12px] sm:text-base mb-2'>
-                    <Link href='/blog'>News & Trends</Link>
-                  </li>
-                </ul>
-              </div>
-              <div>
-                <h3 className='text-[14px] sm:text-xl font-medium mb-2 sm:mb-5'>
-                  Opportunities
-                </h3>
-                <ul>
-                  <li className='text-[12px] sm:text-base mb-2'>
-                    <Link href='/property'>Properties For Sale</Link>
-                  </li>
-                  <li className='text-[12px] sm:text-base mb-2'>
-                    <Link href='/offplan'>Off Plan Properties</Link>
-                  </li>
-                  <li className='text-[12px] sm:text-base mb-2'>
-                    <Link href='/car'>Cars For Sale</Link>
-                  </li>
-                  <li className='text-[12px] sm:text-base mb-2'>
-                    <Link href='/boat'>Boats For Sale</Link>
-                  </li>
-                  <li className='text-[12px] sm:text-base mb-2'>
-                    <Link href='/jewelry'>Jewelleries For Sale</Link>
-                  </li>
-                  <li className='text-[12px] sm:text-base mb-2'>
-                    <Link href='/advertise-with-us'>Advertise with us</Link>
-                  </li>
-                </ul>
-              </div>
-            </div>
+                ))}
+              </ul>
+            </FooterAccordion>
 
-            {/* Contact Info */}
-            <div className='w-full'>
-              <h3 className='text-[16px] sm:text-xl font-medium mb-2 sm:mb-3'>
-                Get In Touch
-              </h3>
-              <ul>
-                <li className='text-[12px] sm:text-base mb-2'>
-                  <Link href='tel:+971561290003' className='flex gap-4'>
-                    <PhoneIcon className='text-reefGold' /> +971 56 129 0003
+            <FooterAccordion title='Opportunities'>
+              <ul className='space-y-2 pl-0.5'>
+                {OPPORTUNITIES.map((item) => (
+                  <li key={item.href} className='text-sm sm:text-base'>
+                    <Link href={item.href}>{item.label}</Link>
+                  </li>
+                ))}
+              </ul>
+            </FooterAccordion>
+
+            <FooterAccordion title='Get In Touch'>
+              <ul className='space-y-3 pl-0.5'>
+                <li className='text-sm sm:text-base'>
+                  <Link href='tel:+971561290003' className='flex gap-3'>
+                    <Phone className='h-5 w-5 shrink-0 text-[#b7a65f]' />
+                    +971 56 129 0003
                   </Link>
                 </li>
-                <li className='text-[12px] sm:text-base mb-2'>
+                <li className='text-sm sm:text-base'>
                   <Link
                     href='mailto:outlook@fundsverifier.com'
-                    className='flex gap-4'
+                    className='flex gap-3'
                   >
-                    <EmailIcon className='text-reefGold' height={10} />{' '}
+                    <Mail className='h-5 w-5 shrink-0 text-[#b7a65f]' />
                     outlook@fundsverifier.com
                   </Link>
                 </li>
-                <li className='text-[12px] sm:text-base mb-2'>
+                <li className='text-sm sm:text-base'>
                   <Link
                     href='https://maps.google.com/?q=Dubai,United+Arab+Emirates'
-                    className='flex gap-4'
+                    className='flex gap-3'
+                    target='_blank'
+                    rel='noopener noreferrer'
                   >
-                    <LocationIcon className='text-reefGold' />
+                    <LocationIcon className='shrink-0 text-[#b7a65f]' />
                     Dubai, United Arab Emirates
                   </Link>
                 </li>
               </ul>
-            </div>
+            </FooterAccordion>
 
-            <div className='border-t border-[rgba(166,149,69,1)] pt-3 '>
-              <ul className='flex items-center justify-center gap-10 text-[10px] sm:text-sm'>
-                <li className='text-[12px]'>
-                  Terms & Conditions Cookie Policy
-                </li>
-                <li className='text-[12px]'>Privacy Policy Disclaimer</li>
+            <FooterAccordion title='Rules'>
+              <ul className='space-y-2 pl-0.5'>
+                {LEGAL_LINKS.map((item) => (
+                  <li key={item.href} className='text-sm sm:text-base'>
+                    <Link href={item.href}>{item.label}</Link>
+                  </li>
+                ))}
               </ul>
-            </div>
+            </FooterAccordion>
           </div>
 
-          {/* Large Screen Layout */}
-          <div className='hidden lg:flex gap-11 flex-wrap xl:flex-nowrap'>
-            {/* Logo + Text */}
+          {/* 1200px+ — desktop columns */}
+          <div className='hidden gap-11 min-[1200px]:flex min-[1200px]:flex-wrap xl:flex-nowrap'>
             <div className='w-[412px]'>
-              <div className='flex items-center gap-2 mb-3'>
+              <div className='mb-3 flex items-center gap-2'>
                 <figure>
                   <Image
                     src='/assets/images/Group.png'
@@ -192,104 +258,43 @@ const Footer = () => {
                     className='h-[50px] w-[70px]'
                   />
                 </figure>
-                <h1 className='text-lg font-semibold'>Funds Verifier</h1>
+                <h2 className='text-lg font-semibold'>Funds Verifier</h2>
               </div>
-              <p className='text-white text-base mb-5'>
-                {FOOTER_DESCRIPTION}
-              </p>
-              <div className='flex gap-3'>
-                <Link
-                  href='https://facebook.com'
-                  target='_blank'
-                  className='p-2 rounded bg-[linear-gradient(135deg,_rgba(162,145,62,1),_rgba(215,197,144,1),_rgba(162,145,62,1))]'
-                >
-                  <FaFacebookF className='text-black w-5 h-5' />
-                </Link>
-                <Link
-                  href='https://instagram.com'
-                  target='_blank'
-                  className='p-2 rounded bg-[linear-gradient(135deg,_rgba(162,145,62,1),_rgba(215,197,144,1),_rgba(162,145,62,1))]'
-                >
-                  <Instagram className='text-black w-5 h-5' />
-                </Link>
-                <Link
-                  href='https://linkedin.com'
-                  target='_blank'
-                  className='p-2 rounded bg-[linear-gradient(135deg,_rgba(162,145,62,1),_rgba(215,197,144,1),_rgba(162,145,62,1))]'
-                >
-                  <FaLinkedinIn className='text-black w-5 h-5' />
-                </Link>
-                <Link
-                  href='https://twitter.com'
-                  target='_blank'
-                  className='p-2 rounded bg-[linear-gradient(135deg,_rgba(162,145,62,1),_rgba(215,197,144,1),_rgba(162,145,62,1))]'
-                >
-                  <Twitter className='text-black w-5 h-5' />
-                </Link>
-                <Link
-                  href='https://tiktok.com'
-                  target='_blank'
-                  className='p-2 rounded bg-[linear-gradient(135deg,_rgba(162,145,62,1),_rgba(215,197,144,1),_rgba(162,145,62,1))]'
-                >
-                  <FaTiktok className='text-black w-5 h-5' />
-                </Link>
-              </div>
+              <p className='mb-5 text-base text-white'>{FOOTER_DESCRIPTION}</p>
+              <SocialLinks />
             </div>
 
-            {/* Quick Links */}
-            <div className='flex flex-col'>
-              <div className='flex justify-between gap-20 mb-3'>
+            <div className='flex flex-1 flex-col'>
+              <div className='mb-3 flex justify-between gap-12'>
                 <div>
-                  <h3 className='text-2xl font-medium mb-3'>Quick Links</h3>
+                  <h3 className='mb-3 text-2xl font-medium'>Quick Links</h3>
                   <ul className='space-y-2'>
-                    <li>
-                      <Link href='/aboutus'>About Us</Link>
-                    </li>
-                    <li>
-                      <Link href='/profile'>Deal Hunter</Link>
-                    </li>
-                    <li>
-                      <Link href='/seller-profile'>Asset Holder</Link>
-                    </li>
-                    <li>
-                      <Link href='/blog'>News & Trends</Link>
-                    </li>
+                    {quickLinks.map((item) => (
+                      <li key={`${item.label}-${item.href}`}>
+                        <Link href={item.href}>{item.label}</Link>
+                      </li>
+                    ))}
                   </ul>
                 </div>
 
-                {/* Opportunities */}
                 <div>
-                  <h3 className='text-2xl font-medium mb-3'>Opportunities</h3>
+                  <h3 className='mb-3 text-2xl font-medium'>Opportunities</h3>
                   <ul className='space-y-2'>
-                    <li>
-                      <Link href='/property'>Properties For Sale</Link>
-                    </li>
-                    <li>
-                      <Link href='/offplan'>Off Plan Properties</Link>
-                    </li>
-                    <li>
-                      <Link href='/car'>Cars For Sale</Link>
-                    </li>
-                    <li>
-                      <Link href='/boat'>Boats For Sale</Link>
-                    </li>
-                    <li>
-                      <Link href='/jewelry'>Jewelleries For Sale</Link>
-                    </li>
-                    <li>
-                      <Link href='/advertise-with-us'>Advertise with us</Link>
-                    </li>
+                    {OPPORTUNITIES.map((item) => (
+                      <li key={item.href}>
+                        <Link href={item.href}>{item.label}</Link>
+                      </li>
+                    ))}
                   </ul>
                 </div>
 
-                {/* Contact Info */}
                 <div className='flex-1'>
-                  <h3 className='text-2xl font-medium mb-3'>Get In Touch</h3>
+                  <h3 className='mb-3 text-2xl font-medium'>Get In Touch</h3>
                   <ul className='space-y-3'>
                     <li>
                       <Link href='tel:+971561290003' className='flex gap-4'>
-                        <Phone className='h-5 w-5 text-[#b7a65f]' /> +971 56 129
-                        0003
+                        <Phone className='h-5 w-5 text-[#b7a65f]' />
+                        +971 56 129 0003
                       </Link>
                     </li>
                     <li>
@@ -297,7 +302,7 @@ const Footer = () => {
                         href='mailto:outlook@fundsverifier.com'
                         className='flex gap-4'
                       >
-                        <Mail className='h-5 w-5 text-[#b7a65f]' />{' '}
+                        <Mail className='h-5 w-5 text-[#b7a65f]' />
                         outlook@fundsverifier.com
                       </Link>
                     </li>
@@ -305,20 +310,24 @@ const Footer = () => {
                       <Link
                         href='https://maps.google.com/?q=Dubai,United+Arab+Emirates'
                         className='flex gap-4'
+                        target='_blank'
+                        rel='noopener noreferrer'
                       >
-                        <LocationIcon className='text-[#b7a65f]' /> Dubai, United
-                        Arab Emirates
+                        <LocationIcon className='text-[#b7a65f]' />
+                        Dubai, United Arab Emirates
                       </Link>
                     </li>
                   </ul>
                 </div>
               </div>
-              <div className='border-t border-[rgba(166,149,69,1)] pt-5 mt-5'>
-                <ul className='flex flex-wrap items-center justify-center gap-20 text-sm'>
-                  <Link href='/termsandcondition'>Terms & Conditions</Link>
-                  <Link href={'/privacy-policy'}>Privacy Policy</Link>
-                  <Link href='/cookies'>Cookie Policy</Link>
-                  <Link href='/disclaimer'>Disclaimer</Link>
+
+              <div className='mt-5 border-t border-[rgba(166,149,69,1)] pt-5'>
+                <ul className='flex flex-wrap items-center justify-center gap-12 text-sm'>
+                  {LEGAL_LINKS.map((item) => (
+                    <li key={item.href}>
+                      <Link href={item.href}>{item.label}</Link>
+                    </li>
+                  ))}
                 </ul>
               </div>
             </div>
@@ -326,8 +335,7 @@ const Footer = () => {
         </div>
       </footer>
 
-      {/* Bottom Bar */}
-      <div className='bg-white theme-container py-2 flex justify-between sm:flex-wrap text-[7px] sm:text-sm text-prussianBlue gap-1 sm:gap-3'>
+      <div className='theme-container flex justify-between gap-1 bg-white py-2 text-[7px] text-prussianBlue sm:flex-wrap sm:gap-3 sm:text-sm'>
         <p>
           Copyright © {new Date().getFullYear()} - All rights reserved Funds
           Verifier
@@ -338,5 +346,4 @@ const Footer = () => {
   )
 }
 
-// export default dynamic(() => Promise.resolve(Footer), { ssr: false })
 export default Footer

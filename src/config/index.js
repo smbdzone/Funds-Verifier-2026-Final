@@ -1,4 +1,7 @@
-import { getPublicApiHeaders } from '@/libs/publicApiClient'
+import {
+  clearPublicTokenCache,
+  getPublicApiHeaders,
+} from '@/libs/publicApiClient'
 
 // Simple in-memory cache
 const cache = {}
@@ -25,33 +28,43 @@ export async function api(url, options = {}, cacheTime = 20000) {
     return cache[fullUrl].data
   }
 
-  try {
+  const doFetch = async (forceToken = false) => {
     const authHeaders = options.headers?.Authorization
       ? options.headers
-      : await getPublicApiHeaders(options.headers || {})
+      : await getPublicApiHeaders(options.headers || {}, { force: forceToken })
 
-    const response = await fetch(fullUrl, {
+    return fetch(fullUrl, {
       ...options,
       headers: {
         'Content-Type': 'application/json',
         ...authHeaders,
       },
-      // Align with HomeLayout ISR (60s) unless caller overrides.
-      next: { revalidate: 60, ...(options.next || {}) },
+      // Detail/listing reads must not reuse expired public-token responses
+      cache: 'no-store',
     })
+  }
+
+  try {
+    let response = await doFetch(false)
+
+    if (response.status === 401) {
+      clearPublicTokenCache()
+      response = await doFetch(true)
+    }
 
     if (!response.ok) {
       throw new Error(
-        `Request failed: ${response.status} ${response.statusText}`
+        `Request failed: ${response.status} ${response.statusText}`,
       )
     }
 
     const data = await response.json()
 
-    // ✅ Save to cache
-    cache[fullUrl] = {
-      data,
-      timestamp: now,
+    if (cacheTime > 0) {
+      cache[fullUrl] = {
+        data,
+        timestamp: now,
+      }
     }
 
     return data

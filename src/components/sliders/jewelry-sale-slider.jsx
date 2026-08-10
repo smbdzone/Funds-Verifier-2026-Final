@@ -113,7 +113,7 @@ export default function JewelrySaleSlider() {
       ) : null}
 
       {hasListings ? (
-        <div className='flex flex-row gap-3 items-center relative'>
+        <div className='home-listing-slider-row relative flex flex-row items-center gap-3'>
           <div className='hidden md:block space-x-5 pb-5'>
             <div
               onClick={handlePrevSlide}
@@ -155,11 +155,11 @@ export default function JewelrySaleSlider() {
               disableOnInteraction: false,
             }}
             breakpoints={{
-              700: {
+              900: {
                 slidesPerView: 2,
                 spaceBetween: 14,
               },
-              1024: {
+              1400: {
                 slidesPerView: 3,
                 spaceBetween: 16,
               },
@@ -174,7 +174,7 @@ export default function JewelrySaleSlider() {
                 <SwiperSlide className='listing-card-slide !h-auto w-full' key={item.uuid}>
                   <div className='listing-card mx-1 my-1 h-full w-full rounded-md bg-white'>
                     {imageSrc ? (
-                      <div className='relative shrink-0 overflow-hidden rounded-md !h-[275px] w-full'>
+                      <div className='listing-card-image relative h-[190px] w-full shrink-0 overflow-hidden rounded-md md:h-[240px] lg:h-[275px]'>
                         <Image
                           width={414}
                           height={275}
@@ -184,7 +184,7 @@ export default function JewelrySaleSlider() {
                         />
                       </div>
                     ) : (
-                      <div className='flex justify-center items-center rounded-md bg-[#f0f4f8] !h-[275px] w-full'>
+                      <div className='listing-card-image flex h-[190px] w-full shrink-0 items-center justify-center rounded-md bg-[#f0f4f8] md:h-[240px] lg:h-[275px]'>
                         <Image
                           width={64}
                           height={64}

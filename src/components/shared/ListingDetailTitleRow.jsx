@@ -19,7 +19,7 @@ export default function ListingDetailTitleRow({ listing, title }) {
   return (
     <div className='flex w-full flex-wrap items-start gap-3'>
       <div className='flex min-w-0 flex-1 flex-wrap items-center gap-2.5'>
-        <h1 className='min-w-0 text-wrap text-xl font-semibold capitalize text-blue md:text-2xl lg:text-3xl'>
+        <h1 className='min-w-0 break-words text-wrap text-lg font-semibold capitalize text-blue sm:text-xl md:text-2xl lg:text-3xl'>
           {displayTitle}
         </h1>
       </div>

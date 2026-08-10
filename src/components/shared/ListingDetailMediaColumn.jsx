@@ -5,8 +5,9 @@ import ImageSlider from '@/components/modules/Jewelry/ImageSlider'
 import ListingMapSection from '@/components/ListingsForm/ListingMapSection'
 
 /**
- * Off-plan-style left column: thumbs + preview, with Location map under the image.
- * Watermark is burned into listing photos on upload (no CSS overlay here).
+ * Mobile (&lt;700): carousel.
+ * 700px+: thumbs + main image + map (full width when stacked).
+ * Parent stacks details below until lg, then side-by-side.
  */
 export default function ListingDetailMediaColumn({
   media = [],
@@ -53,12 +54,14 @@ export default function ListingDetailMediaColumn({
   }
 
   return (
-    <div className='flex w-full flex-col items-stretch gap-4 sm:flex-row'>
-      <div className='hidden w-full shrink-0 sm:block sm:w-[160px] md:block'>
+    <div className='flex w-full min-w-0 flex-col items-stretch gap-4 min-[700px]:flex-row xl:max-w-[740px] xl:shrink-0'>
+      {/* Detail preview thumbs — 700px+ */}
+      <div className='hidden w-full shrink-0 min-[700px]:block min-[700px]:w-[110px] lg:w-[140px] xl:w-[160px]'>
         <LiftSlider setPreviewMedia={setPreviewMedia} media={media} />
       </div>
 
-      <div className='block w-full shrink-0 sm:hidden md:hidden'>
+      {/* Mobile only (&lt;700): carousel */}
+      <div className='block w-full shrink-0 min-[700px]:hidden'>
         <ImageSlider media={media} />
         <ListingMapSection
           mapUrl={mapUrl}
@@ -66,19 +69,20 @@ export default function ListingDetailMediaColumn({
           title='Location'
           showEmptyPlaceholder
           className='mt-4 w-full'
-          iframeClassName='h-[240px] w-full rounded-[5px]'
+          iframeClassName='h-[240px] w-full rounded-[5px] sm:h-[280px]'
         />
       </div>
 
-      <div className='hidden w-full flex-col gap-4 md:flex xl:w-[580px]'>
-        <div className='h-[560px] w-full'>{renderPreview()}</div>
+      {/* 700px+: main preview + map */}
+      <div className='hidden w-full min-w-0 flex-col gap-4 min-[700px]:flex min-[700px]:flex-1'>
+        <div className='h-[360px] w-full lg:h-[420px] xl:h-[560px]'>{renderPreview()}</div>
         <ListingMapSection
           mapUrl={mapUrl}
           showInput={false}
           title='Location'
           showEmptyPlaceholder
           className='w-full'
-          iframeClassName='h-[280px] w-full rounded-[5px] sm:h-[320px]'
+          iframeClassName='h-[260px] w-full rounded-[5px] sm:h-[300px] lg:h-[320px]'
         />
       </div>
     </div>
