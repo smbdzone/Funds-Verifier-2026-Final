@@ -103,7 +103,7 @@ export default function RelatedListingCard({ listing, className = '' }) {
           <Image
             width={414}
             height={275}
-            className='h-full w-full object-cover'
+            className='listing-card-photo h-full w-full object-cover object-center'
             alt={listing.title || 'Listing'}
             src={imageSrc}
           />
@@ -185,7 +185,7 @@ export default function RelatedListingCard({ listing, className = '' }) {
                 <Image
                   width={50}
                   height={50}
-                  className='h-full w-full object-cover'
+                  className='listing-card-photo h-full w-full object-cover object-center'
                   alt=''
                   src={getProfileImageSrc(
                     listing?.sellerAvatar || listing?.userId?.profileImage,

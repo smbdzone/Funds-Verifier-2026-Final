@@ -184,8 +184,6 @@ const ListingCard = ({
   const [walkthroughLink, setWalkthroughLink] = useState('')
   const [modalCardId, setModalCardId] = useState(null)
   const [analyticsCardId, setAnalyticsCardId] = useState(null)
-  const [qrHoveredById, setQrHoveredById] = useState({})
-
   const getDynamicLink = (assetType, slug) => {
     if (usePendingEvaluation) {
       return getPendingEvaluationViewPath(assetType, slug)
@@ -297,11 +295,6 @@ const ListingCard = ({
         'technical-report.pdf'
 
       const isOffPlan = isOffPlanListing(listing)
-      const qrHovered = Boolean(qrHoveredById[listing.uuid])
-      // Below 1200px: details always visible. 1200px+: reveal on QR hover.
-      const detailsVisibleClass = qrHovered
-        ? 'max-h-[480px] opacity-100'
-        : 'max-h-[480px] opacity-100 min-[1200px]:max-h-0 min-[1200px]:opacity-0 min-[1200px]:pointer-events-none'
 
       return (
         <>
@@ -402,18 +395,10 @@ const ListingCard = ({
                     </IconButton>
                   )}
               </div>
-              <ListingCardQrThumb
-                listing={listing}
-                onHoverChange={(hovered) =>
-                  setQrHoveredById((prev) => ({
-                    ...prev,
-                    [listing.uuid]: hovered,
-                  }))
-                }
-              />
+              <ListingCardQrThumb listing={listing} />
             </div>
 
-            <div className='xl:!max-w-[350px] relative'>
+            <div className='listing-card-media-swiper relative mx-auto xl:!max-w-[350px]'>
               {swiperSlides.length > 1 ? (
                 <ListingCarouselNavButton
                   direction='prev'
@@ -441,7 +426,7 @@ const ListingCard = ({
                   <SwiperSlide key={index}>
                     {item.type === 'video' ? (
                       <video
-                        className='rounded-lg object-cover w-full !h-[250px] bg-black'
+                        className='rounded-lg object-cover object-center w-full !h-[250px] bg-black'
                         src={item.src}
                         controls
                         playsInline
@@ -458,9 +443,9 @@ const ListingCard = ({
                         />
                       </div>
                     ) : (
-                      <div className='relative h-[250px] w-full max-w-[312px] overflow-hidden rounded-lg'>
+                      <div className='relative flex h-[250px] w-full max-w-[312px] items-center justify-center overflow-hidden rounded-lg'>
                         <Image
-                          className='rounded-lg object-fill !h-[250px]'
+                          className='listing-card-photo h-full w-full rounded-lg object-cover object-center !h-[250px]'
                           src={item.src}
                           height={253}
                           width={314}
@@ -517,10 +502,7 @@ const ListingCard = ({
                   </Link>
                 </div>
               </div>
-              <div
-                className={`overflow-hidden transition-all duration-300 ease-out ${detailsVisibleClass}`}
-                aria-hidden={false}
-              >
+              <div className='overflow-hidden'>
                 <div className='flex flex-col'>
                   <div className='flex flex-wrap items-center space-x-4'>
                     <p

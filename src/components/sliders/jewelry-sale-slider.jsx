@@ -178,7 +178,7 @@ export default function JewelrySaleSlider() {
                         <Image
                           width={414}
                           height={275}
-                          className='h-full w-full rounded-md object-cover'
+                          className='listing-card-photo h-full w-full rounded-md object-cover object-center'
                           alt={item.title || item.category || 'Jewellery'}
                           src={imageSrc}
                         />

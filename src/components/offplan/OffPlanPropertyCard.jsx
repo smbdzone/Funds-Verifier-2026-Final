@@ -82,7 +82,7 @@ const OffPlanPropertyCard = ({
             alt={title}
             width={414}
             height={275}
-            className='h-full w-full object-cover'
+            className='listing-card-photo h-full w-full object-cover object-center'
           />
 
           {String(paymentPlanLabel || '').trim() ? (
@@ -221,7 +221,7 @@ const OffPlanPropertyCard = ({
                     alt='Seller'
                     width={78}
                     height={70}
-                    className='h-full w-full object-cover'
+                    className='listing-card-photo h-full w-full object-cover object-center'
                     unoptimized
                   />
                 </div>

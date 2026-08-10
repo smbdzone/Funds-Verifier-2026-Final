@@ -193,7 +193,7 @@ export default function PropertySaleSlider() {
                     {imageSrc ? (
                       <div className='listing-card-image relative h-[190px] w-full shrink-0 overflow-hidden rounded-md md:h-[240px] lg:h-[275px]'>
                         <Image
-                          className='h-full w-full rounded-md object-cover'
+                          className='listing-card-photo h-full w-full rounded-md object-cover object-center'
                           alt={propertyForSale.title || 'Property'}
                           src={imageSrc}
                           width={414}

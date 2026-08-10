@@ -1,10 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
-import Image from 'next/image'
-import Link from 'next/link'
-import { getListingQrScanSrc } from '@/libs/listingCardMedia'
-import { getListingSharePath } from '@/libs/listingSocialShare'
+import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import { decodeQrFromImageSrc } from '@/libs/decodeQrImage'
 
 function looksLikeUrl(value) {
@@ -12,7 +8,7 @@ function looksLikeUrl(value) {
   const trimmed = value.trim()
   if (/^https?:\/\//i.test(trimmed)) return true
   if (trimmed.startsWith('/')) return true
-  // Names / IDs with spaces are not URLs
+  // Plain names / IDs with spaces are not URLs
   if (/\s/.test(trimmed)) return false
   return Boolean(trimmed.includes('.') && !trimmed.includes(' '))
 }
@@ -26,33 +22,18 @@ function toHref(value) {
 }
 
 /**
- * QR thumb — on hover, auto-scans the QR image and pops up the real encoded text.
+ * Wrap any QR image preview. On hover, auto-scans and shows the real
+ * encoded text (name, ID, URL, etc.) — not listing/property details.
  */
-export default function ListingCardQrThumb({
-  listing,
+export default function QrDecodeHover({
   src,
+  children,
   className = '',
-  size = 72,
-  onHoverChange,
+  disabled = false,
 }) {
-  const qrSrc = src || getListingQrScanSrc(listing)
-  const thumbPx =
-    Number(size) === 96 ? 96 : Number(size) === 48 ? 48 : 72
-  const thumbClass =
-    thumbPx === 96
-      ? 'listing-qr-thumb listing-qr-thumb-lg h-24 w-24 shrink-0 object-contain'
-      : thumbPx === 48
-        ? 'listing-qr-thumb h-12 w-12 shrink-0 object-contain'
-        : 'listing-qr-thumb h-[72px] w-[72px] shrink-0 object-contain'
-
-  const listingPath = useMemo(
-    () => (listing ? getListingSharePath(listing) : ''),
-    [listing],
-  )
-
   const tooltipId = useId()
   const [open, setOpen] = useState(false)
-  const [status, setStatus] = useState('idle') // idle | scanning | ready | error
+  const [status, setStatus] = useState('idle')
   const [payload, setPayload] = useState('')
   const scanReqRef = useRef(0)
   const closeTimerRef = useRef(null)
@@ -64,37 +45,27 @@ export default function ListingCardQrThumb({
     }
   }, [])
 
-  const setHovered = useCallback(
-    (next) => {
-      onHoverChange?.(Boolean(next))
-    },
-    [onHoverChange],
-  )
-
   const openPanel = useCallback(() => {
+    if (disabled || !src) return
     clearCloseTimer()
     setOpen(true)
-    setHovered(true)
-  }, [clearCloseTimer, setHovered])
+  }, [clearCloseTimer, disabled, src])
 
   const scheduleClose = useCallback(() => {
     clearCloseTimer()
-    closeTimerRef.current = setTimeout(() => {
-      setOpen(false)
-      setHovered(false)
-    }, 160)
-  }, [clearCloseTimer, setHovered])
+    closeTimerRef.current = setTimeout(() => setOpen(false), 160)
+  }, [clearCloseTimer])
 
   useEffect(() => () => clearCloseTimer(), [clearCloseTimer])
 
   useEffect(() => {
-    if (!open || !qrSrc) return
+    if (!open || !src || disabled) return
     if (status === 'ready' || status === 'scanning') return
 
     const reqId = ++scanReqRef.current
     setStatus('scanning')
 
-    decodeQrFromImageSrc(qrSrc)
+    decodeQrFromImageSrc(src)
       .then((decoded) => {
         if (reqId !== scanReqRef.current) return
         if (decoded) {
@@ -110,32 +81,20 @@ export default function ListingCardQrThumb({
         setPayload('')
         setStatus('error')
       })
-  }, [open, qrSrc, status])
+  }, [open, src, status, disabled])
 
   useEffect(() => {
     setStatus('idle')
     setPayload('')
     scanReqRef.current += 1
-  }, [qrSrc])
+  }, [src])
 
-  if (!qrSrc) return null
+  if (!src || disabled) {
+    return <div className={className}>{children}</div>
+  }
 
   const payloadHref = toHref(payload)
   const isLinkPayload = Boolean(payloadHref)
-
-  const qrImage = (
-    <Image
-      src={qrSrc}
-      width={thumbPx}
-      height={thumbPx}
-      alt='QR code'
-      className={thumbClass}
-      unoptimized
-    />
-  )
-
-  const frameClass =
-    'block rounded bg-white/90 p-0.5 shadow-sm ring-1 ring-black/5 transition hover:ring-[#A2913E]/50 focus:outline-none focus:ring-2 focus:ring-[#A2913E]/40'
 
   return (
     <div
@@ -145,25 +104,13 @@ export default function ListingCardQrThumb({
       onFocus={openPanel}
       onBlur={scheduleClose}
     >
-      {listingPath ? (
-        <Link
-          href={listingPath}
-          onClick={(e) => e.stopPropagation()}
-          className={frameClass}
-          aria-label='Open listing'
-          aria-describedby={open ? tooltipId : undefined}
-        >
-          {qrImage}
-        </Link>
-      ) : (
-        <div className={frameClass}>{qrImage}</div>
-      )}
+      <div aria-describedby={open ? tooltipId : undefined}>{children}</div>
 
       {open ? (
         <div
           id={tooltipId}
           role='tooltip'
-          className='absolute right-0 top-full z-50 mt-2 w-[min(300px,75vw)] rounded-md border border-[#A2913E]/40 bg-white p-3 text-left shadow-lg'
+          className='absolute left-0 top-full z-[60] mt-2 w-[min(300px,75vw)] rounded-md border border-[#A2913E]/40 bg-white p-3 text-left shadow-lg'
           onMouseEnter={openPanel}
           onMouseLeave={scheduleClose}
           onClick={(e) => e.stopPropagation()}

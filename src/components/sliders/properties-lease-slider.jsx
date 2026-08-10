@@ -158,7 +158,7 @@ export default function PropertyLeaseSlider() {
                       <Image
                         width={414}
                         height={275}
-                        className='h-full w-full rounded-md object-cover'
+                        className='listing-card-photo h-full w-full rounded-md object-cover object-center'
                         alt={propertyForLease?.propertyType || 'Property'}
                         src={imageSrc}
                       />

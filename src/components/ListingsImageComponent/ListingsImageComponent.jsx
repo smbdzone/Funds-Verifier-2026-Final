@@ -2,6 +2,7 @@ import Image from 'next/image'
 import React, { useEffect, useState } from 'react'
 import { getListingImageSrc } from '@/libs/listingCardMedia'
 import ListingImagePreviewModal from '@/components/ListingsImageComponent/ListingImagePreviewModal'
+import QrDecodeHover from '@/components/shared/QrDecodeHover'
 
 const PLACEHOLDER = '/listing/camera.svg'
 
@@ -37,6 +38,7 @@ const ListingsImageComponent = ({
 }) => {
   const [previewUrl, setPreviewUrl] = useState(null)
   const [lightboxOpen, setLightboxOpen] = useState(false)
+  const isQrUpload = /qr/i.test(String(uploadLabel || ''))
 
   useEffect(() => {
     if (!image) {
@@ -62,41 +64,47 @@ const ListingsImageComponent = ({
     event.target.value = ''
   }
 
+  const previewBlock = previewUrl ? (
+    <div className='group relative h-[88px] w-[88px] overflow-hidden rounded-sm border border-dark-grey/15 bg-offwhite'>
+      <button
+        type='button'
+        onClick={() => setLightboxOpen(true)}
+        className='block h-full w-full cursor-zoom-in'
+        title={isQrUpload ? 'Hover to scan QR · click to enlarge' : 'Click to preview watermark'}
+      >
+        <Image
+          width={88}
+          height={88}
+          src={previewUrl}
+          alt={isQrUpload ? 'Uploaded QR code' : 'Uploaded thumbnail'}
+          unoptimized
+          className='h-full w-full object-cover'
+        />
+      </button>
+      {!disabled && (
+        <button
+          type='button'
+          onClick={() =>
+            handleImageRemove?.(image?.public_id || image?.s3Key)
+          }
+          className='absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-light-gold text-xs text-white opacity-0 transition-opacity group-hover:opacity-100'
+          title='Remove image'
+        >
+          &times;
+        </button>
+      )}
+    </div>
+  ) : null
+
   return (
     <>
       <div className='flex h-full min-h-0 items-stretch gap-3'>
         <div className='min-w-0 flex-1 overflow-hidden'>
-          {previewUrl ? (
-            <div className='group relative h-[88px] w-[88px] overflow-hidden rounded-sm border border-dark-grey/15 bg-offwhite'>
-              <button
-                type='button'
-                onClick={() => setLightboxOpen(true)}
-                className='block h-full w-full cursor-zoom-in'
-                title='Click to preview watermark'
-              >
-                <Image
-                  width={88}
-                  height={88}
-                  src={previewUrl}
-                  alt='Uploaded thumbnail'
-                  unoptimized
-                  className='h-full w-full object-cover'
-                />
-              </button>
-              {!disabled && (
-                <button
-                  type='button'
-                  onClick={() =>
-                    handleImageRemove?.(image?.public_id || image?.s3Key)
-                  }
-                  className='absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-light-gold text-xs text-white opacity-0 transition-opacity group-hover:opacity-100'
-                  title='Remove image'
-                >
-                  &times;
-                </button>
-              )}
-            </div>
-          ) : null}
+          {previewUrl && isQrUpload ? (
+            <QrDecodeHover src={previewUrl}>{previewBlock}</QrDecodeHover>
+          ) : (
+            previewBlock
+          )}
         </div>
 
         <input
@@ -136,7 +144,7 @@ const ListingsImageComponent = ({
       {lightboxOpen ? (
         <ListingImagePreviewModal
           src={previewUrl}
-          alt='Thumbnail preview'
+          alt={isQrUpload ? 'QR preview' : 'Thumbnail preview'}
           onClose={() => setLightboxOpen(false)}
         />
       ) : null}

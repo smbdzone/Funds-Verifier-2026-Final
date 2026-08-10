@@ -337,6 +337,59 @@ html {
   height: auto;
 }
 
+/* Listing / product cards: photo fills the frame and stays centered */
+.listing-card-media-swiper {
+  width: 100%;
+  max-width: 312px;
+  height: 200px !important;
+  min-height: 200px !important;
+  max-height: 200px !important;
+  flex-shrink: 0 !important;
+  overflow: hidden;
+  align-self: center;
+}
+
+@media (min-width: 640px) {
+  .listing-card-media-swiper {
+    width: 312px;
+    height: 220px !important;
+    min-height: 220px !important;
+    max-height: 220px !important;
+  }
+}
+
+.listing-card-media-swiper .swiper,
+.listing-card-media-swiper .swiper-wrapper {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.listing-card-media-swiper .swiper-slide img.listing-card-photo,
+.swiper-slide img.listing-card-photo {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  max-height: none !important;
+  object-fit: cover !important;
+  object-position: center center !important;
+}
+
+.listing-card-media-swiper .swiper-slide {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.listing-card-media-swiper .swiper-slide>div,
+.listing-card-media-swiper .swiper-slide>video,
+.listing-card-media-swiper .swiper-slide>img {
+  width: 100% !important;
+  height: 100% !important;
+}
+
 /* Testimonials thumbnail column: vertical Swiper slots stay aligned; global
    width:inherit on slide images was stretching avatars and crowding text. */
 .testimonials-thumb-swiper .swiper-slide {

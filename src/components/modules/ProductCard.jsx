@@ -57,7 +57,6 @@ const ProductCard = ({
   } = item
 
   const [showROI, setShowROI] = useState(false)
-  const [qrHovered, setQrHovered] = useState(false)
   useState(() => {
     if (type === 'property') setShowROI(true)
   })
@@ -69,10 +68,6 @@ const ProductCard = ({
     getListingDocumentSrc(technicalReport) &&
     getListingDocumentSrc(evaluationCertificate) &&
     video3DWalkthrough?.link
-  // Below 1200px: details always visible. 1200px+: reveal on QR hover.
-  const detailsVisibleClass = qrHovered
-    ? 'max-h-[480px] opacity-100'
-    : 'max-h-[480px] opacity-100 min-[1200px]:max-h-0 min-[1200px]:opacity-0 min-[1200px]:pointer-events-none'
   return (
     <div
       key={item.uuid}
@@ -95,11 +90,10 @@ const ProductCard = ({
         ) : null}
         <ListingCardQrThumb
           listing={item}
-          onHoverChange={setQrHovered}
           className='hidden sm:block'
         />
       </div>
-      <div className='relative w-full shrink-0 sm:w-[280px] md:w-[312px] xl:w-auto xl:max-w-[350px]'>
+      <div className='listing-card-media-swiper relative mx-auto w-full shrink-0 overflow-hidden rounded-lg sm:mx-0'>
         {carouselSlides.length > 1 ? (
           <ListingCarouselNavButton
             direction='prev'
@@ -114,18 +108,18 @@ const ProductCard = ({
           pagination={{ clickable: true }}
           scrollbar={{ draggable: true }}
           navigation={false}
-          className='!h-[200px] w-full sm:!h-[220px]'
-          style={{ width: '100%', maxWidth: '100%' }}
+          className='listing-card-swiper-root !h-full w-full'
+          style={{ width: '100%', height: '100%' }}
           modules={[Pagination, Scrollbar, A11y]}
           onSwiper={(swiper) => {
             swiperRefs.current[item.uuid] = swiper
           }}
         >
           {carouselSlides.map((slide, index) => (
-            <SwiperSlide key={`slide-${index}-${slide.type}`}>
+            <SwiperSlide key={`slide-${index}-${slide.type}`} className='!h-full'>
               {slide.type === 'video' ? (
                 <video
-                  className='h-[200px] w-full rounded-lg bg-black object-cover sm:h-[220px]'
+                  className='h-full w-full rounded-lg bg-black object-cover object-center'
                   controls
                   playsInline
                   preload='metadata'
@@ -137,7 +131,7 @@ const ProductCard = ({
                   Your browser does not support the video tag.
                 </video>
               ) : isListingCarouselPlaceholderSlide(slide) ? (
-                <div className='listing-carousel-placeholder listing-carousel-placeholder-frame flex h-[200px] min-h-[200px] w-full shrink-0 items-center justify-center overflow-hidden rounded-lg bg-gradient-to-br from-[#eef0f3] to-[#e2e6ec] sm:h-[220px] sm:min-h-[220px]'>
+                <div className='listing-carousel-placeholder listing-carousel-placeholder-frame flex h-full min-h-0 w-full shrink-0 items-center justify-center overflow-hidden rounded-lg bg-gradient-to-br from-[#eef0f3] to-[#e2e6ec]'>
                   <img
                     src={PLACEHOLDER}
                     alt=''
@@ -147,9 +141,9 @@ const ProductCard = ({
                   />
                 </div>
               ) : (
-                <div className='relative h-[200px] w-full overflow-hidden rounded-lg sm:h-[220px]'>
+                <div className='relative flex h-full w-full items-center justify-center overflow-hidden rounded-lg'>
                   <Image
-                    className='h-full w-full rounded-lg object-cover'
+                    className='listing-card-photo h-full w-full rounded-lg object-cover object-center'
                     src={slide.src}
                     height={220}
                     width={314}
@@ -160,8 +154,8 @@ const ProductCard = ({
             </SwiperSlide>
           ))}
           {video3DWalkthrough?.link && (
-            <SwiperSlide key='walkthrough-3d'>
-              <div className='flex h-[200px] w-full items-center justify-center rounded-lg bg-gray-800 text-white sm:h-[220px]'>
+            <SwiperSlide key='walkthrough-3d' className='!h-full'>
+              <div className='flex h-full w-full items-center justify-center rounded-lg bg-gray-800 text-white'>
                 <iframe
                   src={video3DWalkthrough.link}
                   title='3D Video'
@@ -194,10 +188,7 @@ const ProductCard = ({
           </Link>
           <ListingCardViewCount listing={item} />
         </div>
-        <div
-          className={`overflow-hidden transition-all duration-300 ease-out ${detailsVisibleClass}`}
-          aria-hidden={false}
-        >
+        <div className='overflow-hidden'>
           <div className='flex flex-col gap-2.5 pb-1'>
             <div className='flex w-full flex-wrap gap-x-3 gap-y-1'>
               <p
@@ -250,7 +241,6 @@ const ProductCard = ({
               <div className='flex flex-wrap items-center gap-2'>
                 <ListingCardQrThumb
                   listing={item}
-                  onHoverChange={setQrHovered}
                   size={48}
                   className='sm:hidden'
                 />
