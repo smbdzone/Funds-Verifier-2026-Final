@@ -764,7 +764,7 @@ const Page = () => {
           thumbnail instanceof File
             ? handleThumbnailUpload(thumbnail)
             : thumbnailID,
-          qrScan ? handleImageUpload([qrScan]) : qrScanID,
+          qrScan instanceof File ? handleImageUpload([qrScan]) : qrScanID,
         ])
 
         imageID = uploadedImages
@@ -781,7 +781,8 @@ const Page = () => {
         }
       } else {
         // For updates: only re-upload media that changed
-        if (videos.length) videoID = await handleVideoUpload(videos)
+        const newVideos = videos.filter((v) => v instanceof File)
+        if (newVideos.length) videoID = await handleVideoUpload(newVideos)
         if (file) fileID = await handleFileUpload(file)
         if (thumbnail instanceof File) {
           thumbnailID = await handleThumbnailUpload(thumbnail)
@@ -861,9 +862,12 @@ const Page = () => {
           listingMediaRef(formData?.evaluationCertificate),
         thumbnailImg:
           listingMediaRef(thumbnailID) ??
+          listingMediaRef(thumbnail) ??
           listingMediaRef(formData?.thumbnailImg),
         qrScan:
-          listingMediaRef(qrScanID) ?? listingMediaRef(formData?.qrScan),
+          listingMediaRef(qrScanID) ??
+          listingMediaRef(qrScan) ??
+          listingMediaRef(formData?.qrScan),
         agencyAgreement: isOffPlan
           ? listingCertificateRef(agencyAgreementID) ??
           listingCertificateRef(formData?.agencyAgreement)

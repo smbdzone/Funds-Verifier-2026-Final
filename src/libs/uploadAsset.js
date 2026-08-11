@@ -14,8 +14,11 @@ const wrapUploadError = (error, fileType, maxMB) => {
   throw wrapped
 }
 
+const isUploadableFile = (value) =>
+  typeof File !== 'undefined' && value instanceof File
+
 const handleImageUpload = async (images, options = {}) => {
-  const files = Array.isArray(images) ? images.filter(Boolean) : []
+  const files = (Array.isArray(images) ? images : [images]).filter(isUploadableFile)
   if (!files.length) return null
 
   const appendToId =
@@ -62,7 +65,7 @@ const handleImageUpload = async (images, options = {}) => {
 const handleVideoUpload = async (video) => {
   if (!video) return
 
-  const files = Array.isArray(video) ? video : [video]
+  const files = (Array.isArray(video) ? video : [video]).filter(isUploadableFile)
   if (!files.length) return
 
   const formData = new FormData()

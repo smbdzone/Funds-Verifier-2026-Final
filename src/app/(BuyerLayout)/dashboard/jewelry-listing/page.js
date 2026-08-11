@@ -651,7 +651,7 @@ function Page() {
             thumbnail instanceof File
               ? handleThumbnailUpload(thumbnail)
               : thumbnailID,
-            qrScan ? handleImageUpload([qrScan]) : qrScanID,
+            qrScan instanceof File ? handleImageUpload([qrScan]) : qrScanID,
           ])
 
         imageID = uploadedImages
@@ -660,6 +660,8 @@ function Page() {
         thumbnailID = uploadedThumbnail
         qrScanID = uploadedQrScan
       } else {
+        const newVideos = videos.filter((v) => v instanceof File)
+        if (newVideos.length) videoID = await handleVideoUpload(newVideos)
         if (thumbnail instanceof File) {
           thumbnailID = await handleThumbnailUpload(thumbnail)
         }
@@ -677,8 +679,9 @@ function Page() {
         // evaluationCertificate: fileID,
         thumbnailImg:
           listingMediaRef(thumbnailID) ??
+          listingMediaRef(thumbnail) ??
           listingMediaRef(formData?.thumbnailImg),
-        qrScan: listingMediaRef(qrScanID) ?? listingMediaRef(formData?.qrScan),
+        qrScan: listingMediaRef(qrScanID) ?? listingMediaRef(qrScan) ?? listingMediaRef(formData?.qrScan),
         feedback: 'feedback',
       }
 

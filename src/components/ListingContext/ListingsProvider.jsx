@@ -228,6 +228,8 @@ const ListingsProvider = ({ children }) => {
             firstThumb
               ? {
                 ...firstThumb,
+                _id: thumbAsset?._id || firstThumb._id,
+                assetId: thumbAsset?._id || firstThumb._id,
                 signedUrl:
                   firstThumb.signedUrl ||
                   thumbAsset?.signedUrl ||
@@ -240,12 +242,40 @@ const ListingsProvider = ({ children }) => {
               : thumbAsset || null,
           )
         }
-        setQrScan(d?.qrScan?.images?.[0] ?? d?.qrScan ?? null)
+        {
+          const qrAsset = d?.qrScan
+          const firstQr = Array.isArray(qrAsset?.images)
+            ? qrAsset.images[0]
+            : null
+          setQrScan(
+            firstQr
+              ? {
+                ...firstQr,
+                _id: qrAsset?._id || firstQr._id,
+                assetId: qrAsset?._id || firstQr._id,
+                signedUrl:
+                  firstQr.signedUrl || qrAsset?.signedUrl || firstQr.url,
+                url:
+                  firstQr.url || qrAsset?.signedUrl || firstQr.signedUrl,
+              }
+              : qrAsset || null,
+          )
+        }
         setImages(Array.isArray(d?.pictures?.images) ? d.pictures.images : [])
+        // Keep parent ImageAsset ids on formData even if UI peels previews
+        setFormData((prev) => ({
+          ...prev,
+          thumbnailImg: d?.thumbnailImg ?? prev?.thumbnailImg ?? null,
+          qrScan: d?.qrScan ?? prev?.qrScan ?? null,
+          pictures: d?.pictures ?? prev?.pictures ?? null,
+          video: d?.video ?? prev?.video ?? null,
+        }))
         if (Array.isArray(d?.video?.videos) && d.video.videos.length) {
           setVideos(
             d.video.videos.map((v) => ({
               ...v,
+              _id: d.video?._id || v?._id,
+              assetId: d.video?._id || v?._id,
               signedUrl: v?.signedUrl || d.video.signedUrl || v?.url,
               url: v?.url || v?.signedUrl || d.video.signedUrl,
             })),
@@ -256,6 +286,7 @@ const ListingsProvider = ({ children }) => {
               url: d.video.url || d.video.signedUrl,
               signedUrl: d.video.signedUrl || d.video.url,
               _id: d.video._id,
+              assetId: d.video._id,
             },
           ])
         } else if (Array.isArray(d?.video)) {
@@ -588,7 +619,7 @@ const ListingsProvider = ({ children }) => {
             } catch (err) {
               toast.error(
                 err?.message ||
-                  `Could not prepare ${workingFile.name} for upload`,
+                `Could not prepare ${workingFile.name} for upload`,
               )
               resolve(null)
             }
@@ -836,6 +867,7 @@ const ListingsProvider = ({ children }) => {
 
   const handleQrScanRemove = () => {
     setQrScan(null)
+    setFormData((prev) => ({ ...prev, qrScan: null }))
   }
 
   /** True when the user actually requested 3D or technical report (has a fee). */
