@@ -1,10 +1,8 @@
 'use client'
 
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import Image from 'next/image'
-import Link from 'next/link'
 import { getListingQrScanSrc } from '@/libs/listingCardMedia'
-import { getListingSharePath } from '@/libs/listingSocialShare'
 import { decodeQrFromImageSrc } from '@/libs/decodeQrImage'
 
 function looksLikeUrl(value) {
@@ -26,7 +24,8 @@ function toHref(value) {
 }
 
 /**
- * QR thumb — on hover, auto-scans the QR image and pops up the real encoded text.
+ * QR thumb — hover only (not a link). Auto-scans and shows encoded text.
+ * Clicks are blocked so parent card links do not navigate.
  */
 export default function ListingCardQrThumb({
   listing,
@@ -44,11 +43,6 @@ export default function ListingCardQrThumb({
       : thumbPx === 48
         ? 'listing-qr-thumb h-12 w-12 shrink-0 object-contain'
         : 'listing-qr-thumb h-[72px] w-[72px] shrink-0 object-contain'
-
-  const listingPath = useMemo(
-    () => (listing ? getListingSharePath(listing) : ''),
-    [listing],
-  )
 
   const tooltipId = useId()
   const [open, setOpen] = useState(false)
@@ -84,6 +78,11 @@ export default function ListingCardQrThumb({
       setHovered(false)
     }, 160)
   }, [clearCloseTimer, setHovered])
+
+  const blockCardNavigation = useCallback((e) => {
+    e.preventDefault()
+    e.stopPropagation()
+  }, [])
 
   useEffect(() => () => clearCloseTimer(), [clearCloseTimer])
 
@@ -123,41 +122,31 @@ export default function ListingCardQrThumb({
   const payloadHref = toHref(payload)
   const isLinkPayload = Boolean(payloadHref)
 
-  const qrImage = (
-    <Image
-      src={qrSrc}
-      width={thumbPx}
-      height={thumbPx}
-      alt='QR code'
-      className={thumbClass}
-      unoptimized
-    />
-  )
-
   const frameClass =
-    'block rounded bg-white/90 p-0.5 shadow-sm ring-1 ring-black/5 transition hover:ring-[#A2913E]/50 focus:outline-none focus:ring-2 focus:ring-[#A2913E]/40'
+    'block cursor-default rounded bg-white/90 p-0.5 shadow-sm ring-1 ring-black/5 transition hover:ring-[#A2913E]/50'
 
   return (
     <div
       className={`relative ${className}`}
       onMouseEnter={openPanel}
       onMouseLeave={scheduleClose}
-      onFocus={openPanel}
-      onBlur={scheduleClose}
     >
-      {listingPath ? (
-        <Link
-          href={listingPath}
-          onClick={(e) => e.stopPropagation()}
-          className={frameClass}
-          aria-label='Open listing'
-          aria-describedby={open ? tooltipId : undefined}
-        >
-          {qrImage}
-        </Link>
-      ) : (
-        <div className={frameClass}>{qrImage}</div>
-      )}
+      <div
+        className={frameClass}
+        aria-describedby={open ? tooltipId : undefined}
+        onClick={blockCardNavigation}
+        onMouseDown={(e) => e.stopPropagation()}
+      >
+        <Image
+          src={qrSrc}
+          width={thumbPx}
+          height={thumbPx}
+          alt='QR code'
+          className={thumbClass}
+          unoptimized
+          draggable={false}
+        />
+      </div>
 
       {open ? (
         <div
