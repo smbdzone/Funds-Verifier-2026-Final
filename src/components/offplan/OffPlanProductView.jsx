@@ -2,28 +2,25 @@
 
 import CalendarPopup from '@/components/CalendarPopup/CalendarPopup'
 import Description from '@/components/Product_page/Description'
-import LiftSlider from '@/components/Product_page/Left_slider'
 import Review from '@/components/Product_page/Review'
-import ImageSlider from '@/components/modules/Jewelry/ImageSlider'
 import OffPlanLayoutFloorPlanDisplay from '@/components/offplan/OffPlanLayoutFloorPlanDisplay'
 import OffPlanPaymentPlanDisplay from '@/components/offplan/OffPlanPaymentPlanDisplay'
 import ListingSocialShare from '@/components/shared/ListingSocialShare'
 import ListingQrCodeSection from '@/components/shared/ListingQrCodeSection'
-import ListingMapSection from '@/components/ListingsForm/ListingMapSection'
 import ListingDetailsGrid from '@/components/shared/ListingDetailsGrid'
 import ListingDetailCertificates from '@/components/shared/ListingDetailCertificates'
 import ListingDetailTitleRow from '@/components/shared/ListingDetailTitleRow'
 import ListingDetailsHeading from '@/components/shared/ListingDetailsHeading'
+import ListingDetailMediaColumn from '@/components/shared/ListingDetailMediaColumn'
 import ArrangeViewingButton from '@/components/shared/ArrangeViewingButton'
 import { formatOffPlanPriceRange } from '@/constants/offPlanDummyListings'
 import { formatPropertySizeDisplay } from '@/libs/propertySizeUnits'
 import { getListingAmenities } from '@/libs/listingAmenities'
 import { formatListingLocation } from '@/libs/listingLocationUtils'
+import { getListingDetailMediaItems } from '@/libs/listingCardMedia'
 import { getProfileImageSrc } from '@/utils/global-functions/global'
-import { isOwnListing } from '@/libs/isOwnListing'
-import { useProfile } from '@/context/UserContext'
 import Image from 'next/image'
-import React, { useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { IoCheckmarkSharp } from 'react-icons/io5'
 
 const TABS = [
@@ -35,11 +32,36 @@ const TABS = [
 ]
 
 export default function OffPlanProductView({ data }) {
-  const { user } = useProfile()
-  const ownsListing = isOwnListing(data, user)
   const [activeTab, setActiveTab] = useState('Description')
-  const [previewSrc, setPreviewSrc] = useState(data?.images?.[0] || '/offplan/image1.svg')
   const [showCalendarPopup, setShowCalendarPopup] = useState(false)
+
+  const combinedMedia = useMemo(() => {
+    const fromListing = getListingDetailMediaItems(data)
+    if (fromListing.length) return fromListing
+    const fallbackImages = Array.isArray(data?.images) ? data.images : []
+    if (fallbackImages.length) {
+      return fallbackImages.map((src) => ({ type: 'image', src }))
+    }
+    return [{ type: 'image', src: '/offplan/image1.svg' }]
+  }, [data])
+
+  const [previewMedia, setPreviewMedia] = useState(() => {
+    const media = getListingDetailMediaItems(data)
+    return (
+      media.find((item) => item.type === 'image') ||
+      media[0] ||
+      (data?.images?.[0] ? { type: 'image', src: data.images[0] } : null) ||
+      { type: 'image', src: '/offplan/image1.svg' }
+    )
+  })
+
+  useEffect(() => {
+    const next =
+      combinedMedia.find((item) => item.type === 'image') ||
+      combinedMedia[0] ||
+      null
+    setPreviewMedia(next)
+  }, [combinedMedia])
 
   const bookingProductData = useMemo(
     () => ({
@@ -82,15 +104,6 @@ export default function OffPlanProductView({ data }) {
     ]
   }, [data])
 
-  const media = useMemo(
-    () =>
-      (data?.images || ['/offplan/image1.svg']).map((src) => ({
-        type: 'image',
-        src,
-      })),
-    [data?.images],
-  )
-
   const amenities = useMemo(() => getListingAmenities(data), [data])
 
   const tabButtonClass = (tab) =>
@@ -110,50 +123,16 @@ export default function OffPlanProductView({ data }) {
   return (
     <div className='theme-container !max-w-none w-full px-4 sm:px-6 md:px-8 lg:px-10 xl:px-12'>
       <div className='flex w-full flex-col gap-6 pb-5 pt-4 sm:pt-10 min-[700px]:pt-12 xl:flex-row xl:flex-nowrap xl:gap-12 xl:pt-24'>
-        {/* Media: full width through tablet/1024; beside details only on xl+ */}
-        <div className='flex w-full min-w-0 flex-col items-stretch gap-4 min-[700px]:flex-row xl:max-w-[740px] xl:shrink-0'>
-          {/* Detail preview thumbs — 700px+ */}
-          <div className='hidden w-full shrink-0 min-[700px]:block min-[700px]:w-[110px] lg:w-[140px] xl:w-[160px]'>
-            <LiftSlider
-              setPreviewMedia={(item) => setPreviewSrc(item?.src)}
-              media={media}
-            />
-          </div>
-          {/* Mobile only (&lt;700): carousel */}
-          <div className='block w-full shrink-0 min-[700px]:hidden'>
-            <ImageSlider media={media} />
-            <ListingMapSection
-              mapUrl={data?.mapUrl}
-              showInput={false}
-              title='Location'
-              showEmptyPlaceholder
-              className='mt-4 w-full'
-              iframeClassName='h-[240px] w-full rounded-[5px] sm:h-[280px]'
-            />
-          </div>
-          {/* 700px+: main preview + map (full width until xl) */}
-          <div className='hidden w-full min-w-0 flex-col gap-4 min-[700px]:flex min-[700px]:flex-1'>
-            <div className='relative h-[360px] w-full overflow-hidden rounded-lg lg:h-[420px] xl:h-[560px]'>
-              <img
-                alt={data?.title || 'Off-plan property'}
-                className='h-full w-full object-cover'
-                src={previewSrc}
-              />
-            </div>
-            <ListingMapSection
-              mapUrl={data?.mapUrl}
-              showInput={false}
-              title='Location'
-              showEmptyPlaceholder
-              className='w-full'
-              iframeClassName='h-[260px] w-full rounded-[5px] sm:h-[300px] lg:h-[320px]'
-            />
-          </div>
-        </div>
+        <ListingDetailMediaColumn
+          media={combinedMedia}
+          previewMedia={previewMedia}
+          setPreviewMedia={setPreviewMedia}
+          mapUrl={data?.mapUrl}
+          imageAlt={data?.title || 'Off-plan property'}
+        />
 
-        {/* Details: below map through 1024; side column only on xl+ (large screen) */}
         <div className='relative mt-2 flex w-full min-w-0 flex-col items-start gap-5 xl:mt-0 xl:flex-1'>
-          <ListingDetailTitleRow listing={data} />
+          <ListingDetailTitleRow listing={data} hideApprovedBadge />
 
           <div className='flex w-full min-w-0 flex-col gap-3'>
             <ListingDetailsHeading listing={data} />
@@ -170,11 +149,10 @@ export default function OffPlanProductView({ data }) {
             </p>
           ) : null}
 
-          {!ownsListing ? (
-            <ArrangeViewingButton
-              onAuthenticated={handleDeveloperRequestClick}
-            />
-          ) : null}
+          <ArrangeViewingButton
+            listing={data}
+            onAuthenticated={handleDeveloperRequestClick}
+          />
 
           <ListingDetailCertificates listing={data} />
 
@@ -220,7 +198,7 @@ export default function OffPlanProductView({ data }) {
           <div className='space-y-4'>
             {data?.description ? <Description text={data.description} /> : null}
             {data?.additionalDescription &&
-              data.additionalDescription !== data?.description ? (
+            data.additionalDescription !== data?.description ? (
               <Description text={data.additionalDescription} />
             ) : null}
             {!data?.description && !data?.additionalDescription ? (

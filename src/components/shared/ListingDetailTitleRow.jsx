@@ -6,11 +6,18 @@ import {
 } from '@/libs/listingPremiumStatus'
 
 /** Detail-page title row: title and status badge. */
-export default function ListingDetailTitleRow({ listing, title }) {
+export default function ListingDetailTitleRow({
+  listing,
+  title,
+  hideApprovedBadge = false,
+}) {
   const displayTitle = title ?? listing?.title ?? ''
   const { badge, hasFeaturedStyling } = getListingPremiumDisplay(listing)
-  const label =
+  let label =
     String(listing?.approvalBadge || '').trim() || badge || null
+  if (hideApprovedBadge && label === 'Approved') {
+    label = null
+  }
   const occupancy = String(listing?.occupancyStatus || '')
   const showOccupancy = ['Reserved', 'Under Offer'].includes(occupancy)
   const useBlueBadge =

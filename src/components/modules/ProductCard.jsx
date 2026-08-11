@@ -225,20 +225,20 @@ const ProductCard = ({
                 </div>
               ))}
             </div>
-            <div className='flex flex-wrap items-center gap-3'>
-              <div className='flex items-center gap-3'>
+            <div className='flex w-full flex-wrap items-start gap-x-3 gap-y-2'>
+              <div className='flex min-w-0 flex-1 items-center gap-3'>
                 <LocationIcon
-                  className={`${hasAdditionalContent ? 'text-white/80' : 'text-reef-gold/80'
+                  className={`shrink-0 ${hasAdditionalContent ? 'text-white/80' : 'text-reef-gold/80'
                     }`}
                 />
                 <p
-                  className={`font-normal ${hasAdditionalContent ? 'text-white/80' : 'text-reef-gold/80'
+                  className={`min-w-0 font-normal ${hasAdditionalContent ? 'text-white/80' : 'text-reef-gold/80'
                     }`}
                 >
                   {locationLabel || '—'}
                 </p>
               </div>
-              <div className='flex flex-wrap items-center gap-2'>
+              <div className='ml-auto flex shrink-0 flex-wrap items-center justify-end gap-2'>
                 <ListingCardQrThumb
                   listing={item}
                   size={48}

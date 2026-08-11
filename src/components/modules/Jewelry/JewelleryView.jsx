@@ -26,14 +26,10 @@ import ArrangeViewingButton from '@/components/shared/ArrangeViewingButton'
 import ListingAmenitiesPanel from '@/components/shared/ListingAmenitiesPanel'
 import { getListingAmenities } from '@/libs/listingAmenities'
 import { formatListingLocation } from '@/libs/listingLocationUtils'
-import { isOwnListing } from '@/libs/isOwnListing'
-import { useProfile } from '@/context/UserContext'
 
 const TABS = ['Description', 'Reviews', 'Amenities']
 
 export default function JewelleryView({ data }) {
-  const { user } = useProfile()
-  const ownsListing = isOwnListing(data, user)
   const combinedMedia = useMemo(
     () => getListingDetailMediaItems(data),
     [data],
@@ -112,11 +108,10 @@ export default function JewelleryView({ data }) {
           </div>
 
           <div className='flex w-full flex-wrap items-center gap-3'>
-            {!ownsListing ? (
-              <ArrangeViewingButton
-                onAuthenticated={() => setShowCalendarPopup(true)}
-              />
-            ) : null}
+            <ArrangeViewingButton
+              listing={data}
+              onAuthenticated={() => setShowCalendarPopup(true)}
+            />
             <div className='flex gap-3'>
               {technicalReportSrc ? (
                 <>

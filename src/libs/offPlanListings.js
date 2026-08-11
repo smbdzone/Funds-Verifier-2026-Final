@@ -107,6 +107,10 @@ export function mapApiListingToOffPlanCard(listing) {
     priceFrom: listing?.priceFrom ?? listing?.price,
     priceTo: listing?.priceTo ?? listing?.price,
     images: getOffPlanImageUrls(listing),
+    /** Keep raw media refs so public detail can play listing videos (same as property). */
+    thumbnailImg: listing?.thumbnailImg || null,
+    pictures: listing?.pictures || null,
+    video: listing?.video || null,
     developerAvatar:
       listing?.sellerAvatar ||
       listing?.userId?.profileImage ||

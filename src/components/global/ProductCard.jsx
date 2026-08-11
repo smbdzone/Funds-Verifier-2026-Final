@@ -197,14 +197,14 @@ const ProductCard = ({
                 </div>
               ))}
             </div>
-            <div className='flex flex-wrap items-center gap-3'>
-              <div className='flex items-center gap-1 md:gap-3'>
-                <LocationIcon className='text-reef-gold/80' />
-                <p className='text-xs font-normal text-reef-gold/80 md:text-sm lg:text-base'>
+            <div className='flex w-full flex-wrap items-start gap-x-3 gap-y-2'>
+              <div className='flex min-w-0 flex-1 items-center gap-1 md:gap-3'>
+                <LocationIcon className='shrink-0 text-reef-gold/80' />
+                <p className='min-w-0 text-xs font-normal text-reef-gold/80 md:text-sm lg:text-base'>
                   {locationLabel || '—'}
                 </p>
               </div>
-              <div className='flex flex-wrap items-center gap-2'>
+              <div className='ml-auto flex shrink-0 flex-wrap items-center justify-end gap-2'>
                 <ListingCardQrThumb
                   listing={item}
                   size={48}
