@@ -16,10 +16,11 @@ export default function page({ searchParams }) {
           catagory={searchParams?.category || 'Jewelery'}
           subcatagory={searchParams?.model || ''}
         />
-        <QuarterPageBanner />
         <CarWrapper>
           <JewelleryListingCard />
         </CarWrapper>
+        {/* Ad banner sits at the bottom, directly above the footer. */}
+        <QuarterPageBanner />
       </div>
     </Suspense>
   )

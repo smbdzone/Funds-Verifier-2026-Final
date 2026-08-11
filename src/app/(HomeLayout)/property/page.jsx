@@ -52,8 +52,9 @@ function PropertyPageContent({ params }) {
         catagory={propertyTypeText || 'Properties'}
         subcatagory={propertyTypeValue || 'Apartment'}
       />
-       <QuarterPageBanner />
       <ClientWrapper params={params} />
+      {/* Ad banner sits at the bottom, directly above the footer. */}
+      <QuarterPageBanner />
     </div>
   )
 }
