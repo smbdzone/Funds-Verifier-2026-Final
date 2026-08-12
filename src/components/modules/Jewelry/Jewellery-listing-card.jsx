@@ -149,14 +149,20 @@ export const JewelleryListingCard = () => {
             }
             return (
               <ProductCard
-                key={index}
+                key={item?.uuid || item?._id || index}
                 type='jewelry'
                 item={item}
                 attributes={[
-                  item.materials[0],
-                  'Age ' + item.age,
-                  formatNumberWithCommas(item.grams) + ' Grams',
-                ]}
+                  Array.isArray(item?.materials) && item.materials[0]
+                    ? item.materials[0]
+                    : item?.jewelryMetal || item?.metal || '—',
+                  item?.age != null && item?.age !== ''
+                    ? `Age ${item.age}`
+                    : null,
+                  item?.grams != null && item?.grams !== ''
+                    ? `${formatNumberWithCommas(item.grams)} Grams`
+                    : null,
+                ].filter(Boolean)}
                 handlePrevSlide={handlePrevSlide}
                 handleNextSlide={handleNextSlide}
                 openTechnicalReport={openTechnicalReport}

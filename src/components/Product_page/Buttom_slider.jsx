@@ -243,7 +243,7 @@ const ButtomSlider = ({ data }) => {
                             </div>
                           )}
                         </div>
-                        <ListingCardQrThumb listing={listing} className='ml-auto' />
+                        <ListingCardQrThumb listing={listing} size={72} className='ml-auto shrink-0' />
                       </div>
                     </div>
 

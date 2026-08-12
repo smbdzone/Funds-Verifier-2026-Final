@@ -231,7 +231,7 @@ export default function CarForSale() {
                             </div>
                           </div>
                         </div>
-                        <ListingCardQrThumb listing={car} className='ml-auto' />
+                        <ListingCardQrThumb listing={car} size={72} className='ml-auto shrink-0' />
                       </div>
                     </div>
                     <div className='listing-card-footer'>

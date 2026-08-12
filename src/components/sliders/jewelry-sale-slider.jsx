@@ -256,7 +256,7 @@ export default function JewelrySaleSlider() {
                               </div>
                             </div>
                           </div>
-                          <ListingCardQrThumb listing={item} className='ml-auto' />
+                          <ListingCardQrThumb listing={item} size={72} className='ml-auto shrink-0' />
                         </div>
                       </div>
                       <div className='listing-card-footer'>

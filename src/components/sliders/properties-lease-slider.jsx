@@ -239,7 +239,7 @@ export default function PropertyLeaseSlider() {
                           </div>
                         </div>
                       </div>
-                      <ListingCardQrThumb listing={propertyForLease} className='ml-auto' />
+                      <ListingCardQrThumb listing={propertyForLease} size={72} className='ml-auto shrink-0' />
                     </div>
                   </div>
                   <div className='listing-card-footer'>

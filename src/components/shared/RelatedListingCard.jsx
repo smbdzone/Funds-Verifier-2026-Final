@@ -171,9 +171,11 @@ export default function RelatedListingCard({ listing, className = '' }) {
                 </div>
               </div>
             </div>
-            <div className='scale-75 origin-top-right sm:scale-100'>
-              <ListingCardQrThumb listing={listing} className='ml-auto' />
-            </div>
+            <ListingCardQrThumb
+              listing={listing}
+              size={72}
+              className='ml-auto shrink-0'
+            />
           </div>
         </div>
 

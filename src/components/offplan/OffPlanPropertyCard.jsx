@@ -199,14 +199,12 @@ const OffPlanPropertyCard = ({
                   ) : null}
                 </div>
               </div>
-
-              <div className='scale-75 origin-top-right lg:scale-100'>
-                <ListingCardQrThumb
-                  listing={viewListing}
-                  src={qrScanSrc || undefined}
-                  className='ml-auto'
-                />
-              </div>
+              <ListingCardQrThumb
+                listing={viewListing}
+                src={qrScanSrc || undefined}
+                size={72}
+                className='ml-auto shrink-0'
+              />
             </div>
           </div>
 

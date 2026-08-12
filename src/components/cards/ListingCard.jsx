@@ -395,7 +395,10 @@ const ListingCard = ({
                     </IconButton>
                   )}
               </div>
-              <ListingCardQrThumb listing={listing} />
+              <ListingCardQrThumb
+                listing={listing}
+                className='hidden sm:block'
+              />
             </div>
 
             <div className='listing-card-media-swiper relative mx-auto xl:!max-w-[350px]'>
@@ -464,7 +467,7 @@ const ListingCard = ({
               ) : null}
             </div>
             {/* Details section */}
-            <div className='flex w-full min-w-0 flex-1 flex-col pr-14 sm:pr-20 sm:pt-8 xl:!max-w-[450px] xl:pt-10'>
+            <div className='flex w-full min-w-0 flex-1 flex-col sm:pr-20 sm:pt-8 xl:!max-w-[450px] xl:pt-10'>
               <span
                 className={`capitalize lg:text-base text-sm${hasFeaturedStyling
                   ? 'text-gradient-custom text-light-gold capitalize'
@@ -502,7 +505,7 @@ const ListingCard = ({
                   </Link>
                 </div>
               </div>
-              <div className='overflow-hidden'>
+              <div className='overflow-visible'>
                 <div className='flex flex-col'>
                   <div className='flex flex-wrap items-center space-x-4'>
                     <p
@@ -537,9 +540,9 @@ const ListingCard = ({
 
                   {renderListingDetails(listing, hasFeaturedStyling)}
 
-                  <div className='flex'>
+                  <div className='mb-3 flex w-full min-w-0 flex-col gap-2'>
                     <div
-                      className={`flex gap-3 items-center mb-3 ${hasFeaturedStyling
+                      className={`flex items-center gap-3 ${hasFeaturedStyling
                         ? 'text-gradient-custom'
                         : 'text-prussianBlue'
                         }`}
@@ -554,7 +557,7 @@ const ListingCard = ({
                         {listing.country}
                       </p>
                     </div>
-                    <div className='flex gap-3 ml-3 flex-wrap items-center'>
+                    <div className='flex flex-wrap items-center gap-3'>
                       {showDocIcons && technicalReportSrc ? (
                         <>
                           <div className='bg-[#E0E0E0] p-1 rounded relative group'>
@@ -651,76 +654,83 @@ const ListingCard = ({
                 </div>
               </div>
 
-              <div className='relative'>
-                <button
-                  type='button'
-                  onClick={() =>
-                    setAnalyticsCardId(
-                      analyticsCardId === listing.uuid ? null : listing.uuid,
-                    )
-                  }
-                  className='flex gap-2 items-center cursor-pointer'
-                >
-                  <Analytics
-                    className={
-                      hasFeaturedStyling ? 'text-light-gold' : 'text-blue'
+              <div className='mt-2 flex w-full flex-wrap items-end justify-between gap-3'>
+                <div className='relative'>
+                  <button
+                    type='button'
+                    onClick={() =>
+                      setAnalyticsCardId(
+                        analyticsCardId === listing.uuid ? null : listing.uuid,
+                      )
                     }
-                  />
-                  <p
-                    className={
-                      hasFeaturedStyling
-                        ? 'text-light-gold lg:text-base text-sm'
-                        : 'text-blue lg:text-base text-sm'
-                    }
+                    className='flex gap-2 items-center cursor-pointer'
                   >
-                    Analytics
-                    <span className='ml-1 text-xs opacity-80'>
-                      ({formatNumberWithCommas(
-                        listing?.analytics?.clicks ?? 0,
-                      )}{' '}
-                      views)
-                    </span>
-                  </p>
-                </button>
-                {analyticsCardId === listing.uuid ? (
-                  <>
-                    <div
-                      className='fixed inset-0 z-40'
-                      onClick={() => setAnalyticsCardId(null)}
+                    <Analytics
+                      className={
+                        hasFeaturedStyling ? 'text-light-gold' : 'text-blue'
+                      }
                     />
-                    <div className='absolute bottom-[calc(100%+10px)] left-0 z-50 w-[230px] rounded-lg border border-gray-100 bg-white p-4 shadow-lg'>
-                      <div className='mb-3 flex items-center justify-between'>
-                        <span className='text-sm font-semibold text-prussianBlue'>
-                          Listing analytics
-                        </span>
-                        <button
-                          type='button'
-                          onClick={() => setAnalyticsCardId(null)}
-                          className='text-sm font-semibold text-dark-grey/60 hover:text-dark-grey'
-                          aria-label='Close analytics'
-                        >
-                          ✕
-                        </button>
-                      </div>
-                      <div className='space-y-2'>
-                        <div className='flex items-center justify-between'>
-                          <span className='text-sm text-dark-grey/80'>
-                            Views
-                          </span>
+                    <p
+                      className={
+                        hasFeaturedStyling
+                          ? 'text-light-gold lg:text-base text-sm'
+                          : 'text-blue lg:text-base text-sm'
+                      }
+                    >
+                      Analytics
+                      <span className='ml-1 text-xs opacity-80'>
+                        ({formatNumberWithCommas(
+                          listing?.analytics?.clicks ?? 0,
+                        )}{' '}
+                        views)
+                      </span>
+                    </p>
+                  </button>
+                  {analyticsCardId === listing.uuid ? (
+                    <>
+                      <div
+                        className='fixed inset-0 z-40'
+                        onClick={() => setAnalyticsCardId(null)}
+                      />
+                      <div className='absolute bottom-[calc(100%+10px)] left-0 z-50 w-[230px] rounded-lg border border-gray-100 bg-white p-4 shadow-lg'>
+                        <div className='mb-3 flex items-center justify-between'>
                           <span className='text-sm font-semibold text-prussianBlue'>
-                            {formatNumberWithCommas(
-                              listing?.analytics?.clicks ?? 0,
-                            )}
+                            Listing analytics
                           </span>
+                          <button
+                            type='button'
+                            onClick={() => setAnalyticsCardId(null)}
+                            className='text-sm font-semibold text-dark-grey/60 hover:text-dark-grey'
+                            aria-label='Close analytics'
+                          >
+                            ✕
+                          </button>
                         </div>
+                        <div className='space-y-2'>
+                          <div className='flex items-center justify-between'>
+                            <span className='text-sm text-dark-grey/80'>
+                              Views
+                            </span>
+                            <span className='text-sm font-semibold text-prussianBlue'>
+                              {formatNumberWithCommas(
+                                listing?.analytics?.clicks ?? 0,
+                              )}
+                            </span>
+                          </div>
+                        </div>
+                        <p className='mt-3 text-[11px] leading-4 text-dark-grey/60'>
+                          Views count when a visitor opens this listing only —
+                          not when it appears with other cards.
+                        </p>
                       </div>
-                      <p className='mt-3 text-[11px] leading-4 text-dark-grey/60'>
-                        Views count when a visitor opens this listing only —
-                        not when it appears with other cards.
-                      </p>
-                    </div>
-                  </>
-                ) : null}
+                    </>
+                  ) : null}
+                </div>
+                <ListingCardQrThumb
+                  listing={listing}
+                  size={48}
+                  className='ml-auto shrink-0 sm:hidden'
+                />
               </div>
             </div>
           </div>

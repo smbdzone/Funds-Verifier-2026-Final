@@ -88,10 +88,7 @@ const ProductCard = ({
             {premiumBadge}
           </button>
         ) : null}
-        <ListingCardQrThumb
-          listing={item}
-          className='hidden sm:block'
-        />
+        <ListingCardQrThumb listing={item} className='hidden sm:block' />
       </div>
       <div className='listing-card-media-swiper relative mx-auto w-full shrink-0 overflow-hidden rounded-lg sm:mx-0'>
         {carouselSlides.length > 1 ? (
@@ -188,7 +185,7 @@ const ProductCard = ({
           </Link>
           <ListingCardViewCount listing={item} />
         </div>
-        <div className='overflow-hidden'>
+        <div className='overflow-visible'>
           <div className='flex flex-col gap-2.5 pb-1'>
             <div className='flex w-full flex-wrap gap-x-3 gap-y-1'>
               <p
@@ -225,8 +222,8 @@ const ProductCard = ({
                 </div>
               ))}
             </div>
-            <div className='flex w-full flex-wrap items-start gap-x-3 gap-y-2'>
-              <div className='flex min-w-0 flex-1 items-center gap-3'>
+            <div className='flex w-full min-w-0 flex-col gap-2'>
+              <div className='flex min-w-0 items-center gap-3'>
                 <LocationIcon
                   className={`shrink-0 ${hasAdditionalContent ? 'text-white/80' : 'text-reef-gold/80'
                     }`}
@@ -238,23 +235,23 @@ const ProductCard = ({
                   {locationLabel || '—'}
                 </p>
               </div>
-              <div className='ml-auto flex shrink-0 flex-wrap items-center justify-end gap-2'>
-                <ListingCardQrThumb
-                  listing={item}
-                  size={48}
-                  className='sm:hidden'
-                />
-                <ListingCardCertificates listing={item} />
-              </div>
+              <ListingCardCertificates listing={item} />
             </div>
-            <ListingSocialShare
-              listing={{ ...item, type }}
-              label='Share With:'
-              labelClassName={`mb-0 text-base font-normal ${hasAdditionalContent ? 'text-white/80' : 'text-reef-gold/80'}`}
-              iconClassName='h-[21px] w-[21px]'
-              iconGapClassName='gap-3'
-              stacked
-            />
+            <div className='flex w-full flex-wrap items-end justify-between gap-3'>
+              <ListingSocialShare
+                listing={{ ...item, type }}
+                label='Share With:'
+                labelClassName={`mb-0 text-base font-normal ${hasAdditionalContent ? 'text-white/80' : 'text-reef-gold/80'}`}
+                iconClassName='h-[21px] w-[21px]'
+                iconGapClassName='gap-3'
+                stacked
+              />
+              <ListingCardQrThumb
+                listing={item}
+                size={48}
+                className='ml-auto shrink-0 sm:hidden'
+              />
+            </div>
           </div>
         </div>
       </div>

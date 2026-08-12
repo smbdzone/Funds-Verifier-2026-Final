@@ -255,7 +255,7 @@ export default function CarSaleSliderStatic() {
                               </div>
                             </div>
                           </div>
-                          <ListingCardQrThumb listing={carForSale} className='ml-auto' />
+                          <ListingCardQrThumb listing={carForSale} size={72} className='ml-auto shrink-0' />
                         </div>
                       </div>
                       <div className='listing-card-footer'>
