@@ -10,6 +10,7 @@ import { NoSlotsAvailable } from '@/components/global/NoSlotsAvailable'
 import { getBookableSlotsForDate } from '@/libs/slotTimeFilters'
 import { isOwnListing } from '@/libs/isOwnListing'
 import { setPostLoginRedirect } from '@/utils/auth/postLoginRedirect'
+import { CONSUMER_ROLES } from '@/utils/auth/roleHome'
 import { usePathname, useRouter } from 'next/navigation'
 
 const resolveTrusteeFromListing = (product) => {
@@ -47,7 +48,10 @@ const CalendarPopup = ({ onClose, productData }) => {
   const ownsListing = isOwnListing(productData, user)
 
   useEffect(() => {
-    if (loading || (isAuthenticated && user)) return
+    if (loading) return
+    const isConsumer =
+      isAuthenticated && user?.role && CONSUMER_ROLES.has(user.role)
+    if (isConsumer) return
 
     const returnTo =
       typeof window !== 'undefined'
@@ -57,7 +61,9 @@ const CalendarPopup = ({ onClose, productData }) => {
     setPostLoginRedirect(returnTo)
     toast.info('Please sign in with UAE Pass to arrange a viewing.')
     onClose?.()
-    router.push(`/login?redirect=${encodeURIComponent(returnTo)}`)
+    router.push(
+      `/login?redirect=${encodeURIComponent(returnTo)}&uaepass=1`,
+    )
   }, [isAuthenticated, loading, onClose, pathname, router, user])
 
   useEffect(() => {
@@ -164,7 +170,9 @@ const CalendarPopup = ({ onClose, productData }) => {
 
   const handleSubmit = async (event) => {
     event.preventDefault()
-    if (!isAuthenticated || !user) {
+    const isConsumer =
+      isAuthenticated && user?.role && CONSUMER_ROLES.has(user.role)
+    if (!isConsumer) {
       const returnTo =
         typeof window !== 'undefined'
           ? `${window.location.pathname}${window.location.search}`
@@ -172,7 +180,9 @@ const CalendarPopup = ({ onClose, productData }) => {
       setPostLoginRedirect(returnTo)
       toast.info('Please sign in with UAE Pass to arrange a viewing.')
       onClose?.()
-      router.push(`/login?redirect=${encodeURIComponent(returnTo)}`)
+      router.push(
+        `/login?redirect=${encodeURIComponent(returnTo)}&uaepass=1`,
+      )
       return
     }
     if (ownsListing) {

@@ -1,12 +1,17 @@
 'use client'
 import Image from 'next/image'
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useSearchParams } from 'next/navigation'
+import { useProfile } from '@/context/UserContext'
 import { useRedirectIfAuthenticated } from '@/hooks/useRedirectIfAuthenticated'
 import { captureRedirectQueryParam } from '@/utils/auth/postLoginRedirect'
+import { buildUaePassAuthorizeUrl } from '@/utils/auth/uaePass'
+import { CONSUMER_ROLES } from '@/utils/auth/roleHome'
 
 export default function Login() {
   const searchParams = useSearchParams()
+  const { user, loading, isAuthenticated } = useProfile()
+  const autoStartedUaePass = useRef(false)
   useRedirectIfAuthenticated()
 
   // Persist email deep-link / return URL before UAE PASS leaves this origin.
@@ -21,10 +26,25 @@ export default function Login() {
       window.location.replace(`/?code=${encodeURIComponent(code)}`)
     }
   }, [searchParams])
+
+  // Arrange Viewing (and similar): open UAE Pass immediately when requested.
+  // Staff roles (Evaluator, Trustee, Admin, …) also force UAE Pass here.
+  useEffect(() => {
+    if (autoStartedUaePass.current) return
+    if (loading) return
+    if (searchParams.get('code')) return
+    if (searchParams.get('uaepass') !== '1') return
+    const isConsumer =
+      user?.role && CONSUMER_ROLES.has(user.role) && isAuthenticated
+    if (isConsumer) return
+    autoStartedUaePass.current = true
+    captureRedirectQueryParam(searchParams)
+    window.location.href = buildUaePassAuthorizeUrl()
+  }, [searchParams, loading, user, isAuthenticated])
+
   const handleLogin = () => {
     captureRedirectQueryParam(searchParams)
-    const authUrl = `https://id.uaepass.ae/idshub/authorize?redirect_uri=${process.env.NEXT_PUBLIC_UAE_PASS_REDIRECT_URI}/&client_id=${process.env.NEXT_PUBLIC_UAE_PASS_CLIENT_ID}&response_type=code&scope=urn:uae:digitalid:profile:general&acr_values=urn:safelayer:tws:policies:authentication:level:low;`
-    window.location.href = authUrl
+    window.location.href = buildUaePassAuthorizeUrl()
   }
 
   return (

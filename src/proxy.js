@@ -1,7 +1,20 @@
 import { NextResponse } from 'next/server'
+import { isSafePostLoginPath } from '@/utils/auth/postLoginRedirect'
 
 const LOGIN_ROUTES = ['/login', '/user-login']
 const CONSUMER_ROLES = new Set(['AssetHolder', 'DealHunter'])
+
+function resolvePostLoginTarget(request, fallbackPath) {
+  const raw = request.nextUrl.searchParams.get('redirect')
+  if (!raw) return fallbackPath
+  let decoded = raw
+  try {
+    decoded = decodeURIComponent(raw)
+  } catch {
+    decoded = raw
+  }
+  return isSafePostLoginPath(decoded) ? decoded : fallbackPath
+}
 
 const normalizeRole = (role) => {
   if (!role) return role
@@ -332,12 +345,21 @@ async function handleLoginRoutes(request, pathname) {
 
   const { role } = session
 
+  // Arrange Viewing: staff sessions must reach /login so UAE Pass can start.
+  const forceUaePass = request.nextUrl.searchParams.get('uaepass') === '1'
+  if (forceUaePass && !CONSUMER_ROLES.has(role)) {
+    return NextResponse.next()
+  }
+
   if (pathname === '/user-login' && CONSUMER_ROLES.has(role)) {
-    return redirectAuthenticated(request, session, getRoleHomeRoute(role))
+    const target = resolvePostLoginTarget(request, getRoleHomeRoute(role))
+    return redirectAuthenticated(request, session, target)
   }
 
   if (pathname === '/login' || pathname === '/user-login') {
-    return redirectAuthenticated(request, session, getRoleHomeRoute(role))
+    // Honor ?redirect= (e.g. Arrange Viewing) instead of always dumping to role home.
+    const target = resolvePostLoginTarget(request, getRoleHomeRoute(role))
+    return redirectAuthenticated(request, session, target)
   }
 
   return NextResponse.next()
