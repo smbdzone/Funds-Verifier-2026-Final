@@ -4,6 +4,7 @@ import {
   getListingCarouselItems,
   getListingImageSrc,
   getListingQrScanSrc,
+  isListingCarouselPlaceholderSlide,
 } from '@/libs/listingCardMedia'
 import { getListingDetailId } from '@/libs/listingSlug'
 import { getListingRef } from '@/libs/listingRef'
@@ -30,12 +31,22 @@ export function resolveLayoutImageSrc(field) {
   return src && src !== '/listing/camera.svg' ? src : null
 }
 
-function getOffPlanImageUrls(listing) {
-  const slides = getListingCarouselItems(listing)
-    .filter((item) => item.type === 'image' && !item.isPlaceholder)
-    .map((item) => item.src)
+/** Card carousel slides (images + videos), same order as other marketplace cards. */
+function getOffPlanMediaSlides(listing) {
+  const slides = getListingCarouselItems(listing).filter(
+    (item) =>
+      item.type === 'video' ||
+      (item.type === 'image' && !isListingCarouselPlaceholderSlide(item)),
+  )
 
-  return slides.length ? slides : [OFF_PLAN_PLACEHOLDER]
+  if (!slides.length) {
+    return [{ type: 'image', src: OFF_PLAN_PLACEHOLDER }]
+  }
+
+  return slides.map((item) => ({
+    type: item.type,
+    src: item.src,
+  }))
 }
 
 export function getOffPlanPaymentPlanLabel(paymentPlanOrType, paymentPlanSteps) {
@@ -106,7 +117,7 @@ export function mapApiListingToOffPlanCard(listing) {
     ref: getListingRef(listing),
     priceFrom: listing?.priceFrom ?? listing?.price,
     priceTo: listing?.priceTo ?? listing?.price,
-    images: getOffPlanImageUrls(listing),
+    images: getOffPlanMediaSlides(listing),
     /** Keep raw media refs so public detail can play listing videos (same as property). */
     thumbnailImg: listing?.thumbnailImg || null,
     pictures: listing?.pictures || null,

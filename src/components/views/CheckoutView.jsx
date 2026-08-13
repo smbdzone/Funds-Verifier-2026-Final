@@ -14,6 +14,7 @@ import ListingSocialShare from '@/components/shared/ListingSocialShare'
 import { formatPriceUS } from '@/utils'
 import { formatNumberWithCommas } from '../../utils/global-functions/global'
 import { getListingAmenities } from '@/libs/listingAmenities'
+import { displayBedBathCount } from '@/libs/bedBathCount'
 
 export default function CheckoutView({
   data,
@@ -125,14 +126,12 @@ export default function CheckoutView({
                   Details
                 </h2>
                 <div className='flex flex-wrap lg:text-base sm:text-sm text-xs items-center p-2 shadow rounded mb-2 gap-5'>
-                  {data?.bedrooms ? (
+                  {data?.bedrooms != null && data?.bedrooms !== '' ? (
                     <>
                       <span className='flex flex-row items-center lg:text-base sm:text-sm text-xs'>
                         <GoDotFill className='flex  mr-2 text-gold-800' />
                         Bedrooms:
-                        {data?.bedrooms < 10
-                          ? '0' + data?.bedrooms
-                          : data?.bedrooms?.toString()}
+                        {displayBedBathCount(data?.bedrooms)}
                       </span>
                       <span className='flex flex-row items-center lg:text-base sm:text-sm text-xs'>
                         <GoDotFill className='flex mr-2 text-gold-800' />

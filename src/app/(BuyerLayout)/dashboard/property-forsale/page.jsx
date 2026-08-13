@@ -18,6 +18,7 @@ import {
   formatCityLabel,
 } from '@/libs/dummyLocationData'
 import { autoCapitalizeField } from '@/libs/autoCapitalizeText'
+import { parseBedBathCount } from '@/libs/bedBathCount'
 import {
   normalizeCountriesResponse,
   normalizeCitiesResponse,
@@ -301,6 +302,8 @@ function Page() {
 
       const updatedFormData = {
         ...formData,
+        bedrooms: parseBedBathCount(formData.bedrooms),
+        bathrooms: parseBedBathCount(formData.bathrooms),
         video3DWalkthrough: video3DWalkthroughID,
         technicalReport: technicalReportID,
         pictures: imageID,
@@ -519,6 +522,7 @@ function Page() {
   ]
 
   const bedroomsOptions = [
+    'Studio',
     '1',
     '2',
     '3',
@@ -642,8 +646,8 @@ function Page() {
     if (!data.sizeSQFT.trim()) errors.sizeSQFT = 'Size is required'
     if (!data.title.trim()) {
       errors.title = 'Title is required'
-    } else if (data.title.length > 50) {
-      errors.title = 'Title must be less than 50 characters'
+    } else if (data.title.length > 60) {
+      errors.title = 'Title must be less than 60 characters'
     }
     if (!data.price.trim()) errors.price = 'Price is required'
     if (!data.phoneNumber.trim()) {
@@ -657,7 +661,13 @@ function Page() {
     if (!data.leaseNumberofCheques.trim())
       errors.leaseNumberofCheques = 'leaseNumberofCheques is required'
     if (!data.bathrooms.trim()) errors.bathrooms = 'Bathrooms is required'
-    if (!data.bedrooms.trim()) errors.bedrooms = 'Bedrooms is required'
+    if (
+      data.bedrooms == null ||
+      data.bedrooms === '' ||
+      (typeof data.bedrooms === 'string' && !String(data.bedrooms).trim())
+    ) {
+      if (data.bedrooms !== 0) errors.bedrooms = 'Bedrooms is required'
+    }
     if (!data.occupancyStatus.trim())
       errors.occupancyStatus = 'Occupancy Status is required'
     if (!data.evaluationCompanies.trim())
@@ -687,8 +697,8 @@ function Page() {
       case 'title':
         if (!value) {
           error = 'Title is required.'
-        } else if (value.length > 50) {
-          error = 'Title cannot exceed 50 characters.'
+        } else if (value.length > 60) {
+          error = 'Title cannot exceed 60 characters.'
         }
         break
       case 'phoneNumber':
@@ -1189,11 +1199,11 @@ function Page() {
                   <div className='relative flex flex-col justify-start'>
                     <input
                       type='text'
-                      maxLength={50}
+                      maxLength={60}
                       className={`w-full shadow-neons h-[50px] pl-5 placeholder:text-dark-grey outline-with-opacity placeholder:text-[15px] placeholder:font-normal ${errors.title ? '   ' : ''
                         }`}
                       required
-                      placeholder='Title your property (max. 50 characters)'
+                      placeholder='Title your property (max. 60 characters)'
                       name='title'
                       value={formData.title}
                       onChange={handleChange}

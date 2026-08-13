@@ -8,6 +8,7 @@ import {
   bedroomsOptions,
   occupancyStatusOptions,
 } from '@/constants/listing-data'
+import { formatBedBathCount, parseBedBathCount } from '@/libs/bedBathCount'
 import { getListingAmenities } from '@/libs/listingAmenities'
 import { getListingSizeUnitForEvaluator } from './evaluatorPriceHandlers'
 
@@ -95,7 +96,9 @@ export default function EvaluatorPropertyEditableDetails({
       sizeUnit === 'SQM' ? property.sizeSQMFrom : property.sizeSQFTFrom,
     ),
   )
-  const bedroomValue = String(pickValue(draft?.bedrooms, property.bedrooms))
+  const bedroomValue = formatBedBathCount(
+    pickValue(draft?.bedrooms, property.bedrooms),
+  )
   const bedroomChoices = useMemo(() => {
     if (bedroomValue && !bedroomsOptions.includes(bedroomValue)) {
       return [bedroomValue, ...bedroomsOptions]
@@ -171,7 +174,9 @@ export default function EvaluatorPropertyEditableDetails({
           <select
             className={editInputClass}
             value={bedroomValue}
-            onChange={(e) => setField('bedrooms', e.target.value)}
+            onChange={(e) =>
+              setField('bedrooms', parseBedBathCount(e.target.value))
+            }
           >
             <option value=''>Select bedrooms</option>
             {bedroomChoices.map((opt) => (

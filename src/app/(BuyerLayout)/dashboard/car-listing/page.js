@@ -622,8 +622,8 @@ function Page() {
     if (!data?.size) errors.size = 'Size is required'
     if (!String(data?.title || '').trim()) {
       errors.title = 'Title is required'
-    } else if (data?.title?.length > 30) {
-      errors.title = 'Title must be less than 30 characters'
+    } else if (data?.title?.length > 60) {
+      errors.title = 'Title must be less than 60 characters'
     }
     if (!String(data?.price || '') && !totalprice) {
       errors.price = 'Price is required'
@@ -671,8 +671,8 @@ function Page() {
       case 'title':
         if (!value) {
           error = 'Title is required.'
-        } else if (value.length > 30) {
-          error = 'Title cannot exceed 30 characters.'
+        } else if (value.length > 60) {
+          error = 'Title cannot exceed 60 characters.'
         }
         break
       case 'phoneNumber':

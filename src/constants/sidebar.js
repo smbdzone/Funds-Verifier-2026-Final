@@ -122,6 +122,7 @@ export const interiorColors = [
 ];
 
 export const bedroomsOptions = [
+  { id: 0, value: "Studio" },
   { id: 1, value: "1" },
   { id: 2, value: "2" },
   { id: 3, value: "3" },

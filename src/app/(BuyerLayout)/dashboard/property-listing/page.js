@@ -39,6 +39,7 @@ import { LISTING_IMAGE_MAX_BYTES, LISTING_IMAGE_MAX_MB } from '@/constants/listi
 import { ensureWithinSize } from '@/libs/imageCompression'
 import { applyListingWatermark } from '@/libs/applyListingWatermark'
 import { autoCapitalizeField } from '@/libs/autoCapitalizeText'
+import { parseBedBathCount } from '@/libs/bedBathCount'
 import { flagListingPendingApprovalNotice } from '@/libs/listingPendingApprovalNotice'
 import { ListingContext } from '@/components/ListingContext/ListingsProvider'
 import { propertyType } from '../../../../constants/listing-data'
@@ -820,6 +821,8 @@ const Page = () => {
 
       const updatedFormData = {
         ...formData,
+        bedrooms: parseBedBathCount(formData.bedrooms),
+        bathrooms: parseBedBathCount(formData.bathrooms),
         sizeSQFT: formData.sizeSQFTFrom
           ? Number(formData.sizeSQFTFrom)
           : formData.sizeSQFT
@@ -1122,10 +1125,8 @@ const Page = () => {
 
     if (!String(data.title || '').trim()) {
       errors.title = 'Title is required'
-    } else if (offPlan && data.title.length > 50) {
-      errors.title = 'Title must be less than 50 characters'
-    } else if (!offPlan && data.title.length > 30) {
-      errors.title = 'Title must be less than 30 characters'
+    } else if (data.title.length > 60) {
+      errors.title = 'Title must be less than 60 characters'
     }
 
     if (offPlan) {
@@ -1189,7 +1190,8 @@ const Page = () => {
       errors.bathrooms = 'Bathrooms are required'
     }
 
-    if (!String(data.bedrooms || '').trim()) {
+    // Studio is stored as 0 after parseBedBathCount — only empty/null are invalid.
+    if (data.bedrooms == null || data.bedrooms === '') {
       errors.bedrooms = 'Bedrooms are required'
     }
 
@@ -1216,8 +1218,8 @@ const Page = () => {
       case 'title':
         if (!value) {
           error = 'Title is required.'
-        } else if (value.length > 30) {
-          error = 'Title cannot exceed 30 characters.'
+        } else if (value.length > 60) {
+          error = 'Title cannot exceed 60 characters.'
         }
         break
       case 'phoneNumber':

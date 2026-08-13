@@ -190,10 +190,10 @@ const JewelryListingForm = ({
               handleBlur={handleBlur}
               disabled={isEvaluatorApprovedLocked}
               required={true}
-              placeholder='Title your Jewellery (max. 30 characters)'
+              placeholder='Title your Jewellery (max. 60 characters)'
               errorsMessage={errors.title}
               name='title'
-              maxLength={30}
+              maxLength={60}
               type='text'
             />
           </div>

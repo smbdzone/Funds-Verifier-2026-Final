@@ -72,6 +72,13 @@ const CalendarPopup = ({ onClose, productData }) => {
     onClose?.()
   }, [ownsListing, onClose])
 
+  const formatApiDate = (date) => {
+    const correctedDate = new Date(
+      date.getTime() - date.getTimezoneOffset() * 60000,
+    )
+    return correctedDate.toISOString().split('T')[0]
+  }
+
   const loadTrustee = useCallback(async () => {
     setTrusteeLoading(true)
     setSlotsFetchError(null)
@@ -87,6 +94,7 @@ const CalendarPopup = ({ onClose, productData }) => {
       const response = await customAxios.get('/user/service-providers/Trustee')
       const providers = Array.isArray(response?.data) ? response.data : []
       if (providers.length > 0) {
+        // Backend ranks trustees with upcoming viewing slots first.
         setTrusteeUUID(providers[0].uuid)
       } else {
         setTrusteeUUID(null)
@@ -118,10 +126,7 @@ const CalendarPopup = ({ onClose, productData }) => {
     setSelectedTimeSlotId('')
 
     try {
-      const correctedDate = new Date(
-        date.getTime() - date.getTimezoneOffset() * 60000
-      )
-      const formattedDate = correctedDate.toISOString().split('T')[0]
+      const formattedDate = formatApiDate(date)
 
       const response = await customAxios.get(
         `${process.env.NEXT_PUBLIC_BASE_URL}/arrange-view/slots/available?date=${formattedDate}&userUUID=${ownerUUID}&slotCategory=viewing`
@@ -137,8 +142,10 @@ const CalendarPopup = ({ onClose, productData }) => {
           setSelectedTime(openSlots[0].time)
           setTimeSlotId(openSlots[0].uuid)
           setSelectedTimeSlotId(daySlotGroupId)
+          return true
         }
       }
+      return false
     } catch (error) {
       console.error('Error fetching appointments:', error)
       setSlotsFetchError('network')
@@ -146,6 +153,7 @@ const CalendarPopup = ({ onClose, productData }) => {
         error?.response?.data?.message ||
         'Could not check this date. Try again.',
       )
+      return false
     } finally {
       setFetchingSlots(false)
     }
@@ -153,9 +161,33 @@ const CalendarPopup = ({ onClose, productData }) => {
 
   useEffect(() => {
     if (!trusteeUUID || trusteeLoading) return
-    const today = getTodayStart()
-    setSelectedDate(today)
-    fetchAppointments(today, trusteeUUID)
+
+    const boot = async () => {
+      const today = getTodayStart()
+      setSelectedDate(today)
+      const hasToday = await fetchAppointments(today, trusteeUUID)
+      if (hasToday) return
+
+      // Today may be empty — jump to the trustee's next open viewing day.
+      try {
+        const nextRes = await customAxios.get(
+          `${process.env.NEXT_PUBLIC_BASE_URL}/arrange-view/slots/next-available?userUUID=${trusteeUUID}&fromDate=${formatApiDate(today)}&slotCategory=viewing`,
+        )
+        const nextDateStr = nextRes?.data?.date
+        if (!nextDateStr) return
+        const [y, m, d] = String(nextDateStr)
+          .split('-')
+          .map((n) => Number(n))
+        if (!y || !m || !d) return
+        const nextDate = new Date(y, m - 1, d)
+        setSelectedDate(nextDate)
+        await fetchAppointments(nextDate, trusteeUUID)
+      } catch (error) {
+        console.error('Error loading next available viewing date:', error)
+      }
+    }
+
+    boot()
   }, [trusteeUUID, trusteeLoading, fetchAppointments])
 
   const formatDay = (date) => {

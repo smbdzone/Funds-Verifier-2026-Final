@@ -33,11 +33,24 @@ const OffPlanPropertyCard = ({
   uuid = '',
   assetType = 'Property Off Plan For Sale',
 }) => {
-  const imageList = useMemo(
-    () => (Array.isArray(images) && images.length ? images : ['/assets/images/property.jpg']),
-    [images],
-  )
+  const mediaList = useMemo(() => {
+    if (!Array.isArray(images) || !images.length) {
+      return [{ type: 'image', src: '/assets/images/property.jpg' }]
+    }
+    return images.map((item) => {
+      if (typeof item === 'string') return { type: 'image', src: item }
+      if (item?.src) {
+        return {
+          type: item.type === 'video' ? 'video' : 'image',
+          src: item.src,
+        }
+      }
+      return { type: 'image', src: '/assets/images/property.jpg' }
+    })
+  }, [images])
   const [activeImageIndex, setActiveImageIndex] = useState(0)
+  const activeSlide =
+    mediaList[Math.min(activeImageIndex, mediaList.length - 1)] || mediaList[0]
 
   const displayPrice =
     priceLabel || formatOffPlanPriceRange(priceFrom, priceTo)
@@ -59,7 +72,7 @@ const OffPlanPropertyCard = ({
     event.preventDefault()
     event.stopPropagation()
     setActiveImageIndex((prev) =>
-      prev === 0 ? imageList.length - 1 : prev - 1,
+      prev === 0 ? mediaList.length - 1 : prev - 1,
     )
   }
 
@@ -67,8 +80,13 @@ const OffPlanPropertyCard = ({
     event.preventDefault()
     event.stopPropagation()
     setActiveImageIndex((prev) =>
-      prev === imageList.length - 1 ? 0 : prev + 1,
+      prev === mediaList.length - 1 ? 0 : prev + 1,
     )
+  }
+
+  const stopCardNavigation = (event) => {
+    event.preventDefault()
+    event.stopPropagation()
   }
 
   const card = (
@@ -77,13 +95,25 @@ const OffPlanPropertyCard = ({
     >
       <div className='listing-card-body flex h-full w-full flex-1 flex-col gap-2 lg:gap-3'>
         <div className='relative h-[190px] w-full shrink-0 overflow-hidden rounded-t-[5px] sm:h-[210px] lg:h-[275px]'>
-          <Image
-            src={imageList[activeImageIndex]}
-            alt={title}
-            width={414}
-            height={275}
-            className='listing-card-photo h-full w-full object-cover object-center'
-          />
+          {activeSlide?.type === 'video' ? (
+            <video
+              className='listing-card-photo h-full w-full bg-black object-cover object-center'
+              src={activeSlide.src}
+              controls
+              playsInline
+              preload='metadata'
+              onClick={stopCardNavigation}
+              onPointerDown={stopCardNavigation}
+            />
+          ) : (
+            <Image
+              src={activeSlide?.src || '/assets/images/property.jpg'}
+              alt={title}
+              width={414}
+              height={275}
+              className='listing-card-photo h-full w-full object-cover object-center'
+            />
+          )}
 
           {String(paymentPlanLabel || '').trim() ? (
             <div className='absolute right-2 top-2 rounded-[2px] px-1.5 py-0.5 shadow-[0px_0px_8px_rgba(0,0,0,0.15)] [background:linear-gradient(90deg,#A2913E_0%,#D7C590_35.28%,#A2913E_68.99%,#D7C58F_100%)] lg:right-[10px] lg:top-[10px] lg:px-2 lg:py-1'>
@@ -93,13 +123,13 @@ const OffPlanPropertyCard = ({
             </div>
           ) : null}
 
-          {imageList.length > 1 ? (
+          {mediaList.length > 1 ? (
             <>
               <button
                 type='button'
                 onClick={goPrev}
-                aria-label='Previous image'
-                className='absolute left-2 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-[3px] [background:linear-gradient(90deg,#A2913E_0%,#D7C590_35.28%,#A2913E_68.99%,#D7C58F_100%)] lg:left-3 lg:h-[51px] lg:w-[51px]'
+                aria-label='Previous media'
+                className='absolute left-2 top-1/2 z-10 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-[3px] [background:linear-gradient(90deg,#A2913E_0%,#D7C590_35.28%,#A2913E_68.99%,#D7C58F_100%)] lg:left-3 lg:h-[51px] lg:w-[51px]'
               >
                 <Image
                   src='/icons/golden-arrow-previous.png'
@@ -112,8 +142,8 @@ const OffPlanPropertyCard = ({
               <button
                 type='button'
                 onClick={goNext}
-                aria-label='Next image'
-                className='absolute right-2 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-[3px] [background:linear-gradient(90deg,#A2913E_0%,#D7C590_35.28%,#A2913E_68.99%,#D7C58F_100%)] lg:right-3 lg:h-[51px] lg:w-[51px]'
+                aria-label='Next media'
+                className='absolute right-2 top-1/2 z-10 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-[3px] [background:linear-gradient(90deg,#A2913E_0%,#D7C590_35.28%,#A2913E_68.99%,#D7C58F_100%)] lg:right-3 lg:h-[51px] lg:w-[51px]'
               >
                 <Image
                   src='/icons/golden-arrow-previous.png'

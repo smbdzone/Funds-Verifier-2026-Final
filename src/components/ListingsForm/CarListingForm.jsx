@@ -199,10 +199,10 @@ const CarListingForm = ({
               handleChange={handleChange}
               handleBlur={handleBlur}
               required={true}
-              placeholder='Title your Car (max. 30 characters)'
+              placeholder='Title your Car (max. 60 characters)'
               errorsMessage={errors.title}
               name='title'
-              maxLength={30}
+              maxLength={60}
               type='text'
               disabled={isEvaluatorApprovedLocked}
             />

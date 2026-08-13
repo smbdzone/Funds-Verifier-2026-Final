@@ -76,6 +76,7 @@ export default function OffPlanProductView({ data }) {
 
     const pad = (value) => {
       if (value == null || value === '') return ''
+      if (Number(value) === 0) return 'Studio'
       const num = Number(value)
       if (Number.isFinite(num)) return String(num).padStart(2, '0')
       return String(value)

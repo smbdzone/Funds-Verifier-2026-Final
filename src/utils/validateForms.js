@@ -56,8 +56,8 @@ export const validateOffPlanAsset = (formData, formFields) => {
 
   if (!safeTrim(formData.title)) {
     errors.title = "Title is required";
-  } else if (formData.title.length > 50) {
-    errors.title = "Title must be less than 50 characters";
+  } else if (formData.title.length > 60) {
+    errors.title = "Title must be less than 60 characters";
   }
 
   if (!safeTrim(formData.priceFrom)) {
@@ -83,8 +83,15 @@ export const validateOffPlanAsset = (formData, formFields) => {
     errors.developer = "Developer is required";
   }
 
-  if (!safeTrim(formData.bedrooms)) {
-    errors.bedrooms = "Bedrooms is required";
+  // Studio is valid (may already be parsed to 0).
+  if (
+    formData.bedrooms == null ||
+    formData.bedrooms === "" ||
+    (typeof formData.bedrooms === "string" && !safeTrim(formData.bedrooms))
+  ) {
+    if (formData.bedrooms !== 0) {
+      errors.bedrooms = "Bedrooms is required";
+    }
   }
 
   if (!safeTrim(formData.bathrooms)) {

@@ -35,6 +35,7 @@ import {
   LISTING_VIDEO_MAX_COUNT,
 } from '@/constants/listingUploadLimits'
 import { createDefaultOffPlanPaymentPlan, sanitizeOffPlanPaymentPlan, facilities, getExtraFacilities } from '@/constants/listing-data'
+import { formatBedBathCount } from '@/libs/bedBathCount'
 import {
   ensureWithinSize,
 } from '@/libs/imageCompression'
@@ -175,6 +176,8 @@ const ListingsProvider = ({ children }) => {
           description: d.description || '',
           additionalDescription: d.additionalDescription || '',
           country: countryNorm,
+          bedrooms: formatBedBathCount(d.bedrooms),
+          bathrooms: formatBedBathCount(d.bathrooms),
           priceFrom: d.priceFrom ?? '',
           priceTo: d.priceTo ?? '',
           sizeSQFTFrom: d.sizeSQFTFrom ?? d.sizeSQFT ?? '',

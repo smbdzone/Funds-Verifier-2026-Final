@@ -232,10 +232,10 @@ export const ImageUploadComponent = React.memo(
                 handleChange={handleChange}
                 handleBlur={handleBlur}
                 required={true}
-                placeholder='Title your property (max. 50 characters)'
+                placeholder='Title your property (max. 60 characters)'
                 errorsMessage={errors.title}
                 name='title'
-                maxLength={50}
+                maxLength={60}
                 type='text'
               />
             </div>
@@ -527,10 +527,10 @@ export const ImageUploadComponent = React.memo(
                 handleChange={handleChange}
                 handleBlur={handleBlur}
                 required={true}
-                placeholder='Title your property (max. 30 characters)'
+                placeholder='Title your property (max. 60 characters)'
                 errorsMessage={errors.title}
                 name='title'
-                maxLength={30}
+                maxLength={60}
                 type='text'
               />
             </div>
