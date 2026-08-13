@@ -29,6 +29,7 @@ import {
 } from '@/libs/uploadAsset'
 import { getCsrfHeaders } from '@/utils/csrf'
 import { CloseIcon } from '@/components/Icons'
+import SaleProceedObligationModal from '@/components/shared/SaleProceedObligationModal'
 
 const EVALUATION_CLOZER_AMOUNT = 2500
 
@@ -46,10 +47,14 @@ const PaymentModal = ({
   const [loading, setLoading] = useState(false)
   const [paymentStep, setPaymentStep] = useState('choice')
   const [clozerLoading, setClozerLoading] = useState(false)
+  const [obligationAccepted, setObligationAccepted] = useState(false)
 
   useEffect(() => {
-    if (!show) return
-    loadFullPayDiscountPercent().catch(() => {})
+    if (!show) {
+      setObligationAccepted(false)
+      return
+    }
+    loadFullPayDiscountPercent().catch(() => { })
   }, [show])
 
   useEffect(() => {
@@ -342,6 +347,7 @@ const PaymentModal = ({
       })
     }
     setPaymentStep('choice')
+    setObligationAccepted(false)
     onClose()
   }
 
@@ -361,6 +367,20 @@ const PaymentModal = ({
       })
     }
     if (typeof next === 'function') next()
+  }
+
+  if (!obligationAccepted) {
+    return (
+      <SaleProceedObligationModal
+        show
+        context='listing'
+        assetType={formData?.assetType || ''}
+        listingTitle={formData?.title || ''}
+        listingUuid={formData?.uuid || ''}
+        onAgree={() => setObligationAccepted(true)}
+        onClose={handleClose}
+      />
+    )
   }
 
   return (
