@@ -26,8 +26,10 @@ const ViewerDetailsErrorBoundary = dynamic(
 )
 
 const formatDate = (dateString) => {
+  if (!dateString) return '—'
   try {
     const date = new Date(dateString)
+    if (Number.isNaN(date.getTime())) return '—'
     return new Intl.DateTimeFormat('en-US', {
       year: 'numeric',
       month: 'short',
@@ -38,6 +40,20 @@ const formatDate = (dateString) => {
   }
 }
 
+const formatAssignment = (value) => {
+  if (value === 'fv_admin') return 'FV Admin'
+  return 'Trustee'
+}
+
+const Field = ({ label, children }) => (
+  <div className='min-w-0'>
+    <p className='text-[11px] font-semibold uppercase tracking-wide text-slate-500'>
+      {label}
+    </p>
+    <div className='mt-1 text-sm font-medium text-[#002d4f]'>{children}</div>
+  </div>
+)
+
 const UnderProcessToggle = ({ checked, disabled, onChange }) => (
   <button
     type='button'
@@ -46,15 +62,21 @@ const UnderProcessToggle = ({ checked, disabled, onChange }) => (
     aria-label='Under process'
     disabled={disabled}
     onClick={onChange}
-    className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#a2913e]/50 ${checked ? 'bg-[#a2913e]' : 'bg-slate-300'
-      } ${disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}
+    className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#a2913e]/50 ${
+      checked ? 'bg-[#a2913e]' : 'bg-slate-300'
+    } ${disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}
   >
     <span
-      className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition ${checked ? 'translate-x-6' : 'translate-x-1'
-        }`}
+      className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition ${
+        checked ? 'translate-x-6' : 'translate-x-1'
+      }`}
     />
   </button>
 )
+
+/** Same card columns as Super Admin, plus Under process for trustee. */
+const CARD_COLS =
+  'lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,0.85fr)_minmax(0,0.85fr)_minmax(0,0.95fr)_110px]'
 
 function TrusteeViewingRequest() {
   const [viewingRequests, setViewingRequests] = useState([])
@@ -69,7 +91,7 @@ function TrusteeViewingRequest() {
       const response = await customAxios.get(
         `${process.env.NEXT_PUBLIC_BASE_URL}/arrange-view/bookings`,
       )
-      setViewingRequests(response.data)
+      setViewingRequests(Array.isArray(response.data) ? response.data : [])
     } catch {
       toast.error('Could not load viewing requests.')
     }
@@ -160,7 +182,7 @@ function TrusteeViewingRequest() {
   )
 
   return (
-    <div className='w-full max-w-7xl mx-auto pb-10'>
+    <div className='mx-auto w-full max-w-7xl pb-10'>
       <ToastContainer position='top-right' theme='colored' />
 
       <div className='mb-6 md:mb-8'>
@@ -185,216 +207,153 @@ function TrusteeViewingRequest() {
           </div>
         </div>
 
-        {/* Desktop table */}
-        <div className='hidden md:block'>
-          <div className='overflow-x-auto'>
-            <table className='min-w-full border-collapse text-left text-sm'>
-              <thead>
-                <tr className='border-b border-[#002d4f]/15 bg-gradient-to-r from-[#eef4fa] via-[#e2ecf6] to-[#eef4fa]'>
-                  <th
-                    scope='col'
-                    className='whitespace-nowrap px-6 py-3.5 text-xs font-semibold uppercase tracking-wide text-[#002d4f]'
-                  >
-                    Broker
-                  </th>
-                  <th
-                    scope='col'
-                    className='px-6 py-3.5 text-xs font-semibold uppercase tracking-wide text-[#002d4f]'
-                  >
-                    Email
-                  </th>
-                  <th
-                    scope='col'
-                    className='whitespace-nowrap px-6 py-3.5 text-xs font-semibold uppercase tracking-wide text-[#002d4f]'
-                  >
-                    Appointment
-                  </th>
-                  <th
-                    scope='col'
-                    className='whitespace-nowrap px-6 py-3.5 text-xs font-semibold uppercase tracking-wide text-[#002d4f]'
-                  >
-                    Status
-                  </th>
-                  <th
-                    scope='col'
-                    className='whitespace-nowrap px-6 py-3.5 text-xs font-semibold uppercase tracking-wide text-[#002d4f]'
-                  >
-                    Under process
-                  </th>
-                  <th
-                    scope='col'
-                    className='w-[120px] px-6 py-3.5 text-right text-xs font-semibold uppercase tracking-wide text-[#002d4f]'
-                  >
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className='divide-y divide-slate-100'>
-                {viewingRequests.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className='px-6 py-16 text-center'>
-                      <p className='text-base font-medium text-slate-700'>
-                        No viewing requests yet
-                      </p>
-                      <p className='mx-auto mt-2 max-w-md text-sm text-slate-500'>
-                        When brokers book a slot, their requests will appear
-                        here.
-                      </p>
-                    </td>
-                  </tr>
-                ) : (
-                  viewingRequests.map((viewer) => (
-                    <tr
-                      key={viewer?.uuid}
-                      className='transition-colors hover:bg-slate-50/80'
-                    >
-                      <td className='whitespace-nowrap px-6 py-4'>
-                        <span className='font-medium text-slate-900'>
-                          {viewer?.brokerId?.name || '—'}
-                        </span>
-                      </td>
-                      <td className='max-w-[220px] truncate px-6 py-4 text-slate-600'>
-                        {viewer?.brokerId?.email || '—'}
-                      </td>
-                      <td className='whitespace-nowrap px-6 py-4 text-slate-600'>
-                        <span className='block font-medium text-slate-800'>
-                          {formatDate(viewer?.slotId?.date)}
-                        </span>
-                        <span className='text-xs text-slate-500'>
-                          {viewer?.timeSlot?.time || ''}
-                        </span>
-                      </td>
-                      <td className='whitespace-nowrap px-6 py-4'>
-                        <span
-                          className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ring-1 ring-inset ${viewingBookingStatusBadgeClass(viewer?.status)}`}
-                        >
-                          {formatViewingBookingStatus(viewer?.status)}
-                        </span>
-                      </td>
-                      <td className='whitespace-nowrap px-6 py-4'>
-                        <UnderProcessToggle
-                          checked={isViewingBookingUnderProcess(viewer?.status)}
-                          disabled={togglingId === viewer?.uuid}
-                          onChange={() => handleToggleUnderProcess(viewer)}
-                        />
-                      </td>
-                      <td className='whitespace-nowrap px-6 py-4 text-right'>
-                        <div className='inline-flex items-center justify-end gap-1'>
-                          <button
-                            type='button'
-                            onClick={() => handleViewDetails(viewer?.uuid)}
-                            className='inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:border-[#a2913e]/40 hover:bg-[#a2913e]/5 hover:text-[#002d4f]'
-                            title='View details'
-                            aria-label='View booking details'
-                          >
-                            <EyeIcon className='h-5 w-5' />
-                          </button>
-                          <button
-                            type='button'
-                            onClick={() => openDeleteDialog(viewer?.uuid)}
-                            className='inline-flex h-9 w-9 items-center justify-center rounded-lg border border-transparent text-[#a2913e] transition hover:bg-[#a2913e]/10 hover:text-[#002d4f]'
-                            title='Delete request'
-                            aria-label='Delete viewing request'
-                          >
-                            <DeleteIcon className='h-5 w-5' />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* Mobile cards */}
-        <div className='divide-y divide-slate-100 md:hidden'>
+        <div className='space-y-3 p-4 sm:p-5'>
           {viewingRequests.length === 0 ? (
-            <div className='px-5 py-14 text-center'>
+            <div className='px-2 py-16 text-center'>
               <p className='text-base font-medium text-slate-700'>
                 No viewing requests yet
               </p>
-              <p className='mx-auto mt-2 max-w-xs text-sm text-slate-500'>
-                Bookings from brokers will show up here.
+              <p className='mx-auto mt-2 max-w-md text-sm text-slate-500'>
+                When buyers book a slot, their requests will appear here.
               </p>
             </div>
           ) : (
-            viewingRequests.map((viewer) => (
-              <article
-                key={viewer?.uuid}
-                className='space-y-3 px-5 py-4 active:bg-slate-50/50'
+            <>
+              <div
+                className={`hidden items-center gap-4 rounded-xl bg-gradient-to-r from-[#eef4fa] via-[#e2ecf6] to-[#eef4fa] px-5 py-3 text-[11px] font-semibold uppercase tracking-wide text-[#002d4f] lg:grid ${CARD_COLS}`}
               >
-                <div className='flex items-start justify-between gap-3'>
-                  <div className='min-w-0 flex-1'>
-                    <p className='truncate text-base font-semibold text-[#002d4f]'>
-                      {viewer?.brokerId?.name || '—'}
-                    </p>
-                    <p className='truncate text-sm text-slate-600'>
-                      {viewer?.brokerId?.email || '—'}
-                    </p>
-                  </div>
-                  <span
-                    className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide ring-1 ring-inset ${viewingBookingStatusBadgeClass(viewer?.status)}`}
+                <span>Listing</span>
+                <span>Buyer</span>
+                <span>Seller</span>
+                <span>Date</span>
+                <span>Assignment</span>
+                <span>Status</span>
+                <span>Under process</span>
+                <span className='text-right'>Action</span>
+              </div>
+
+              {viewingRequests.map((viewer) => {
+                const listingName =
+                  viewer?.listingTitle ||
+                  viewer?.productData?.title ||
+                  '—'
+                const buyerName =
+                  viewer?.buyerName || viewer?.brokerId?.name || '—'
+                const sellerName =
+                  viewer?.sellerName || viewer?.assetHolder?.name || '—'
+                const dateLabel = formatDate(
+                  viewer?.date || viewer?.slotId?.date,
+                )
+                const timeLabel = viewer?.timeSlot?.time || ''
+
+                return (
+                  <article
+                    key={viewer?.uuid}
+                    className='rounded-xl border border-slate-200 bg-white px-4 py-4 shadow-sm transition hover:border-[#a2913e]/40 hover:shadow-md sm:px-5'
                   >
-                    {formatViewingBookingStatus(viewer?.status)}
-                  </span>
-                </div>
-                <div className='flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5'>
-                  <div>
-                    <p className='text-xs font-semibold uppercase tracking-wide text-slate-500'>
-                      Under process
-                    </p>
-                    <p className='mt-0.5 text-sm text-slate-700'>
-                      {isViewingBookingUnderProcess(viewer?.status)
-                        ? 'Seller price locked'
-                        : 'Off'}
-                    </p>
-                  </div>
-                  <UnderProcessToggle
-                    checked={isViewingBookingUnderProcess(viewer?.status)}
-                    disabled={togglingId === viewer?.uuid}
-                    onChange={() => handleToggleUnderProcess(viewer)}
-                  />
-                </div>
-                <dl className='grid grid-cols-2 gap-2 text-sm'>
-                  <div className='rounded-lg bg-slate-50 px-3 py-2'>
-                    <dt className='text-[11px] font-medium uppercase tracking-wide text-slate-500'>
-                      Date
-                    </dt>
-                    <dd className='mt-0.5 font-medium text-slate-800'>
-                      {formatDate(viewer?.slotId?.date)}
-                    </dd>
-                  </div>
-                  <div className='rounded-lg bg-slate-50 px-3 py-2'>
-                    <dt className='text-[11px] font-medium uppercase tracking-wide text-slate-500'>
-                      Time
-                    </dt>
-                    <dd className='mt-0.5 font-medium text-slate-800'>
-                      {viewer?.timeSlot?.time || '—'}
-                    </dd>
-                  </div>
-                </dl>
-                <div className='flex gap-2 pt-1'>
-                  <button
-                    type='button'
-                    onClick={() => handleViewDetails(viewer?.uuid)}
-                    className='flex flex-1 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white py-2.5 text-sm font-medium text-[#002d4f] shadow-sm transition hover:border-[#a2913e]/50 hover:bg-slate-50'
-                  >
-                    <EyeIcon className='h-4 w-4' />
-                    Details
-                  </button>
-                  <button
-                    type='button'
-                    onClick={() => openDeleteDialog(viewer?.uuid)}
-                    className='rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-[#002d4f] transition hover:border-[#a2913e]/50 hover:bg-[#a2913e]/5'
-                    aria-label='Delete'
-                  >
-                    Delete
-                  </button>
-                </div>
-              </article>
-            ))
+                    <div
+                      className={`grid grid-cols-1 gap-4 sm:grid-cols-2 lg:items-center lg:gap-4 ${CARD_COLS}`}
+                    >
+                      <Field label='Listing'>
+                        <p className='break-words whitespace-normal leading-snug'>
+                          {listingName}
+                        </p>
+                        {viewer?.assetType ? (
+                          <p className='mt-0.5 break-words text-xs font-normal text-slate-500'>
+                            {viewer.assetType}
+                          </p>
+                        ) : null}
+                      </Field>
+
+                      <Field label='Buyer'>
+                        <p className='break-words whitespace-normal leading-snug'>
+                          {buyerName}
+                        </p>
+                        {viewer?.buyerEmail || viewer?.brokerId?.email ? (
+                          <p className='mt-0.5 break-all text-xs font-normal text-slate-500'>
+                            {viewer?.buyerEmail || viewer?.brokerId?.email}
+                          </p>
+                        ) : null}
+                      </Field>
+
+                      <Field label='Seller'>
+                        <p className='break-words whitespace-normal leading-snug'>
+                          {sellerName}
+                        </p>
+                        {viewer?.sellerEmail || viewer?.assetHolder?.email ? (
+                          <p className='mt-0.5 break-all text-xs font-normal text-slate-500'>
+                            {viewer?.sellerEmail ||
+                              viewer?.assetHolder?.email}
+                          </p>
+                        ) : null}
+                      </Field>
+
+                      <Field label='Date'>
+                        <p className='whitespace-normal'>{dateLabel}</p>
+                        {timeLabel ? (
+                          <p className='mt-0.5 text-xs font-normal text-slate-500'>
+                            {timeLabel}
+                          </p>
+                        ) : null}
+                      </Field>
+
+                      <Field label='Assignment'>
+                        <span
+                          className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${
+                            viewer?.viewAssignedTo === 'fv_admin'
+                              ? 'primary-gradient text-white'
+                              : 'bg-slate-100 text-slate-700'
+                          }`}
+                        >
+                          {formatAssignment(viewer?.viewAssignedTo)}
+                        </span>
+                      </Field>
+
+                      <Field label='Status'>
+                        <span
+                          className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset ${viewingBookingStatusBadgeClass(
+                            viewer?.status,
+                          )}`}
+                        >
+                          {formatViewingBookingStatus(viewer?.status)}
+                        </span>
+                      </Field>
+
+                      <Field label='Under process'>
+                        <UnderProcessToggle
+                          checked={isViewingBookingUnderProcess(
+                            viewer?.status,
+                          )}
+                          disabled={togglingId === viewer?.uuid}
+                          onChange={() => handleToggleUnderProcess(viewer)}
+                        />
+                      </Field>
+
+                      <div className='flex items-end justify-start gap-1 lg:items-center lg:justify-end'>
+                        <button
+                          type='button'
+                          onClick={() => handleViewDetails(viewer?.uuid)}
+                          className='inline-flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:border-[#a2913e]/40 hover:bg-[#a2913e]/5 hover:text-[#002d4f]'
+                          title='View details'
+                          aria-label='View booking details'
+                        >
+                          <EyeIcon className='h-5 w-5' />
+                        </button>
+                        <button
+                          type='button'
+                          onClick={() => openDeleteDialog(viewer?.uuid)}
+                          className='inline-flex h-10 w-10 items-center justify-center rounded-lg border border-transparent text-[#a2913e] transition hover:bg-[#a2913e]/10 hover:text-[#002d4f]'
+                          title='Delete request'
+                          aria-label='Delete viewing request'
+                        >
+                          <DeleteIcon className='h-5 w-5' />
+                        </button>
+                      </div>
+                    </div>
+                  </article>
+                )
+              })}
+            </>
           )}
         </div>
       </section>
@@ -408,7 +367,7 @@ function TrusteeViewingRequest() {
             role='dialog'
             aria-modal='true'
             aria-labelledby='viewer-details-title'
-            className='relative w-full max-w-[595px] max-h-[min(85vh,841px)] overflow-y-auto rounded-xl border border-slate-200/90 bg-white shadow-2xl ring-1 ring-slate-900/10'
+            className='relative max-h-[min(85vh,841px)] w-full max-w-[595px] overflow-y-auto rounded-xl border border-slate-200/90 bg-white shadow-2xl ring-1 ring-slate-900/10'
           >
             <ViewerDetailsErrorBoundary onClose={handleClose}>
               <ViewerDetails
@@ -453,10 +412,21 @@ function TrusteeViewingRequest() {
               {pendingDeleteRequest ? (
                 <div className='mt-4 rounded-xl bg-slate-50 px-4 py-3 text-sm'>
                   <p className='font-medium text-slate-900'>
-                    {pendingDeleteRequest?.brokerId?.name || 'Broker'}
+                    {pendingDeleteRequest?.listingTitle ||
+                      pendingDeleteRequest?.productData?.title ||
+                      'Listing'}
                   </p>
                   <p className='mt-1 text-slate-600'>
-                    {formatDate(pendingDeleteRequest?.slotId?.date)}
+                    Buyer:{' '}
+                    {pendingDeleteRequest?.buyerName ||
+                      pendingDeleteRequest?.brokerId?.name ||
+                      '—'}
+                  </p>
+                  <p className='mt-1 text-slate-600'>
+                    {formatDate(
+                      pendingDeleteRequest?.date ||
+                        pendingDeleteRequest?.slotId?.date,
+                    )}
                     {pendingDeleteRequest?.timeSlot?.time
                       ? ` · ${pendingDeleteRequest.timeSlot.time}`
                       : ''}

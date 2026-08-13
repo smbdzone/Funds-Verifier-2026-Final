@@ -10,7 +10,11 @@ import Modal from '../../product-modal/modal'
 import CancelTransferModal from '@/components/Modals/CancelTransferModal'
 import TransferPaymentLinkModal from '@/components/Modals/TransferPaymentLinkModal'
 import customAxios from '../../../utils/apis/apis'
-import { getListingImageSrc } from '@/libs/listingCardMedia'
+import {
+  getListingImageSrc,
+  getListingVideoSrc,
+} from '@/libs/listingCardMedia'
+import { getListingAmenities } from '@/libs/listingAmenities'
 import { parseSlotTimeOnDate } from '@/libs/slotTimeFilters'
 import {
   formatTransactionPhase,
@@ -498,16 +502,47 @@ const ViewerDetails = ({ bookingId, handleClose }) => {
     return String(value)
   }
 
-  const pictures = viewerData?.productData?.pictures
-  const rawGalleryImages =
-    pictures?.images?.length > 0
-      ? pictures.images
-      : viewerData?.productData?.thumbnailImg?.images
-  const galleryImages = Array.isArray(rawGalleryImages) ? rawGalleryImages : []
+  const product = viewerData?.productData || {}
+  const galleryImages = (() => {
+    const items = []
+    const seen = new Set()
+    const push = (img) => {
+      const src = getListingImageSrc(img)
+      if (!src || src === '/listing/camera.svg' || seen.has(src)) return
+      seen.add(src)
+      items.push(img)
+    }
+    const thumbs = product?.thumbnailImg?.images
+    if (Array.isArray(thumbs)) thumbs.forEach(push)
+    const pics = product?.pictures?.images
+    if (Array.isArray(pics)) pics.forEach(push)
+    return items
+  })()
+  const videoItems = Array.isArray(product?.video?.videos)
+    ? product.video.videos
+        .map((v) => ({ src: getListingVideoSrc(v), key: v?.uuid || v?._id || v?.url }))
+        .filter((v) => v.src)
+    : []
+  const qrSrc = (() => {
+    const qr = product?.qrScan
+    if (!qr) return ''
+    if (Array.isArray(qr?.images) && qr.images.length) {
+      return getListingImageSrc(qr.images[0])
+    }
+    return getListingImageSrc(qr)
+  })()
+  const amenitiesList =
+    Array.isArray(product?.amenities) && product.amenities.length
+      ? product.amenities
+      : getListingAmenities(product)
   const broker = viewerData?.brokerId || {}
   const name = broker.name ?? ''
   const email = broker.email ?? ''
   const phone = broker.phone ?? broker.phoneNumber ?? ''
+  const assetHolder = viewerData?.assetHolder || {}
+  const sellerName = assetHolder.name ?? ''
+  const sellerEmail = assetHolder.email ?? ''
+  const sellerPhone = assetHolder.phone ?? assetHolder.phoneNumber ?? ''
   const transferDocuments = viewerData?.productData?.transferDocuments || {}
   const transferPhase =
     viewerData?.productData?.transactionPhase ||
@@ -533,7 +568,6 @@ const ViewerDetails = ({ bookingId, handleClose }) => {
   const hasPaymentProof = Boolean(transferDocuments.PaymentProof)
   const missingRecordedFee =
     hasTransferDocSubmitted && submittedSuccessFee <= 0 && !hasPaymentProof
-  const assetHolder = viewerData?.assetHolder || {}
   const isAssetHolderViewer =
     user?.role === 'AssetHolder' &&
     (assetHolder?._id === user?._id ||
@@ -565,21 +599,60 @@ const ViewerDetails = ({ bookingId, handleClose }) => {
           </h3>
           <div className='grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4'>
             {Array.isArray(viewerData?.productData?.fields)
-              ? viewerData.productData.fields.map((field, index) => (
-                <div key={`${field?.label || 'field'}-${index}`} className='flex flex-col'>
-                  <label className='mb-2 text-sm font-medium text-gray-700'>
-                    {field?.label || ''}
-                  </label>
-                  <input
-                    type='text'
-                    value={formatFieldValue(field?.value)}
-                    className='rounded-md border-2 border-[#8d7c3b] px-2 py-2 focus:outline-none'
-                    readOnly
-                  />
-                </div>
-              ))
+              ? viewerData.productData.fields.map((field, index) => {
+                const value = formatFieldValue(field?.value)
+                const label = field?.label || ''
+                const isLong =
+                  value.length > 36 ||
+                  /description|amenities|map url|title/i.test(label)
+                return (
+                  <div
+                    key={`${label || 'field'}-${index}`}
+                    className={`flex flex-col ${isLong ? 'sm:col-span-2' : ''}`}
+                  >
+                    <label className='mb-2 text-sm font-medium text-gray-700'>
+                      {label}
+                    </label>
+                    {isLong ? (
+                      <textarea
+                        value={value}
+                        rows={value.length > 80 ? 3 : 2}
+                        className='resize-none break-words whitespace-pre-wrap rounded-md border-2 border-[#8d7c3b] px-2 py-2 focus:outline-none'
+                        readOnly
+                      />
+                    ) : (
+                      <input
+                        type='text'
+                        value={value}
+                        className='rounded-md border-2 border-[#8d7c3b] px-2 py-2 focus:outline-none'
+                        readOnly
+                      />
+                    )}
+                  </div>
+                )
+              })
               : null}
           </div>
+        </div>
+
+        <div>
+          <h3 className='mb-3 text-sm font-bold uppercase tracking-wide text-[#a2913e]'>
+            Amenities
+          </h3>
+          {amenitiesList.length > 0 ? (
+            <div className='flex flex-wrap gap-2'>
+              {amenitiesList.map((item) => (
+                <span
+                  key={item}
+                  className='rounded-md border border-[#8d7c3b]/40 bg-[#f7f4ea] px-2.5 py-1 text-sm text-[#002d4f]'
+                >
+                  {item}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <p className='text-sm text-slate-500'>No amenities</p>
+          )}
         </div>
 
         <div>
@@ -588,11 +661,11 @@ const ViewerDetails = ({ bookingId, handleClose }) => {
           </h3>
           <div className='grid grid-cols-2 gap-3 sm:gap-4'>
             {galleryImages.length > 0 ? (
-              galleryImages.map((image) => (
+              galleryImages.map((image, index) => (
                 <img
-                  key={image?.uuid || image?._id || image?.url}
+                  key={image?.uuid || image?._id || image?.url || index}
                   src={getListingImageSrc(image)}
-                  alt={`Property Image ${image?.uuid}`}
+                  alt={`Property Image ${index + 1}`}
                   className='w-full h-40 object-cover rounded-md'
                 />
               ))
@@ -604,39 +677,115 @@ const ViewerDetails = ({ bookingId, handleClose }) => {
 
         <div>
           <h3 className='mb-3 text-sm font-bold uppercase tracking-wide text-[#a2913e]'>
-            Booking details
+            Video
+          </h3>
+          {videoItems.length > 0 ? (
+            <div className='grid grid-cols-1 gap-3 sm:grid-cols-2'>
+              {videoItems.map((video, index) => (
+                <video
+                  key={video.key || index}
+                  src={video.src}
+                  controls
+                  className='h-48 w-full rounded-md bg-black object-contain'
+                />
+              ))}
+            </div>
+          ) : (
+            <p className='text-sm text-slate-500'>No video</p>
+          )}
+        </div>
+
+        <div>
+          <h3 className='mb-3 text-sm font-bold uppercase tracking-wide text-[#a2913e]'>
+            QR code
+          </h3>
+          {qrSrc && qrSrc !== '/listing/camera.svg' ? (
+            <img
+              src={qrSrc}
+              alt='Listing QR code'
+              className='h-48 w-48 rounded-md border border-slate-200 object-contain bg-white p-2'
+            />
+          ) : (
+            <p className='text-sm text-slate-500'>No QR code</p>
+          )}
+        </div>
+
+        <div>
+          <h3 className='mb-3 text-sm font-bold uppercase tracking-wide text-[#a2913e]'>
+            Seller details
           </h3>
           <div className='grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4'>
+            <div className='flex flex-col sm:col-span-2'>
+              <label className='mb-2 text-sm font-medium text-gray-700'>
+                Seller Name
+              </label>
+              <textarea
+                value={sellerName || ''}
+                rows={2}
+                className='resize-none break-words whitespace-pre-wrap rounded-md border border-prussianBlue bg-white px-2 py-2 text-prussianBlue outline-none'
+                disabled
+              />
+            </div>
             <div className='flex flex-col'>
               <label className='mb-2 text-sm font-medium text-gray-700'>
-                Broker Name
+                Seller Email
+              </label>
+              <textarea
+                value={sellerEmail || ''}
+                rows={2}
+                className='resize-none break-all whitespace-pre-wrap rounded-md border border-prussianBlue bg-white px-2 py-2 text-prussianBlue outline-none'
+                disabled
+              />
+            </div>
+            <div className='flex flex-col'>
+              <label className='mb-2 text-sm font-medium text-gray-700'>
+                Seller Phone
               </label>
               <input
                 type='text'
+                value={sellerPhone || ''}
+                className='rounded-md border border-prussianBlue bg-white px-2 py-2 text-prussianBlue outline-none'
+                disabled
+              />
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h3 className='mb-3 text-sm font-bold uppercase tracking-wide text-[#a2913e]'>
+            Buyer details
+          </h3>
+          <div className='grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4'>
+            <div className='flex flex-col sm:col-span-2'>
+              <label className='mb-2 text-sm font-medium text-gray-700'>
+                Buyer Name
+              </label>
+              <textarea
                 value={name || ''}
-                className='bg-white py-2 px-2 rounded-md border text-prussianBlue border-prussianBlue outline-none'
+                rows={2}
+                className='resize-none break-words whitespace-pre-wrap rounded-md border border-prussianBlue bg-white px-2 py-2 text-prussianBlue outline-none'
                 disabled
               />
             </div>
             <div className='flex flex-col'>
               <label className='mb-2 text-sm font-medium text-gray-700'>
-                Broker Email
+                Buyer Email
               </label>
-              <input
-                type='text'
+              <textarea
                 value={email || ''}
-                className='bg-white py-2 px-2 rounded-md border text-prussianBlue border-prussianBlue outline-none'
+                rows={2}
+                className='resize-none break-all whitespace-pre-wrap rounded-md border border-prussianBlue bg-white px-2 py-2 text-prussianBlue outline-none'
                 disabled
               />
             </div>
             <div className='flex flex-col'>
               <label className='mb-2 text-sm font-medium text-gray-700'>
-                Broker Phone
+                Buyer Phone
               </label>
               <input
                 type='text'
                 value={phone || ''}
-                className='bg-white py-2 px-2 rounded-md border text-prussianBlue border-prussianBlue outline-none'
+                className='rounded-md border border-prussianBlue bg-white px-2 py-2 text-prussianBlue outline-none'
                 disabled
               />
             </div>

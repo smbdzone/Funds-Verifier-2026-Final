@@ -209,10 +209,10 @@ export default function Page() {
               <div className='min-w-0'>
                 <p className='text-gray-600 text-xs sm:text-sm'>Write Email</p>
                 <a
-                  href='mailto:outlook@fundsverifier.com'
+                  href='mailto:fvportal@outlook.com'
                   className='text-sm sm:text-base font-semibold text-blue hover:underline break-all'
                 >
-                  outlook@fundsverifier.com
+                  fvportal@outlook.com
                 </a>
               </div>
             </div>
