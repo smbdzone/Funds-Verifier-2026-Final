@@ -24,6 +24,33 @@ const resolveTrusteeFromListing = (product) => {
   )
 }
 
+/** Slim listing payload for /arrange-view/book — full off-plan docs can trip nginx/WAF 403. */
+function buildBookingProductPayload(product) {
+  if (!product || typeof product !== 'object') return product
+  const userUUID =
+    product.userUUID ||
+    product.assetHolderUUID ||
+    (typeof product.userId === 'string' ? product.userId : product.userId?.uuid) ||
+    ''
+  return {
+    uuid: product.uuid || '',
+    slug: product.slug || '',
+    title: product.title || '',
+    assetType: product.assetType || '',
+    userUUID,
+    trusteeUUID: resolveTrusteeFromListing(product) || '',
+    neighbourhood: product.neighbourhood || '',
+    city: product.city || '',
+    country: product.country || '',
+    phoneNumber: product.phoneNumber || '',
+    price: product.price ?? product.priceFrom ?? '',
+    priceFrom: product.priceFrom ?? '',
+    priceTo: product.priceTo ?? '',
+    developer: product.developer || '',
+    propertyType: product.propertyType || '',
+  }
+}
+
 const CalendarPopup = ({ onClose, productData }) => {
   const getTodayStart = () => {
     const today = new Date()
@@ -248,17 +275,19 @@ const CalendarPopup = ({ onClose, productData }) => {
         timeSlotId ||
         timeSlots.find((slot) => slot.time === selectedTime)?.uuid
 
+      const bookingProduct = buildBookingProductPayload(productData)
       const response = await customAxios.post(
         `${process.env.NEXT_PUBLIC_BASE_URL}/arrange-view/book`,
         {
           brokerId: `${user?.uuid}`,
           assetHolderId:
+            bookingProduct?.userUUID ||
             productData?.userUUID ||
             productData?.userId ||
             productData?.assetHolderUUID ||
             '',
           timeSlotId: activeTimeSlotId,
-          productData,
+          productData: bookingProduct,
         }
       )
       toast.success(response.data.message)
