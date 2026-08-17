@@ -47,7 +47,7 @@ const formatAssignment = (value) => {
 
 const Field = ({ label, children, className = '' }) => (
   <div className={`min-w-0 ${className}`}>
-    <p className='mb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500 xl:hidden'>
+    <p className='mb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500 lg:hidden'>
       {label}
     </p>
     <div className='text-sm font-medium text-[#002d4f]'>{children}</div>
@@ -76,7 +76,7 @@ const UnderProcessToggle = ({ checked, disabled, onChange }) => (
 
 /** Desktop row: listing + people + date + assignment + status + toggle + actions */
 const ROW_GRID =
-  'xl:grid-cols-[minmax(160px,1.4fr)_minmax(120px,1fr)_minmax(120px,1fr)_minmax(110px,0.9fr)_minmax(100px,0.75fr)_minmax(110px,0.85fr)_minmax(100px,0.75fr)_minmax(96px,96px)]'
+  'lg:grid-cols-[minmax(160px,1.4fr)_minmax(120px,1fr)_minmax(120px,1fr)_minmax(110px,0.9fr)_minmax(100px,0.75fr)_minmax(110px,0.85fr)_minmax(100px,0.75fr)_minmax(96px,96px)]'
 
 function TrusteeViewingRequest() {
   const [viewingRequests, setViewingRequests] = useState([])
@@ -221,7 +221,7 @@ function TrusteeViewingRequest() {
             <div className='overflow-x-auto'>
               <div className='min-w-[980px] space-y-3'>
                 <div
-                  className={`hidden items-center gap-3 rounded-xl bg-gradient-to-r from-[#eef4fa] via-[#e2ecf6] to-[#eef4fa] px-5 py-3 text-[11px] font-semibold uppercase tracking-wide text-[#002d4f] xl:grid ${ROW_GRID}`}
+                  className={`hidden items-center gap-3 rounded-xl bg-gradient-to-r from-[#eef4fa] via-[#e2ecf6] to-[#eef4fa] px-5 py-3 text-[11px] font-semibold uppercase tracking-wide text-[#002d4f] lg:grid ${ROW_GRID}`}
                 >
                   <span>Listing</span>
                   <span>Buyer</span>
@@ -253,7 +253,7 @@ function TrusteeViewingRequest() {
                       className='rounded-xl border border-slate-200 bg-white px-4 py-4 shadow-sm transition hover:border-[#a2913e]/40 hover:shadow-md sm:px-5'
                     >
                       <div
-                        className={`grid grid-cols-1 gap-4 sm:grid-cols-2 xl:items-center xl:gap-3 ${ROW_GRID}`}
+                        className={`grid grid-cols-1 gap-4 sm:grid-cols-2 lg:items-center lg:gap-3 ${ROW_GRID}`}
                       >
                         <Field label='Listing'>
                           <p className='break-words whitespace-normal leading-snug'>
@@ -330,11 +330,11 @@ function TrusteeViewingRequest() {
                           />
                         </Field>
 
-                        <div className='flex items-end justify-start gap-1 xl:items-center xl:justify-end'>
-                          <p className='mb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500 xl:hidden'>
+                        <div className='min-w-0'>
+                          <p className='mb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500 lg:hidden'>
                             Action
                           </p>
-                          <div className='flex gap-1'>
+                          <div className='flex gap-1 lg:justify-end'>
                             <button
                               type='button'
                               onClick={() => handleViewDetails(viewer?.uuid)}
