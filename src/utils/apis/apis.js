@@ -107,7 +107,8 @@ customAxios.interceptors.response.use(
     if (
       error.response.status === 401 &&
       (requestUrl.includes('/user/service-providers/') ||
-        requestUrl.includes('/notifications/'))
+        requestUrl.includes('/notifications/') ||
+        requestUrl.includes('/arrange-view/bookings'))
     ) {
       return Promise.reject(error)
     }
@@ -148,7 +149,8 @@ customAxios.interceptors.response.use(
         } else if (
           // Optional listing helpers — never wipe the session if these fail.
           requestUrl.includes('/user/service-providers/') ||
-          requestUrl.includes('/notifications/')
+          requestUrl.includes('/notifications/') ||
+          requestUrl.includes('/arrange-view/bookings')
         ) {
           /* keep session */
         } else {

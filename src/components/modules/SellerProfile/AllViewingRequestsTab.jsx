@@ -43,28 +43,50 @@ export const AllViewingRequestsTab = () => {
   const [viewingRequests, setViewingRequests] = useState([])
   const [openDetails, setOpenDetails] = useState(false)
   const [selectedBookingId, setSelectedBookingId] = useState(null)
+  const [loading, setLoading] = useState(true)
   const token = getTokenFromCookie()
 
   const fetchBookings = async () => {
+    setLoading(true)
     try {
       const response = await customAxios.get(
         `${process.env.NEXT_PUBLIC_BASE_URL}/arrange-view/bookings`,
       )
       setViewingRequests(Array.isArray(response.data) ? response.data : [])
     } catch {
+      setViewingRequests([])
       toast.error('Error fetching bookings.')
+    } finally {
+      setLoading(false)
     }
   }
 
   useEffect(() => {
     if (token) {
       fetchBookings()
+    } else {
+      setLoading(false)
+      setViewingRequests([])
     }
   }, [token])
+
+  useEffect(() => {
+    if (!openDetails) return undefined
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = prev
+    }
+  }, [openDetails])
 
   const handleViewDetails = (bookingId) => {
     setSelectedBookingId(bookingId)
     setOpenDetails(true)
+  }
+
+  const handleClose = () => {
+    setOpenDetails(false)
+    setSelectedBookingId(null)
   }
 
   return (
@@ -78,7 +100,13 @@ export const AllViewingRequestsTab = () => {
         </div>
 
         <div className='relative w-full py-5'>
-          {viewingRequests.length === 0 ? (
+          {loading ? (
+            <div className='flex h-40 items-center justify-center rounded-xl border border-slate-200'>
+              <p className='text-sm font-semibold text-slate-500 sm:text-lg'>
+                Loading viewing requests...
+              </p>
+            </div>
+          ) : viewingRequests.length === 0 ? (
             <div className='flex h-40 items-center justify-center rounded-xl border border-slate-200'>
               <h1 className='text-sm font-semibold sm:text-lg'>
                 No Requests Found!
@@ -150,11 +178,10 @@ export const AllViewingRequestsTab = () => {
 
                       <Field label='Assignment'>
                         <span
-                          className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${
-                            viewer?.viewAssignedTo === 'fv_admin'
-                              ? 'primary-gradient text-white'
-                              : 'bg-slate-100 text-slate-700'
-                          }`}
+                          className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${viewer?.viewAssignedTo === 'fv_admin'
+                            ? 'primary-gradient text-white'
+                            : 'bg-slate-100 text-slate-700'
+                            }`}
                         >
                           {formatAssignment(viewer?.viewAssignedTo)}
                         </span>
@@ -187,14 +214,27 @@ export const AllViewingRequestsTab = () => {
             </div>
           )}
 
-          {openDetails && (
-            <div className='fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50'>
-              <ViewerDetails
-                bookingId={selectedBookingId}
-                handleClose={() => setOpenDetails(false)}
-              />
+          {openDetails ? (
+            <div
+              className='fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-3 backdrop-blur-sm sm:p-6'
+              role='presentation'
+              onClick={(e) => {
+                if (e.target === e.currentTarget) handleClose()
+              }}
+            >
+              <div
+                role='dialog'
+                aria-modal='true'
+                aria-labelledby='viewer-details-title'
+                className='relative max-h-[min(90vh,920px)] w-full max-w-3xl overflow-y-auto rounded-2xl border border-slate-200/90 bg-white shadow-2xl ring-1 ring-slate-900/10'
+              >
+                <ViewerDetails
+                  bookingId={selectedBookingId}
+                  handleClose={handleClose}
+                />
+              </div>
             </div>
-          )}
+          ) : null}
         </div>
       </div>
     </div>

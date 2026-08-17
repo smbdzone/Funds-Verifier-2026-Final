@@ -503,6 +503,15 @@ const ViewerDetails = ({ bookingId, handleClose }) => {
   }
 
   const product = viewerData?.productData || {}
+  const listingTitle = product?.title || ''
+  const listingType = product?.assetType || ''
+  const listingPrice = product?.price
+  const assetFields = Array.isArray(product?.fields)
+    ? product.fields.filter((field) => {
+      const value = formatFieldValue(field?.value)
+      return value !== ''
+    })
+    : []
   const galleryImages = (() => {
     const items = []
     const seen = new Set()
@@ -520,8 +529,11 @@ const ViewerDetails = ({ bookingId, handleClose }) => {
   })()
   const videoItems = Array.isArray(product?.video?.videos)
     ? product.video.videos
-        .map((v) => ({ src: getListingVideoSrc(v), key: v?.uuid || v?._id || v?.url }))
-        .filter((v) => v.src)
+      .map((v) => ({
+        src: getListingVideoSrc(v),
+        key: v?.uuid || v?._id || v?.url,
+      }))
+      .filter((v) => v.src)
     : []
   const qrSrc = (() => {
     const qr = product?.qrScan
@@ -568,21 +580,91 @@ const ViewerDetails = ({ bookingId, handleClose }) => {
   const hasPaymentProof = Boolean(transferDocuments.PaymentProof)
   const missingRecordedFee =
     hasTransferDocSubmitted && submittedSuccessFee <= 0 && !hasPaymentProof
+  const isAssetHolderRole = user?.role === 'AssetHolder'
   const isAssetHolderViewer =
-    user?.role === 'AssetHolder' &&
+    isAssetHolderRole &&
     (assetHolder?._id === user?._id ||
       assetHolder?.uuid === user?.uuid ||
-      String(assetHolder?._id) === String(user?._id))
+      String(assetHolder?._id) === String(user?._id) ||
+      !assetHolder?._id)
+
+  const DetailBox = ({ label, value, wide = false, multiline = false }) => {
+    const text = value == null || value === '' ? '—' : String(value)
+    const useArea = multiline || text.length > 36
+    return (
+      <div className={`flex min-w-0 flex-col ${wide ? 'sm:col-span-2' : ''}`}>
+        <label className='mb-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500'>
+          {label}
+        </label>
+        {useArea ? (
+          <textarea
+            value={text}
+            rows={text.length > 80 ? 3 : 2}
+            className='resize-none break-words whitespace-pre-wrap rounded-lg border border-[#8d7c3b] bg-white px-3 py-2.5 text-sm text-[#002d4f] outline-none'
+            readOnly
+            disabled
+          />
+        ) : (
+          <input
+            type='text'
+            value={text}
+            className='rounded-lg border border-[#8d7c3b] bg-white px-3 py-2.5 text-sm text-[#002d4f] outline-none'
+            readOnly
+            disabled
+          />
+        )}
+      </div>
+    )
+  }
+
+  const buyerBlock = (
+    <div>
+      <h3 className='mb-3 text-sm font-bold uppercase tracking-wide text-[#a2913e]'>
+        Buyer details
+      </h3>
+      <div className='grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4'>
+        <DetailBox label='Buyer name' value={name} wide multiline />
+        <DetailBox label='Buyer email' value={email} multiline />
+        <DetailBox label='Buyer phone' value={phone} />
+      </div>
+    </div>
+  )
+
+  const sellerBlock = (
+    <div>
+      <h3 className='mb-3 text-sm font-bold uppercase tracking-wide text-[#a2913e]'>
+        Seller details
+      </h3>
+      <div className='grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4'>
+        <DetailBox label='Seller name' value={sellerName} wide multiline />
+        <DetailBox label='Seller email' value={sellerEmail} multiline />
+        <DetailBox label='Seller phone' value={sellerPhone} />
+      </div>
+    </div>
+  )
 
   return (
-    <div className='w-full bg-white'>
+    <div className='flex h-full w-full flex-col bg-white'>
       <div className='sticky top-0 z-10 flex items-start justify-between gap-3 border-b border-slate-200 bg-white px-4 py-3 sm:px-5'>
-        <h2
-          id='viewer-details-title'
-          className='pr-8 text-base font-bold leading-snug text-[#002d4f] sm:text-lg'
-        >
-          Booking &amp; asset details
-        </h2>
+        <div className='min-w-0 pr-2'>
+          <h2
+            id='viewer-details-title'
+            className='text-base font-bold leading-snug text-[#002d4f] sm:text-lg'
+          >
+            Booking &amp; asset details
+          </h2>
+          {listingTitle ? (
+            <p className='mt-1 break-words text-sm font-medium leading-snug text-slate-600'>
+              {listingTitle}
+              {listingType ? (
+                <span className='font-normal text-slate-500'>
+                  {' '}
+                  · {listingType}
+                </span>
+              ) : null}
+            </p>
+          ) : null}
+        </div>
         <button
           type='button'
           className='shrink-0 rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-[#002d4f] transition hover:bg-slate-50'
@@ -592,59 +674,62 @@ const ViewerDetails = ({ bookingId, handleClose }) => {
         </button>
       </div>
 
-      <div className='space-y-8 px-4 py-5 sm:px-5 sm:py-6'>
+      <div className='space-y-7 px-4 py-5 sm:px-5 sm:py-6'>
+        {/* Asset holders care most about who booked; show buyer first */}
+        {isAssetHolderRole ? buyerBlock : sellerBlock}
+
         <div>
           <h3 className='mb-3 text-sm font-bold uppercase tracking-wide text-[#a2913e]'>
             Asset details
           </h3>
           <div className='grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4'>
-            {Array.isArray(viewerData?.productData?.fields)
-              ? viewerData.productData.fields.map((field, index) => {
-                const value = formatFieldValue(field?.value)
-                const label = field?.label || ''
-                const isLong =
-                  value.length > 36 ||
-                  /description|amenities|map url|title/i.test(label)
-                return (
-                  <div
-                    key={`${label || 'field'}-${index}`}
-                    className={`flex flex-col ${isLong ? 'sm:col-span-2' : ''}`}
-                  >
-                    <label className='mb-2 text-sm font-medium text-gray-700'>
-                      {label}
-                    </label>
-                    {isLong ? (
-                      <textarea
-                        value={value}
-                        rows={value.length > 80 ? 3 : 2}
-                        className='resize-none break-words whitespace-pre-wrap rounded-md border-2 border-[#8d7c3b] px-2 py-2 focus:outline-none'
-                        readOnly
-                      />
-                    ) : (
-                      <input
-                        type='text'
-                        value={value}
-                        className='rounded-md border-2 border-[#8d7c3b] px-2 py-2 focus:outline-none'
-                        readOnly
-                      />
-                    )}
-                  </div>
-                )
-              })
-              : null}
+            {listingTitle ? (
+              <DetailBox label='Property / listing' value={listingTitle} wide multiline />
+            ) : null}
+            {listingType ? (
+              <DetailBox label='Asset type' value={listingType} />
+            ) : null}
+            {listingPrice != null && listingPrice !== '' ? (
+              <DetailBox label='Price' value={listingPrice} />
+            ) : null}
+            {assetFields.map((field, index) => {
+              const label = field?.label || `Field ${index + 1}`
+              const value = formatFieldValue(field?.value)
+              if (
+                /^(title|asset type|price)$/i.test(String(label).trim()) &&
+                (listingTitle || listingType || listingPrice != null)
+              ) {
+                return null
+              }
+              return (
+                <DetailBox
+                  key={`${label}-${index}`}
+                  label={label}
+                  value={value}
+                  wide={
+                    value.length > 36 ||
+                    /description|map url|title/i.test(label)
+                  }
+                  multiline={
+                    value.length > 36 ||
+                    /description|map url|title/i.test(label)
+                  }
+                />
+              )
+            })}
           </div>
         </div>
 
         <div>
           <h3 className='mb-3 text-sm font-bold uppercase tracking-wide text-[#a2913e]'>
-            Amenities
+            Amenities / facilities
           </h3>
           {amenitiesList.length > 0 ? (
             <div className='flex flex-wrap gap-2'>
               {amenitiesList.map((item) => (
                 <span
                   key={item}
-                  className='rounded-md border border-[#8d7c3b]/40 bg-[#f7f4ea] px-2.5 py-1 text-sm text-[#002d4f]'
+                  className='rounded-full border border-[#8d7c3b]/35 bg-[#f7f4ea] px-3 py-1.5 text-xs font-medium leading-snug text-[#002d4f] sm:text-sm'
                 >
                   {item}
                 </span>
@@ -659,15 +744,19 @@ const ViewerDetails = ({ bookingId, handleClose }) => {
           <h3 className='mb-3 text-sm font-bold uppercase tracking-wide text-[#a2913e]'>
             Images
           </h3>
-          <div className='grid grid-cols-2 gap-3 sm:gap-4'>
+          <div className='grid grid-cols-1 gap-3 sm:grid-cols-2'>
             {galleryImages.length > 0 ? (
               galleryImages.map((image, index) => (
-                <img
+                <div
                   key={image?.uuid || image?._id || image?.url || index}
-                  src={getListingImageSrc(image)}
-                  alt={`Property Image ${index + 1}`}
-                  className='w-full h-40 object-cover rounded-md'
-                />
+                  className='overflow-hidden rounded-xl border border-slate-200 bg-slate-50'
+                >
+                  <img
+                    src={getListingImageSrc(image)}
+                    alt={`Property Image ${index + 1}`}
+                    className='aspect-[4/3] w-full object-cover'
+                  />
+                </div>
               ))
             ) : (
               <p className='text-sm text-slate-500'>No images</p>
@@ -680,13 +769,13 @@ const ViewerDetails = ({ bookingId, handleClose }) => {
             Video
           </h3>
           {videoItems.length > 0 ? (
-            <div className='grid grid-cols-1 gap-3 sm:grid-cols-2'>
+            <div className='grid grid-cols-1 gap-3'>
               {videoItems.map((video, index) => (
                 <video
                   key={video.key || index}
                   src={video.src}
                   controls
-                  className='h-48 w-full rounded-md bg-black object-contain'
+                  className='aspect-video w-full rounded-xl bg-black object-contain'
                 />
               ))}
             </div>
@@ -703,94 +792,14 @@ const ViewerDetails = ({ bookingId, handleClose }) => {
             <img
               src={qrSrc}
               alt='Listing QR code'
-              className='h-48 w-48 rounded-md border border-slate-200 object-contain bg-white p-2'
+              className='h-44 w-44 rounded-xl border border-slate-200 bg-white object-contain p-3'
             />
           ) : (
             <p className='text-sm text-slate-500'>No QR code</p>
           )}
         </div>
 
-        <div>
-          <h3 className='mb-3 text-sm font-bold uppercase tracking-wide text-[#a2913e]'>
-            Seller details
-          </h3>
-          <div className='grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4'>
-            <div className='flex flex-col sm:col-span-2'>
-              <label className='mb-2 text-sm font-medium text-gray-700'>
-                Seller Name
-              </label>
-              <textarea
-                value={sellerName || ''}
-                rows={2}
-                className='resize-none break-words whitespace-pre-wrap rounded-md border border-prussianBlue bg-white px-2 py-2 text-prussianBlue outline-none'
-                disabled
-              />
-            </div>
-            <div className='flex flex-col'>
-              <label className='mb-2 text-sm font-medium text-gray-700'>
-                Seller Email
-              </label>
-              <textarea
-                value={sellerEmail || ''}
-                rows={2}
-                className='resize-none break-all whitespace-pre-wrap rounded-md border border-prussianBlue bg-white px-2 py-2 text-prussianBlue outline-none'
-                disabled
-              />
-            </div>
-            <div className='flex flex-col'>
-              <label className='mb-2 text-sm font-medium text-gray-700'>
-                Seller Phone
-              </label>
-              <input
-                type='text'
-                value={sellerPhone || ''}
-                className='rounded-md border border-prussianBlue bg-white px-2 py-2 text-prussianBlue outline-none'
-                disabled
-              />
-            </div>
-          </div>
-        </div>
-
-        <div>
-          <h3 className='mb-3 text-sm font-bold uppercase tracking-wide text-[#a2913e]'>
-            Buyer details
-          </h3>
-          <div className='grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4'>
-            <div className='flex flex-col sm:col-span-2'>
-              <label className='mb-2 text-sm font-medium text-gray-700'>
-                Buyer Name
-              </label>
-              <textarea
-                value={name || ''}
-                rows={2}
-                className='resize-none break-words whitespace-pre-wrap rounded-md border border-prussianBlue bg-white px-2 py-2 text-prussianBlue outline-none'
-                disabled
-              />
-            </div>
-            <div className='flex flex-col'>
-              <label className='mb-2 text-sm font-medium text-gray-700'>
-                Buyer Email
-              </label>
-              <textarea
-                value={email || ''}
-                rows={2}
-                className='resize-none break-all whitespace-pre-wrap rounded-md border border-prussianBlue bg-white px-2 py-2 text-prussianBlue outline-none'
-                disabled
-              />
-            </div>
-            <div className='flex flex-col'>
-              <label className='mb-2 text-sm font-medium text-gray-700'>
-                Buyer Phone
-              </label>
-              <input
-                type='text'
-                value={phone || ''}
-                className='rounded-md border border-prussianBlue bg-white px-2 py-2 text-prussianBlue outline-none'
-                disabled
-              />
-            </div>
-          </div>
-        </div>
+        {isAssetHolderRole ? sellerBlock : buyerBlock}
 
         <div className='flex flex-col gap-4 sm:flex-row sm:items-start'>
           <div className='min-w-0 flex-1'>
