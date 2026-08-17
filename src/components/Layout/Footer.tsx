@@ -213,11 +213,11 @@ const Footer = () => {
                 </li>
                 <li className='text-sm sm:text-base'>
                   <Link
-                    href='mailto:outlook@fundsverifier.com'
+                    href='mailto:fvportal@outlook.com'
                     className='flex gap-3'
                   >
                     <Mail className='h-5 w-5 shrink-0 text-[#b7a65f]' />
-                    outlook@fundsverifier.com
+                    fvportal@outlook.com
                   </Link>
                 </li>
                 <li className='text-sm sm:text-base'>
@@ -299,11 +299,11 @@ const Footer = () => {
                     </li>
                     <li>
                       <Link
-                        href='mailto:outlook@fundsverifier.com'
+                        href='mailto:fvportal@outlook.com'
                         className='flex gap-4'
                       >
                         <Mail className='h-5 w-5 text-[#b7a65f]' />
-                        outlook@fundsverifier.com
+                        fvportal@outlook.com
                       </Link>
                     </li>
                     <li>

@@ -166,7 +166,7 @@ export default function Footer() {
                 src={mail.src}
                 className="me-3  inline"
               />
-              outlook@fundsverifier.com
+              fvportal@outlook.com
             </p>
             <div className="flex flex-row items-start gap-2 justify-start mt-2">
               <Image
