@@ -8,27 +8,36 @@
   height: 46px !important;
   display: flex;
   align-items: center;
-  justify-content: center; /* Center the content */
+  justify-content: center;
+  /* Center the content */
 }
 
 .react-calendar__tile:disabled {
   background-color: white !important;
   cursor: not-allowed !important;
+  color: #c4c4c4 !important;
 }
 
-.react-calendar__tile--hasActive{
-  background-color: #8d7c3b !important;
-  color: white !important; 
+/* Dates the trustee opened with at least one free time */
+.react-calendar__tile.has-viewing-slot:enabled {
+  font-weight: 700 !important;
+  color: #8d7c3b !important;
 }
-.react-calendar__year-view__months__month:hover{
+
+.react-calendar__tile--hasActive {
+  background-color: #8d7c3b !important;
+  color: white !important;
+}
+
+.react-calendar__year-view__months__month:hover {
   background: none !important;
 }
 
-.react-calendar__year-view__months__month{
+.react-calendar__year-view__months__month {
   border-radius: 8px !important;
 }
 
-.react-calendar__year-view__months__month:hover{
+.react-calendar__year-view__months__month:hover {
   background: none !important;
 }
 
@@ -40,6 +49,7 @@
 .react-calendar__year-view__months__month {
   background-color: none !important;
 }
+
 .react-calendar__year-view__months__month:hover {
   background-color: #8d7c3b !important;
 }
@@ -49,7 +59,8 @@
   height: 46px !important;
   display: flex;
   align-items: center;
-  justify-content: center; /* Center the content */
+  justify-content: center;
+  /* Center the content */
 }
 
 /* Hover effect for tiles */
@@ -57,7 +68,8 @@
   border-radius: 10px !important;
   display: flex;
   align-items: center;
-  justify-content: center; /* Ensure content stays centered on hover */
+  justify-content: center;
+  /* Ensure content stays centered on hover */
 }
 
 .react-calendar__tile--now:hover {
@@ -81,7 +93,8 @@
   text-decoration: none;
   display: flex;
   align-items: center;
-  justify-content: center; /* Center weekdays text */
+  justify-content: center;
+  /* Center weekdays text */
 }
 
 /* Navigation label (month/year) */
@@ -91,7 +104,8 @@
   font-weight: 600 !important;
   display: flex;
   align-items: center;
-  justify-content: center; /* Center navigation label text */
+  justify-content: center;
+  /* Center navigation label text */
 }
 
 /* Year view month styling */
@@ -99,7 +113,8 @@
   border-radius: 12px !important;
   display: flex;
   align-items: center;
-  justify-content: center; /* Center content for month tiles */
+  justify-content: center;
+  /* Center content for month tiles */
 }
 
 /* Hover effect for year view months */
@@ -107,7 +122,8 @@
   color: white !important;
   display: flex;
   align-items: center;
-  justify-content: center; /* Keep content centered on hover */
+  justify-content: center;
+  /* Keep content centered on hover */
 }
 
 /* Navigation button hover effects */
@@ -122,14 +138,12 @@
 }
 
 /* Now tile hover effect */
-.react-calendar__tile
-  .react-calendar__tile--now
-  .react-calendar__tile--hasActive
-  .react-calendar__year-view__months__month:hover {
+.react-calendar__tile .react-calendar__tile--now .react-calendar__tile--hasActive .react-calendar__year-view__months__month:hover {
   border-radius: 12px !important;
   display: flex;
   align-items: center;
-  justify-content: center; /* Ensure center alignment */
+  justify-content: center;
+  /* Ensure center alignment */
 }
 
 .react-calendar__month-view__weekdays__weekday abbr {

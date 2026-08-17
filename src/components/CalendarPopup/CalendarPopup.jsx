@@ -69,6 +69,9 @@ const CalendarPopup = ({ onClose, productData }) => {
   /** While we ask the API for slots for the selected calendar day */
   const [fetchingSlots, setFetchingSlots] = useState(false)
   const [slotsFetchError, setSlotsFetchError] = useState(null)
+  /** YYYY-MM-DD dates that still have at least one open viewing time */
+  const [availableDates, setAvailableDates] = useState(() => new Set())
+  const [availableDatesLoading, setAvailableDatesLoading] = useState(false)
   const { user, isAuthenticated, loading } = useProfile()
   const pathname = usePathname()
   const router = useRouter()
@@ -104,6 +107,14 @@ const CalendarPopup = ({ onClose, productData }) => {
       date.getTime() - date.getTimezoneOffset() * 60000,
     )
     return correctedDate.toISOString().split('T')[0]
+  }
+
+  const parseApiDateLocal = (dateStr) => {
+    const [y, m, d] = String(dateStr || '')
+      .split('-')
+      .map((n) => Number(n))
+    if (!y || !m || !d) return null
+    return new Date(y, m - 1, d)
   }
 
   const loadTrustee = useCallback(async () => {
@@ -143,7 +154,7 @@ const CalendarPopup = ({ onClose, productData }) => {
   }, [isAuthenticated, loadTrustee, loading, user])
 
   const fetchAppointments = useCallback(async (date, ownerUUID) => {
-    if (!ownerUUID) return
+    if (!ownerUUID) return false
 
     setFetchingSlots(true)
     setSlotsFetchError(null)
@@ -172,6 +183,13 @@ const CalendarPopup = ({ onClose, productData }) => {
           return true
         }
       }
+      // Day has no bookable times — drop it from the selectable calendar set.
+      setAvailableDates((prev) => {
+        if (!prev.has(formattedDate)) return prev
+        const next = new Set(prev)
+        next.delete(formattedDate)
+        return next
+      })
       return false
     } catch (error) {
       console.error('Error fetching appointments:', error)
@@ -186,36 +204,60 @@ const CalendarPopup = ({ onClose, productData }) => {
     }
   }, [])
 
+  const loadAvailableDates = useCallback(async (ownerUUID) => {
+    if (!ownerUUID) {
+      setAvailableDates(new Set())
+      return []
+    }
+    setAvailableDatesLoading(true)
+    try {
+      const today = getTodayStart()
+      const response = await customAxios.get(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/arrange-view/slots/available-dates?userUUID=${ownerUUID}&fromDate=${formatApiDate(today)}`,
+      )
+      const dates = Array.isArray(response?.data?.dates)
+        ? response.data.dates
+        : []
+      setAvailableDates(new Set(dates))
+      return dates
+    } catch (error) {
+      console.error('Error loading available viewing dates:', error)
+      setAvailableDates(new Set())
+      return []
+    } finally {
+      setAvailableDatesLoading(false)
+    }
+  }, [])
+
   useEffect(() => {
     if (!trusteeUUID || trusteeLoading) return
 
     const boot = async () => {
-      const today = getTodayStart()
-      setSelectedDate(today)
-      const hasToday = await fetchAppointments(today, trusteeUUID)
-      if (hasToday) return
-
-      // Today may be empty — jump to the trustee's next open viewing day.
-      try {
-        const nextRes = await customAxios.get(
-          `${process.env.NEXT_PUBLIC_BASE_URL}/arrange-view/slots/next-available?userUUID=${trusteeUUID}&fromDate=${formatApiDate(today)}&slotCategory=viewing`,
-        )
-        const nextDateStr = nextRes?.data?.date
-        if (!nextDateStr) return
-        const [y, m, d] = String(nextDateStr)
-          .split('-')
-          .map((n) => Number(n))
-        if (!y || !m || !d) return
-        const nextDate = new Date(y, m - 1, d)
-        setSelectedDate(nextDate)
-        await fetchAppointments(nextDate, trusteeUUID)
-      } catch (error) {
-        console.error('Error loading next available viewing date:', error)
+      const dates = await loadAvailableDates(trusteeUUID)
+      if (!dates.length) {
+        setSelectedDate(getTodayStart())
+        setTimeSlots([])
+        return
       }
+
+      const firstDate = parseApiDateLocal(dates[0]) || getTodayStart()
+      setSelectedDate(firstDate)
+      await fetchAppointments(firstDate, trusteeUUID)
     }
 
     boot()
-  }, [trusteeUUID, trusteeLoading, fetchAppointments])
+  }, [trusteeUUID, trusteeLoading, fetchAppointments, loadAvailableDates])
+
+  const isDateSelectable = useCallback(
+    (date) => {
+      const today = getTodayStart()
+      const day = new Date(date)
+      day.setHours(0, 0, 0, 0)
+      if (day < today) return false
+      return availableDates.has(formatApiDate(day))
+    },
+    [availableDates],
+  )
 
   const formatDay = (date) => {
     const options = { weekday: 'long' }
@@ -265,7 +307,7 @@ const CalendarPopup = ({ onClose, productData }) => {
       })
 
       // Update the slot status
-      const res = await customAxios.put(
+      await customAxios.put(
         `${process.env.NEXT_PUBLIC_BASE_URL}/arrange-view/timeslot/update/${selectedTimeSlotId}`,
         { timeSlots: newUpdatedSlot }
       )
@@ -309,6 +351,10 @@ const CalendarPopup = ({ onClose, productData }) => {
 
   if (loading || !isAuthenticated || !user || ownsListing) return null
 
+  const bookableTimes = getBookableSlotsForDate(timeSlots, selectedDate)
+  const scheduleLoading =
+    trusteeLoading || availableDatesLoading || fetchingSlots
+
   return (
     <>
       <div className='fixed inset-0 flex  items-center justify-center z-50 bg-black bg-opacity-50'>
@@ -344,14 +390,14 @@ const CalendarPopup = ({ onClose, productData }) => {
                 </div>
               </div>
               <div className='flex min-h-[120px] flex-col items-center justify-center gap-2 px-2'>
-                {trusteeLoading || fetchingSlots ? (
+                {scheduleLoading ? (
                   <div className='flex flex-col items-center gap-2 text-center text-white'>
                     <span
                       className='inline-block h-8 w-8 animate-spin rounded-full border-2 border-white border-t-transparent'
                       aria-hidden
                     />
                     <p className='text-sm font-medium leading-snug'>
-                      {trusteeLoading
+                      {trusteeLoading || availableDatesLoading
                         ? 'Loading trustee schedule…'
                         : 'Checking this date…'}
                     </p>
@@ -368,7 +414,12 @@ const CalendarPopup = ({ onClose, productData }) => {
                   <p className='max-w-[220px] text-center text-sm text-white'>
                     Could not load this date. Pick another day or try again.
                   </p>
-                ) : getBookableSlotsForDate(timeSlots, selectedDate).length > 0 ? (
+                ) : availableDates.size === 0 ? (
+                  <p className='max-w-[220px] text-center text-sm leading-relaxed text-white'>
+                    No viewing dates are open yet. Only days with trustee time
+                    slots appear on the calendar.
+                  </p>
+                ) : bookableTimes.length > 0 ? (
                   <>
                     <select
                       value={selectedTime}
@@ -383,16 +434,14 @@ const CalendarPopup = ({ onClose, productData }) => {
                       }}
                       className='mt-2 max-w-[220px] cursor-pointer rounded-[4px] bg-[#FFFFFF] px-3 py-2 text-[#8D7C3B]'
                     >
-                      {getBookableSlotsForDate(timeSlots, selectedDate).map(
-                        (slot) => (
-                          <option
-                            key={slot.uuid || slot.time}
-                            value={slot.time}
-                          >
-                            {slot.time}
-                          </option>
-                        ),
-                      )}
+                      {bookableTimes.map((slot) => (
+                        <option
+                          key={slot.uuid || slot.time}
+                          value={slot.time}
+                        >
+                          {slot.time}
+                        </option>
+                      ))}
                     </select>
                     <button
                       type='button'
@@ -411,11 +460,19 @@ const CalendarPopup = ({ onClose, productData }) => {
             <div className='flex-grow relative'>
               <Calendar
                 onChange={(date) => {
+                  if (!isDateSelectable(date)) return
                   setSelectedDate(date)
                   if (trusteeUUID) fetchAppointments(date, trusteeUUID)
                 }}
                 value={selectedDate}
                 minDate={getTodayStart()}
+                tileDisabled={({ date, view }) =>
+                  view === 'month' ? !isDateSelectable(date) : false
+                }
+                tileClassName={({ date, view }) => {
+                  if (view !== 'month') return null
+                  return isDateSelectable(date) ? 'has-viewing-slot' : null
+                }}
                 className='w-full h-full sm:rounded-tl-[24px] sm:rounded-bl-[24px] rounded-2xl arrange_viewing'
               />
               <button
