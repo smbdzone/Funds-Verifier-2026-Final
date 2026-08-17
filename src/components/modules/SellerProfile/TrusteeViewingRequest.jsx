@@ -45,12 +45,12 @@ const formatAssignment = (value) => {
   return 'Trustee'
 }
 
-const Field = ({ label, children }) => (
-  <div className='min-w-0'>
-    <p className='text-[11px] font-semibold uppercase tracking-wide text-slate-500'>
+const Field = ({ label, children, className = '' }) => (
+  <div className={`min-w-0 ${className}`}>
+    <p className='mb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500 xl:hidden'>
       {label}
     </p>
-    <div className='mt-1 text-sm font-medium text-[#002d4f]'>{children}</div>
+    <div className='text-sm font-medium text-[#002d4f]'>{children}</div>
   </div>
 )
 
@@ -74,9 +74,9 @@ const UnderProcessToggle = ({ checked, disabled, onChange }) => (
   </button>
 )
 
-/** Same card columns as Super Admin, plus Under process for trustee. */
-const CARD_COLS =
-  'lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,0.85fr)_minmax(0,0.85fr)_minmax(0,0.95fr)_110px]'
+/** Desktop row: listing + people + date + assignment + status + toggle + actions */
+const ROW_GRID =
+  'xl:grid-cols-[minmax(160px,1.4fr)_minmax(120px,1fr)_minmax(120px,1fr)_minmax(110px,0.9fr)_minmax(100px,0.75fr)_minmax(110px,0.85fr)_minmax(100px,0.75fr)_minmax(96px,96px)]'
 
 function TrusteeViewingRequest() {
   const [viewingRequests, setViewingRequests] = useState([])
@@ -218,142 +218,149 @@ function TrusteeViewingRequest() {
               </p>
             </div>
           ) : (
-            <>
-              <div
-                className={`hidden items-center gap-4 rounded-xl bg-gradient-to-r from-[#eef4fa] via-[#e2ecf6] to-[#eef4fa] px-5 py-3 text-[11px] font-semibold uppercase tracking-wide text-[#002d4f] lg:grid ${CARD_COLS}`}
-              >
-                <span>Listing</span>
-                <span>Buyer</span>
-                <span>Seller</span>
-                <span>Date</span>
-                <span>Assignment</span>
-                <span>Status</span>
-                <span>Under process</span>
-                <span className='text-right'>Action</span>
-              </div>
+            <div className='overflow-x-auto'>
+              <div className='min-w-[980px] space-y-3'>
+                <div
+                  className={`hidden items-center gap-3 rounded-xl bg-gradient-to-r from-[#eef4fa] via-[#e2ecf6] to-[#eef4fa] px-5 py-3 text-[11px] font-semibold uppercase tracking-wide text-[#002d4f] xl:grid ${ROW_GRID}`}
+                >
+                  <span>Listing</span>
+                  <span>Buyer</span>
+                  <span>Seller</span>
+                  <span>Date</span>
+                  <span>Assignment</span>
+                  <span>Status</span>
+                  <span>Under process</span>
+                  <span className='text-right'>Action</span>
+                </div>
 
-              {viewingRequests.map((viewer) => {
-                const listingName =
-                  viewer?.listingTitle ||
-                  viewer?.productData?.title ||
-                  '—'
-                const buyerName =
-                  viewer?.buyerName || viewer?.brokerId?.name || '—'
-                const sellerName =
-                  viewer?.sellerName || viewer?.assetHolder?.name || '—'
-                const dateLabel = formatDate(
-                  viewer?.date || viewer?.slotId?.date,
-                )
-                const timeLabel = viewer?.timeSlot?.time || ''
+                {viewingRequests.map((viewer) => {
+                  const listingName =
+                    viewer?.listingTitle ||
+                    viewer?.productData?.title ||
+                    '—'
+                  const buyerName =
+                    viewer?.buyerName || viewer?.brokerId?.name || '—'
+                  const sellerName =
+                    viewer?.sellerName || viewer?.assetHolder?.name || '—'
+                  const dateLabel = formatDate(
+                    viewer?.date || viewer?.slotId?.date,
+                  )
+                  const timeLabel = viewer?.timeSlot?.time || ''
 
-                return (
-                  <article
-                    key={viewer?.uuid}
-                    className='rounded-xl border border-slate-200 bg-white px-4 py-4 shadow-sm transition hover:border-[#a2913e]/40 hover:shadow-md sm:px-5'
-                  >
-                    <div
-                      className={`grid grid-cols-1 gap-4 sm:grid-cols-2 lg:items-center lg:gap-4 ${CARD_COLS}`}
+                  return (
+                    <article
+                      key={viewer?.uuid}
+                      className='rounded-xl border border-slate-200 bg-white px-4 py-4 shadow-sm transition hover:border-[#a2913e]/40 hover:shadow-md sm:px-5'
                     >
-                      <Field label='Listing'>
-                        <p className='break-words whitespace-normal leading-snug'>
-                          {listingName}
-                        </p>
-                        {viewer?.assetType ? (
-                          <p className='mt-0.5 break-words text-xs font-normal text-slate-500'>
-                            {viewer.assetType}
+                      <div
+                        className={`grid grid-cols-1 gap-4 sm:grid-cols-2 xl:items-center xl:gap-3 ${ROW_GRID}`}
+                      >
+                        <Field label='Listing'>
+                          <p className='break-words whitespace-normal leading-snug'>
+                            {listingName}
                           </p>
-                        ) : null}
-                      </Field>
+                          {viewer?.assetType ? (
+                            <p className='mt-0.5 break-words text-xs font-normal text-slate-500'>
+                              {viewer.assetType}
+                            </p>
+                          ) : null}
+                        </Field>
 
-                      <Field label='Buyer'>
-                        <p className='break-words whitespace-normal leading-snug'>
-                          {buyerName}
-                        </p>
-                        {viewer?.buyerEmail || viewer?.brokerId?.email ? (
-                          <p className='mt-0.5 break-all text-xs font-normal text-slate-500'>
-                            {viewer?.buyerEmail || viewer?.brokerId?.email}
+                        <Field label='Buyer'>
+                          <p className='break-words whitespace-normal leading-snug'>
+                            {buyerName}
                           </p>
-                        ) : null}
-                      </Field>
+                          {viewer?.buyerEmail || viewer?.brokerId?.email ? (
+                            <p className='mt-0.5 break-all text-xs font-normal text-slate-500'>
+                              {viewer?.buyerEmail || viewer?.brokerId?.email}
+                            </p>
+                          ) : null}
+                        </Field>
 
-                      <Field label='Seller'>
-                        <p className='break-words whitespace-normal leading-snug'>
-                          {sellerName}
-                        </p>
-                        {viewer?.sellerEmail || viewer?.assetHolder?.email ? (
-                          <p className='mt-0.5 break-all text-xs font-normal text-slate-500'>
-                            {viewer?.sellerEmail ||
-                              viewer?.assetHolder?.email}
+                        <Field label='Seller'>
+                          <p className='break-words whitespace-normal leading-snug'>
+                            {sellerName}
                           </p>
-                        ) : null}
-                      </Field>
+                          {viewer?.sellerEmail || viewer?.assetHolder?.email ? (
+                            <p className='mt-0.5 break-all text-xs font-normal text-slate-500'>
+                              {viewer?.sellerEmail ||
+                                viewer?.assetHolder?.email}
+                            </p>
+                          ) : null}
+                        </Field>
 
-                      <Field label='Date'>
-                        <p className='whitespace-normal'>{dateLabel}</p>
-                        {timeLabel ? (
-                          <p className='mt-0.5 text-xs font-normal text-slate-500'>
-                            {timeLabel}
+                        <Field label='Date'>
+                          <p className='whitespace-normal'>{dateLabel}</p>
+                          {timeLabel ? (
+                            <p className='mt-0.5 text-xs font-normal text-slate-500'>
+                              {timeLabel}
+                            </p>
+                          ) : null}
+                        </Field>
+
+                        <Field label='Assignment'>
+                          <span
+                            className={`inline-flex max-w-full rounded-full px-2.5 py-1 text-xs font-semibold ${
+                              viewer?.viewAssignedTo === 'fv_admin'
+                                ? 'primary-gradient text-white'
+                                : 'bg-slate-100 text-slate-700'
+                            }`}
+                          >
+                            {formatAssignment(viewer?.viewAssignedTo)}
+                          </span>
+                        </Field>
+
+                        <Field label='Status'>
+                          <span
+                            className={`inline-flex max-w-full items-center rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset ${viewingBookingStatusBadgeClass(
+                              viewer?.status,
+                            )}`}
+                          >
+                            {formatViewingBookingStatus(viewer?.status)}
+                          </span>
+                        </Field>
+
+                        <Field label='Under process'>
+                          <UnderProcessToggle
+                            checked={isViewingBookingUnderProcess(
+                              viewer?.status,
+                            )}
+                            disabled={togglingId === viewer?.uuid}
+                            onChange={() => handleToggleUnderProcess(viewer)}
+                          />
+                        </Field>
+
+                        <div className='flex items-end justify-start gap-1 xl:items-center xl:justify-end'>
+                          <p className='mb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500 xl:hidden'>
+                            Action
                           </p>
-                        ) : null}
-                      </Field>
-
-                      <Field label='Assignment'>
-                        <span
-                          className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${
-                            viewer?.viewAssignedTo === 'fv_admin'
-                              ? 'primary-gradient text-white'
-                              : 'bg-slate-100 text-slate-700'
-                          }`}
-                        >
-                          {formatAssignment(viewer?.viewAssignedTo)}
-                        </span>
-                      </Field>
-
-                      <Field label='Status'>
-                        <span
-                          className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset ${viewingBookingStatusBadgeClass(
-                            viewer?.status,
-                          )}`}
-                        >
-                          {formatViewingBookingStatus(viewer?.status)}
-                        </span>
-                      </Field>
-
-                      <Field label='Under process'>
-                        <UnderProcessToggle
-                          checked={isViewingBookingUnderProcess(
-                            viewer?.status,
-                          )}
-                          disabled={togglingId === viewer?.uuid}
-                          onChange={() => handleToggleUnderProcess(viewer)}
-                        />
-                      </Field>
-
-                      <div className='flex items-end justify-start gap-1 lg:items-center lg:justify-end'>
-                        <button
-                          type='button'
-                          onClick={() => handleViewDetails(viewer?.uuid)}
-                          className='inline-flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:border-[#a2913e]/40 hover:bg-[#a2913e]/5 hover:text-[#002d4f]'
-                          title='View details'
-                          aria-label='View booking details'
-                        >
-                          <EyeIcon className='h-5 w-5' />
-                        </button>
-                        <button
-                          type='button'
-                          onClick={() => openDeleteDialog(viewer?.uuid)}
-                          className='inline-flex h-10 w-10 items-center justify-center rounded-lg border border-transparent text-[#a2913e] transition hover:bg-[#a2913e]/10 hover:text-[#002d4f]'
-                          title='Delete request'
-                          aria-label='Delete viewing request'
-                        >
-                          <DeleteIcon className='h-5 w-5' />
-                        </button>
+                          <div className='flex gap-1'>
+                            <button
+                              type='button'
+                              onClick={() => handleViewDetails(viewer?.uuid)}
+                              className='inline-flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:border-[#a2913e]/40 hover:bg-[#a2913e]/5 hover:text-[#002d4f]'
+                              title='View details'
+                              aria-label='View booking details'
+                            >
+                              <EyeIcon className='h-5 w-5' />
+                            </button>
+                            <button
+                              type='button'
+                              onClick={() => openDeleteDialog(viewer?.uuid)}
+                              className='inline-flex h-10 w-10 items-center justify-center rounded-lg border border-transparent text-[#a2913e] transition hover:bg-[#a2913e]/10 hover:text-[#002d4f]'
+                              title='Delete request'
+                              aria-label='Delete viewing request'
+                            >
+                              <DeleteIcon className='h-5 w-5' />
+                            </button>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </article>
-                )
-              })}
-            </>
+                    </article>
+                  )
+                })}
+              </div>
+            </div>
           )}
         </div>
       </section>
