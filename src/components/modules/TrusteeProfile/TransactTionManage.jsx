@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Disclosure } from '@headlessui/react'
 import { OpenDisclosure, CloseDisclosure } from '@/components/Icons'
@@ -9,6 +9,9 @@ import {
   formatTransactionPhase,
   transactionPhaseBadgeClass,
 } from '@/libs/transactionPhase'
+import EvaluationActionDropdown, {
+  evaluationMenuItemClass,
+} from '@/components/modules/EvaluatorProfile/requestCompoenets/EvaluationActionDropdown'
 
 const formatViewing = (row) => {
   if (!row?.viewingDate) return '—'
@@ -25,8 +28,24 @@ export const TransactionMange = ({
   onView,
   onRefresh,
 }) => {
-  const [show, setShow] = useState(-1)
+  const [openDropdown, setOpenDropdown] = useState(null)
+  const menuAnchorRef = useRef(null)
   const router = useRouter()
+
+  const closeActionMenu = () => {
+    setOpenDropdown(null)
+    menuAnchorRef.current = null
+  }
+
+  const toggleActionMenu = (event, bookingUuid) => {
+    event.stopPropagation()
+    if (openDropdown === bookingUuid) {
+      closeActionMenu()
+      return
+    }
+    menuAnchorRef.current = event.currentTarget
+    setOpenDropdown(bookingUuid)
+  }
 
   const handleDepositClick = (row) => {
     router.push(`/trustee/transaction/${row.bookingUuid}`)
@@ -99,7 +118,7 @@ export const TransactionMange = ({
                           </td>
                         </tr>
                       ) : (
-                        transactions.map((row, i) => (
+                        transactions.map((row) => (
                           <tr
                             key={row.bookingUuid}
                             className='border-t border-gray-200 hover:bg-gray-50'
@@ -165,16 +184,15 @@ export const TransactionMange = ({
                                   : null}
                               </div>
                             </td>
-                            <td className='py-2 px-2 relative'>
+                            <td className='py-2 px-2'>
                               <button
                                 type='button'
-                                onClick={() =>
-                                  setShow((current) =>
-                                    current === i ? -1 : i,
-                                  )
+                                onClick={(e) =>
+                                  toggleActionMenu(e, row.bookingUuid)
                                 }
                                 className='bg-gray-200 px-3 py-1.5 rounded hover:bg-gray-300'
                                 aria-label='Transaction actions'
+                                aria-expanded={openDropdown === row.bookingUuid}
                               >
                                 <svg
                                   xmlns='http://www.w3.org/2000/svg'
@@ -186,51 +204,48 @@ export const TransactionMange = ({
                                   <path d='M12 7a2 2 0 110-4 2 2 0 010 4zm0 7a2 2 0 110-4 2 2 0 010 4zm0 7a2 2 0 110-4 2 2 0 010 4z' />
                                 </svg>
                               </button>
-                              {show === i ? (
-                                <ul
-                                  onMouseLeave={() => setShow(-1)}
-                                  className='absolute right-0 bg-white border z-20 rounded shadow w-48 mt-1 text-sm'
+                              <EvaluationActionDropdown
+                                open={openDropdown === row.bookingUuid}
+                                onClose={closeActionMenu}
+                                anchorRef={menuAnchorRef}
+                                className='w-56 min-w-[14rem]'
+                              >
+                                <button
+                                  type='button'
+                                  role='menuitem'
+                                  className={evaluationMenuItemClass}
+                                  onClick={() => {
+                                    closeActionMenu()
+                                    onView?.(row.bookingUuid)
+                                  }}
                                 >
-                                  <li>
-                                    <button
-                                      type='button'
-                                      className='w-full px-4 py-2 text-left hover:bg-gray-50'
-                                      onClick={() => {
-                                        setShow(-1)
-                                        onView?.(row.bookingUuid)
-                                      }}
-                                    >
-                                      Manage transfer &amp; fee
-                                    </button>
-                                  </li>
-                                  <li>
-                                    <button
-                                      type='button'
-                                      className='w-full px-4 py-2 text-left hover:bg-gray-50'
-                                      onClick={() => {
-                                        setShow(-1)
-                                        handleDepositClick(row)
-                                      }}
-                                    >
-                                      Upload deposit receipt
-                                    </button>
-                                  </li>
-                                  {onRefresh ? (
-                                    <li>
-                                      <button
-                                        type='button'
-                                        className='w-full px-4 py-2 text-left hover:bg-gray-50'
-                                        onClick={() => {
-                                          setShow(-1)
-                                          onRefresh()
-                                        }}
-                                      >
-                                        Refresh
-                                      </button>
-                                    </li>
-                                  ) : null}
-                                </ul>
-                              ) : null}
+                                  Manage transfer &amp; fee
+                                </button>
+                                <button
+                                  type='button'
+                                  role='menuitem'
+                                  className={evaluationMenuItemClass}
+                                  onClick={() => {
+                                    closeActionMenu()
+                                    handleDepositClick(row)
+                                  }}
+                                >
+                                  Upload deposit receipt
+                                </button>
+                                {onRefresh ? (
+                                  <button
+                                    type='button'
+                                    role='menuitem'
+                                    className={evaluationMenuItemClass}
+                                    onClick={() => {
+                                      closeActionMenu()
+                                      onRefresh()
+                                    }}
+                                  >
+                                    Refresh
+                                  </button>
+                                ) : null}
+                              </EvaluationActionDropdown>
                             </td>
                           </tr>
                         ))
