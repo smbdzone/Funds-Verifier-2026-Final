@@ -71,6 +71,7 @@ export const ImageUploadComponent = React.memo(
     handleImageChange,
     images,
     handleImageRemove,
+    handleImageReorder,
     videos,
     handleVideoChange,
     handleVideoRemove,
@@ -277,6 +278,7 @@ export const ImageUploadComponent = React.memo(
               <ListingMultipleImageComponent
                 images={images}
                 handleImageRemove={handleImageRemove}
+                handleImageReorder={handleImageReorder}
                 handleImageChange={handleImageChange}
                 errors={errors.pictures && images.length === 0}
                 errorMessage={errors.pictures}
@@ -572,6 +574,7 @@ export const ImageUploadComponent = React.memo(
               <ListingMultipleImageComponent
                 images={images}
                 handleImageRemove={handleImageRemove}
+                handleImageReorder={handleImageReorder}
                 handleImageChange={handleImageChange}
                 errors={errors.pictures && images.length === 0}
                 errorMessage={errors.pictures}

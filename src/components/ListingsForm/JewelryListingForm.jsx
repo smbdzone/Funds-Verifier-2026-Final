@@ -59,6 +59,7 @@ const JewelryListingForm = ({
   images,
   videos,
   handleImageRemove,
+  handleImageReorder,
   handleImageChange,
   handleVideoRemove,
   handleVideoChange,
@@ -235,6 +236,7 @@ const JewelryListingForm = ({
             <ListingMultipleImageComponent
               images={images}
               handleImageRemove={handleImageRemove}
+              handleImageReorder={handleImageReorder}
               handleImageChange={handleImageChange}
               errors={errors.pictures && images.length === 0}
               errorMessage={errors.pictures}

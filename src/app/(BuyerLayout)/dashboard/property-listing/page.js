@@ -14,6 +14,7 @@ import {
   handleVideoUpload,
   handleFileUpload,
   handleThumbnailUpload,
+  persistListingGalleryOrder,
 } from '@/libs/uploadAsset'
 import { toast, ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
@@ -64,6 +65,7 @@ import {
   listingCertificateRef,
   premiumServiceRequestId,
   stripEmptyObjectIdRefs,
+  sanitizeAssetHolderUpdatePayload,
 } from '@/libs/listingMediaRef'
 import {
   hasConfirmedEvaluationPayment,
@@ -163,6 +165,7 @@ const Page = () => {
     handleImageChange,
     images,
     handleImageRemove,
+    handleImageReorder,
     fileInputRef,
     isModalOpen,
     handleCloseModal,
@@ -909,8 +912,11 @@ const Page = () => {
           await bookEvaluationTimeslotFromFormData(formData)
         }
 
-        const listingPayload = stripEmptyObjectIdRefs(
-          stripEvaluationBookingMeta(updatedFormData),
+        const listingPayload = sanitizeAssetHolderUpdatePayload(
+          stripEmptyObjectIdRefs(
+            stripEvaluationBookingMeta(updatedFormData),
+          ),
+          formData,
         )
 
         // After evaluator approval, only send fields the asset holder may
@@ -924,6 +930,7 @@ const Page = () => {
             : listingPayload
 
         if (id) {
+          await persistListingGalleryOrder(formData?.pictures, images)
           requests.push(
             customAxios.put(
               `${process.env.NEXT_PUBLIC_BASE_URL}/property/${id}`,
@@ -1118,7 +1125,7 @@ const Page = () => {
     } else {
       const sizeValue =
         sizeUnit === 'SQM' ? data.sizeSQM : data.sizeSQFT
-      if (!String(sizeValue || '').trim()) {
+      if (sizeValue == null || String(sizeValue).trim() === '') {
         errors.sizeSQFT = 'Size is required'
       }
     }
@@ -1204,12 +1211,13 @@ const Page = () => {
 
   const isValidNumber = (value) => {
     setPhoneNumber(value)
-    if (value) {
-      setIsValid(isValidPhoneNumber(value))
-    } else {
+    if (!value) {
       setIsValid(true)
+      return true
     }
-    return phoneNumber
+    const ok = isValidPhoneNumber(value)
+    setIsValid(ok)
+    return ok
   }
 
   const validateField = (name, value) => {
@@ -1377,6 +1385,7 @@ const Page = () => {
                 handleImageChange={handleImageChange}
                 images={images}
                 handleImageRemove={handleImageRemove}
+                handleImageReorder={handleImageReorder}
                 fileInputRef={fileInputRef}
                 isModalOpen={isModalOpen}
                 handleCloseModal={handleCloseModal}

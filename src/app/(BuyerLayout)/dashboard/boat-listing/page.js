@@ -5,6 +5,7 @@ import {
   handleImageUpload,
   handleThumbnailUpload,
   handleVideoUpload,
+  persistListingGalleryOrder,
 } from '@/libs/uploadAsset'
 import { autoCapitalizeField } from '@/libs/autoCapitalizeText'
 import { flagListingPendingApprovalNotice } from '@/libs/listingPendingApprovalNotice'
@@ -13,6 +14,7 @@ import {
   listingMediaRef,
   premiumServiceRequestId,
   stripEmptyObjectIdRefs,
+  sanitizeAssetHolderUpdatePayload,
 } from '@/libs/listingMediaRef'
 import {
   isListingEvaluatorApprovedLocked,
@@ -165,6 +167,7 @@ function Page() {
     handleImageChange,
     images,
     handleImageRemove,
+    handleImageReorder,
     fileInputRef,
     isModalOpen,
     handleCloseModal,
@@ -342,7 +345,7 @@ function Page() {
     if (!data.seats.trim()) {
       errors.seats = 'Usage is required'
     }
-    if (!data?.warrenty && !data?.warrenty?.trim()) {
+    if (!data?.warrenty && !data?.warranty) {
       errors.warrenty = 'Warrenty is required'
     }
     if (!data.length.trim()) {
@@ -660,7 +663,6 @@ function Page() {
           listingMediaRef(thumbnail) ??
           listingMediaRef(formData?.thumbnailImg),
         qrScan: listingMediaRef(qrScanID) ?? listingMediaRef(qrScan) ?? listingMediaRef(formData?.qrScan),
-        feedback: 'feedback',
       }
 
       applyPremiumServiceRefs(updatedFormData, formData, {
@@ -668,8 +670,11 @@ function Page() {
         technicalReportID,
       })
 
-      const listingPayload = stripEmptyObjectIdRefs(
-        stripEvaluationBookingMeta(updatedFormData),
+      const listingPayload = sanitizeAssetHolderUpdatePayload(
+        stripEmptyObjectIdRefs(
+          stripEvaluationBookingMeta(updatedFormData),
+        ),
+        formData,
       )
       const payloadToSave =
         id && isListingEvaluatorApprovedLocked(formData)
@@ -683,6 +688,7 @@ function Page() {
       }
 
       if (id) {
+        await persistListingGalleryOrder(formData?.pictures, images)
         requests.push(
           customAxios.put(
             `${process.env.NEXT_PUBLIC_BASE_URL}/boat/${id}`,
@@ -915,6 +921,7 @@ function Page() {
                   images={images}
                   videos={videos}
                   handleImageRemove={handleImageRemove}
+                  handleImageReorder={handleImageReorder}
                   handleImageChange={handleImageChange}
                   handleVideoRemove={handleVideoRemove}
                   handleVideoChange={handleVideoChange}

@@ -1,12 +1,13 @@
 'use client'
 
 import Image from 'next/image'
-import React from 'react'
+import React, { useContext } from 'react'
 import ConfirmationModal from '@/components/AddListing/ConfirmationModal'
 import ListingMapSection from '@/components/ListingsForm/ListingMapSection'
 import FacilitiesChecklist from '@/components/property-listing/FacilitiesChecklist'
 import { IoReload } from 'react-icons/io5'
 import { isListingEvaluatorApprovedLocked } from '@/libs/listingEditLock'
+import { ListingContext } from '@/components/ListingContext/ListingsProvider'
 
 const Facilities = React.memo(
   ({
@@ -23,7 +24,9 @@ const Facilities = React.memo(
     setConfirmationModal,
     id,
   }) => {
+    const { isCompressing } = useContext(ListingContext) || {}
     const fieldsLocked = isListingEvaluatorApprovedLocked(formData)
+    const busy = Boolean(loading || isCompressing)
 
     return (
       <div className='pt-[30px]'>
@@ -58,9 +61,9 @@ const Facilities = React.memo(
           <button
             className={`text-whitee flex justify-center items-center text-xl font-medium w-[205px] h-[50px] rounded-[3px] bg-light-gold shadow-neons`}
             onClick={submitConfirmation}
-            disabled={loading}
+            disabled={busy}
           >
-            {loading ? (
+            {busy ? (
               <IoReload size={24} className='animate-spin' />
             ) : id ? (
               'Update'

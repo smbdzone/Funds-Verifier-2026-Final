@@ -18,7 +18,7 @@ function phonesEqual(a, b) {
 
 /**
  * Choose which phone should receive booking/asset updates:
- * UAE Pass number vs listing (or other) mobile.
+ * UAE Pass number vs listing mobile (no custom number).
  */
 export default function BookingContactPhonePicker({
   uaePassPhone = '',
@@ -33,36 +33,38 @@ export default function BookingContactPhonePicker({
   const listingIsDistinct = Boolean(
     listing && (!uae || !phonesEqual(listing, uae)),
   )
+  const hasKnownPhones = Boolean(uae || listingIsDistinct)
 
   const [source, setSource] = useState(() => {
     if (uae) return 'uae'
-    if (listing) return 'listing'
-    return 'other'
+    if (listingIsDistinct) return 'listing'
+    return 'fallback'
   })
-  const [otherPhone, setOtherPhone] = useState(() => {
-    if (value && !phonesEqual(value, uae) && !phonesEqual(value, listing)) {
-      return value
-    }
+  const [fallbackPhone, setFallbackPhone] = useState(() => {
+    if (!hasKnownPhones && value) return value
     return ''
   })
 
   useEffect(() => {
     setSource((prev) => {
       if (prev === 'listing' && !listingIsDistinct) {
-        return uae ? 'uae' : 'other'
+        return uae ? 'uae' : 'fallback'
       }
       if (prev === 'uae' && !uae) {
-        return listingIsDistinct ? 'listing' : 'other'
+        return listingIsDistinct ? 'listing' : 'fallback'
+      }
+      if (prev === 'fallback' && hasKnownPhones) {
+        return uae ? 'uae' : 'listing'
       }
       return prev
     })
-  }, [uae, listingIsDistinct])
+  }, [uae, listingIsDistinct, hasKnownPhones])
 
   const selectedPhone = useMemo(() => {
     if (source === 'uae') return uae
     if (source === 'listing') return listing
-    return normalizePhone(otherPhone)
-  }, [source, uae, listing, otherPhone])
+    return normalizePhone(fallbackPhone)
+  }, [source, uae, listing, fallbackPhone])
 
   useEffect(() => {
     onChange?.(selectedPhone || '')
@@ -118,40 +120,28 @@ export default function BookingContactPhonePicker({
           </label>
         ) : null}
 
-        <div className='flex items-start gap-3'>
-          <input
-            id={`${idPrefix}-other`}
-            type='radio'
-            name={`${idPrefix}-source`}
-            className='mt-1 h-4 w-4 shrink-0 accent-[#c4a35a]'
-            checked={source === 'other'}
-            onChange={() => setSource('other')}
-          />
+        {!hasKnownPhones ? (
           <div className='min-w-0 flex-1'>
             <label
-              className='mb-2 block cursor-pointer font-medium'
-              htmlFor={`${idPrefix}-other`}
+              className='mb-2 block font-medium'
+              htmlFor={`${idPrefix}-fallback`}
             >
-              {listingIsDistinct
-                ? 'Use a different number'
-                : 'Enter mobile number'}
+              Enter mobile number
             </label>
-            {source === 'other' || !uae ? (
-              <PhoneInput
-                international
-                defaultCountry='AE'
-                value={otherPhone || undefined}
-                onChange={(phoneValue) => {
-                  setSource('other')
-                  setOtherPhone(phoneValue || '')
-                }}
-                onFocus={() => setSource('other')}
-                className='w-full rounded border p-2'
-                placeholder='Enter phone number'
-              />
-            ) : null}
+            <PhoneInput
+              id={`${idPrefix}-fallback`}
+              international
+              defaultCountry='AE'
+              value={fallbackPhone || undefined}
+              onChange={(phoneValue) => {
+                setSource('fallback')
+                setFallbackPhone(phoneValue || '')
+              }}
+              className='w-full rounded border p-2'
+              placeholder='Enter phone number'
+            />
           </div>
-        </div>
+        ) : null}
       </div>
     </div>
   )

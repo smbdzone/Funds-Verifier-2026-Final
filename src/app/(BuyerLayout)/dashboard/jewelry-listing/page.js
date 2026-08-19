@@ -7,6 +7,7 @@ import {
   handleVideoUpload,
   handleFileUpload,
   handleThumbnailUpload,
+  persistListingGalleryOrder,
 } from '@/libs/uploadAsset'
 import { autoCapitalizeField } from '@/libs/autoCapitalizeText'
 import { flagListingPendingApprovalNotice } from '@/libs/listingPendingApprovalNotice'
@@ -15,6 +16,7 @@ import {
   listingMediaRef,
   premiumServiceRequestId,
   stripEmptyObjectIdRefs,
+  sanitizeAssetHolderUpdatePayload,
 } from '@/libs/listingMediaRef'
 import {
   isListingEvaluatorApprovedLocked,
@@ -185,6 +187,7 @@ function Page() {
     handleImageChange,
     images,
     handleImageRemove,
+    handleImageReorder,
     fileInputRef,
     isModalOpen,
     handleCloseModal,
@@ -381,7 +384,7 @@ function Page() {
       errors.price = 'Price is invalid'
     }
 
-    if (!data?.warrenty && !data?.warrenty?.trim()) {
+    if (!data?.warrenty && !data?.warranty) {
       errors.warrenty = 'Warrenty is required'
     }
     // if (!data.evaluationDateTime.trim())
@@ -682,7 +685,6 @@ function Page() {
           listingMediaRef(thumbnail) ??
           listingMediaRef(formData?.thumbnailImg),
         qrScan: listingMediaRef(qrScanID) ?? listingMediaRef(qrScan) ?? listingMediaRef(formData?.qrScan),
-        feedback: 'feedback',
       }
 
       applyPremiumServiceRefs(updatedFormData, formData, {
@@ -694,8 +696,11 @@ function Page() {
       if (Object.keys(validationErrors).length === 0) {
         setFormData(updatedFormData)
 
-        const listingPayload = stripEmptyObjectIdRefs(
-          stripEvaluationBookingMeta(updatedFormData),
+        const listingPayload = sanitizeAssetHolderUpdatePayload(
+          stripEmptyObjectIdRefs(
+            stripEvaluationBookingMeta(updatedFormData),
+          ),
+          formData,
         )
         const payloadToSave =
           id && isListingEvaluatorApprovedLocked(formData)
@@ -709,6 +714,7 @@ function Page() {
         }
 
         if (id) {
+          await persistListingGalleryOrder(formData?.pictures, images)
           requests.push(
             customAxios.put(
               `${process.env.NEXT_PUBLIC_BASE_URL}/jewelry/${id}`,
@@ -752,7 +758,7 @@ function Page() {
         setErrors(validationErrors)
         handleScroll()
         setLoading(false)
-        router.push('/seller-profile/my-listing')
+        toast.error('Please fix the highlighted fields before saving.')
       }
     } catch (error) {
       console.error('Error during submission:', error)
@@ -899,6 +905,7 @@ function Page() {
                 images={images}
                 videos={videos}
                 handleImageRemove={handleImageRemove}
+                handleImageReorder={handleImageReorder}
                 handleImageChange={handleImageChange}
                 handleVideoRemove={handleVideoRemove}
                 handleVideoChange={handleVideoChange}

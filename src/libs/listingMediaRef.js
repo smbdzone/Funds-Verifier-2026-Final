@@ -69,6 +69,53 @@ export function mergePremiumServiceRef(newRequestId, existingValue) {
   return listingMediaRef(existingValue)
 }
 
+const UNSAFE_LISTING_UPDATE_KEYS = [
+  'userId',
+  '_id',
+  '__v',
+  'ratings',
+  'analytics',
+  'totalrating',
+  'createdAt',
+  'updatedAt',
+  'isDeleted',
+  'deletedAt',
+  'dealhunterId',
+  'transactionId',
+  'customFacilities',
+  'feedback',
+  'warrenty',
+]
+
+/**
+ * Drop populated GET leftovers so asset-holder PUT does not CastError.
+ */
+export function sanitizeAssetHolderUpdatePayload(body = {}, formData = {}) {
+  if (!body || typeof body !== 'object') return body
+  for (const key of UNSAFE_LISTING_UPDATE_KEYS) {
+    delete body[key]
+  }
+  const warranty = formData?.warranty || formData?.warrenty || body.warranty
+  if (warranty) body.warranty = warranty
+
+  if (formData?.underProcess || body.underProcess) {
+    delete body.price
+    delete body.priceFrom
+    delete body.priceTo
+    delete body.underProcess
+  }
+
+  if (Array.isArray(body.uploadDocument) && body.uploadDocument.some((d) => d && typeof d === 'object')) {
+    delete body.uploadDocument
+  } else if (body.uploadDocument && typeof body.uploadDocument === 'object') {
+    delete body.uploadDocument
+  }
+  if (body.requestDocument && typeof body.requestDocument === 'object') {
+    delete body.requestDocument
+  }
+  return body
+}
+
 /** Remove empty / invalid ObjectId refs so MongoDB does not CastError. */
 export function stripEmptyObjectIdRefs(body) {
   if (!body || typeof body !== 'object') return body

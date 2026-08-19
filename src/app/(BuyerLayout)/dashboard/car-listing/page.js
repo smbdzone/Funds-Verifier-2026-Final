@@ -5,6 +5,7 @@ import {
   handleImageUpload,
   handleThumbnailUpload,
   handleVideoUpload,
+  persistListingGalleryOrder,
 } from '@/libs/uploadAsset'
 import { autoCapitalizeField } from '@/libs/autoCapitalizeText'
 import { flagListingPendingApprovalNotice } from '@/libs/listingPendingApprovalNotice'
@@ -13,6 +14,7 @@ import {
   listingMediaRef,
   premiumServiceRequestId,
   stripEmptyObjectIdRefs,
+  sanitizeAssetHolderUpdatePayload,
 } from '@/libs/listingMediaRef'
 import {
   hasConfirmedEvaluationPayment,
@@ -182,6 +184,7 @@ function Page() {
     handleImageChange,
     images,
     handleImageRemove,
+    handleImageReorder,
     fileInputRef,
     isModalOpen,
     handleCloseModal,
@@ -515,7 +518,6 @@ function Page() {
           listingMediaRef(thumbnail) ??
           listingMediaRef(formData?.thumbnailImg),
         qrScan: listingMediaRef(qrScanID) ?? listingMediaRef(qrScan) ?? listingMediaRef(formData?.qrScan),
-        feedback: 'feedback',
       }
 
       applyPremiumServiceRefs(updatedFormData, formData, {
@@ -533,8 +535,11 @@ function Page() {
       }
 
       // Submit data
-      const listingPayload = stripEmptyObjectIdRefs(
-        stripEvaluationBookingMeta(updatedFormData),
+      const listingPayload = sanitizeAssetHolderUpdatePayload(
+        stripEmptyObjectIdRefs(
+          stripEvaluationBookingMeta(updatedFormData),
+        ),
+        formData,
       )
       const payloadToSave =
         id && isListingEvaluatorApprovedLocked(formData)
@@ -544,6 +549,7 @@ function Page() {
           : listingPayload
 
       if (id) {
+        await persistListingGalleryOrder(formData?.pictures, images)
         await customAxios.put(
           `${process.env.NEXT_PUBLIC_BASE_URL}/car/${id}`,
           payloadToSave
@@ -830,6 +836,7 @@ function Page() {
                 type={'Car For Sale'}
                 // dropdown3D={carForSaleDropdown}
                 handleImageRemove={handleImageRemove}
+                handleImageReorder={handleImageReorder}
                 handleImageChange={handleImageChange}
                 handleVideoRemove={handleVideoRemove}
                 handleVideoChange={handleVideoChange}

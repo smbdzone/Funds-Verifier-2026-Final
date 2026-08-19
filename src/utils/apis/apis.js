@@ -32,6 +32,8 @@ const normalizeRole = (role) => {
   if (cleaned === 'technicalreport') return 'TechnicalReport'
   if (cleaned === 'evaluator') return 'Evaluator'
   if (cleaned === 'trustee') return 'Trustee'
+  if (cleaned === 'advertiser') return 'Advertiser'
+  if (cleaned === 'developer') return 'Developer'
   return role
 }
 
@@ -289,52 +291,25 @@ const finalizeLoginSession = async (data, router) => {
     }
     toast.success(data?.message)
 
-    // Honor an intended destination (e.g. email deep link or Advertise with Us)
-    // captured before sign-in. Takes precedence over the role-based default below.
+    // Deep link only if this role may open it; otherwise go to role dashboard.
+    // Stale redirects (e.g. /seller-profile after Arrange Viewing) used to send
+    // Evaluator/Trustee users to /unauthorized right after "Login successful!".
     const { consumePostLoginRedirect } = await import(
       '@/utils/auth/postLoginRedirect'
     )
-    const redirectTo = consumePostLoginRedirect()
-    if (redirectTo) {
-      router.replace(redirectTo)
+    const { resolveRoleSafeRedirect } = await import('@/utils/auth/roleAccess')
+    const { getRoleHomeRoute, getDeveloperAppUrl } = await import(
+      '@/utils/auth/roleHome'
+    )
+    const intended = consumePostLoginRedirect()
+
+    if (assignedRole === 'Developer') {
+      window.location.href = getDeveloperAppUrl()
       return data
     }
 
-    switch (assignedRole) {
-      case 'Advertiser':
-        router.replace('/advertiser-dashboard')
-        break
-      case 'Developer': {
-        const developerUrl =
-          process.env.NEXT_PUBLIC_DEVELOPER_APP_URL || 'http://localhost:3012'
-        window.location.href = developerUrl.replace(/\/$/, '')
-        break
-      }
-      case 'AssetHolder':
-        router.replace('/seller-profile')
-        break
-      case 'Evaluator':
-        router.replace('/evaluator-profile')
-        break
-      case 'SubEvaluator':
-        router.replace('/sub-evaluator-profile')
-        break
-      case 'DealHunter':
-        router.replace('/profile')
-        break
-      case 'Trustee':
-        router.replace('/trustee')
-        break
-      case '3dWalkthrough':
-        router.replace('/3d-walkthrough')
-        break
-      case 'TechnicalReport':
-        router.replace('/survey-dashboard/')
-        break
-      default:
-        router.replace('/')
-    }
-
+    const destination = resolveRoleSafeRedirect(intended, assignedRole)
+    router.replace(destination || getRoleHomeRoute(assignedRole) || '/')
     return data
   } catch (error) {
     console.error(error)

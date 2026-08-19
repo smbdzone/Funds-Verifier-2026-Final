@@ -18,6 +18,7 @@ import customAxios from '../../utils/apis/apis'
 import { useProfile } from '@/context/UserContext'
 import { setAccessToken } from '../../utils/auth/accessTokenStore'
 import { getRoleHomeRoute } from '@/utils/auth/roleHome'
+import { resolveRoleSafeRedirect } from '@/utils/auth/roleAccess'
 import { POST_LOGIN_BOOTSTRAP_KEY } from '@/utils/auth/uaePass'
 import { consumePostLoginRedirect } from '@/utils/auth/postLoginRedirect'
 import { parseUaePassName } from '@/utils/auth/parseUaePassName'
@@ -101,14 +102,11 @@ export default function Login() {
 
     toast.success(data?.message || 'Login Successful!')
 
-    const intended = consumePostLoginRedirect()
-    if (intended) {
-      window.location.replace(intended)
-      return
-    }
-
     const role = data?.role === 'AssetHolder' ? 'AssetHolder' : 'DealHunter'
-    window.location.replace(getRoleHomeRoute(role))
+    const intended = consumePostLoginRedirect()
+    window.location.replace(
+      resolveRoleSafeRedirect(intended, role) || getRoleHomeRoute(role),
+    )
   }
 
   if (isLoading) return <HomePageSkeleton />

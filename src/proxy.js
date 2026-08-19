@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server'
 import { isSafePostLoginPath } from '@/utils/auth/postLoginRedirect'
+import { isPathAllowedForRole } from '@/utils/auth/roleAccess'
 
 const LOGIN_ROUTES = ['/login', '/user-login']
 const CONSUMER_ROLES = new Set(['AssetHolder', 'DealHunter'])
 
-function resolvePostLoginTarget(request, fallbackPath) {
+function resolvePostLoginTarget(request, role, fallbackPath) {
   const raw = request.nextUrl.searchParams.get('redirect')
   if (!raw) return fallbackPath
   let decoded = raw
@@ -13,7 +14,9 @@ function resolvePostLoginTarget(request, fallbackPath) {
   } catch {
     decoded = raw
   }
-  return isSafePostLoginPath(decoded) ? decoded : fallbackPath
+  if (!isSafePostLoginPath(decoded)) return fallbackPath
+  if (!isPathAllowedForRole(decoded, role)) return fallbackPath
+  return decoded
 }
 
 const normalizeRole = (role) => {
@@ -352,13 +355,21 @@ async function handleLoginRoutes(request, pathname) {
   }
 
   if (pathname === '/user-login' && CONSUMER_ROLES.has(role)) {
-    const target = resolvePostLoginTarget(request, getRoleHomeRoute(role))
+    const target = resolvePostLoginTarget(
+      request,
+      role,
+      getRoleHomeRoute(role),
+    )
     return redirectAuthenticated(request, session, target)
   }
 
   if (pathname === '/login' || pathname === '/user-login') {
-    // Honor ?redirect= (e.g. Arrange Viewing) instead of always dumping to role home.
-    const target = resolvePostLoginTarget(request, getRoleHomeRoute(role))
+    // Honor ?redirect= only when this role can open that path.
+    const target = resolvePostLoginTarget(
+      request,
+      role,
+      getRoleHomeRoute(role),
+    )
     return redirectAuthenticated(request, session, target)
   }
 
@@ -369,6 +380,12 @@ async function handleLoginRoutes(request, pathname) {
 export async function proxy(request) {
   const { nextUrl } = request
   const pathname = nextUrl.pathname
+
+  // Public access for listing form (requested): /dashboard/property-listing
+  // This bypasses cookie/role checks entirely.
+  if (pathname === '/dashboard/property-listing' || pathname.startsWith('/dashboard/property-listing/')) {
+    return NextResponse.next()
+  }
 
   if (LOGIN_ROUTES.includes(pathname)) {
     return handleLoginRoutes(request, pathname)
@@ -402,6 +419,14 @@ export async function proxy(request) {
   const hasAccess = allowedRoutes.some((route) => pathname.startsWith(route))
 
   if (!hasAccess) {
+    // Wrong-role deep links after login used to dump users on /unauthorized.
+    // Send them to their dashboard instead.
+    const home = getRoleHomeRoute(role)
+    if (home && home.startsWith('/') && home !== pathname) {
+      const response = NextResponse.redirect(new URL(home, request.url))
+      applyPendingCookies(response, session.pendingCookies, session.cookieOptions)
+      return response
+    }
     return NextResponse.redirect(new URL('/unauthorized', request.url))
   }
 

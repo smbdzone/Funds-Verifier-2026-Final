@@ -316,7 +316,7 @@ const Modal = ({
               <>
                 <div className='flex flex-col'>
                   <label className='mb-1 text-xl'>Property Type</label>
-                  <div className='w-full p-2 border rounded'>
+                  <div className='w-full rounded border border-gray-300 px-3 py-2.5'>
                     <DropDown
                       dropdown3D={dropdown3D}
                       setCategory={setCategory}
@@ -331,7 +331,7 @@ const Modal = ({
                 </div>
                 <div className='flex flex-col'>
                   <label className='mb-1 text-xl'>{title}</label>
-                  <div className='w-full p-2 border rounded'>
+                  <div className='w-full rounded border border-gray-300 px-3 py-2.5'>
                     <DropDown
                       bedroomsDropDown={bedroomsDropDown}
                       setBedroomCount={(count) => {
@@ -350,7 +350,7 @@ const Modal = ({
             ) : (
               <div className='flex flex-col'>
                 <label className='mb-1 text-xl'>{title}</label>
-                <div className='w-full p-2 border rounded'>
+                <div className='w-full rounded border border-gray-300 px-3 py-2.5'>
                   <DropDown
                     dropdown={dropdown}
                     setCategory={setCategory}

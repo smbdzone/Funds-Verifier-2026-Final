@@ -173,6 +173,28 @@ const handleDeleteImg = async (id) => {
   }
 }
 
+/** Persist additional-picture order (and removals) on the ImageAsset gallery. */
+const persistListingGalleryOrder = async (assetId, images = []) => {
+  const id = assetId && typeof assetId === 'object' ? assetId._id || assetId.id : assetId
+  if (!id) return null
+  const order = (Array.isArray(images) ? images : [])
+    .filter((img) => img && !(typeof File !== 'undefined' && img instanceof File))
+    .map((img) => ({
+      originalName: img.originalName || '',
+      size: img.size,
+      uploadedAt: img.uploadedAt,
+      signedUrl: String(img.signedUrl || img.url || '').split('?')[0],
+    }))
+
+  try {
+    const response = await customAxios.put(`/upload-imgs/${id}/order`, { order })
+    return response.data
+  } catch (error) {
+    console.warn('Could not persist gallery order', error)
+    return null
+  }
+}
+
 const handleDownload = async (public_id) => {
   const url = await fetchCertificateUrlByPublicId(public_id)
   if (url) {
@@ -213,5 +235,6 @@ export {
   handleThumbnailUpload,
   handleVerificationUpload,
   handleDeleteImg,
+  persistListingGalleryOrder,
   handleDownload,
 }

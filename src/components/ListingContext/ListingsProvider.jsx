@@ -207,6 +207,8 @@ const ListingsProvider = ({ children }) => {
               ? cleaned
               : createDefaultOffPlanPaymentPlan()
           })(),
+          warranty: d.warranty || d.warrenty || '',
+          warrenty: d.warranty || d.warrenty || '',
         }
         setFormData(normalized)
         restorePendingPremiumModals(normalized)
@@ -678,6 +680,9 @@ const ListingsProvider = ({ children }) => {
             // Always keep the full ImageAsset from the API (includes every image).
             pictures: imageIDs,
           }))
+          if (Array.isArray(imageIDs?.images) && imageIDs.images.length) {
+            setImages(imageIDs.images)
+          }
         } catch (error) {
           toast.error(error?.message || 'Image upload failed. Please try again.')
           setImages((prevImages) =>
@@ -696,34 +701,42 @@ const ListingsProvider = ({ children }) => {
     processFiles()
   }
 
+  const handleImageReorder = (fromIndex, toIndex) => {
+    if (fromIndex === toIndex) return
+    setImages((prev) => {
+      const next = [...prev]
+      const [moved] = next.splice(fromIndex, 1)
+      next.splice(toIndex, 0, moved)
+      return next
+    })
+    setFormData((prev) => {
+      const imgs = Array.isArray(prev.pictures?.images)
+        ? [...prev.pictures.images]
+        : []
+      if (imgs.length) {
+        const [moved] = imgs.splice(fromIndex, 1)
+        imgs.splice(toIndex, 0, moved)
+        return { ...prev, pictures: { ...prev.pictures, images: imgs } }
+      }
+      return prev
+    })
+  }
+
   const handleImageRemove = (index, id) => {
-    if (index && id) {
+    setImages((prevImages) => prevImages.filter((_, i) => i !== index))
+    setFormData((prevFormData) => {
+      const updatedImages =
+        prevFormData.pictures?.images?.filter((_, i) => i !== index) || []
+      return {
+        ...prevFormData,
+        pictures: {
+          ...prevFormData.pictures,
+          images: updatedImages,
+        },
+      }
+    })
+    if (id) {
       handleDeleteImg(id)
-      setImages((prevImages) => prevImages.filter((_, i) => i !== index))
-      setFormData((prevFormData) => {
-        const updatedImages =
-          prevFormData.pictures?.images?.filter((_, i) => i !== index) || []
-        return {
-          ...prevFormData,
-          pictures: {
-            ...prevFormData.pictures,
-            images: updatedImages,
-          },
-        }
-      })
-    } else {
-      setImages((prevImages) => prevImages.filter((_, i) => i !== index))
-      setFormData((prevFormData) => {
-        const updatedImages =
-          prevFormData.pictures?.images?.filter((_, i) => i !== index) || []
-        return {
-          ...prevFormData,
-          pictures: {
-            ...prevFormData.pictures,
-            images: updatedImages,
-          },
-        }
-      })
     }
   }
 
@@ -1131,6 +1144,7 @@ const ListingsProvider = ({ children }) => {
         handleImageChange,
         images,
         handleImageRemove,
+        handleImageReorder,
         fileInputRef,
         isModalOpen,
         handleCloseModal,

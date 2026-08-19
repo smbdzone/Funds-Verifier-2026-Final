@@ -3,10 +3,8 @@
 import { useEffect } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useProfile } from '@/context/UserContext'
-import {
-  CONSUMER_ROLES,
-  getRoleHomeRoute,
-} from '@/utils/auth/roleHome'
+import { CONSUMER_ROLES } from '@/utils/auth/roleHome'
+import { resolveRoleSafeRedirect } from '@/utils/auth/roleAccess'
 import { isUaePassCallback } from '@/utils/auth/uaePass'
 import {
   peekPostLoginRedirect,
@@ -31,6 +29,10 @@ function resolveIntendedPath(searchParams) {
     }
   }
   return peekPostLoginRedirect() ? consumePostLoginRedirect() : null
+}
+
+function resolveDestinationForRole(searchParams, role) {
+  return resolveRoleSafeRedirect(resolveIntendedPath(searchParams), role)
 }
 
 /**
@@ -63,14 +65,12 @@ export function useRedirectIfAuthenticated({ blockConsumerOnUserLogin = false } 
       pathname === '/user-login' &&
       CONSUMER_ROLES.has(role)
     ) {
-      const intended = resolveIntendedPath(searchParams)
-      router.replace(intended || getRoleHomeRoute(role))
+      router.replace(resolveDestinationForRole(searchParams, role))
       return
     }
 
     if (pathname === '/login' || pathname === '/user-login') {
-      const intended = resolveIntendedPath(searchParams)
-      router.replace(intended || getRoleHomeRoute(role))
+      router.replace(resolveDestinationForRole(searchParams, role))
     }
   }, [
     user,
