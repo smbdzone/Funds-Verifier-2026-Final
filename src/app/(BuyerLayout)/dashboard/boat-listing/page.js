@@ -712,6 +712,7 @@ function Page() {
         )
         if (!id) {
           flagListingPendingApprovalNotice({ assetKind: 'boat' })
+          router.push('/seller-profile/my-listing')
           resetForm()
           setFormData(initialFormData)
           localStorage.removeItem('FormPayment')
@@ -720,7 +721,6 @@ function Page() {
           localStorage.removeItem('pendingListingDraft')
         }
       }
-      router.push('/seller-profile/my-listing')
     } catch (error) {
       console.error('Error during form submission:', error)
       toast.error(

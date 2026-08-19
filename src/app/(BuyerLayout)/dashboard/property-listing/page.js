@@ -969,6 +969,7 @@ const Page = () => {
         setTitleDeedFile(null)
         setAgencyAgreementFile(null)
         if (!id) {
+          router.push('/seller-profile/my-listing')
           resetForm()
           setFormData(initialFormData)
           localStorage.removeItem('FormPayment')
@@ -976,8 +977,6 @@ const Page = () => {
           localStorage.removeItem('checkoutSession')
           localStorage.removeItem('pendingListingDraft')
         }
-        resetForm()
-        router.push('/seller-profile/my-listing')
       } else {
         setErrors(validationErrors)
         handleScroll()

@@ -739,10 +739,7 @@ function Page() {
           )
           if (!id) {
             flagListingPendingApprovalNotice({ assetKind: 'jewelry' })
-          }
-          router.push('/seller-profile/my-listing')
-
-          if (!id) {
+            router.push('/seller-profile/my-listing')
             resetForm()
             setFormData(initialFormData)
             localStorage.removeItem('FormPayment')
@@ -752,6 +749,7 @@ function Page() {
           }
         }
         setLoading(false)
+
       } else {
         setErrors(validationErrors)
         handleScroll()
