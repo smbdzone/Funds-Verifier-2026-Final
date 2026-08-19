@@ -381,12 +381,6 @@ export async function proxy(request) {
   const { nextUrl } = request
   const pathname = nextUrl.pathname
 
-  // Public access for listing form (requested): /dashboard/property-listing
-  // This bypasses cookie/role checks entirely.
-  if (pathname === '/dashboard/property-listing' || pathname.startsWith('/dashboard/property-listing/')) {
-    return NextResponse.next()
-  }
-
   if (LOGIN_ROUTES.includes(pathname)) {
     return handleLoginRoutes(request, pathname)
   }
