@@ -519,18 +519,6 @@ const JewelryListingForm = ({
               readOnly={true}
             />
           </div>
-          <div className='relative w-full dropdown-container'>
-            <div className='relative-placeholder w-full'>
-              <ListingCustomPlacholderInput
-                errors={errors.jewelryMetal}
-                value={formData.jewelryMetal}
-                handleChange={handleChange}
-                disabled={isEvaluatorApprovedLocked}
-                name='jewelryMetal'
-                customPlaceholder='Jewelry'
-              />
-            </div>
-          </div>
         </div>
       </form>
     </>

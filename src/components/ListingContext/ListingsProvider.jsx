@@ -232,10 +232,12 @@ const ListingsProvider = ({ children }) => {
         if (d.propertyType) setSelectType(d.propertyType)
         setTotalPrice(d.price != null ? String(d.price) : null)
         const rawPhone = d.phoneNumber ? `${d.phoneNumber}` : ''
-        setPhoneNumber(rawPhone)
-        if (rawPhone) {
+        // PhoneInput and parsePhoneNumber both require E.164 (leading +)
+        const e164Phone = rawPhone && !rawPhone.startsWith('+') ? `+${rawPhone}` : rawPhone
+        setPhoneNumber(e164Phone)
+        if (e164Phone) {
           try {
-            const parsed = parsePhoneNumber(rawPhone)
+            const parsed = parsePhoneNumber(e164Phone)
             if (parsed?.country) {
               setSelectedCountryPhone(parsed.country)
             }

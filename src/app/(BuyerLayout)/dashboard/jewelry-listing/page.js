@@ -115,7 +115,6 @@ function Page() {
     thumbnailImg: null,
     evaluationCertificate: null,
     evaluationCompanies: '',
-    jewelryMetal: '',
     ratings: [],
     materials: [],
     customMaterials: [],

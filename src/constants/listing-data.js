@@ -1222,13 +1222,6 @@ export const jewelleryFormFields = [
     options: jeweleryAge,
     required: true,
   },
-  {
-    id: 8,
-    type: "text",
-    name: "jewelryMetal",
-    placeholder: "Jewellery Metal",
-    required: false,
-  },
 ];
 export const jewelleryCheckBoxFields = [
   {
