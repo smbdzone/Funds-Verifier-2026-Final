@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { IoCheckmarkSharp } from 'react-icons/io5'
 import {
   facilities,
@@ -82,6 +82,22 @@ export default function EvaluatorPropertyEditableDetails({
       ? current.filter((item) => item !== name)
       : [...current, name]
     setField('facilities', next)
+  }
+
+  const [customAmenity, setCustomAmenity] = useState('')
+  const [showCustomInput, setShowCustomInput] = useState(false)
+
+  const addCustomAmenity = () => {
+    const val = customAmenity.trim()
+    if (!val) return
+    const current = Array.isArray(draft?.facilities)
+      ? [...draft.facilities]
+      : [...selectedAmenities]
+    if (!current.includes(val)) {
+      setField('facilities', [...current, val])
+    }
+    setCustomAmenity('')
+    setShowCustomInput(false)
   }
 
   const isLease = isLeaseAsset(property)
@@ -376,11 +392,40 @@ export default function EvaluatorPropertyEditableDetails({
       </div>
 
       <div className='mt-5'>
-        <p className='mb-2 text-sm sm:text-base font-medium text-gray-700'>
-          Amenities
-        </p>
+        <div className='flex items-center gap-2 mb-2'>
+          <p className='text-sm sm:text-base font-medium text-gray-700'>
+            Amenities
+          </p>
+          <button
+            type='button'
+            onClick={() => setShowCustomInput((v) => !v)}
+            className='flex h-5 w-5 items-center justify-center rounded-full border border-[#8d7c3b] text-[#8d7c3b] text-sm font-bold hover:bg-[#8d7c3b]/10'
+            title='Add custom amenity'
+          >
+            +
+          </button>
+        </div>
+        {showCustomInput && (
+          <div className='mb-2 flex gap-2'>
+            <input
+              type='text'
+              value={customAmenity}
+              onChange={(e) => setCustomAmenity(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && addCustomAmenity()}
+              placeholder='Add custom amenity...'
+              className='flex-1 rounded-md border border-[#8d7c3b] px-3 py-1.5 text-sm focus:outline-none'
+            />
+            <button
+              type='button'
+              onClick={addCustomAmenity}
+              className='primary-gradient rounded-md px-3 py-1.5 text-sm text-white'
+            >
+              Add
+            </button>
+          </div>
+        )}
         <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 max-h-64 overflow-y-auto rounded-md border border-[#8d7c3b]/30 bg-white p-3'>
-          {facilities.map((item) => {
+          {[...new Set([...facilities, ...selectedAmenities])].map((item) => {
             const checked = selectedAmenities.includes(item)
             return (
               <label

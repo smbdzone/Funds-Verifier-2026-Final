@@ -17,6 +17,7 @@ import {
   formatNumericInput,
   initFormattedPrice,
 } from './requestCompoenets/evaluatorPriceHandlers'
+import EvaluatorBoatEditableDetails from './requestCompoenets/EvaluatorBoatEditableDetails'
 import { handleFileUpload } from '@/libs/uploadAsset'
 import Loader from './requestCompoenets/Loader'
 import { formatNumberWithCommas } from '../../../utils/global-functions/global'
@@ -40,7 +41,7 @@ import {
   requestDocumentsMissingDate,
   serializeRequestDocuments,
 } from '@/utils/requestDocumentUtils'
-import { length as boatLengthOptions } from '@/constants/boat-listings'
+import { length as boatLengthOptions, extrasList as boatExtras } from '@/constants/boat-listings'
 
 export const RequestTab2 = () => {
   const { user } = useProfile()
@@ -57,6 +58,9 @@ export const RequestTab2 = () => {
   const [roi, setRoi] = useState('')
   const [length, setLength] = useState('')
   const [isSavingDetails, setIsSavingDetails] = useState(false)
+  const [isSavingListingDetails, setIsSavingListingDetails] = useState(false)
+  const [listingDetailsDraft, setListingDetailsDraft] = useState({})
+  const [isSavingAmenities, setIsSavingAmenities] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
   const handleFileChange = async (e) => {
@@ -109,6 +113,7 @@ export const RequestTab2 = () => {
     try {
       const response = await customAxios.get(`/boat/${propertyId}`)
       setProperty(response.data)
+      setListingDetailsDraft(response.data || {})
 
       fetchPrice(response?.data.category)
 
@@ -355,6 +360,27 @@ export const RequestTab2 = () => {
     formatNumericInput(e, setListingPrice, setFormattedListingPrice)
   }
 
+  const handleSaveListingDetails = async () => {
+    if (!listingDetailsDraft || Object.keys(listingDetailsDraft).length === 0) {
+      toast.error('No changes to save')
+      return
+    }
+    setIsSavingListingDetails(true)
+    try {
+      await customAxios.put(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/boat/${propertyId}`,
+        listingDetailsDraft,
+      )
+      toast.success('Listing details updated successfully')
+      fetchPropertyData()
+    } catch (error) {
+      console.error('Error updating boat details:', error)
+      toast.error(error?.response?.data?.message || 'Failed to update listing details')
+    } finally {
+      setIsSavingListingDetails(false)
+    }
+  }
+
   const handleSaveEvaluationDetails = async () => {
     const updateData = buildEvaluatorUpdatePayload({
       listingPrice,
@@ -388,6 +414,22 @@ export const RequestTab2 = () => {
     }
   }
 
+  const handleSaveAmenities = async (selectedAmenities) => {
+    setIsSavingAmenities(true)
+    try {
+      await customAxios.put(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/boat/${propertyId}`,
+        { extras: selectedAmenities },
+      )
+      toast.success('Amenities updated successfully')
+      fetchPropertyData()
+    } catch (error) {
+      toast.error(error?.response?.data?.message || 'Failed to update amenities')
+    } finally {
+      setIsSavingAmenities(false)
+    }
+  }
+
   const role = 'evaluator'
   const fetchPrice = async (category, subCategory, value) => {
     try {
@@ -409,73 +451,28 @@ export const RequestTab2 = () => {
       </span>
 
       <div className='gap-2 md:px-8 px-4 py-4 w-full'>
-        <div className='mb-4 grid sm:grid-cols-2 gap-4'>
-          <InputField label='Title' value={property.title} />
-        </div>
         <EvaluatorAssetHolderFields listing={property} />
-        {property?.status !== 1 ? (
-          <EvaluatorEditableFields
-            variant='pending'
-            listingPriceLabel='Price'
-            formattedListingPrice={formattedListingPrice}
-            onListingPriceChange={handleListingPrice}
-            formattedEvaluationPrice={formattedPrice}
-            onEvaluationPriceChange={handleEvaluationPrice}
-            showEvaluationPrice={false}
-            showRoi={false}
-            showLength
-            length={length}
-            onLengthChange={setLength}
-            lengthOptions={boatLengthOptions}
-            onSave={handleSaveEvaluationDetails}
-            isSaving={isSavingDetails}
-          />
-        ) : null}
-
-        <div className='mb-4 grid sm:grid-cols-2 gap-4'>
-          <InputField label='Model' value={property.model} />
-          <InputField label='SellerType' value={property.sellerType} />
-        </div>
-
-        <div className='mb-4 grid sm:grid-cols-2 gap-4'>
-          <InputField label='Location' value={property.locateBoat} />
-          <InputField label='Seats' value={property.seats} />
-        </div>
-
-        <div className='mb-4 grid sm:grid-cols-2 gap-4'>
-          <InputField label='Warranty' value={property.warranty} />
-        </div>
+        <EvaluatorBoatEditableDetails
+          property={property}
+          draft={listingDetailsDraft}
+          onDraftChange={setListingDetailsDraft}
+          onSave={handleSaveListingDetails}
+          isSaving={isSavingListingDetails}
+        />
         {property?.status === 1 ? (
           <EvaluatorEditableFields
-            listingPriceLabel='Price'
-            formattedListingPrice={formattedListingPrice}
-            onListingPriceChange={handleListingPrice}
+            showListingPrice={false}
             formattedEvaluationPrice={formattedPrice}
             onEvaluationPriceChange={handleEvaluationPrice}
             roi={roi}
             onRoiChange={setRoi}
             showRoi
-            showLength
-            length={length}
-            onLengthChange={setLength}
-            lengthOptions={boatLengthOptions}
+            showLength={false}
             onSave={handleSaveEvaluationDetails}
             isSaving={isSavingDetails}
           />
         ) : null}
 
-        <div className='mb-4'>
-          <label className='block text-sm font-medium text-[#969696]'>
-            Description
-          </label>
-          <textarea
-            rows={3}
-            value={property.description || ''}
-            className='focus:outline-none mt-1 block w-full pl-5 py-3 rounded-md bg-white text-[#969696] text-sm border border-[#969696]'
-            readOnly
-          />
-        </div>
-        <EvaluatorAmenitiesList listing={property} />
         <EvaluatorListingMedia
           property={property}
           emptyImage='/listing/no-image.png'

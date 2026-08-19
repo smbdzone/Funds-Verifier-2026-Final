@@ -120,6 +120,13 @@ export default function BookingContactPhonePicker({
           </label>
         ) : null}
 
+        {selectedPhone ? (
+          <div className='mt-2 rounded bg-[#f5f0e8] px-3 py-2 text-sm text-[#002d4f]'>
+            <span className='font-medium'>Selected: </span>
+            <span className='font-semibold'>{selectedPhone}</span>
+          </div>
+        ) : null}
+
         {!hasKnownPhones ? (
           <div className='min-w-0 flex-1'>
             <label

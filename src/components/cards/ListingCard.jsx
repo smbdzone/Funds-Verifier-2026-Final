@@ -81,12 +81,12 @@ const renderListingDetails = (listing, hasFeaturedStyling) => {
       )
     case 'Car For Sale':
       return (
-        <div className='flex gap-x-1 items-center mb-3'>
+        <div className='flex flex-wrap gap-x-3 gap-y-1 items-center mb-3'>
           <span
             className={`lg:text-base text-sm ${hasFeaturedStyling
               ? 'text-gradient-custom'
               : 'text-prussianBlue'
-              } truncate`}
+              }`}
           >
             Model: {listing.model}
           </span>
@@ -94,7 +94,7 @@ const renderListingDetails = (listing, hasFeaturedStyling) => {
             className={`lg:text-base text-sm ${hasFeaturedStyling
               ? 'text-gradient-custom'
               : 'text-prussianBlue'
-              } truncate`}
+              }`}
           >
             Used: {listing.bodyCondition}
           </span>
@@ -102,7 +102,7 @@ const renderListingDetails = (listing, hasFeaturedStyling) => {
             className={`lg:text-base text-sm ${hasFeaturedStyling
               ? 'text-gradient-custom'
               : 'text-prussianBlue'
-              } truncate`}
+              }`}
           >
             Steering: {listing.steeringSide}
           </span>

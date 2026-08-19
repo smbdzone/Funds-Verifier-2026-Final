@@ -710,6 +710,9 @@ function Page() {
             ? 'Updated successfully.'
             : 'Submitted successfully. Evaluator will evaluate it.'
         )
+        if (id) {
+          fetchData('boat')
+        }
         if (!id) {
           flagListingPendingApprovalNotice({ assetKind: 'boat' })
           router.push('/seller-profile/my-listing')

@@ -560,6 +560,7 @@ function Page() {
           payloadToSave
         )
         toast.success('Updated successfully.')
+        fetchData('car')
       } else {
         await Promise.all([
           customAxios.post(

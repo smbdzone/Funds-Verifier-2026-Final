@@ -112,7 +112,11 @@ const EvaluatorEditableFields = ({
     </div>
   )
 
+  const pendingHasFields =
+    showListingPrice || showEvaluationPrice || showWarranty || showLength || showSqft
+
   if (isPending) {
+    if (!pendingHasFields) return null
     return (
       <div className='mb-4'>
         <div className='grid sm:grid-cols-2 gap-4'>
@@ -135,6 +139,11 @@ const EvaluatorEditableFields = ({
       </div>
     )
   }
+
+  const fullHasFields =
+    showListingPrice || showEvaluationPrice || showSqft || showRoi || showWarranty || showLength
+
+  if (!fullHasFields) return null
 
   return (
     <section className='mb-6 rounded-lg border border-[#8d7c3b]/40 bg-[#faf8f3] p-4 sm:p-5'>

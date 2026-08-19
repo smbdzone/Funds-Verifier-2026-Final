@@ -957,6 +957,10 @@ const Page = () => {
               : 'Submitted successfully. Evaluator will evaluate it.',
         )
 
+        if (id) {
+          fetchData('property')
+        }
+
         if (!id) {
           flagListingPendingApprovalNotice({
             assetKind: isOffPlan ? 'offplan' : 'property',

@@ -737,6 +737,9 @@ function Page() {
               ? 'Updated successfully.'
               : 'Submitted successfully. Evaluator will evaluate it.'
           )
+          if (id) {
+            fetchData('jewelry')
+          }
           if (!id) {
             flagListingPendingApprovalNotice({ assetKind: 'jewelry' })
             router.push('/seller-profile/my-listing')

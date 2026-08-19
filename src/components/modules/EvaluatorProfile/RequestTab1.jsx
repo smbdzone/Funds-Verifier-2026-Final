@@ -17,6 +17,8 @@ import {
   formatNumericInput,
   initFormattedPrice,
 } from './requestCompoenets/evaluatorPriceHandlers'
+import EvaluatorCarEditableDetails from './requestCompoenets/EvaluatorCarEditableDetails'
+import { technicalFeatures, extras as carExtras } from '@/constants/car-listings'
 import { handleFileUpload } from '@/libs/uploadAsset'
 import Loader from './requestCompoenets/Loader'
 import { formatNumberWithCommas } from '../../../utils/global-functions/global'
@@ -56,6 +58,9 @@ export const RequestTab1 = () => {
   const [roi, setRoi] = useState('')
   const [warranty, setWarranty] = useState('')
   const [isSavingDetails, setIsSavingDetails] = useState(false)
+  const [isSavingListingDetails, setIsSavingListingDetails] = useState(false)
+  const [listingDetailsDraft, setListingDetailsDraft] = useState({})
+  const [isSavingAmenities, setIsSavingAmenities] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
   const handleFileChange = async (e) => {
@@ -108,6 +113,7 @@ export const RequestTab1 = () => {
       const response = await customAxios.get(`/car/${propertyId}`)
       const listing = response.data || {}
       setProperty(listing)
+      setListingDetailsDraft(listing)
       fetchPrice(listing.carType)
 
       initFormattedPrice(
@@ -358,6 +364,27 @@ export const RequestTab1 = () => {
     formatNumericInput(e, setListingPrice, setFormattedListingPrice)
   }
 
+  const handleSaveListingDetails = async () => {
+    if (!listingDetailsDraft || Object.keys(listingDetailsDraft).length === 0) {
+      toast.error('No changes to save')
+      return
+    }
+    setIsSavingListingDetails(true)
+    try {
+      await customAxios.put(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/car/${propertyId}`,
+        listingDetailsDraft,
+      )
+      toast.success('Listing details updated successfully')
+      fetchPropertyData()
+    } catch (error) {
+      console.error('Error updating car details:', error)
+      toast.error(error?.response?.data?.message || 'Failed to update listing details')
+    } finally {
+      setIsSavingListingDetails(false)
+    }
+  }
+
   const handleSaveEvaluationDetails = async () => {
     const updateData = buildEvaluatorUpdatePayload({
       listingPrice,
@@ -391,6 +418,22 @@ export const RequestTab1 = () => {
     }
   }
 
+  const handleSaveAmenities = async (selectedAmenities) => {
+    setIsSavingAmenities(true)
+    try {
+      await customAxios.put(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/car/${propertyId}`,
+        { extras: selectedAmenities },
+      )
+      toast.success('Amenities updated successfully')
+      fetchPropertyData()
+    } catch (error) {
+      toast.error(error?.response?.data?.message || 'Failed to update amenities')
+    } finally {
+      setIsSavingAmenities(false)
+    }
+  }
+
   const role = 'evaluator'
   const fetchPrice = async (category) => {
     try {
@@ -411,64 +454,40 @@ export const RequestTab1 = () => {
       </span>
 
       <div className='gap-2 md:px-8 px-4 py-4 w-full'>
-        <div className='mb-4 grid sm:grid-cols-2 gap-4'>
-          <InputField label='Title' value={property.title} />
-          <InputField label='Car type' value={property.carType} />
-        </div>
         <EvaluatorAssetHolderFields listing={property} />
+        <EvaluatorCarEditableDetails
+          property={property}
+          draft={listingDetailsDraft}
+          onDraftChange={setListingDetailsDraft}
+          onSave={handleSaveListingDetails}
+          isSaving={isSavingListingDetails}
+        />
         {property?.status !== 1 ? (
           <EvaluatorEditableFields
             variant='pending'
-            listingPriceLabel='Price'
-            formattedListingPrice={formattedListingPrice}
-            onListingPriceChange={handleListingPrice}
+            showListingPrice={false}
             formattedEvaluationPrice={formattedPrice}
             onEvaluationPriceChange={handleEvaluationPrice}
             showEvaluationPrice={false}
             showRoi={false}
-            showWarranty
-            warranty={warranty}
-            onWarrantyChange={setWarranty}
+            showWarranty={false}
             onSave={handleSaveEvaluationDetails}
             isSaving={isSavingDetails}
           />
         ) : null}
-        <div className='mb-4 grid sm:grid-cols-2 gap-4'>
-          <InputField label='Models' value={property.model} />
-          <InputField label='Make' value={property.make} />
-        </div>
-        <div className='mb-4 grid sm:grid-cols-2 gap-4'>
-          <InputField label='Fueltype' value={property.fuelType} />
-        </div>
         {property?.status === 1 ? (
           <EvaluatorEditableFields
-            listingPriceLabel='Price'
-            formattedListingPrice={formattedListingPrice}
-            onListingPriceChange={handleListingPrice}
+            showListingPrice={false}
             formattedEvaluationPrice={formattedPrice}
             onEvaluationPriceChange={handleEvaluationPrice}
             roi={roi}
             onRoiChange={setRoi}
             showRoi
-            showWarranty
-            warranty={warranty}
-            onWarrantyChange={setWarranty}
+            showWarranty={false}
             onSave={handleSaveEvaluationDetails}
             isSaving={isSavingDetails}
           />
         ) : null}
-        <div className='mb-4'>
-          <label className='block text-sm font-medium text-[#969696]'>
-            Description
-          </label>
-          <textarea
-            rows={3}
-            value={property.description || ''}
-            className='focus:outline-none mt-1 block w-full pl-5 py-3 rounded-md bg-white text-[#969696] text-sm border border-[#969696]'
-            readOnly
-          />
-        </div>
-        <EvaluatorAmenitiesList listing={property} />
         <EvaluatorListingMedia
           property={property}
           emptyImage='/listing/no-image.png'
