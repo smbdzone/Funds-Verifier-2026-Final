@@ -63,7 +63,7 @@ export default function CarView({ data }) {
         fullWidth: true,
       },
       { label: 'VIN', value: data?.vin || data?.VIN },
-      { label: 'DLD Number', value: data?.dldNumber },
+      { label: 'Project Number', value: data?.dldNumber },
     ],
     [data],
   )

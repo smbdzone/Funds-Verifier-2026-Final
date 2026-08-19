@@ -30,7 +30,7 @@ const ListingMultipleImageComponent = ({
   const imagePreviews = useMemo(() => {
     if (!images || !Array.isArray(images)) return []
     return images
-      .filter(Boolean)
+      .filter((img) => img && !img?.isDeleted)
       .map((image) => {
         if (typeof image?.signedUrl === 'string' && image.signedUrl.startsWith('http'))
           return { file: image?.s3Key || image?.public_id, preview: image.signedUrl }
@@ -43,7 +43,7 @@ const ListingMultipleImageComponent = ({
       .filter(Boolean)
   }, [images])
 
-  const atImageLimit = images?.length >= LISTING_IMAGE_MAX_COUNT
+  const atImageLimit = imagePreviews.length >= LISTING_IMAGE_MAX_COUNT
 
   // find which tile the pointer is over by element hit-test
   const getTileIndexFromPoint = useCallback((x, y) => {

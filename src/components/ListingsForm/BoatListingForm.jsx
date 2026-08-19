@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { formatDateTime } from '@/utils/global-functions/global'
 import ListingFormInput from '@/components/ListingFormInput/ListingFormInput'
 import PhoneInputComponent from '@/components/ListingFormInput/PhoneInputComponent'
 import ListingImageUploadLayout from '@/components/ListingsImageComponent/ListingImageUploadLayout'
@@ -281,7 +282,7 @@ const BoatListingForm = ({
                 value={formData.dldNumber || ''}
                 handleChange={handleChange}
                 name='dldNumber'
-                customPlaceholder='DLD Number'
+                customPlaceholder='Project Number'
                 disabled={isEvaluatorApprovedLocked}
               />
             </div>
@@ -366,7 +367,11 @@ const BoatListingForm = ({
             <ListingModalInputComponent
               maxLength={50}
               name='evaluationDateTime'
-              value={formData.evaluationDateTime}
+              value={
+                formData.evaluationDateTime
+                  ? formatDateTime(formData.evaluationDateTime).formattedDate
+                  : ''
+              }
               handleChange={handleChange}
               disabled={isEvaluatorApprovedLocked}
               required={true}
@@ -476,18 +481,6 @@ const BoatListingForm = ({
               />
             </div>
           </div>
-          <div className='relative w-full dropdown-container'>
-            <div className='relative-placeholder w-full'>
-              <ListingCustomPlacholderInput
-                errors={errors.locateBoat}
-                value={formData.locateBoat}
-                handleChange={handleChange}
-                name='locateBoat'
-                customPlaceholder='Locate Your Boat'
-                maxLength={50}
-              />
-            </div>
-          </div>
 
           <div className='relative dropdown-container'>
             <ListingsDropdownInputComponents
@@ -525,19 +518,6 @@ const BoatListingForm = ({
               }
               readOnly={true}
             />
-          </div>
-          <div className='relative w-full dropdown-container'>
-            <div className='relative-placeholder w-full'>
-              <ListingCustomPlacholderInput
-                errors={errors.sportsOutdoorPrice}
-                value={formData.sportsOutdoorPrice}
-                handleChange={handleChange}
-                disabled={isEvaluatorApprovedLocked}
-                name='sportsOutdoorPrice'
-                customPlaceholder='Sports & Outdoor Price'
-                maxLength={50}
-              />
-            </div>
           </div>
           <div className='relative w-full dropdown-container'>
             <ListingFormInput

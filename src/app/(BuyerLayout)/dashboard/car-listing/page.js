@@ -548,6 +548,10 @@ function Page() {
           )
           : listingPayload
 
+      if (formData?.evaluationSlotTimeslots) {
+        await bookEvaluationTimeslotFromFormData(formData)
+      }
+
       if (id) {
         await persistListingGalleryOrder(formData?.pictures, images)
         await customAxios.put(
@@ -556,7 +560,6 @@ function Page() {
         )
         toast.success('Updated successfully.')
       } else {
-        await bookEvaluationTimeslotFromFormData(formData)
         await Promise.all([
           customAxios.post(
             `${process.env.NEXT_PUBLIC_BASE_URL}/car`,

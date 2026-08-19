@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { formatDateTime } from '@/utils/global-functions/global'
 import TechnicalReport from '@/components/Modals/TechnicalReport'
 import ListingFormInput from '@/components/ListingFormInput/ListingFormInput'
 import PhoneInputComponent from '@/components/ListingFormInput/PhoneInputComponent'
@@ -279,7 +280,7 @@ const JewelryListingForm = ({
                 value={formData.dldNumber || ''}
                 handleChange={handleChange}
                 name='dldNumber'
-                customPlaceholder='DLD Number'
+                customPlaceholder='Project Number'
                 disabled={isEvaluatorApprovedLocked}
               />
             </div>
@@ -322,7 +323,11 @@ const JewelryListingForm = ({
               <ListingModalInputComponent
                 maxLength={50}
                 name='evaluationDateTime'
-                value={formData.evaluationDateTime}
+                value={
+                  formData.evaluationDateTime
+                    ? formatDateTime(formData.evaluationDateTime).formattedDate
+                    : ''
+                }
                 handleChange={handleChange}
                 required={true}
                 errors={
@@ -445,17 +450,6 @@ const JewelryListingForm = ({
             />
           </div>
           <div className='relative flex flex-col gap-4 w-full dropdown-container'>
-            <div className='relative-placeholder w-full'>
-              <ListingCustomPlacholderInput
-                errors={errors.locateJewelry}
-                value={formData.locateJewelry}
-                handleChange={handleChange}
-                disabled={isEvaluatorApprovedLocked}
-                name='locateJewelry'
-                customPlaceholder='Locate Your Jewelry'
-                maxLength={50}
-              />
-            </div>
             <div className='relative dropdown-container'>
               <ListingsDropdownInputComponents
                 errors={errors.warrenty && !formData.warrenty}
@@ -475,16 +469,6 @@ const JewelryListingForm = ({
             </div>
           </div>
           <div className='relative flex flex-col gap-4 w-full dropdown-container'>
-            <div className='relative-placeholder w-full'>
-              <ListingCustomPlacholderInput
-                errors={errors.lengthh}
-                value={formData.lengthh}
-                handleChange={handleChange}
-                name='lengthh'
-                customPlaceholder='Length'
-                maxLength={50}
-              />
-            </div>
             <div className='relative dropdown-container'>
               <ListingFormInput
                 errors={errors.grams && !formData.grams}
@@ -534,19 +518,6 @@ const JewelryListingForm = ({
               }
               readOnly={true}
             />
-          </div>
-          <div className='relative w-full dropdown-container'>
-            <div className='relative-placeholder w-full'>
-              <ListingCustomPlacholderInput
-                errors={errors.jewelryStyles}
-                value={formData.jewelryStyles}
-                handleChange={handleChange}
-                disabled={isEvaluatorApprovedLocked}
-                name='jewelryStyles'
-                customPlaceholder='Jewelry Styles'
-                maxLength={50}
-              />
-            </div>
           </div>
           <div className='relative w-full dropdown-container'>
             <div className='relative-placeholder w-full'>

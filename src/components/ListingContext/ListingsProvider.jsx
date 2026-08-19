@@ -2,7 +2,7 @@
 import { handleImageUpload } from '@/libs/uploadAsset'
 import axios from 'axios'
 import customAxios from '@/utils/apis/apis'
-import { getExampleNumber } from 'libphonenumber-js'
+import { getExampleNumber, parsePhoneNumber } from 'libphonenumber-js'
 import metadata from 'libphonenumber-js/min/metadata'
 import { useSearchParams } from 'next/navigation'
 import React, { createContext, useEffect, useRef, useState } from 'react'
@@ -34,7 +34,8 @@ import {
   LISTING_IMAGE_MAX_COUNT,
   LISTING_VIDEO_MAX_COUNT,
 } from '@/constants/listingUploadLimits'
-import { createDefaultOffPlanPaymentPlan, sanitizeOffPlanPaymentPlan, facilities, getExtraFacilities } from '@/constants/listing-data'
+import { createDefaultOffPlanPaymentPlan, sanitizeOffPlanPaymentPlan, facilities, getExtraFacilities, materials } from '@/constants/listing-data'
+import { extrasList } from '@/constants/boat-listings'
 import { formatBedBathCount } from '@/libs/bedBathCount'
 import {
   ensureWithinSize,
@@ -201,6 +202,12 @@ const ListingsProvider = ({ children }) => {
           customFacilities: Array.isArray(d.facilities)
             ? getExtraFacilities(d.facilities, [], facilities)
             : [],
+          customMaterials: Array.isArray(d.materials)
+            ? getExtraFacilities(d.materials, [], materials)
+            : [],
+          customExtras: Array.isArray(d.extras)
+            ? getExtraFacilities(d.extras, [], extrasList)
+            : [],
           paymentPlan: (() => {
             const cleaned = sanitizeOffPlanPaymentPlan(d.paymentPlan)
             return cleaned.length
@@ -223,7 +230,18 @@ const ListingsProvider = ({ children }) => {
         if (d.model) setSelectedModel(d.model)
         if (d.propertyType) setSelectType(d.propertyType)
         setTotalPrice(d.price != null ? String(d.price) : null)
-        setPhoneNumber(d.phoneNumber ? `${d.phoneNumber}` : '')
+        const rawPhone = d.phoneNumber ? `${d.phoneNumber}` : ''
+        setPhoneNumber(rawPhone)
+        if (rawPhone) {
+          try {
+            const parsed = parsePhoneNumber(rawPhone)
+            if (parsed?.country) {
+              setSelectedCountryPhone(parsed.country)
+            }
+          } catch {
+            // leave flag at default if phone can't be parsed
+          }
+        }
         {
           const thumbAsset = d?.thumbnailImg
           const firstThumb = Array.isArray(thumbAsset?.images)
@@ -266,7 +284,11 @@ const ListingsProvider = ({ children }) => {
               : qrAsset || null,
           )
         }
-        setImages(Array.isArray(d?.pictures?.images) ? d.pictures.images : [])
+        setImages(
+          Array.isArray(d?.pictures?.images)
+            ? d.pictures.images.filter((img) => !img?.isDeleted)
+            : [],
+        )
         // Keep parent ImageAsset ids on formData even if UI peels previews
         setFormData((prev) => ({
           ...prev,
@@ -566,7 +588,12 @@ const ListingsProvider = ({ children }) => {
     const files = Array.from(e.target.files || [])
     if (!files.length) return
 
-    const remainingSlots = LISTING_IMAGE_MAX_COUNT - images.length
+    const visibleCount = images.filter((img) => img && !img?.isDeleted && (
+      (typeof img?.signedUrl === 'string' && img.signedUrl.startsWith('http')) ||
+      (typeof img?.url === 'string' && img.url.startsWith('http')) ||
+      (typeof File !== 'undefined' && img instanceof File)
+    )).length
+    const remainingSlots = LISTING_IMAGE_MAX_COUNT - visibleCount
     if (remainingSlots <= 0) {
       toast.error(
         `You can only upload a maximum of ${LISTING_IMAGE_MAX_COUNT} images`,
@@ -656,7 +683,7 @@ const ListingsProvider = ({ children }) => {
         }
 
         // Check if the number of images exceeds the limit
-        if (images.length + validFiles.length > LISTING_IMAGE_MAX_COUNT) {
+        if (visibleCount + validFiles.length > LISTING_IMAGE_MAX_COUNT) {
           toast.error(
             `You can only upload a maximum of ${LISTING_IMAGE_MAX_COUNT} images`,
           )

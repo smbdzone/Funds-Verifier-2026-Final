@@ -59,7 +59,7 @@ export default function BoatView({ data: boatData }) {
           : '',
         fullWidth: true,
       },
-      { label: 'DLD Number', value: data?.dldNumber },
+      { label: 'Project Number', value: data?.dldNumber },
     ],
     [data],
   )

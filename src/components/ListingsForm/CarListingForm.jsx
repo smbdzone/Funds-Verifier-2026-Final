@@ -33,6 +33,7 @@ import {
   carTypes,
 } from '@/constants/car-listings'
 import customAxios from '../../utils/apis/apis'
+import { formatDateTime } from '@/utils/global-functions/global'
 import { toast } from 'react-toastify'
 import { XIcon } from 'lucide-react'
 import {
@@ -289,7 +290,7 @@ const CarListingForm = ({
                 value={formData.dldNumber || ''}
                 handleChange={handleChange}
                 name='dldNumber'
-                customPlaceholder='DLD Number'
+                customPlaceholder='Project Number'
                 disabled={isEvaluatorApprovedLocked}
               />
             </div>
@@ -465,7 +466,11 @@ const CarListingForm = ({
               <ListingModalInputComponent
                 maxLength={50}
                 name='evaluationDateTime'
-                value={formData.evaluationDateTime}
+                value={
+                  formData.evaluationDateTime
+                    ? formatDateTime(formData.evaluationDateTime).formattedDate
+                    : ''
+                }
                 handleChange={handleChange}
                 disabled={isEvaluatorApprovedLocked}
                 required={true}

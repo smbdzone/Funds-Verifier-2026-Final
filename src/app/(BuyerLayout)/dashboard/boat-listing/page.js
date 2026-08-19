@@ -35,6 +35,7 @@ import { ListingContext } from '@/components/ListingContext/ListingsProvider'
 import ListingsLowerComponent from '@/components/ListingsForm/ListingsLowerComponent'
 import { categories } from '@/constants/listing-data'
 import BoatListingForm from '@/components/ListingsForm/BoatListingForm'
+import FacilitiesChecklist from '@/components/property-listing/FacilitiesChecklist'
 import { useRouter } from 'next/navigation'
 import PayModal from '../../../../components/Modals/PayModal'
 import { useProfile } from '../../../../context/UserContext'
@@ -85,8 +86,6 @@ function Page() {
     brands: '',
     age: '',
     usage: '',
-    locateBoat: '',
-    sportsOutdoorPrice: '',
     warrenty: '',
     seats: '',
     pictures: null,
@@ -95,10 +94,10 @@ function Page() {
     qrScan: null,
     evaluationCertificate: null,
     evaludationComponents: '',
-    sportsOutdoorPrice: '',
     exteriorColor: [],
     interiorColor: [],
     extras: [],
+    customExtras: [],
     category: '',
     model: '',
     technicalReport: null,
@@ -683,7 +682,7 @@ function Page() {
           )
           : listingPayload
 
-      if (!id) {
+      if (formData?.evaluationSlotTimeslots) {
         await bookEvaluationTimeslotFromFormData(formData)
       }
 
@@ -1057,26 +1056,29 @@ function Page() {
                         />
                       </div>
                     </form>
-                    <div>
-                      <h2 className='text-dark-black text-xl font-medium pt-5'>
-                        Extras
-                      </h2>
-                      <form className='mt-[10px] grid xl:grid-cols-5 lg:grid-cols-3 md:grid-cols-2 sm:grid-cols-2 xxs:grid-cols-1 justify-between gap-y-[10px]'>
-                        {extrasList.map((extra, index) => (
-                          <div className='flex items-center' key={index}>
-                            <input
-                              className='custom-checkbox'
-                              type='checkbox'
-                              value={extra}
-                              checked={(formData.extras || []).includes(extra)}
-                              onChange={(e) =>
-                                handleCheckboxChange(e, 'extras')
-                              }
-                            />
-                            <label className='custom-label'>{extra}</label>
-                          </div>
-                        ))}
-                      </form>
+                    <div className='pt-5'>
+                      <FacilitiesChecklist
+                        title='Extras'
+                        presetFacilities={extrasList}
+                        selectedFacilities={formData.extras || []}
+                        customFacilities={formData.customExtras || []}
+                        onCheckboxChange={(e) => handleCheckboxChange(e, 'extras')}
+                        setFormData={(updater) => {
+                          setFormData((prev) => {
+                            const next = typeof updater === 'function' ? updater({
+                              ...prev,
+                              facilities: prev.extras || [],
+                              customFacilities: prev.customExtras || [],
+                            }) : updater
+                            return {
+                              ...prev,
+                              extras: next.facilities ?? prev.extras,
+                              customExtras: next.customFacilities ?? prev.customExtras,
+                            }
+                          })
+                        }}
+                        gridClassName='mt-[10px] grid xl:grid-cols-5 lg:grid-cols-3 md:grid-cols-2 sm:grid-cols-2 xxs:grid-cols-1 justify-between gap-y-[10px]'
+                      />
                     </div>
                   </div>
                   <ListingsLowerComponent

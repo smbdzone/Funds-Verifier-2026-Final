@@ -58,7 +58,7 @@ export default function JewelleryView({ data }) {
         fullWidth: true,
       },
       { label: 'Quantity', value: '01' },
-      { label: 'DLD Number', value: data?.dldNumber },
+      { label: 'Project Number', value: data?.dldNumber },
     ],
     [data],
   )

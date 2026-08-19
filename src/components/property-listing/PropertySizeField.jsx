@@ -20,6 +20,8 @@ const PropertySizeField = ({
   onBlur,
 }) => {
   const [unitOpen, setUnitOpen] = useState(false)
+  const [isFocused, setIsFocused] = useState(false)
+  const [rawInput, setRawInput] = useState('')
   const rootRef = useRef(null)
 
   useEffect(() => {
@@ -33,18 +35,35 @@ const PropertySizeField = ({
     return () => document.removeEventListener('mousedown', onPointerDown)
   }, [unitOpen])
 
-  const displayValue = useMemo(() => {
+  // Formatted value shown when not focused
+  const formattedValue = useMemo(() => {
     const raw = sizeUnit === 'SQM' ? sizeSQM : sizeSQFT
     return formatPropertySizeNumber(raw)
   }, [sizeSQFT, sizeSQM, sizeUnit])
 
+  // While focused show raw typing; when blurred show formatted
+  const displayValue = isFocused ? rawInput : formattedValue
+
+  const handleFocus = () => {
+    const raw = sizeUnit === 'SQM' ? sizeSQM : sizeSQFT
+    setRawInput(String(raw ?? ''))
+    setIsFocused(true)
+  }
+
   const handleInputChange = (e) => {
-    const next = parsePropertySizeInput(e.target.value)
+    const typed = e.target.value
+    setRawInput(typed)
+    const next = parsePropertySizeInput(typed)
     if (sizeUnit === 'SQM') {
       onSizeChange?.({ sizeSQM: next, sizeUnit })
-      return
+    } else {
+      onSizeChange?.({ sizeSQFT: next, sizeUnit })
     }
-    onSizeChange?.({ sizeSQFT: next, sizeUnit })
+  }
+
+  const handleBlur = (e) => {
+    setIsFocused(false)
+    onBlur?.(e)
   }
 
   const handleUnitPick = (unit) => {
@@ -99,8 +118,9 @@ const PropertySizeField = ({
           name={sizeUnit === 'SQM' ? 'sizeSQM' : 'sizeSQFT'}
           disabled={disabled}
           value={displayValue}
+          onFocus={handleFocus}
           onChange={handleInputChange}
-          onBlur={onBlur}
+          onBlur={handleBlur}
           placeholder={sizeUnit === 'SQM' ? 'Size in SQM' : 'Size in SQFT'}
           className='h-[50px] w-full border-0 pl-4 pr-3 placeholder:text-dark-grey outline-none placeholder:text-[15px] placeholder:font-normal'
         />

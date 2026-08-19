@@ -1014,13 +1014,6 @@ export const boatFormFields = [
     required: false,
   },
   {
-    id: 3,
-    type: "text",
-    name: "locateBoat",
-    placeholder: "Locate Your Boat",
-    required: false,
-  },
-  {
     id: 4,
     type: "dropdown",
     name: "usage",
@@ -1035,13 +1028,6 @@ export const boatFormFields = [
     placeholder: "Age",
     options: age,
     required: true,
-  },
-  {
-    id: 6,
-    type: "text",
-    name: "sportsOutdoorPrice",
-    placeholder: "Sports & Outdoor Price",
-    required: false,
   },
   {
     id: 7,
@@ -1206,25 +1192,11 @@ export const materials = [
 
 export const jewelleryFormFields = [
   {
-    id: 1,
-    type: "text",
-    name: "locateJewelry",
-    placeholder: "Locate Your Jewellery",
-    required: false,
-  },
-  {
     id: 2,
     type: "dropdown",
     name: "warrenty",
     placeholder: "Warrenty",
     options: warrenty,
-    required: false,
-  },
-  {
-    id: 3,
-    type: "text",
-    name: "lengthh",
-    placeholder: "Length",
     required: false,
   },
   {
@@ -1249,13 +1221,6 @@ export const jewelleryFormFields = [
     placeholder: "Age",
     options: jeweleryAge,
     required: true,
-  },
-  {
-    id: 7,
-    type: "text",
-    name: "jewelryStyles",
-    placeholder: "Jewellery Styles",
-    required: false,
   },
   {
     id: 8,

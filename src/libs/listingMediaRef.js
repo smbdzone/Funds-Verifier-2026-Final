@@ -83,6 +83,8 @@ const UNSAFE_LISTING_UPDATE_KEYS = [
   'dealhunterId',
   'transactionId',
   'customFacilities',
+  'customMaterials',
+  'customExtras',
   'feedback',
   'warrenty',
 ]

@@ -908,7 +908,7 @@ const Page = () => {
       const validationErrors = validateForm(updatedFormData)
 
       if (Object.keys(validationErrors).length === 0) {
-        if (!id && !isOffPlan) {
+        if (!isOffPlan && formData?.evaluationSlotTimeslots) {
           await bookEvaluationTimeslotFromFormData(formData)
         }
 

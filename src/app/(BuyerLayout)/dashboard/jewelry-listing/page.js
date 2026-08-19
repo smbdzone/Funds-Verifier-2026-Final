@@ -36,6 +36,7 @@ import { ListingContext } from '@/components/ListingContext/ListingsProvider'
 import ListingsLowerComponent from '@/components/ListingsForm/ListingsLowerComponent'
 import { materials } from '@/constants/listing-data'
 import JewelryListingForm from '@/components/ListingsForm/JewelryListingForm'
+import FacilitiesChecklist from '@/components/property-listing/FacilitiesChecklist'
 import { useRouter } from 'next/navigation'
 import PayModal from '../../../../components/Modals/PayModal'
 import { useProfile } from '../../../../context/UserContext'
@@ -114,14 +115,12 @@ function Page() {
     thumbnailImg: null,
     evaluationCertificate: null,
     evaluationCompanies: '',
-    jewelryStyles: '',
     jewelryMetal: '',
-    locateJewelry: '',
     ratings: [],
     materials: [],
+    customMaterials: [],
     totalrating: '',
     warrenty: '',
-    lengthh: '',
     technicalReport: null,
     evaluationDateTime: '',
     video3DWalkthrough: null,
@@ -709,7 +708,7 @@ function Page() {
             )
             : listingPayload
 
-        if (!id) {
+        if (formData?.evaluationSlotTimeslots) {
           await bookEvaluationTimeslotFromFormData(formData)
         }
 
@@ -963,25 +962,30 @@ function Page() {
                   ) : (
                     <></>
                   )}
-                  <h2 className='text-dark-black text-xl font-medium pt-5'>
-                    Materials
-                  </h2>
-                  <form className='mt-[10px] grid xl:grid-cols-5 lg:grid-cols-4 md:grid-cols-3 sm:grid-cols-2 xxs:grid-cols-2 justify-between gap-y-[10px]'>
-                    {materials.map((material, index) => (
-                      <div key={index}>
-                        <input
-                          className='custom-checkbox'
-                          type='checkbox'
-                          value={material}
-                          checked={(formData.materials || []).includes(
-                            material
-                          )}
-                          onChange={(e) => handleCheckboxChange(e, 'materials')}
-                        />
-                        <label className='custom-label'>{material}</label>
-                      </div>
-                    ))}
-                  </form>
+                  <div className='pt-5'>
+                    <FacilitiesChecklist
+                      title='Materials'
+                      presetFacilities={materials}
+                      selectedFacilities={formData.materials || []}
+                      customFacilities={formData.customMaterials || []}
+                      onCheckboxChange={(e) => handleCheckboxChange(e, 'materials')}
+                      setFormData={(updater) => {
+                        setFormData((prev) => {
+                          const next = typeof updater === 'function' ? updater({
+                            ...prev,
+                            facilities: prev.materials || [],
+                            customFacilities: prev.customMaterials || [],
+                          }) : updater
+                          return {
+                            ...prev,
+                            materials: next.facilities ?? prev.materials,
+                            customMaterials: next.customFacilities ?? prev.customMaterials,
+                          }
+                        })
+                      }}
+                      gridClassName='mt-[10px] grid xl:grid-cols-5 lg:grid-cols-4 md:grid-cols-3 sm:grid-cols-2 xxs:grid-cols-2 justify-between gap-y-[10px]'
+                    />
+                  </div>
                 </div>
                 <ListingsLowerComponent
                   image='/listing/jewelery.png'
