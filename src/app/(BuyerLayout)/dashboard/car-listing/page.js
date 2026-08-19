@@ -102,6 +102,7 @@ const initialFormData = {
   interiorColor: [String],
   technicalFeatures: [String],
   extras: [String],
+  customExtras: [],
   technicalReport: '',
   evaluationDateTime: '',
   mapUrl: '',
@@ -875,6 +876,7 @@ function Page() {
                   handleRadioChange={handleRadioChange}
                   handleCheckboxChange={handleCheckboxChange}
                   formData={formData}
+                  setFormData={setFormData}
                 />
                 <ListingsLowerComponent
                   image='/listing/car.png'

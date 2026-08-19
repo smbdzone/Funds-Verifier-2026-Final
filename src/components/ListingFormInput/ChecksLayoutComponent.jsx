@@ -1,4 +1,5 @@
 import React from "react";
+import FacilitiesChecklist from '@/components/property-listing/FacilitiesChecklist'
 
 const ChecksLayoutComponent = ({
   carListings,
@@ -8,6 +9,7 @@ const ChecksLayoutComponent = ({
   handleRadioChange,
   handleCheckboxChange,
   formData,
+  setFormData,
 }) => {
   return (
     <>
@@ -95,21 +97,28 @@ const ChecksLayoutComponent = ({
           ))}
         </form>
         {/* 4 */}
-        <h2 className="text-dark-black text-xl font-medium pt-5">Extras</h2>
-        <form className="mt-[10px] grid xl:grid-cols-5 lg:grid-cols-3 md:grid-cols-2 sm:grid-cols-2 xxs:grid-cols-1 justify-between gap-y-[10px]">
-          {extras.map((extra, index) => (
-            <div className="flex items-center" key={index}>
-              <input
-                className="custom-checkbox"
-                type="checkbox"
-                value={extra}
-                checked={(formData.extras || []).includes(extra)}
-                onChange={(e) => handleCheckboxChange(e, "extras")}
-              />
-              <label className="custom-label">{extra}</label>
-            </div>
-          ))}
-        </form>
+        <FacilitiesChecklist
+          title='Extras'
+          presetFacilities={extras}
+          selectedFacilities={formData.extras || []}
+          customFacilities={formData.customExtras || []}
+          onCheckboxChange={(e) => handleCheckboxChange(e, 'extras')}
+          setFormData={(updater) => {
+            if (typeof setFormData !== 'function') return
+            setFormData((prev) => {
+              const next = typeof updater === 'function' ? updater({
+                facilities: prev.extras || [],
+                customFacilities: prev.customExtras || [],
+              }) : updater
+              return {
+                ...prev,
+                extras: next.facilities ?? prev.extras,
+                customExtras: next.customFacilities ?? prev.customExtras,
+              }
+            })
+          }}
+          gridClassName='grid xl:grid-cols-5 lg:grid-cols-3 md:grid-cols-2 sm:grid-cols-2 xxs:grid-cols-1'
+        />
       </div>
     </>
   );

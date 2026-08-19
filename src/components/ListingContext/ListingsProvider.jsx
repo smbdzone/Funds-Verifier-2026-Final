@@ -36,6 +36,7 @@ import {
 } from '@/constants/listingUploadLimits'
 import { createDefaultOffPlanPaymentPlan, sanitizeOffPlanPaymentPlan, facilities, getExtraFacilities, materials } from '@/constants/listing-data'
 import { extrasList } from '@/constants/boat-listings'
+import { extras as carExtrasList } from '@/constants/car-listings'
 import { formatBedBathCount } from '@/libs/bedBathCount'
 import {
   ensureWithinSize,
@@ -206,7 +207,7 @@ const ListingsProvider = ({ children }) => {
             ? getExtraFacilities(d.materials, [], materials)
             : [],
           customExtras: Array.isArray(d.extras)
-            ? getExtraFacilities(d.extras, [], extrasList)
+            ? getExtraFacilities(d.extras, [], [...extrasList, ...carExtrasList])
             : [],
           paymentPlan: (() => {
             const cleaned = sanitizeOffPlanPaymentPlan(d.paymentPlan)
