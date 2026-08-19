@@ -345,9 +345,9 @@ function Page() {
     const safeTrim = (value) => {
       return typeof value === 'string' ? value.trim() : ''
     }
-    if (images.length === 0) errors.pictures = 'Pictures are Required'
-    if (!thumbnail) errors.thumbnail = 'Thumbnail is Required'
-    if (!qrScan) errors.qrScan = 'QR Scan is required'
+    if (!id && images.length === 0) errors.pictures = 'Pictures are Required'
+    if (!id && !thumbnail) errors.thumbnail = 'Thumbnail is Required'
+    if (!id && !qrScan) errors.qrScan = 'QR Scan is required'
     if (!safeTrim(data.assetType) || data.assetType === 'Select Asset Type')
       errors.assetType = 'Asset Type is required'
     if (!safeTrim(data.country)) errors.country = 'Country is required'

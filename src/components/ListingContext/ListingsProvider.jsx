@@ -173,6 +173,9 @@ const ListingsProvider = ({ children }) => {
           toUnitedArabEmiratesListingCountryName(d.country) ||
           d.country ||
           ''
+        // Compute E.164 phone here so it can be stored in both formData AND phone state
+        const rawPhone = d.phoneNumber ? `${d.phoneNumber}` : ''
+        const e164Phone = rawPhone && !rawPhone.startsWith('+') ? `+${rawPhone}` : rawPhone
         const normalized = {
           ...normalizeListingPremiumRefs(d),
           description: d.description || '',
@@ -217,6 +220,8 @@ const ListingsProvider = ({ children }) => {
           })(),
           warranty: d.warranty || d.warrenty || '',
           warrenty: d.warranty || d.warrenty || '',
+          // Store E.164 phone in formData so PhoneInputField (which reads formData.phoneNumber in edit mode) shows the correct flag
+          phoneNumber: e164Phone,
         }
         setFormData(normalized)
         restorePendingPremiumModals(normalized)
@@ -231,9 +236,7 @@ const ListingsProvider = ({ children }) => {
         if (d.model) setSelectedModel(d.model)
         if (d.propertyType) setSelectType(d.propertyType)
         setTotalPrice(d.price != null ? String(d.price) : null)
-        const rawPhone = d.phoneNumber ? `${d.phoneNumber}` : ''
         // PhoneInput and parsePhoneNumber both require E.164 (leading +)
-        const e164Phone = rawPhone && !rawPhone.startsWith('+') ? `+${rawPhone}` : rawPhone
         setPhoneNumber(e164Phone)
         if (e164Phone) {
           try {

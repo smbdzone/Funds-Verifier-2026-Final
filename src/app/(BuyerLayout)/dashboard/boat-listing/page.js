@@ -285,11 +285,11 @@ function Page() {
   const validateForm = (data) => {
     const errors = {}
 
-    if (images.length === 0) errors.pictures = 'Pictures are Required'
-    if (!thumbnail) {
+    if (!id && images.length === 0) errors.pictures = 'Pictures are Required'
+    if (!id && !thumbnail) {
       errors.thumbnail = 'Thumbnail are Required'
     }
-    if (!qrScan) {
+    if (!id && !qrScan) {
       errors.qrScan = 'QR Scan is required'
     }
     if (!data.assetType.trim() || data.assetType === 'Select Asset Type') {

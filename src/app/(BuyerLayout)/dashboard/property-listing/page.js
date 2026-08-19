@@ -1090,11 +1090,11 @@ const Page = () => {
     } else if (data.description.length > 300) {
       errors.description = 'Description cannot exceed 300 characters.'
     }
-    if (images.length === 0) errors.pictures = 'Pictures are Required'
-    if (!thumbnail) {
+    if (!id && images.length === 0) errors.pictures = 'Pictures are Required'
+    if (!id && !thumbnail) {
       errors.thumbnail = 'Thumbnail is required'
     }
-    if (!qrScan) {
+    if (!id && !qrScan) {
       errors.qrScan = 'QR Scan is required'
     }
 

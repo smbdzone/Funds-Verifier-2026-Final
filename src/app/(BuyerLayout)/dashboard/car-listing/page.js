@@ -617,12 +617,12 @@ function Page() {
 
   const validateForm = (data) => {
     const errors = {}
-    if (images?.length === 0) errors.pictures = 'Pictures are Required'
+    if (!id && images?.length === 0) errors.pictures = 'Pictures are Required'
     // if (!data.evaluationDateTime) {
     //   errors.evaluationDateTime = "Please select a date and time.";
     // }
-    if (!thumbnail) errors.thumbnail = 'Thumbnail are Required'
-    if (!qrScan) errors.qrScan = 'QR Scan is required'
+    if (!id && !thumbnail) errors.thumbnail = 'Thumbnail are Required'
+    if (!id && !qrScan) errors.qrScan = 'QR Scan is required'
     if (!data?.assetType || data?.assetType === 'Select Asset Type')
       errors.assetType = 'Asset Type is required'
     if (!data?.country) errors.country = 'Country is required'

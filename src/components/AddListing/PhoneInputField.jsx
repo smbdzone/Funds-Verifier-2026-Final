@@ -30,7 +30,7 @@ const PhoneInputField = ({
         className={`shadow-neons w-full h-[50px] pl-5 placeholder:text-dark-grey outline-with-opacity placeholder:text-[15px] placeholder:font-normal outline-none ${
           errors.phoneNumber ? "border-red-500 border" : ""
         }`}
-        value={id ? `${formData.phoneNumber || ""} ` : `${value}`}
+        value={id ? (formData.phoneNumber || '') : (value || '')}
         onChange={handlePhoneNumberChange}
         onCountryChange={handleCountryChange}
         defaultCountry={defaultCountry}
