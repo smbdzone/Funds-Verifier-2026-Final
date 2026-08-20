@@ -27,7 +27,7 @@ const ListingsLowerComponent = ({
   return (
     <>
       <div className="grid place-items-center mt-[49px]">
-       
+
         <FooterAdd />
       </div>
       <ListingMapSection

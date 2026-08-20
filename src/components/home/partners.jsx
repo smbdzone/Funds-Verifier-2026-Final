@@ -1,14 +1,12 @@
 import React from 'react'
 import Image from 'next/image'
-import brand1 from '@/assets/images/partner-logos/brand1.jpg'
 import brand2 from '@/assets/images/partner-logos/ls.jpg'
-import brand3 from '@/assets/images/partner-logos/brand3.jpg'
 import brand4 from '@/assets/images/partner-logos/brand4.jpg'
 import brand5 from '@/assets/images/partner-logos/brand-8.webp'
 
 
 export default function Partners() {
-  const logos = [brand1, brand2, brand3, brand4, brand5]
+  const logos = [ brand2, brand4, brand5]
   return (
     <div className='container mx-auto py-2 pt-5 sm:pt-14'>
       <div className='text-2xl sm:text-3xl text-[#002D4F] font-semibold text-center w-full mb-5 sm:mb-10'>

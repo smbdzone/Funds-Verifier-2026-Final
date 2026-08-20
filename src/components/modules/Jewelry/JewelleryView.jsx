@@ -82,7 +82,7 @@ export default function JewelleryView({ data }) {
           media={combinedMedia}
           previewMedia={previewMedia}
           setPreviewMedia={setPreviewMedia}
-          mapUrl={data?.mapUrl}
+          showMap={false}
           imageAlt={data?.title || 'Jewellery'}
         />
 

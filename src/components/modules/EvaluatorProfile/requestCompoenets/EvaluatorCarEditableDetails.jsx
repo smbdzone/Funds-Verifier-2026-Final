@@ -17,6 +17,7 @@ import {
   horsepowerOptions,
   carTypes,
 } from '@/constants/car-listings'
+import EvaluatorMapUrlField from './EvaluatorMapUrlField'
 
 const editInputClass =
   'focus:outline-none mt-1 block w-full px-3 py-3 rounded-md bg-white text-gray-800 text-sm sm:text-base border border-[#8d7c3b]'
@@ -436,15 +437,10 @@ export default function EvaluatorCarEditableDetails({
           />
         </div>
 
-        <div className='sm:col-span-2'>
-          <label className={labelClass}>Map URL</label>
-          <input
-            type='text'
-            className={editInputClass}
-            value={pickValue(draft?.mapUrl, property.mapUrl)}
-            onChange={(e) => setField('mapUrl', e.target.value)}
-          />
-        </div>
+        <EvaluatorMapUrlField
+          value={pickValue(draft?.mapUrl, property.mapUrl)}
+          onChange={(val) => setField('mapUrl', val)}
+        />
 
         {/* ── Checkboxes ── */}
         <CheckboxGroup

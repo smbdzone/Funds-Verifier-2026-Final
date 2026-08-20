@@ -15,6 +15,7 @@ export default function ListingDetailMediaColumn({
   setPreviewMedia,
   mapUrl = '',
   imageAlt = 'Listing',
+  showMap = true,
 }) {
   const renderPreview = () => {
     if (previewMedia?.type === 'video') {
@@ -63,27 +64,31 @@ export default function ListingDetailMediaColumn({
       {/* Mobile only (&lt;700): carousel */}
       <div className='block w-full shrink-0 min-[700px]:hidden'>
         <ImageSlider media={media} />
-        <ListingMapSection
-          mapUrl={mapUrl}
-          showInput={false}
-          title='Location'
-          showEmptyPlaceholder
-          className='mt-4 w-full'
-          iframeClassName='h-[240px] w-full rounded-[5px] sm:h-[280px]'
-        />
+        {showMap ? (
+          <ListingMapSection
+            mapUrl={mapUrl}
+            showInput={false}
+            title='Location'
+            showEmptyPlaceholder
+            className='mt-4 w-full'
+            iframeClassName='h-[240px] w-full rounded-[5px] sm:h-[280px]'
+          />
+        ) : null}
       </div>
 
       {/* 700px+: main preview + map */}
       <div className='hidden w-full min-w-0 flex-col gap-4 min-[700px]:flex min-[700px]:flex-1'>
         <div className='h-[360px] w-full lg:h-[420px] xl:h-[560px]'>{renderPreview()}</div>
-        <ListingMapSection
-          mapUrl={mapUrl}
-          showInput={false}
-          title='Location'
-          showEmptyPlaceholder
-          className='w-full'
-          iframeClassName='h-[260px] w-full rounded-[5px] sm:h-[300px] lg:h-[320px]'
-        />
+        {showMap ? (
+          <ListingMapSection
+            mapUrl={mapUrl}
+            showInput={false}
+            title='Location'
+            showEmptyPlaceholder
+            className='w-full'
+            iframeClassName='h-[260px] w-full rounded-[5px] sm:h-[300px] lg:h-[320px]'
+          />
+        ) : null}
       </div>
     </div>
   )
