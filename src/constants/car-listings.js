@@ -7,6 +7,12 @@ export const bodyConditionOptions = [
   "Poor",
 ];
 
+export const mechanicalConditionOptions = [
+  "Fair",
+  "Good",
+  "Excellent",
+];
+
 export const evaluationPrices = ["2000", "3000", "4000"];
 export const carTypes = ["Saloon", "Sports", "4x4"];
 
@@ -79,9 +85,8 @@ export const bodyTypeOptions = [
 ];
 
 export const transmissionTypeOptions = [
-  "Transmission Type",
-  "Manual Transmission",
-  "Automatic Transmission",
+  "Manual",
+  "Automatic",
 ];
 
 export const fuelTypeOptions = [

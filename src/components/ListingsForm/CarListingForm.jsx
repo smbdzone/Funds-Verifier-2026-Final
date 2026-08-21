@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import ListingsImageComponent from '../ListingsImageComponent/ListingsImageComponent'
 import ListingFormInput from '@/components/ListingFormInput/ListingFormInput'
+import ListingFieldLabel from '@/components/ListingsForm/ListingFieldLabel'
 import PhoneInputComponent from '@/components/ListingFormInput/PhoneInputComponent'
 import ListingImageUploadLayout from '@/components/ListingsImageComponent/ListingImageUploadLayout'
 import ListingMultipleImageComponent from '@/components/ListingsImageComponent/ListingMultipleImageComponent'
@@ -22,6 +23,7 @@ import {
 import {
   warrantyOptions,
   bodyConditionOptions,
+  mechanicalConditionOptions,
   doorOptions,
   cylindersOptions,
   engineCapacityOptions,
@@ -33,7 +35,7 @@ import {
   carTypes,
 } from '@/constants/car-listings'
 import customAxios from '../../utils/apis/apis'
-import { formatDateTime } from '@/utils/global-functions/global'
+import { formatEvaluationDateTimeDisplay } from '@/libs/evaluationBooking'
 import { toast } from 'react-toastify'
 import { XIcon } from 'lucide-react'
 import {
@@ -295,7 +297,24 @@ const CarListingForm = ({
               />
             </div>
           </div>
-          <div className='relative w-full dropdown-container space-y-6'>
+          <div className='relative w-full dropdown-container'>
+            <ListingFormInput
+              errors={
+                (errors.price && parseInt(totalprice) === 0) ||
+                (!totalprice && errors.price)
+              }
+              value={totalprice}
+              handleChange={handleChange}
+              onBlur={handleBlur}
+              required={true}
+              placeholder='Price'
+              errorsMessage={errors.price}
+              name='price'
+              type='text'
+              disabled={isPriceLocked}
+            />
+          </div>
+          <div className='w-full md:col-span-2'>
             <ListingTextareaComponent
               errors={
                 errors.description ||
@@ -311,53 +330,53 @@ const CarListingForm = ({
               maxLength={300}
               disabled={isEvaluatorApprovedLocked}
             />
-            <div className='relative w-full dropdown-container'>
-              <ListingFormInput
-                errors={
-                  (errors.price && parseInt(totalprice) === 0) ||
-                  (!totalprice && errors.price)
-                }
-                value={totalprice}
-                handleChange={handleChange}
-                onBlur={handleBlur}
-                required={true}
-                placeholder='Price'
-                errorsMessage={errors.price}
-                name='price'
-                type='text'
-                disabled={isPriceLocked}
-              />
-            </div>
           </div>
           <div className='relative w-full dropdown-container'>
             <div className='relative flex flex-col justify-start'>
-              <ListingFormInput
-                errors={errors.size && !formData.size}
-                value={formData.size}
-                handleChange={handleChange}
-                required={true}
-                placeholder='Size'
-                errorsMessage={errors.size}
-                name='size'
-                maxLength={50}
-                type='text'
-                disabled={isEvaluatorApprovedLocked}
-              />
-            </div>
-            <div className='relative flex mt-[20px] flex-col justify-start'>
-              <ListingFormInput
-                errors={errors.kilometers && !formData.kilometers}
-                value={formData.kilometers}
-                handleChange={handleChange}
-                handleBlur={handleBlur}
-                required={true}
-                placeholder='Kilometers'
-                errorsMessage={errors.kilometers}
-                name='kilometers'
-                maxLength={50}
-                type='text'
-                disabled={isEvaluatorApprovedLocked}
-              />
+              <ListingFieldLabel label='How much driven' required />
+              <div
+                className={`w-full flex items-center shadow-neons h-[50px] ${errors.kilometers ? 'input-field-error' : ''
+                  }`}
+              >
+                <input
+                  type='text'
+                  inputMode='numeric'
+                  name='kilometers'
+                  value={formData.kilometers || ''}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  disabled={isEvaluatorApprovedLocked}
+                  maxLength={50}
+                  placeholder='How much driven'
+                  className='h-full w-full min-w-0 border-0 pl-5 placeholder:text-dark-grey outline-with-opacity placeholder:text-[15px] placeholder:font-normal bg-transparent'
+                  onKeyDown={(e) => {
+                    if (
+                      e.key === '-' ||
+                      e.key === 'e' ||
+                      e.key === 'E' ||
+                      e.key === '+'
+                    ) {
+                      e.preventDefault()
+                    }
+                  }}
+                />
+                <select
+                  name='mileageUnit'
+                  value={formData.mileageUnit || 'km'}
+                  onChange={handleChange}
+                  disabled={isEvaluatorApprovedLocked}
+                  className='h-full shrink-0 border-l border-dark-grey bg-white px-3 text-sm text-dark-grey outline-none'
+                  aria-label='Distance unit'
+                >
+                  <option value='km'>km</option>
+                  <option value='mile'>mile</option>
+                </select>
+              </div>
+              {errors.kilometers ? (
+                <span className='absolute left-0 top-[99%] text-xs font-medium text-red-500 lg:text-sm'>
+                  **{errors.kilometers}
+                </span>
+              ) : null}
             </div>
             <div className='relative-placeholder mt-[20px] w-full'>
               <ListingModalInputComponent
@@ -467,9 +486,8 @@ const CarListingForm = ({
                 maxLength={50}
                 name='evaluationDateTime'
                 value={
-                  formData.evaluationDateTime
-                    ? formatDateTime(formData.evaluationDateTime).formattedDate
-                    : ''
+                  formatEvaluationDateTimeDisplay(formData.evaluationDateTime) ||
+                  ''
                 }
                 handleChange={handleChange}
                 disabled={isEvaluatorApprovedLocked}
@@ -497,7 +515,7 @@ const CarListingForm = ({
           <div className='relative w-full dropdown-container'>
             <div className='relative flex flex-col justify-start'>
               <ListingFormInput
-                errors={errors.year && !formData.year}
+                errors={Boolean(errors.year)}
                 value={formData.year}
                 handleChange={handleChange}
                 handleBlur={handleBlur}
@@ -506,6 +524,7 @@ const CarListingForm = ({
                 errorsMessage={errors.year}
                 name='year'
                 type='text'
+                inputMode='numeric'
                 disabled={isEvaluatorApprovedLocked}
               />
             </div>
@@ -548,24 +567,6 @@ const CarListingForm = ({
           </div>
           <div className='relative-placeholder w-full'>
             <ListingsDropdownInputComponents
-              errors={errors.carType && !formData.carType}
-              errorMessage={errors.carType}
-              value={formData.carType}
-              disabled={isEvaluatorApprovedLocked}
-              placeholder='car Type'
-              name='carType'
-              handleToggleDropdown={() => handleToggleDropdown('carType')}
-              dropdown={dropdowns.carType}
-              dropdownType='carType'
-              dropdownOptions={carTypes}
-              handleSelectOption={(_, option) =>
-                handleSelectOption('carType', option)
-              }
-              readOnly={true}
-            />
-          </div>
-          <div className='relative-placeholder w-full'>
-            <ListingsDropdownInputComponents
               errors={errors.noofCylinders && !formData.noofCylinders}
               errorMessage={errors.noofCylinders}
               value={formData.noofCylinders}
@@ -583,26 +584,58 @@ const CarListingForm = ({
             />
           </div>
           <div className='relative w-full dropdown-container'>
-            <div className='relative-placeholder w-full'>
-              <ListingCustomPlacholderInput
-                value={formData.capacityWeight}
-                handleChange={handleChange}
-                disabled={isEvaluatorApprovedLocked}
+            <ListingFieldLabel label='Capacity/Weight' />
+            <div className='w-full flex items-center shadow-neons h-[50px]'>
+              <input
+                type='text'
+                inputMode='decimal'
                 name='capacityWeight'
-                customPlaceholder='Capacity/Weight'
+                value={formData.capacityWeight || ''}
+                onChange={handleChange}
+                disabled={isEvaluatorApprovedLocked}
+                placeholder='Enter Capacity/Weight'
+                className='h-full w-full min-w-0 border-0 pl-5 placeholder:text-dark-grey outline-with-opacity placeholder:text-[15px] placeholder:font-normal bg-transparent'
+                onKeyDown={(e) => {
+                  if (
+                    e.key === '-' ||
+                    e.key === 'e' ||
+                    e.key === 'E' ||
+                    e.key === '+'
+                  ) {
+                    e.preventDefault()
+                  }
+                }}
               />
+              <select
+                name='capacityWeightUnit'
+                value={formData.capacityWeightUnit || 'kg'}
+                onChange={handleChange}
+                disabled={isEvaluatorApprovedLocked}
+                className='h-full shrink-0 border-l border-dark-grey bg-white px-3 text-sm text-dark-grey outline-none'
+                aria-label='Weight unit'
+              >
+                <option value='kg'>kg</option>
+                <option value='lb'>lb</option>
+              </select>
             </div>
           </div>
           <div className='relative w-full dropdown-container'>
-            <div className='relative-placeholder w-full'>
-              <ListingCustomPlacholderInput
-                value={formData.mechanicalCondition}
-                handleChange={handleChange}
-                disabled={isEvaluatorApprovedLocked}
-                name='mechanicalCondition'
-                customPlaceholder='Mechanical condition'
-              />
-            </div>
+            <ListingsDropdownInputComponents
+              value={formData.mechanicalCondition}
+              placeholder='Mechanical condition'
+              name='mechanicalCondition'
+              handleToggleDropdown={() =>
+                handleToggleDropdown('mechanicalCondition')
+              }
+              dropdown={dropdowns.mechanicalCondition}
+              dropdownType='mechanicalCondition'
+              dropdownOptions={mechanicalConditionOptions}
+              handleSelectOption={(_, option) =>
+                handleSelectOption('mechanicalCondition', option)
+              }
+              disabled={isEvaluatorApprovedLocked}
+              readOnly={true}
+            />
           </div>
           <div className='relative w-full dropdown-container'>
             <ListingsDropdownInputComponents
@@ -713,7 +746,7 @@ const CarListingForm = ({
           </div>
           <div className='relative flex flex-col justify-start'>
             <ListingFormInput
-              errors={errors.VIN}
+              errors={Boolean(errors.VIN)}
               value={formData.VIN}
               handleChange={handleChange}
               handleBlur={handleBlur}
@@ -723,6 +756,7 @@ const CarListingForm = ({
               errorsMessage={errors.VIN}
               name='VIN'
               type='text'
+              inputMode='numeric'
               maxLength={50}
             />
           </div>

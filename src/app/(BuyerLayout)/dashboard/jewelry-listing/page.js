@@ -100,6 +100,7 @@ function Page() {
     neighbourhood: '',
     make: '',
     grams: '',
+    weightUnit: 'gm',
     title: '',
     slug: '',
     phoneNumber: '',
@@ -356,7 +357,11 @@ function Page() {
       errors.neighbourhood = 'Neighbourhood is required'
     if (!safeTrim(data.category)) errors.category = 'Category is required'
     if (!safeTrim(data.model)) errors.model = 'SubCategory is required'
-    if (!safeTrim(data.grams)) errors.grams = 'Grams is required'
+    if (!safeTrim(data.grams)) {
+      errors.grams = 'Weight is required'
+    } else if (!/^\d+(\.\d+)?$/.test(String(data.grams).trim()) || Number(data.grams) <= 0) {
+      errors.grams = 'Weight must be a positive number'
+    }
     if (!safeTrim(data.title)) {
       errors.title = 'Title is required'
     } else if (data.title.length > 60) {
@@ -424,6 +429,13 @@ function Page() {
           error = 'price is required'
         } else if (parseInt(value.trim()) === 0) {
           error = 'price is invalid'
+        }
+        break
+      case 'grams':
+        if (!value.trim()) {
+          error = 'Weight is required'
+        } else if (!/^\d+(\.\d+)?$/.test(value.trim()) || Number(value) <= 0) {
+          error = 'Weight must be a positive number'
         }
         break
       case 'weight':
@@ -674,6 +686,9 @@ function Page() {
       const updatedFormData = {
         ...formData,
         userUUID: user?.uuid,
+        weightUnit: ['gm', 'kg', 'lb', 'oz'].includes(formData?.weightUnit)
+          ? formData.weightUnit
+          : 'gm',
         pictures:
           listingMediaRef(imageID) ?? listingMediaRef(formData?.pictures),
         video: listingMediaRef(videoID) ?? listingMediaRef(formData?.video),
@@ -738,9 +753,13 @@ function Page() {
               : 'Submitted successfully. Evaluator will evaluate it.'
           )
           if (id) {
-            fetchData('jewelry')
-          }
-          if (!id) {
+            await fetchData('jewelry')
+            // Hard refresh so form, map embed, and media fully sync from server
+            if (typeof window !== 'undefined') {
+              window.location.reload()
+              return
+            }
+          } else {
             flagListingPendingApprovalNotice({ assetKind: 'jewelry' })
             router.push('/seller-profile/my-listing')
             resetForm()
@@ -809,6 +828,12 @@ function Page() {
         setFormData({ ...formData, [name]: rawValue })
         const formattedValue = new Intl.NumberFormat('en-US').format(rawValue)
         setTotalPrice(formattedValue) // This will format the displayed price
+      }
+      setErrors({ ...errors, [name]: '' })
+    } else if (name === 'grams') {
+      // Positive numbers only (optional decimal); block minus / non-numeric
+      if (value === '' || /^\d*\.?\d*$/.test(value)) {
+        setFormData({ ...formData, [name]: value })
       }
       setErrors({ ...errors, [name]: '' })
     } else if (name === 'sizeSQFT') {

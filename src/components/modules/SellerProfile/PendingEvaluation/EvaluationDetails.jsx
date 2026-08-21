@@ -3,6 +3,7 @@ import { useSearchParams, usePathname } from 'next/navigation'
 import ViewModal from '@/components/Modals/ViewModal'
 import { handleFileUpload } from '@/libs/uploadAsset'
 import { formatNumberWithCommas } from '@/utils/global-functions/global'
+import { formatJewelryWeight } from '@/libs/jewelryUnits'
 import { formatListingCardPrice, formatListingPriceDisplay } from '@/libs/listingPriceDisplay'
 import { isOffPlanListing } from '@/libs/filterMyListingTab'
 import { formatPropertySizeDisplay } from '@/libs/propertySizeUnits'
@@ -158,7 +159,7 @@ const EvaluationDetails = () => {
       ...commonFields,
       {
         label: 'Weight',
-        value: formatNumberWithCommas(selectedProperty?.grams),
+        value: formatJewelryWeight(selectedProperty),
       },
       { label: 'Age', value: selectedProperty?.age },
       { label: 'Category', value: selectedProperty?.category },

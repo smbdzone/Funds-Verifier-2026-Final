@@ -16,6 +16,7 @@ import Link from 'next/link'
 import Modal2 from '../product-modal/modal2'
 import Image from 'next/image'
 import { formatNumberWithCommas } from '@/utils/global-functions/global'
+import { formatJewelryWeight } from '@/libs/jewelryUnits'
 import { formatCardPrice, formatListingCardPrice } from '@/libs/listingPriceDisplay'
 import { isOffPlanListing } from '@/libs/filterMyListingTab'
 import { formatPropertySizeDisplay } from '@/libs/propertySizeUnits'
@@ -126,7 +127,7 @@ const renderListingDetails = (listing, hasFeaturedStyling) => {
               : 'text-prussianBlue'
               }`}
           >
-            Grams: {listing.grams}
+            Weight: {formatJewelryWeight(listing) || listing.grams}
           </span>
         </div>
       )

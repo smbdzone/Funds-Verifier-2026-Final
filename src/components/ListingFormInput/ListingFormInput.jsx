@@ -25,12 +25,22 @@ const ListingFormInput = ({
   maxLength,
   type,
   disabled,
+  inputMode,
 }) => {
   const isPrice = placeholder === 'Price'
   const isTitle = String(name || '').toLowerCase() === 'title'
+  const isGrams = String(name || '').toLowerCase() === 'grams'
+  const isKilometers = String(name || '').toLowerCase() === 'kilometers'
+  const isYear = String(name || '').toLowerCase() === 'year'
+  const isVin = String(name || '').toUpperCase() === 'VIN'
+  const isPositiveNumeric = isGrams || isKilometers || isYear || isVin
   const label = fieldLabel || (required ? labelFromPlaceholder(placeholder) : '')
 
   const onTextChange = (e) => {
+    if (isPositiveNumeric) {
+      handleChange(e)
+      return
+    }
     if (isTitle) {
       const nextValue = autoCapitalizeTitle(e.target.value)
       handleChange({
@@ -84,6 +94,7 @@ const ListingFormInput = ({
         <input
           type={type}
           maxLength={maxLength}
+          inputMode={inputMode}
           className={`w-full shadow-neons h-[50px] pl-5 placeholder:text-dark-grey outline-with-opacity placeholder:text-[15px] placeholder:font-normal ${errors ? 'input-field-error' : ''
             }`}
           required={required}
@@ -93,6 +104,15 @@ const ListingFormInput = ({
           onChange={onTextChange}
           onBlur={handleBlur}
           disabled={disabled}
+          onKeyDown={
+            isPositiveNumeric
+              ? (e) => {
+                  if (e.key === '-' || e.key === 'e' || e.key === 'E' || e.key === '+') {
+                    e.preventDefault()
+                  }
+                }
+              : undefined
+          }
         />
       )}
 

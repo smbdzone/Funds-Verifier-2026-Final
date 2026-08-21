@@ -10,6 +10,7 @@ import ListingSocialShare from '@/components/shared/ListingSocialShare'
 import Modal2 from '@/components/product-modal/modal2'
 import Modal from '@/components/product-modal/modal'
 import { formatNumberWithCommas } from '../../../utils/global-functions/global'
+import { formatJewelryWeight } from '@/libs/jewelryUnits'
 import {
   getListingDetailMediaItems,
   getListingDocumentSrc,
@@ -47,7 +48,7 @@ export default function JewelleryView({ data }) {
   const detailRows = useMemo(
     () => [
       { label: 'Location', value: formatListingLocation(data), fullWidth: true },
-      { label: 'Grams', value: data?.grams },
+      { label: 'Weight', value: formatJewelryWeight(data) },
       { label: 'Age', value: data?.age },
       { label: 'Category', value: data?.model },
       {

@@ -1,5 +1,9 @@
-import React from "react";
+import React from 'react'
 import FacilitiesChecklist from '@/components/property-listing/FacilitiesChecklist'
+import ColorTwoToneField from '@/components/ListingFormInput/ColorTwoToneField'
+
+const colorGridClassName =
+  'mt-[10px] grid xl:grid-cols-8 lg:grid-cols-6 md:grid-cols-4 sm:grid-cols-3 xxs:grid-cols-2 justify-between gap-y-[10px]'
 
 const ChecksLayoutComponent = ({
   carListings,
@@ -13,25 +17,25 @@ const ChecksLayoutComponent = ({
 }) => {
   return (
     <>
-      <div className="px-[19px]">
+      <div className='px-[19px]'>
         {formData.price >= 200000 ? (
           <>
-            <h2 className="text-dark-black text-xl font-medium pt-5">
+            <h2 className='text-dark-black text-xl font-medium pt-5'>
               Listing
             </h2>
-            <form className="mt-[10px] grid xl:grid-cols-5 lg:grid-cols-3 md:grid-cols-2 sm:grid-cols-2 xxs:grid-cols-1  justify-between gap-y-[10px]">
+            <form className='mt-[10px] grid xl:grid-cols-5 lg:grid-cols-3 md:grid-cols-2 sm:grid-cols-2 xxs:grid-cols-1  justify-between gap-y-[10px]'>
               {carListings.map((listing, index) => (
-                <div key={index} className="radio-container flex">
+                <div key={index} className='radio-container flex'>
                   <input
-                    className="custom-radio visually-hidden custom-checkbox"
-                    type="radio"
-                    name="listing"
+                    className='custom-radio visually-hidden custom-checkbox'
+                    type='radio'
+                    name='listing'
                     value={listing}
                     id={`listing-${index}`}
                     checked={formData.listing === listing}
-                    onChange={(e) => handleRadioChange(e, "listing")}
+                    onChange={(e) => handleRadioChange(e, 'listing')}
                   />
-                  <label className="custom-label" htmlFor={`listing-${index}`}>
+                  <label className='custom-label' htmlFor={`listing-${index}`}>
                     {listing}
                   </label>
                 </div>
@@ -42,61 +46,107 @@ const ChecksLayoutComponent = ({
         ) : (
           <></>
         )}
-        <h2 className="text-dark-black text-xl font-medium">Exterior Color</h2>
-        <form className="mt-[10px] grid xl:grid-cols-8 lg:grid-cols-6 md:grid-cols-4 sm:grid-cols-3 xxs:grid-cols-2 justify-between gap-y-[10px]">
-          {colors.map((color, index) => (
-            <div key={index}>
-              <input
-                className="custom-checkbox"
-                type="checkbox"
-                value={color}
-                checked={(formData.exteriorColor || []).includes(color)}
-                onChange={(e) => handleCheckboxChange(e, "exteriorColor")}
-              />
-              <label className="custom-label">{color}</label>
-            </div>
-          ))}
-        </form>
 
-        {/* 2  */}
-        <h2 className="text-dark-black text-xl font-medium pt-5">
-          Interior Color
-        </h2>
-        <form className="mt-[10px] grid xl:grid-cols-8 lg:grid-cols-6 md:grid-cols-4 sm:grid-cols-3 xxs:grid-cols-2 justify-between gap-y-[10px]">
-          {colors.map((color, index) => (
-            <div key={index}>
-              <input
-                className="custom-checkbox"
-                type="checkbox"
-                value={color}
-                checked={(formData.interiorColor || []).includes(color)}
-                onChange={(e) => handleCheckboxChange(e, "interiorColor")}
-              />
-              <label className="custom-label">{color}</label>
-            </div>
-          ))}
-        </form>
+        <FacilitiesChecklist
+          title='Exterior Color'
+          presetFacilities={colors}
+          selectedFacilities={formData.exteriorColor || []}
+          customFacilities={formData.customExteriorColors || []}
+          onCheckboxChange={(e) => handleCheckboxChange(e, 'exteriorColor')}
+          setFormData={(updater) => {
+            if (typeof setFormData !== 'function') return
+            setFormData((prev) => {
+              const next =
+                typeof updater === 'function'
+                  ? updater({
+                      facilities: prev.exteriorColor || [],
+                      customFacilities: prev.customExteriorColors || [],
+                    })
+                  : updater
+              return {
+                ...prev,
+                exteriorColor: next.facilities ?? prev.exteriorColor,
+                customExteriorColors:
+                  next.customFacilities ?? prev.customExteriorColors,
+              }
+            })
+          }}
+          gridClassName={colorGridClassName}
+        />
 
-        <h2 className="text-dark-black text-xl font-medium pt-5">
+        <ColorTwoToneField
+          title='Exterior Two Tone'
+          values={formData.exteriorTwoTone || []}
+          onChange={(next) =>
+            setFormData?.((prev) => ({
+              ...prev,
+              exteriorTwoTone: next,
+            }))
+          }
+          placeholder='e.g. red/black'
+        />
+
+        <div className='pt-5'>
+          <FacilitiesChecklist
+            title='Interior Color'
+            presetFacilities={colors}
+            selectedFacilities={formData.interiorColor || []}
+            customFacilities={formData.customInteriorColors || []}
+            onCheckboxChange={(e) => handleCheckboxChange(e, 'interiorColor')}
+            setFormData={(updater) => {
+              if (typeof setFormData !== 'function') return
+              setFormData((prev) => {
+                const next =
+                  typeof updater === 'function'
+                    ? updater({
+                        facilities: prev.interiorColor || [],
+                        customFacilities: prev.customInteriorColors || [],
+                      })
+                    : updater
+                return {
+                  ...prev,
+                  interiorColor: next.facilities ?? prev.interiorColor,
+                  customInteriorColors:
+                    next.customFacilities ?? prev.customInteriorColors,
+                }
+              })
+            }}
+            gridClassName={colorGridClassName}
+          />
+        </div>
+
+        <ColorTwoToneField
+          title='Interior Two Tone'
+          values={formData.interiorTwoTone || []}
+          onChange={(next) =>
+            setFormData?.((prev) => ({
+              ...prev,
+              interiorTwoTone: next,
+            }))
+          }
+          placeholder='e.g. red/black'
+        />
+
+        <h2 className='text-dark-black text-xl font-medium pt-5'>
           Technical Features
         </h2>
-        <form className="mt-[10px] grid xl:grid-cols-5 lg:grid-cols-3 md:grid-cols-2 sm:grid-cols-2 xxs:grid-cols-1  justify-between gap-y-[10px]">
+        <form className='mt-[10px] grid xl:grid-cols-5 lg:grid-cols-3 md:grid-cols-2 sm:grid-cols-2 xxs:grid-cols-1  justify-between gap-y-[10px]'>
           {technicalFeatures.map((technicalFeature, index) => (
             <div key={index}>
               <input
-                className="custom-checkbox"
-                type="checkbox"
+                className='custom-checkbox'
+                type='checkbox'
                 value={technicalFeature}
                 checked={(formData.technicalFeatures || []).includes(
-                  technicalFeature
+                  technicalFeature,
                 )}
-                onChange={(e) => handleCheckboxChange(e, "technicalFeatures")}
+                onChange={(e) => handleCheckboxChange(e, 'technicalFeatures')}
               />
-              <label className="custom-label">{technicalFeature}</label>
+              <label className='custom-label'>{technicalFeature}</label>
             </div>
           ))}
         </form>
-        {/* 4 */}
+
         <FacilitiesChecklist
           title='Extras'
           presetFacilities={extras}
@@ -106,10 +156,13 @@ const ChecksLayoutComponent = ({
           setFormData={(updater) => {
             if (typeof setFormData !== 'function') return
             setFormData((prev) => {
-              const next = typeof updater === 'function' ? updater({
-                facilities: prev.extras || [],
-                customFacilities: prev.customExtras || [],
-              }) : updater
+              const next =
+                typeof updater === 'function'
+                  ? updater({
+                      facilities: prev.extras || [],
+                      customFacilities: prev.customExtras || [],
+                    })
+                  : updater
               return {
                 ...prev,
                 extras: next.facilities ?? prev.extras,
@@ -121,7 +174,7 @@ const ChecksLayoutComponent = ({
         />
       </div>
     </>
-  );
-};
+  )
+}
 
-export default ChecksLayoutComponent;
+export default ChecksLayoutComponent

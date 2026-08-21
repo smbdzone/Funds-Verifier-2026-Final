@@ -540,6 +540,12 @@ export const bodyConditionOptions = [
   "Poor",
 ];
 
+export const mechanicalConditionOptions = [
+  "Fair",
+  "Good",
+  "Excellent",
+];
+
 export const evaluationPrices = ["2000", "3000", "4000"];
 
 export const doorOptions = ["2 Door", "3 Door", "4 Door", "5+ Door"];
@@ -611,9 +617,8 @@ export const bodyTypeOptions = [
 ];
 
 export const transmissionTypeOptions = [
-  "Transmission Type",
-  "Manual Transmission",
-  "Automatic Transmission",
+  "Manual",
+  "Automatic",
 ];
 
 export const fuelTypeOptions = [
@@ -730,7 +735,7 @@ export const carFormFields = [
     id: 3,
     type: "text",
     name: "kilometers",
-    placeholder: "Kilometers",
+    placeholder: "How much driven",
     required: true,
   },
   {
@@ -1203,7 +1208,7 @@ export const jewelleryFormFields = [
     id: 4,
     type: "text",
     name: "grams",
-    placeholder: "Grams",
+    placeholder: "Weight",
     required: true,
   },
   {

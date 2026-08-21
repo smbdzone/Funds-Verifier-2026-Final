@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import flags from 'react-phone-number-input/flags'
 import Modal2 from '@/components/3dModal/Modal'
 import TechnicalReport from '../Modals/TechnicalReport'
-import { formatDateTime } from '@/utils/global-functions/global'
+import { formatEvaluationDateTimeDisplay } from '@/libs/evaluationBooking'
 import ListingFormInput from '@/components/ListingFormInput/ListingFormInput'
 import PhoneInputComponent from '@/components/ListingFormInput/PhoneInputComponent'
 import ListingImageUploadLayout from '@/components/ListingsImageComponent/ListingImageUploadLayout'
@@ -776,9 +776,8 @@ export const ImageUploadComponent = React.memo(
                 name='evaluationDateTime'
                 disabled={isEvaluatorApprovedLocked}
                 value={
-                  formData.evaluationDateTime
-                    ? formatDateTime(formData.evaluationDateTime).formattedDate
-                    : ''
+                  formatEvaluationDateTimeDisplay(formData.evaluationDateTime) ||
+                  ''
                 }
                 handleChange={handleChange}
                 required={true}

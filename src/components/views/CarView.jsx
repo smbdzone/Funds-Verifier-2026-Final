@@ -14,6 +14,10 @@ import {
   formatColorList,
 } from '../../utils/global-functions/global'
 import {
+  formatCarMileage,
+  formatCarCapacityWeight,
+} from '@/libs/carUnits'
+import {
   getListingDetailMediaItems,
   getListingDocumentSrc,
   getListingQrScanSrc,
@@ -50,10 +54,17 @@ export default function CarView({ data }) {
   const detailRows = useMemo(
     () => [
       { label: 'Location', value: formatListingLocation(data), fullWidth: true },
-      { label: 'Car Type', value: data?.carType },
       { label: 'Make', value: data?.make },
       { label: 'Model', value: data?.model },
       { label: 'Year', value: data?.year },
+      {
+        label: 'How much driven',
+        value: formatCarMileage(data) || null,
+      },
+      {
+        label: 'Capacity/Weight',
+        value: formatCarCapacityWeight(data) || null,
+      },
       { label: 'Steering Side', value: data?.steeringSide },
       { label: 'Fuel Type', value: data?.fuelType },
       { label: 'Body Condition', value: data?.bodyCondition },
@@ -61,6 +72,14 @@ export default function CarView({ data }) {
         label: 'Interior Color',
         value: formatColorList(data?.interiorColor),
         fullWidth: true,
+      },
+      {
+        label: 'Exterior Two Tone',
+        value: formatColorList(data?.exteriorTwoTone),
+      },
+      {
+        label: 'Interior Two Tone',
+        value: formatColorList(data?.interiorTwoTone),
       },
       { label: 'VIN', value: data?.vin || data?.VIN },
       { label: 'Project Number', value: data?.dldNumber },

@@ -77,6 +77,7 @@ const initialFormData = {
   fuelType: '',
   description: '',
   kilometers: '',
+  mileageUnit: 'km',
   year: '',
   warranty: '',
   carType: '',
@@ -93,15 +94,20 @@ const initialFormData = {
   transmissionType: '',
   engineCapacity: '',
   capacityWeight: '',
+  capacityWeightUnit: 'kg',
   pictures: null,
   video: null,
   thumbnailImg: null,
   qrScan: null,
   VIN: '',
-  exteriorColor: [String],
-  interiorColor: [String],
-  technicalFeatures: [String],
-  extras: [String],
+  exteriorColor: [],
+  interiorColor: [],
+  customExteriorColors: [],
+  customInteriorColors: [],
+  exteriorTwoTone: [],
+  interiorTwoTone: [],
+  technicalFeatures: [],
+  extras: [],
   customExtras: [],
   technicalReport: '',
   evaluationDateTime: '',
@@ -110,6 +116,7 @@ const initialFormData = {
 const dropdownData = {
   warranty: false,
   bodyCondition: false,
+  mechanicalCondition: false,
   ies: false,
   doors: false,
   noofCylinders: false,
@@ -508,6 +515,10 @@ function Page() {
       const updatedFormData = {
         ...formData,
         userUUID: user?.uuid,
+        mileageUnit:
+          formData?.mileageUnit === 'mile' ? 'mile' : 'km',
+        capacityWeightUnit:
+          formData?.capacityWeightUnit === 'lb' ? 'lb' : 'kg',
         pictures:
           listingMediaRef(imageID) ?? listingMediaRef(formData?.pictures),
         video: listingMediaRef(videoID) ?? listingMediaRef(formData?.video),
@@ -560,7 +571,11 @@ function Page() {
           payloadToSave
         )
         toast.success('Updated successfully.')
-        fetchData('car')
+        await fetchData('car')
+        if (typeof window !== 'undefined') {
+          window.location.reload()
+          return
+        }
       } else {
         await Promise.all([
           customAxios.post(
@@ -576,11 +591,9 @@ function Page() {
         localStorage.removeItem('checkoutSessionId')
         localStorage.removeItem('checkoutSession')
         localStorage.removeItem('pendingListingDraft')
+        setLoading(false)
+        router.push('/seller-profile/my-listing')
       }
-
-      setLoading(false)
-      router.push('/seller-profile/my-listing')
-      // router.push("/");
     } catch (error) {
       console.error('Error during final form submission:', error)
       toast.error(
@@ -610,6 +623,25 @@ function Page() {
         const formattedValue = new Intl.NumberFormat('en-US').format(rawValue)
         setTotalPrice(formattedValue) // This will format the displayed price
       }
+    } else if (
+      name === 'kilometers' ||
+      name === 'year' ||
+      name === 'VIN' ||
+      name === 'dldNumber'
+    ) {
+      // Digits only — block minus / non-numeric
+      setFormData({ ...formData, [name]: value.replace(/[^\d]/g, '') })
+      setErrors((prev) => ({ ...prev, [name]: '' }))
+    } else if (name === 'capacityWeight') {
+      // Positive numbers only (optional decimal); block minus
+      const next = value.replace(/[^\d.]/g, '')
+      const parts = next.split('.')
+      const sanitized =
+        parts.length > 2
+          ? `${parts[0]}.${parts.slice(1).join('')}`
+          : next
+      setFormData({ ...formData, [name]: sanitized })
+      setErrors((prev) => ({ ...prev, [name]: '' }))
     } else {
       setFormData({ ...formData, [name]: autoCapitalizeField(name, value) })
     }
@@ -630,7 +662,6 @@ function Page() {
     if (!data?.neighbourhood) errors.neighbourhood = 'Neighbourhood is required'
     if (!data?.make) errors.make = 'Make is required'
     if (!data?.model) errors.model = 'Model is required'
-    if (!data?.size) errors.size = 'Size is required'
     if (!String(data?.title || '').trim()) {
       errors.title = 'Title is required'
     } else if (data?.title?.length > 60) {
@@ -652,22 +683,34 @@ function Page() {
     } else if (data?.description?.length > 300) {
       errors.description = 'Description cannot exceed 300 characters.'
     }
-    if (!data?.kilometers) errors.kilometers = 'Kilometers is required'
-    if (!data?.size) errors.size = 'Size is required'
-    if (!data?.year) errors.year = 'Year is required'
+    if (!data?.kilometers && data?.kilometers !== 0) {
+      errors.kilometers = 'How much driven is required'
+    } else if (!/^\d+$/.test(String(data.kilometers).trim())) {
+      errors.kilometers = 'How much driven must be a positive number'
+    } else if (Number(data.kilometers) < 0) {
+      errors.kilometers = 'How much driven must be a positive number'
+    }
+    if (!data?.year) {
+      errors.year = 'Year is required'
+    } else if (!/^\d+$/.test(String(data.year).trim()) || Number(data.year) <= 0) {
+      errors.year = 'Year must be a positive number'
+    }
     if (!data?.warranty) errors.warranty = 'Warranty is required'
     // if (!data?.bodyType) errors.bodyType = "Body type is required";
     if (!data?.bodyCondition)
       errors.bodyCondition = 'Body condition is required'
     if (!data?.noofCylinders)
       errors.noofCylinders = 'Number of cylinders is required'
-    if (!data?.carType) errors.carType = 'Car Type is required'
     if (!data?.seats) errors.seats = 'Seats are required'
     if (!data?.doors) errors.doors = 'Doors is required'
     if (!data?.steeringSide) errors.steeringSide = 'Steering side is required'
     if (!data?.transmissionType)
       errors.transmissionType = 'Transmission type is required'
-    if (!data?.VIN) errors.VIN = 'VIN is required'
+    if (!data?.VIN) {
+      errors.VIN = 'VIN is required'
+    } else if (!/^\d+$/.test(String(data.VIN).trim()) || Number(data.VIN) <= 0) {
+      errors.VIN = 'VIN must be a positive number'
+    }
 
     return errors
   }
@@ -709,22 +752,23 @@ function Page() {
         break
       case 'kilometers':
         if (!value.trim()) {
-          error = 'kilometers is required'
-        }
-        break
-      case 'size':
-        if (!value.trim()) {
-          error = 'Size is required'
+          error = 'How much driven is required'
+        } else if (!/^\d+$/.test(value.trim())) {
+          error = 'How much driven must be a positive number'
         }
         break
       case 'year':
         if (!value.trim()) {
-          error = 'year is required'
+          error = 'Year is required'
+        } else if (!/^\d+$/.test(value.trim()) || Number(value) <= 0) {
+          error = 'Year must be a positive number'
         }
         break
       case 'VIN':
         if (!value.trim()) {
           error = 'VIN is required'
+        } else if (!/^\d+$/.test(value.trim()) || Number(value) <= 0) {
+          error = 'VIN must be a positive number'
         }
         break
       default:

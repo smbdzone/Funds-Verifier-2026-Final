@@ -7,6 +7,7 @@ import {
   extras as carExtras,
   warrantyOptions,
   bodyConditionOptions,
+  mechanicalConditionOptions,
   transmissionTypeOptions,
   fuelTypeOptions,
   steeringSideOptions,
@@ -15,9 +16,9 @@ import {
   cylindersOptions,
   engineCapacityOptions,
   horsepowerOptions,
-  carTypes,
 } from '@/constants/car-listings'
 import EvaluatorMapUrlField from './EvaluatorMapUrlField'
+import ColorTwoToneField from '@/components/ListingFormInput/ColorTwoToneField'
 
 const editInputClass =
   'focus:outline-none mt-1 block w-full px-3 py-3 rounded-md bg-white text-gray-800 text-sm sm:text-base border border-[#8d7c3b]'
@@ -174,18 +175,6 @@ export default function EvaluatorCarEditableDetails({
         </div>
 
         <div>
-          <label className={labelClass}>Car Type</label>
-          <select
-            className={editInputClass}
-            value={pickValue(draft?.carType, property.carType)}
-            onChange={(e) => setField('carType', e.target.value)}
-          >
-            <option value=''>Select car type</option>
-            {carTypes.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
-          </select>
-        </div>
-
-        <div>
           <label className={labelClass}>Make</label>
           <input
             type='text'
@@ -209,9 +198,15 @@ export default function EvaluatorCarEditableDetails({
           <label className={labelClass}>Year</label>
           <input
             type='text'
+            inputMode='numeric'
             className={editInputClass}
             value={pickValue(draft?.year, property.year)}
-            onChange={(e) => setField('year', e.target.value)}
+            onChange={(e) => setField('year', e.target.value.replace(/[^\d]/g, ''))}
+            onKeyDown={(e) => {
+              if (e.key === '-' || e.key === 'e' || e.key === 'E' || e.key === '+') {
+                e.preventDefault()
+              }
+            }}
           />
         </div>
 
@@ -228,14 +223,30 @@ export default function EvaluatorCarEditableDetails({
         </div>
 
         <div>
-          <label className={labelClass}>Kilometers</label>
-          <input
-            type='text'
-            inputMode='numeric'
-            className={editInputClass}
-            value={formatWithCommas(pickValue(draft?.kilometers, property.kilometers))}
-            onChange={(e) => setField('kilometers', e.target.value.replace(/[^\d]/g, ''))}
-          />
+          <label className={labelClass}>How much driven</label>
+          <div className='mt-1 flex items-stretch gap-0'>
+            <input
+              type='text'
+              inputMode='numeric'
+              className={`${editInputClass} rounded-r-none`}
+              value={formatWithCommas(pickValue(draft?.kilometers, property.kilometers))}
+              onChange={(e) => setField('kilometers', e.target.value.replace(/[^\d]/g, ''))}
+              onKeyDown={(e) => {
+                if (e.key === '-' || e.key === 'e' || e.key === 'E' || e.key === '+') {
+                  e.preventDefault()
+                }
+              }}
+            />
+            <select
+              className={`${editInputClass} mt-0 w-[110px] shrink-0 rounded-l-none border-l-0`}
+              value={pickValue(draft?.mileageUnit, property.mileageUnit) || 'km'}
+              onChange={(e) => setField('mileageUnit', e.target.value)}
+              aria-label='Distance unit'
+            >
+              <option value='km'>km</option>
+              <option value='mile'>mile</option>
+            </select>
+          </div>
         </div>
 
         <div>
@@ -259,6 +270,20 @@ export default function EvaluatorCarEditableDetails({
           >
             <option value=''>Select condition</option>
             {bodyConditionOptions.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
+          </select>
+        </div>
+
+        <div>
+          <label className={labelClass}>Mechanical condition</label>
+          <select
+            className={editInputClass}
+            value={pickValue(draft?.mechanicalCondition, property.mechanicalCondition)}
+            onChange={(e) => setField('mechanicalCondition', e.target.value)}
+          >
+            <option value=''>Select condition</option>
+            {mechanicalConditionOptions.map((opt) => (
+              <option key={opt} value={opt}>{opt}</option>
+            ))}
           </select>
         </div>
 
@@ -335,6 +360,44 @@ export default function EvaluatorCarEditableDetails({
         </div>
 
         <div>
+          <label className={labelClass}>Capacity/Weight</label>
+          <div className='mt-1 flex items-stretch gap-0'>
+            <input
+              type='text'
+              inputMode='decimal'
+              className={`${editInputClass} rounded-r-none`}
+              value={pickValue(draft?.capacityWeight, property.capacityWeight)}
+              onChange={(e) => {
+                const next = e.target.value.replace(/[^\d.]/g, '')
+                const parts = next.split('.')
+                const sanitized =
+                  parts.length > 2
+                    ? `${parts[0]}.${parts.slice(1).join('')}`
+                    : next
+                setField('capacityWeight', sanitized)
+              }}
+              onKeyDown={(e) => {
+                if (e.key === '-' || e.key === 'e' || e.key === 'E' || e.key === '+') {
+                  e.preventDefault()
+                }
+              }}
+            />
+            <select
+              className={`${editInputClass} mt-0 w-[90px] shrink-0 rounded-l-none border-l-0`}
+              value={
+                pickValue(draft?.capacityWeightUnit, property.capacityWeightUnit) ||
+                'kg'
+              }
+              onChange={(e) => setField('capacityWeightUnit', e.target.value)}
+              aria-label='Weight unit'
+            >
+              <option value='kg'>kg</option>
+              <option value='lb'>lb</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
           <label className={labelClass}>Horsepower</label>
           <select
             className={editInputClass}
@@ -362,9 +425,15 @@ export default function EvaluatorCarEditableDetails({
           <label className={labelClass}>VIN</label>
           <input
             type='text'
+            inputMode='numeric'
             className={editInputClass}
             value={pickValue(draft?.VIN, property.VIN)}
-            onChange={(e) => setField('VIN', e.target.value)}
+            onChange={(e) => setField('VIN', e.target.value.replace(/[^\d]/g, ''))}
+            onKeyDown={(e) => {
+              if (e.key === '-' || e.key === 'e' || e.key === 'E' || e.key === '+') {
+                e.preventDefault()
+              }
+            }}
           />
         </div>
 
@@ -372,9 +441,17 @@ export default function EvaluatorCarEditableDetails({
           <label className={labelClass}>Project Number</label>
           <input
             type='text'
+            inputMode='numeric'
             className={editInputClass}
             value={pickValue(draft?.dldNumber, property.dldNumber)}
-            onChange={(e) => setField('dldNumber', e.target.value)}
+            onChange={(e) =>
+              setField('dldNumber', e.target.value.replace(/[^\d]/g, ''))
+            }
+            onKeyDown={(e) => {
+              if (e.key === '-' || e.key === 'e' || e.key === 'E' || e.key === '+') {
+                e.preventDefault()
+              }
+            }}
           />
         </div>
 
@@ -387,6 +464,16 @@ export default function EvaluatorCarEditableDetails({
           allowCustom
         />
 
+        <div className='sm:col-span-2'>
+          <ColorTwoToneField
+            title='Exterior Two Tone'
+            values={draft?.exteriorTwoTone ?? toArray(property.exteriorTwoTone)}
+            onChange={(val) => setField('exteriorTwoTone', val)}
+            placeholder='e.g. red/black'
+            className='mt-0'
+          />
+        </div>
+
         <CheckboxGroup
           title='Interior Color'
           options={colors}
@@ -394,6 +481,16 @@ export default function EvaluatorCarEditableDetails({
           onChange={(val) => setField('interiorColor', val)}
           allowCustom
         />
+
+        <div className='sm:col-span-2'>
+          <ColorTwoToneField
+            title='Interior Two Tone'
+            values={draft?.interiorTwoTone ?? toArray(property.interiorTwoTone)}
+            onChange={(val) => setField('interiorTwoTone', val)}
+            placeholder='e.g. red/black'
+            className='mt-0'
+          />
+        </div>
 
         <div>
           <label className={labelClass}>Listing</label>

@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
-import { formatDateTime } from '@/utils/global-functions/global'
+import { formatEvaluationDateTimeDisplay } from '@/libs/evaluationBooking'
 import TechnicalReport from '@/components/Modals/TechnicalReport'
 import ListingFormInput from '@/components/ListingFormInput/ListingFormInput'
+import ListingFieldLabel from '@/components/ListingsForm/ListingFieldLabel'
 import PhoneInputComponent from '@/components/ListingFormInput/PhoneInputComponent'
 import ListingImageUploadLayout from '@/components/ListingsImageComponent/ListingImageUploadLayout'
 import ListingsImageComponent from '@/components/ListingsImageComponent/ListingsImageComponent'
@@ -12,13 +13,14 @@ import ListingsDropdownInputComponents from '@/components/ListingsImageComponent
 import ListingModalInputComponent from '@/components/ListingsImageComponent/ListingModalInputComponent'
 import ListingCustomPlacholderInput from '@/components/ListingFormInput/ListingCustomPlacholderInput'
 import Modal2 from '@/components/3dModal/Modal'
+import EvaluationModal from '@/components/Evaluation/evaluationmodal.jsx'
 import {
   age,
   conditionOptions,
   usage,
   warrenty,
 } from '@/constants/listing-data'
-import EvaluationModal from '@/components/Evaluation/evaluationmodal.jsx'
+import { JEWELRY_WEIGHT_UNITS } from '@/libs/jewelryUnits'
 import {
   LISTING_IMAGE_FORMATS_LABEL,
   LISTING_QR_SCAN_FORMATS_LABEL,
@@ -284,6 +286,23 @@ const JewelryListingForm = ({
                 disabled={isEvaluatorApprovedLocked}
               />
             </div>
+            <div className='mt-5 w-full'>
+              <ListingTextareaComponent
+                errors={
+                  errors.description ||
+                  (String(formData.description).length > 300 &&
+                    !formData.description)
+                }
+                value={formData.description}
+                name='description'
+                handleChange={handleChange}
+                handleBlur={handleBlur}
+                placeholder='Tell us about your Property (max. 300 characters)'
+                errorsMessage={errors.description}
+                maxLength={300}
+                disabled={isEvaluatorApprovedLocked}
+              />
+            </div>
           </div>
           <div className='relative dropdown-container'>
             <ListingsDropdownInputComponents
@@ -324,9 +343,8 @@ const JewelryListingForm = ({
                 maxLength={50}
                 name='evaluationDateTime'
                 value={
-                  formData.evaluationDateTime
-                    ? formatDateTime(formData.evaluationDateTime).formattedDate
-                    : ''
+                  formatEvaluationDateTimeDisplay(formData.evaluationDateTime) ||
+                  ''
                 }
                 handleChange={handleChange}
                 required={true}
@@ -432,23 +450,6 @@ const JewelryListingForm = ({
               listingPhone={formData?.phoneNumber || phoneNumber || ''}
             />
           </div>
-          <div className='w-full col-span-2 flex flex-col gap-5'>
-            <ListingTextareaComponent
-              errors={
-                errors.description ||
-                (String(formData.description).length > 300 &&
-                  !formData.description)
-              }
-              value={formData.description}
-              name='description'
-              handleChange={handleChange}
-              handleBlur={handleBlur}
-              placeholder='Tell us about your Property (max. 300 characters)'
-              errorsMessage={errors.description}
-              maxLength={300}
-              disabled={isEvaluatorApprovedLocked}
-            />
-          </div>
           <div className='relative flex flex-col gap-4 w-full dropdown-container'>
             <div className='relative dropdown-container'>
               <ListingsDropdownInputComponents
@@ -470,17 +471,52 @@ const JewelryListingForm = ({
           </div>
           <div className='relative flex flex-col gap-4 w-full dropdown-container'>
             <div className='relative dropdown-container'>
-              <ListingFormInput
-                errors={errors.grams && !formData.grams}
-                value={formData.grams}
-                handleChange={handleChange}
-                required={true}
-                disabled={isEvaluatorApprovedLocked}
-                placeholder='Grams'
-                errorsMessage={errors.grams}
-                name='grams'
-                type='text'
-              />
+              <ListingFieldLabel label='Weight' required />
+              <div
+                className={`w-full flex items-center shadow-neons h-[50px] ${
+                  errors.grams ? 'input-field-error' : ''
+                }`}
+              >
+                <input
+                  type='text'
+                  inputMode='decimal'
+                  name='grams'
+                  value={formData.grams || ''}
+                  onChange={handleChange}
+                  disabled={isEvaluatorApprovedLocked}
+                  placeholder='Weight'
+                  className='h-full w-full min-w-0 border-0 pl-5 placeholder:text-dark-grey outline-with-opacity placeholder:text-[15px] placeholder:font-normal bg-transparent'
+                  onKeyDown={(e) => {
+                    if (
+                      e.key === '-' ||
+                      e.key === 'e' ||
+                      e.key === 'E' ||
+                      e.key === '+'
+                    ) {
+                      e.preventDefault()
+                    }
+                  }}
+                />
+                <select
+                  name='weightUnit'
+                  value={formData.weightUnit || 'gm'}
+                  onChange={handleChange}
+                  disabled={isEvaluatorApprovedLocked}
+                  className='h-full shrink-0 border-l border-dark-grey bg-white px-3 text-sm text-dark-grey outline-none'
+                  aria-label='Weight unit'
+                >
+                  {JEWELRY_WEIGHT_UNITS.map((unit) => (
+                    <option key={unit} value={unit}>
+                      {unit === 'lb' ? 'lb (pound)' : unit}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {errors.grams ? (
+                <span className='mt-1 text-xs font-medium text-red-500 lg:text-sm'>
+                  **{errors.grams}
+                </span>
+              ) : null}
             </div>
           </div>
           <div className='relative dropdown-container'>

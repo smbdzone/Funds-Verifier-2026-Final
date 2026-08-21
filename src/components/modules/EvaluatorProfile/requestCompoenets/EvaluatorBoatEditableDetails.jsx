@@ -12,6 +12,7 @@ import {
   age as ageOptions,
 } from '@/constants/boat-listings'
 import EvaluatorMapUrlField from './EvaluatorMapUrlField'
+import ColorTwoToneField from '@/components/ListingFormInput/ColorTwoToneField'
 
 const editInputClass =
   'focus:outline-none mt-1 block w-full px-3 py-3 rounded-md bg-white text-gray-800 text-sm sm:text-base border border-[#8d7c3b]'
@@ -383,6 +384,16 @@ export default function EvaluatorBoatEditableDetails({
           allowCustom
         />
 
+        <div className='sm:col-span-2'>
+          <ColorTwoToneField
+            title='Exterior Two Tone'
+            values={draft?.exteriorTwoTone ?? toArray(property.exteriorTwoTone)}
+            onChange={(val) => setField('exteriorTwoTone', val)}
+            placeholder='e.g. red/black'
+            className='mt-0'
+          />
+        </div>
+
         <CheckboxGroup
           title='Interior Color'
           options={boatColors}
@@ -390,6 +401,16 @@ export default function EvaluatorBoatEditableDetails({
           onChange={(val) => setField('interiorColor', val)}
           allowCustom
         />
+
+        <div className='sm:col-span-2'>
+          <ColorTwoToneField
+            title='Interior Two Tone'
+            values={draft?.interiorTwoTone ?? toArray(property.interiorTwoTone)}
+            onChange={(val) => setField('interiorTwoTone', val)}
+            placeholder='e.g. red/black'
+            className='mt-0'
+          />
+        </div>
 
         {/* ── Extras ── */}
         <CheckboxGroup

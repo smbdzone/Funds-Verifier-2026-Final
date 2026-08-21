@@ -3,6 +3,11 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { Suspense, useState, useEffect } from 'react'
 import { toast } from 'react-toastify'
 import { formatNumberWithCommas } from '@/utils/global-functions/global'
+import {
+  formatCarMileage,
+  formatCarCapacityWeight,
+} from '@/libs/carUnits'
+import { formatJewelryWeight } from '@/libs/jewelryUnits'
 import customAxios from '../../../utils/apis/apis'
 
 function SmbDetailsContent() {
@@ -136,7 +141,11 @@ function SmbDetailsContent() {
           { label: 'Make', value: productDetails?.make },
           { label: 'Model', value: productDetails?.model },
           { label: 'Year', value: productDetails?.year },
-          { label: 'Kilometers', value: formatNumberWithCommas(productDetails?.kilometers) },
+          { label: 'How much driven', value: formatCarMileage(productDetails) },
+          {
+            label: 'Capacity/Weight',
+            value: formatCarCapacityWeight(productDetails),
+          },
           { label: 'Seats', value: productDetails?.seats },
           { label: 'Doors', value: productDetails?.doors },
           { label: 'Body Condition', value: productDetails?.bodyCondition },
@@ -155,7 +164,7 @@ function SmbDetailsContent() {
       case 'Jewellery For Sale':
         return [
           { label: 'Category', value: productDetails?.category },
-          { label: 'Grams', value: formatNumberWithCommas(productDetails?.grams) },
+          { label: 'Weight', value: formatJewelryWeight(productDetails) },
           { label: 'Condition', value: productDetails?.condition },
           { label: 'Age', value: productDetails?.age },
         ]

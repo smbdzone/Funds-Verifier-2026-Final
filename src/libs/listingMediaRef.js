@@ -85,6 +85,8 @@ const UNSAFE_LISTING_UPDATE_KEYS = [
   'customFacilities',
   'customMaterials',
   'customExtras',
+  'customExteriorColors',
+  'customInteriorColors',
   'feedback',
   'warrenty',
 ]

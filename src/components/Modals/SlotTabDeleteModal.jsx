@@ -1,11 +1,22 @@
 import React from "react";
 
-const SlotTabDeleteModal = ({ handleConfirmDelete, closeDeleteModal, loading = false }) => {
+const SlotTabDeleteModal = ({
+  handleConfirmDelete,
+  closeDeleteModal,
+  loading = false,
+  count = 1,
+}) => {
+  const isBulk = Number(count) > 1
+
   return (
     <div className="fixed w-full inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-6 w-fit flex flex-col gap-6">
         <h2 className="text-2xl font-semibold">Confirm Deletion</h2>
-        <p>Are you sure you want to delete this slot?</p>
+        <p>
+          {isBulk
+            ? `Are you sure you want to delete ${count} selected slots?`
+            : 'Are you sure you want to delete this slot?'}
+        </p>
         <div className="flex justify-end gap-4">
           <button
             type="button"

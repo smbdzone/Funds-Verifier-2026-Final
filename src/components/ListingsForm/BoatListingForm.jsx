@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { formatDateTime } from '@/utils/global-functions/global'
+import { formatEvaluationDateTimeDisplay } from '@/libs/evaluationBooking'
 import ListingFormInput from '@/components/ListingFormInput/ListingFormInput'
 import PhoneInputComponent from '@/components/ListingFormInput/PhoneInputComponent'
 import ListingImageUploadLayout from '@/components/ListingsImageComponent/ListingImageUploadLayout'
@@ -286,6 +286,23 @@ const BoatListingForm = ({
                 disabled={isEvaluatorApprovedLocked}
               />
             </div>
+            <div className='mt-5 w-full'>
+              <ListingTextareaComponent
+                errors={
+                  errors.description ||
+                  (String(formData.description).length > 300 &&
+                    !formData.description)
+                }
+                value={formData.description}
+                name='description'
+                handleChange={handleChange}
+                handleBlur={handleBlur}
+                placeholder='Tell us about your Property (max. 300 characters)'
+                errorsMessage={errors.description}
+                maxLength={300}
+                disabled={isEvaluatorApprovedLocked}
+              />
+            </div>
           </div>
           <div className='relative dropdown-container'>
             <ListingsDropdownInputComponents
@@ -368,9 +385,8 @@ const BoatListingForm = ({
               maxLength={50}
               name='evaluationDateTime'
               value={
-                formData.evaluationDateTime
-                  ? formatDateTime(formData.evaluationDateTime).formattedDate
-                  : ''
+                formatEvaluationDateTimeDisplay(formData.evaluationDateTime) ||
+                ''
               }
               handleChange={handleChange}
               disabled={isEvaluatorApprovedLocked}
@@ -431,23 +447,6 @@ const BoatListingForm = ({
               productTitle={formData?.title}
               userUUID={data2?.uuid}
               listingPhone={formData?.phoneNumber || phoneNumber || ''}
-            />
-          </div>
-          <div className='w-full col-span-2'>
-            <ListingTextareaComponent
-              errors={
-                errors.description ||
-                (String(formData.description).length > 300 &&
-                  !formData.description)
-              }
-              value={formData.description}
-              name='description'
-              handleChange={handleChange}
-              handleBlur={handleBlur}
-              placeholder='Tell us about your Property (max. 300 characters)'
-              errorsMessage={errors.description}
-              maxLength={300}
-              disabled={isEvaluatorApprovedLocked}
             />
           </div>
           <div className='relative dropdown-container'>

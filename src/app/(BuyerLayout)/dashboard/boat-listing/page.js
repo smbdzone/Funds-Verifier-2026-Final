@@ -36,6 +36,7 @@ import ListingsLowerComponent from '@/components/ListingsForm/ListingsLowerCompo
 import { categories } from '@/constants/listing-data'
 import BoatListingForm from '@/components/ListingsForm/BoatListingForm'
 import FacilitiesChecklist from '@/components/property-listing/FacilitiesChecklist'
+import ColorTwoToneField from '@/components/ListingFormInput/ColorTwoToneField'
 import { useRouter } from 'next/navigation'
 import PayModal from '../../../../components/Modals/PayModal'
 import { useProfile } from '../../../../context/UserContext'
@@ -96,6 +97,8 @@ function Page() {
     evaludationComponents: '',
     exteriorColor: [],
     interiorColor: [],
+    exteriorTwoTone: [],
+    interiorTwoTone: [],
     extras: [],
     customExtras: [],
     category: '',
@@ -711,7 +714,11 @@ function Page() {
             : 'Submitted successfully. Evaluator will evaluate it.'
         )
         if (id) {
-          fetchData('boat')
+          await fetchData('boat')
+          if (typeof window !== 'undefined') {
+            window.location.reload()
+            return
+          }
         }
         if (!id) {
           flagListingPendingApprovalNotice({ assetKind: 'boat' })
@@ -1023,6 +1030,18 @@ function Page() {
                       </div>
                     </form>
 
+                    <ColorTwoToneField
+                      title='Exterior Two Tone'
+                      values={formData.exteriorTwoTone || []}
+                      onChange={(next) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          exteriorTwoTone: next,
+                        }))
+                      }
+                      placeholder='e.g. red/black'
+                    />
+
                     <h2 className='text-dark-black text-xl font-medium pt-5'>
                       Interior Color
                     </h2>
@@ -1059,6 +1078,19 @@ function Page() {
                         />
                       </div>
                     </form>
+
+                    <ColorTwoToneField
+                      title='Interior Two Tone'
+                      values={formData.interiorTwoTone || []}
+                      onChange={(next) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          interiorTwoTone: next,
+                        }))
+                      }
+                      placeholder='e.g. red/black'
+                    />
+
                     <div className='pt-5'>
                       <FacilitiesChecklist
                         title='Extras'

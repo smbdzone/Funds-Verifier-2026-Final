@@ -958,7 +958,11 @@ const Page = () => {
         )
 
         if (id) {
-          fetchData('property')
+          await fetchData('property')
+          if (typeof window !== 'undefined') {
+            window.location.reload()
+            return
+          }
         }
 
         if (!id) {

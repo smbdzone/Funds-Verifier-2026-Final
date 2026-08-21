@@ -12,6 +12,10 @@ import { useProfile } from '../../context/UserContext'
 import { NoSlotsAvailable } from '@/components/global/NoSlotsAvailable'
 import { getBookableSlotsForDate } from '@/libs/slotTimeFilters'
 import BookingContactPhonePicker from '@/components/booking/BookingContactPhonePicker'
+import {
+  formatEvaluationDateTimeDisplay,
+  parseEvaluationDateTimeSelection,
+} from '@/libs/evaluationBooking'
 
 const getToday = () => {
   const today = new Date()
@@ -87,12 +91,32 @@ const EvaluationModal = ({
       phone: uaePhone || listingPhone || '',
       assetType,
     }))
-    setSelectedDate(getToday())
-    setSelectedTime(null)
+
+    const existing =
+      parseEvaluationDateTimeSelection(
+        parentFormData?.evaluationDateTime || parentFormData?.evaluationSlotDate,
+      )
+    const existingTime =
+      parentFormData?.evaluationSlotTime || existing.time || null
+
+    if (existing.date) {
+      setSelectedDate(existing.date)
+    } else {
+      setSelectedDate(getToday())
+    }
+    setSelectedTime(existingTime)
     setIsChecked(false)
     setShowCheckboxError(false)
     getEvaluatorProvider()
-  }, [isOpen, user, parentFormData?.phoneNumber, assetType])
+  }, [
+    isOpen,
+    user,
+    parentFormData?.phoneNumber,
+    parentFormData?.evaluationDateTime,
+    parentFormData?.evaluationSlotDate,
+    parentFormData?.evaluationSlotTime,
+    assetType,
+  ])
 
   useEffect(() => {
     if (isOpen) {
@@ -125,7 +149,6 @@ const EvaluationModal = ({
 
     const date = formatLocalDate(selectedDate)
     setSlotsLoading(true)
-    setSelectedTime(null)
 
     try {
       const providersResponse = await customAxios.get(
@@ -272,6 +295,19 @@ const EvaluationModal = ({
   }
 
   const availableSlots = getBookableSlotsForDate(slots, selectedDate)
+  const currentBookingLabel = formatEvaluationDateTimeDisplay(
+    parentFormData?.evaluationDateTime,
+  )
+
+  // Keep the user's already-booked time visible even if the API marks it booked.
+  const displaySlots = (() => {
+    if (!selectedTime) return availableSlots
+    const alreadyListed = availableSlots.some((slot) => slot?.time === selectedTime)
+    if (alreadyListed) return availableSlots
+    const bookedMatch = (slots || []).find((slot) => slot?.time === selectedTime)
+    if (bookedMatch) return [bookedMatch, ...availableSlots]
+    return [{ time: selectedTime, uuid: 'current-selection', isBooked: true }, ...availableSlots]
+  })()
 
   if (!isOpen) return null
 
@@ -285,6 +321,12 @@ const EvaluationModal = ({
             available evaluation slot. The fee is based on your evaluator&apos;s
             price list.
           </p>
+          {currentBookingLabel ? (
+            <div className='mb-4 rounded-md border border-[#B7A55E]/50 bg-[#faf8f3] px-3 py-2 text-sm text-[#002D4F]'>
+              <span className='font-medium'>Currently selected: </span>
+              {currentBookingLabel}
+            </div>
+          ) : null}
 
           <div className='grid grid-cols-1 md:grid-cols-2 gap-4 mb-6'>
             <div className='flex flex-col'>
@@ -393,7 +435,20 @@ const EvaluationModal = ({
             <div className='bg-white shadow-md rounded-lg p-2 flex-shrink-0'>
               <Calendar
                 className='w-full'
-                onChange={setSelectedDate}
+                onChange={(date) => {
+                  setSelectedDate(date)
+                  const existing = parseEvaluationDateTimeSelection(
+                    parentFormData?.evaluationDateTime,
+                  )
+                  const existingTime =
+                    parentFormData?.evaluationSlotTime || existing.time || null
+                  const sameDay =
+                    existing.date &&
+                    date.getFullYear() === existing.date.getFullYear() &&
+                    date.getMonth() === existing.date.getMonth() &&
+                    date.getDate() === existing.date.getDate()
+                  setSelectedTime(sameDay ? existingTime : null)
+                }}
                 value={selectedDate}
                 minDate={getToday()}
               />
@@ -426,9 +481,9 @@ const EvaluationModal = ({
                         : 'Searching for available slots...'}
                     </p>
                   </div>
-                ) : availableSlots.length > 0 ? (
+                ) : displaySlots.length > 0 ? (
                   <div className='flex flex-wrap gap-2'>
-                    {availableSlots.map((time) => (
+                    {displaySlots.map((time) => (
                       <button
                         key={time.uuid || time.time}
                         type='button'
@@ -439,6 +494,9 @@ const EvaluationModal = ({
                           }`}
                       >
                         {time?.time}
+                        {selectedTime === time.time && time?.isBooked
+                          ? ' (current)'
+                          : ''}
                       </button>
                     ))}
                   </div>

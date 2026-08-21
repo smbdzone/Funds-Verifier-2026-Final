@@ -162,14 +162,18 @@ const handleThumbnailUpload = async (image) => {
 }
 
 const handleDeleteImg = async (id) => {
+  if (!id || typeof id !== 'string') return null
   try {
+    // s3Key often contains slashes — must go in the query string, not the path.
     const response = await customAxios.delete(
-      `${process.env.NEXT_PUBLIC_BASE_URL}/delete-imgs/${id}`
+      `${process.env.NEXT_PUBLIC_BASE_URL}/delete-imgs`,
+      { params: { id } },
     )
 
     return response.data
   } catch (error) {
     console.error('Error deleting image:', error)
+    return null
   }
 }
 

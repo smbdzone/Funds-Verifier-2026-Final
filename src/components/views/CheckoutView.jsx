@@ -13,6 +13,7 @@ import { getListingRef } from '@/libs/listingRef'
 import ListingSocialShare from '@/components/shared/ListingSocialShare'
 import { formatPriceUS } from '@/utils'
 import { formatNumberWithCommas } from '../../utils/global-functions/global'
+import { formatJewelryWeight } from '@/libs/jewelryUnits'
 import { getListingAmenities } from '@/libs/listingAmenities'
 import { displayBedBathCount } from '@/libs/bedBathCount'
 
@@ -181,8 +182,8 @@ export default function CheckoutView({
                   ) : data.assetType === 'Jewellery For Sale' ? (
                     <>
                       <span className='flex flex-row items-center lg:text-base sm:text-sm text-xs'>
-                        <GoDotFill className='flex mr-2 text-gold-800' /> Grams:
-                        {data.grams}
+                        <GoDotFill className='flex mr-2 text-gold-800' /> Weight:
+                        {formatJewelryWeight(data) || data.grams}
                       </span>
                       <span className='flex flex-row items-center lg:text-base sm:text-sm text-xs'>
                         <GoDotFill className='flex mr-2 text-gold-800' /> Metal

@@ -5,6 +5,7 @@ import axios from 'axios'
 import ViewModal from '@/components/Modals/ViewModal'
 import { handleFileUpload } from '@/libs/uploadAsset'
 import { formatNumberWithCommas } from '@/utils/global-functions/global'
+import { formatJewelryWeight } from '@/libs/jewelryUnits'
 import { toast } from 'react-toastify'
 import Modal from '../../../components/documents/modal'
 import customAxios from '../../../utils/apis/apis'
@@ -137,7 +138,7 @@ const AssetDetails = () => {
       ...commonFields,
       {
         label: 'Weight',
-        value: formatNumberWithCommas(selectedProperty?.grams),
+        value: formatJewelryWeight(selectedProperty),
       },
       { label: 'Age', value: selectedProperty?.age },
       { label: 'Category', value: selectedProperty?.category },

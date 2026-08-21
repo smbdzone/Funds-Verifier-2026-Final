@@ -7,10 +7,8 @@ import 'swiper/css/navigation'
 import 'swiper/css/pagination'
 import '../SellerProfile/style.css'
 import ProductCard from '@/components/global/ProductCard'
-import {
-  buildQueryString,
-  formatNumberWithCommas,
-} from '@/utils/global-functions/global'
+import { buildQueryString } from '@/utils/global-functions/global'
+import { formatCarMileage } from '@/libs/carUnits'
 import FooterAdd from '@/components/advertisementComponent/FooterAdd'
 import { getTokenFromCookie } from '../../../utils/helper'
 import { ListingCardSkeleton } from '@/components/global/ListingCardSkeleton'
@@ -156,7 +154,7 @@ export const CarListingCard = () => {
                 item={item}
                 attributes={[
                   item.year + ' year',
-                  formatNumberWithCommas(item.kilometers) + ' kms',
+                  formatCarMileage(item),
                   item.steeringSide + ' side',
                 ]}
                 handlePrevSlide={handlePrevSlide}

@@ -220,13 +220,37 @@ export default function EvaluatorJewelryEditableDetails({
         </div>
 
         <div>
-          <label className={labelClass}>Grams</label>
-          <input
-            type='text'
-            className={editInputClass}
-            value={pickValue(draft?.grams, property.grams)}
-            onChange={(e) => setField('grams', e.target.value)}
-          />
+          <label className={labelClass}>Weight</label>
+          <div className='mt-1 flex items-stretch gap-0'>
+            <input
+              type='text'
+              inputMode='decimal'
+              className={`${editInputClass} rounded-r-none`}
+              value={pickValue(draft?.grams, property.grams)}
+              onChange={(e) => {
+                const next = e.target.value
+                if (next === '' || /^\d*\.?\d*$/.test(next)) {
+                  setField('grams', next)
+                }
+              }}
+              onKeyDown={(e) => {
+                if (e.key === '-' || e.key === 'e' || e.key === 'E' || e.key === '+') {
+                  e.preventDefault()
+                }
+              }}
+            />
+            <select
+              className={`${editInputClass} mt-0 w-[120px] shrink-0 rounded-l-none border-l-0`}
+              value={pickValue(draft?.weightUnit, property.weightUnit) || 'gm'}
+              onChange={(e) => setField('weightUnit', e.target.value)}
+              aria-label='Weight unit'
+            >
+              <option value='gm'>gm</option>
+              <option value='kg'>kg</option>
+              <option value='lb'>lb (pound)</option>
+              <option value='oz'>oz</option>
+            </select>
+          </div>
         </div>
 
         <div>

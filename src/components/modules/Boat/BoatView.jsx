@@ -59,6 +59,18 @@ export default function BoatView({ data: boatData }) {
           : '',
         fullWidth: true,
       },
+      {
+        label: 'Exterior Two Tone',
+        value: Array.isArray(data?.exteriorTwoTone)
+          ? data.exteriorTwoTone.filter(Boolean).join(', ')
+          : '',
+      },
+      {
+        label: 'Interior Two Tone',
+        value: Array.isArray(data?.interiorTwoTone)
+          ? data.interiorTwoTone.filter(Boolean).join(', ')
+          : '',
+      },
       { label: 'Project Number', value: data?.dldNumber },
     ],
     [data],

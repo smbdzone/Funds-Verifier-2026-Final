@@ -12,6 +12,7 @@ import {
   formatNumberWithCommas,
   buildQueryString,
 } from '@/utils/global-functions/global'
+import { formatJewelryWeight } from '@/libs/jewelryUnits'
 import FooterAdd from '../../advertisementComponent/FooterAdd'
 import { getTokenFromCookie } from '../../../utils/helper'
 import { ListingCardSkeleton } from '@/components/global/ListingCardSkeleton'
@@ -160,7 +161,7 @@ export const JewelleryListingCard = () => {
                     ? `Age ${item.age}`
                     : null,
                   item?.grams != null && item?.grams !== ''
-                    ? `${formatNumberWithCommas(item.grams)} Grams`
+                    ? formatJewelryWeight(item)
                     : null,
                 ].filter(Boolean)}
                 handlePrevSlide={handlePrevSlide}

@@ -36,7 +36,7 @@ import {
 } from '@/constants/listingUploadLimits'
 import { createDefaultOffPlanPaymentPlan, sanitizeOffPlanPaymentPlan, facilities, getExtraFacilities, materials } from '@/constants/listing-data'
 import { extrasList } from '@/constants/boat-listings'
-import { extras as carExtrasList } from '@/constants/car-listings'
+import { extras as carExtrasList, colors as carColorOptions } from '@/constants/car-listings'
 import { formatBedBathCount } from '@/libs/bedBathCount'
 import {
   ensureWithinSize,
@@ -49,6 +49,17 @@ const getMaxLengthForCountry = (country) => {
     ? exampleNumber.formatNational().replace(/\D/g, '').length
     : Infinity
 }
+
+const isActiveListingImage = (img) => Boolean(img) && !img?.isDeleted
+
+const getListingImageKey = (img) => {
+  if (!img) return ''
+  if (typeof File !== 'undefined' && img instanceof File) return ''
+  return String(img.s3Key || img.public_id || '').trim()
+}
+
+const filterActiveListingImages = (images = []) =>
+  (Array.isArray(images) ? images : []).filter(isActiveListingImage)
 
 export const ListingContext = createContext()
 
@@ -212,6 +223,12 @@ const ListingsProvider = ({ children }) => {
           customExtras: Array.isArray(d.extras)
             ? getExtraFacilities(d.extras, [], [...extrasList, ...carExtrasList])
             : [],
+          customExteriorColors: Array.isArray(d.exteriorColor)
+            ? getExtraFacilities(d.exteriorColor, [], carColorOptions)
+            : [],
+          customInteriorColors: Array.isArray(d.interiorColor)
+            ? getExtraFacilities(d.interiorColor, [], carColorOptions)
+            : [],
           paymentPlan: (() => {
             const cleaned = sanitizeOffPlanPaymentPlan(d.paymentPlan)
             return cleaned.length
@@ -220,6 +237,29 @@ const ListingsProvider = ({ children }) => {
           })(),
           warranty: d.warranty || d.warrenty || '',
           warrenty: d.warranty || d.warrenty || '',
+          transmissionType: (() => {
+            const raw = String(d.transmissionType || '').trim()
+            if (/^manual(\s+transmission)?$/i.test(raw)) return 'Manual'
+            if (/^automatic(\s+transmission)?$/i.test(raw)) return 'Automatic'
+            return d.transmissionType || ''
+          })(),
+          mileageUnit:
+            d.mileageUnit === 'mile' || d.mileageUnit === 'km'
+              ? d.mileageUnit
+              : 'km',
+          capacityWeight: d.capacityWeight ?? '',
+          capacityWeightUnit:
+            d.capacityWeightUnit === 'lb' || d.capacityWeightUnit === 'kg'
+              ? d.capacityWeightUnit
+              : 'kg',
+          weightUnit: (() => {
+            const unit = String(d.weightUnit || '')
+              .trim()
+              .toLowerCase()
+            if (unit === 'pound' || unit === 'pounds') return 'lb'
+            if (['gm', 'kg', 'lb', 'oz'].includes(unit)) return unit
+            return 'gm'
+          })(),
           // Store E.164 phone in formData so PhoneInputField (which reads formData.phoneNumber in edit mode) shows the correct flag
           phoneNumber: e164Phone,
         }
@@ -291,9 +331,7 @@ const ListingsProvider = ({ children }) => {
           )
         }
         setImages(
-          Array.isArray(d?.pictures?.images)
-            ? d.pictures.images.filter((img) => !img?.isDeleted)
-            : [],
+          filterActiveListingImages(d?.pictures?.images),
         )
         // Keep parent ImageAsset ids on formData even if UI peels previews
         setFormData((prev) => ({
@@ -714,7 +752,8 @@ const ListingsProvider = ({ children }) => {
             pictures: imageIDs,
           }))
           if (Array.isArray(imageIDs?.images) && imageIDs.images.length) {
-            setImages(imageIDs.images)
+            // Never put soft-deleted images back into the UI gallery.
+            setImages(filterActiveListingImages(imageIDs.images))
           }
         } catch (error) {
           toast.error(error?.message || 'Image upload failed. Please try again.')
@@ -737,29 +776,91 @@ const ListingsProvider = ({ children }) => {
   const handleImageReorder = (fromIndex, toIndex) => {
     if (fromIndex === toIndex) return
     setImages((prev) => {
-      const next = [...prev]
-      const [moved] = next.splice(fromIndex, 1)
-      next.splice(toIndex, 0, moved)
-      return next
+      const visible = filterActiveListingImages(prev)
+      if (
+        fromIndex < 0 ||
+        toIndex < 0 ||
+        fromIndex >= visible.length ||
+        toIndex >= visible.length
+      ) {
+        return prev
+      }
+      const nextVisible = [...visible]
+      const [moved] = nextVisible.splice(fromIndex, 1)
+      nextVisible.splice(toIndex, 0, moved)
+      return nextVisible
     })
     setFormData((prev) => {
-      const imgs = Array.isArray(prev.pictures?.images)
-        ? [...prev.pictures.images]
-        : []
-      if (imgs.length) {
-        const [moved] = imgs.splice(fromIndex, 1)
-        imgs.splice(toIndex, 0, moved)
-        return { ...prev, pictures: { ...prev.pictures, images: imgs } }
+      const imgs = filterActiveListingImages(prev.pictures?.images)
+      if (!imgs.length) return prev
+      if (
+        fromIndex < 0 ||
+        toIndex < 0 ||
+        fromIndex >= imgs.length ||
+        toIndex >= imgs.length
+      ) {
+        return prev
       }
-      return prev
+      const next = [...imgs]
+      const [moved] = next.splice(fromIndex, 1)
+      next.splice(toIndex, 0, moved)
+      return { ...prev, pictures: { ...prev.pictures, images: next } }
     })
   }
 
-  const handleImageRemove = (index, id) => {
-    setImages((prevImages) => prevImages.filter((_, i) => i !== index))
+  const handleImageRemove = (index, idOrFile) => {
+    const matchesTarget = (img) => {
+      if (!img) return false
+      if (typeof File !== 'undefined' && idOrFile instanceof File) {
+        return img === idOrFile
+      }
+      if (typeof idOrFile === 'string' && idOrFile) {
+        return getListingImageKey(img) === idOrFile
+      }
+      return false
+    }
+
+    setImages((prevImages) => {
+      const visible = filterActiveListingImages(prevImages)
+      const target =
+        (typeof idOrFile === 'string' && idOrFile) ||
+        (typeof File !== 'undefined' && idOrFile instanceof File)
+          ? visible.find(matchesTarget) || prevImages.find(matchesTarget)
+          : visible[index]
+
+      if (!target) return filterActiveListingImages(prevImages)
+
+      return prevImages.filter((img) => {
+        if (img === target) return false
+        if (typeof File !== 'undefined' && target instanceof File) {
+          return img !== target
+        }
+        const targetKey = getListingImageKey(target)
+        if (targetKey && getListingImageKey(img) === targetKey) return false
+        return true
+      })
+    })
+
     setFormData((prevFormData) => {
-      const updatedImages =
-        prevFormData.pictures?.images?.filter((_, i) => i !== index) || []
+      const currentImages = Array.isArray(prevFormData.pictures?.images)
+        ? prevFormData.pictures.images
+        : []
+      const visible = filterActiveListingImages(currentImages)
+      const target =
+        (typeof idOrFile === 'string' && idOrFile) ||
+        (typeof File !== 'undefined' && idOrFile instanceof File)
+          ? visible.find(matchesTarget) || currentImages.find(matchesTarget)
+          : visible[index]
+
+      const updatedImages = target
+        ? currentImages.filter((img) => {
+            if (img === target) return false
+            const targetKey = getListingImageKey(target)
+            if (targetKey && getListingImageKey(img) === targetKey) return false
+            return true
+          })
+        : currentImages
+
       return {
         ...prevFormData,
         pictures: {
@@ -768,8 +869,9 @@ const ListingsProvider = ({ children }) => {
         },
       }
     })
-    if (id) {
-      handleDeleteImg(id)
+
+    if (typeof idOrFile === 'string' && idOrFile) {
+      handleDeleteImg(idOrFile)
     }
   }
 
