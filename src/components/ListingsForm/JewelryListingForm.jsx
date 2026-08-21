@@ -473,9 +473,8 @@ const JewelryListingForm = ({
             <div className='relative dropdown-container'>
               <ListingFieldLabel label='Weight' required />
               <div
-                className={`w-full flex items-center shadow-neons h-[50px] ${
-                  errors.grams ? 'input-field-error' : ''
-                }`}
+                className={`w-full flex items-center shadow-neons h-[50px] ${errors.grams ? 'input-field-error' : ''
+                  }`}
               >
                 <input
                   type='text'
