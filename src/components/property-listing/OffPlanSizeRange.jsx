@@ -6,7 +6,14 @@ import {
   PROPERTY_SIZE_UNITS,
   formatPropertySizeNumber,
   parsePropertySizeInput,
+  sanitizePropertySizeTyping,
 } from '@/libs/propertySizeUnits'
+
+const blockNonPositiveKeys = (e) => {
+  if (e.key === '-' || e.key === 'e' || e.key === 'E' || e.key === '+') {
+    e.preventDefault()
+  }
+}
 
 const SizeInput = ({
   label,
@@ -27,6 +34,7 @@ const SizeInput = ({
       name={name}
       value={value}
       onChange={onChange}
+      onKeyDown={blockNonPositiveKeys}
       onBlur={onBlur}
       disabled={disabled}
       placeholder='0'
@@ -85,7 +93,9 @@ const OffPlanSizeRange = ({
   }
 
   const handleBoundChange = (bound) => (e) => {
-    const next = parsePropertySizeInput(e.target.value)
+    const next = parsePropertySizeInput(
+      sanitizePropertySizeTyping(e.target.value),
+    )
     if (sizeUnit === 'SQM') {
       const patch =
         bound === 'from'
