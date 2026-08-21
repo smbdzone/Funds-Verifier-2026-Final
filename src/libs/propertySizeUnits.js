@@ -10,9 +10,23 @@ export function formatPropertySizeNumber(value) {
   }).format(rounded)
 }
 
+/** Strip commas/signs; keep digits + at most one decimal point while typing. */
+export function sanitizePropertySizeTyping(rawValue) {
+  let cleaned = String(rawValue || '')
+    .replace(/,/g, '')
+    .replace(/[^\d.]/g, '')
+  const firstDot = cleaned.indexOf('.')
+  if (firstDot !== -1) {
+    cleaned =
+      cleaned.slice(0, firstDot + 1) +
+      cleaned.slice(firstDot + 1).replace(/\./g, '')
+  }
+  return cleaned
+}
+
 export function parsePropertySizeInput(rawValue) {
-  const cleaned = String(rawValue || '').replace(/,/g, '').trim()
-  if (!cleaned) return ''
+  const cleaned = sanitizePropertySizeTyping(rawValue).trim()
+  if (!cleaned || cleaned === '.') return ''
   const n = Number(cleaned)
   if (!Number.isFinite(n) || n <= 0) return ''
   return String(n)

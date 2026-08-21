@@ -33,7 +33,9 @@ const ListingFormInput = ({
   const isKilometers = String(name || '').toLowerCase() === 'kilometers'
   const isYear = String(name || '').toLowerCase() === 'year'
   const isVin = String(name || '').toUpperCase() === 'VIN'
-  const isPositiveNumeric = isGrams || isKilometers || isYear || isVin
+  const isDldNumber = String(name || '').toLowerCase() === 'dldnumber'
+  const isPositiveNumeric =
+    isGrams || isKilometers || isYear || isVin || isDldNumber
   const label = fieldLabel || (required ? labelFromPlaceholder(placeholder) : '')
 
   const onTextChange = (e) => {
@@ -107,10 +109,10 @@ const ListingFormInput = ({
           onKeyDown={
             isPositiveNumeric
               ? (e) => {
-                  if (e.key === '-' || e.key === 'e' || e.key === 'E' || e.key === '+') {
-                    e.preventDefault()
-                  }
+                if (e.key === '-' || e.key === 'e' || e.key === 'E' || e.key === '+') {
+                  e.preventDefault()
                 }
+              }
               : undefined
           }
         />

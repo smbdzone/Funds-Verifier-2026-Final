@@ -820,17 +820,23 @@ const ListingsProvider = ({ children }) => {
       return false
     }
 
-    setImages((prevImages) => {
-      const visible = filterActiveListingImages(prevImages)
-      const target =
-        (typeof idOrFile === 'string' && idOrFile) ||
-        (typeof File !== 'undefined' && idOrFile instanceof File)
-          ? visible.find(matchesTarget) || prevImages.find(matchesTarget)
-          : visible[index]
+    const hasExplicitTarget =
+      (typeof idOrFile === 'string' && idOrFile) ||
+      (typeof File !== 'undefined' && idOrFile instanceof File)
 
-      if (!target) return filterActiveListingImages(prevImages)
+    const visibleImages = filterActiveListingImages(images)
+    const target = hasExplicitTarget
+      ? visibleImages.find(matchesTarget) ||
+      images.find(matchesTarget) ||
+      filterActiveListingImages(formData?.pictures?.images).find(
+        matchesTarget,
+      )
+      : visibleImages[index]
 
-      return prevImages.filter((img) => {
+    if (!target) return
+
+    const dropTarget = (list = []) =>
+      (Array.isArray(list) ? list : []).filter((img) => {
         if (img === target) return false
         if (typeof File !== 'undefined' && target instanceof File) {
           return img !== target
@@ -839,39 +845,27 @@ const ListingsProvider = ({ children }) => {
         if (targetKey && getListingImageKey(img) === targetKey) return false
         return true
       })
-    })
 
-    setFormData((prevFormData) => {
-      const currentImages = Array.isArray(prevFormData.pictures?.images)
-        ? prevFormData.pictures.images
-        : []
-      const visible = filterActiveListingImages(currentImages)
-      const target =
-        (typeof idOrFile === 'string' && idOrFile) ||
-        (typeof File !== 'undefined' && idOrFile instanceof File)
-          ? visible.find(matchesTarget) || currentImages.find(matchesTarget)
-          : visible[index]
+    setImages((prev) => filterActiveListingImages(dropTarget(prev)))
+    setFormData((prevFormData) => ({
+      ...prevFormData,
+      pictures: {
+        ...prevFormData.pictures,
+        images: filterActiveListingImages(
+          dropTarget(prevFormData.pictures?.images),
+        ),
+      },
+    }))
 
-      const updatedImages = target
-        ? currentImages.filter((img) => {
-            if (img === target) return false
-            const targetKey = getListingImageKey(target)
-            if (targetKey && getListingImageKey(img) === targetKey) return false
-            return true
-          })
-        : currentImages
-
-      return {
-        ...prevFormData,
-        pictures: {
-          ...prevFormData.pictures,
-          images: updatedImages,
-        },
-      }
-    })
-
-    if (typeof idOrFile === 'string' && idOrFile) {
-      handleDeleteImg(idOrFile)
+    // Soft-delete on the server so reload / re-open edit does not bring it back.
+    const deleteKey =
+      (typeof idOrFile === 'string' && idOrFile) || getListingImageKey(target)
+    if (deleteKey) {
+      handleDeleteImg(deleteKey).then((result) => {
+        if (!result?.success) {
+          console.warn('Image delete API did not confirm success', deleteKey)
+        }
+      })
     }
   }
 

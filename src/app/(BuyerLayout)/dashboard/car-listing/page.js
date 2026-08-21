@@ -571,11 +571,12 @@ function Page() {
           payloadToSave
         )
         toast.success('Updated successfully.')
-        await fetchData('car')
         if (typeof window !== 'undefined') {
-          window.location.reload()
-          return
+          window.location.assign('/seller-profile/my-listing')
+        } else {
+          router.push('/seller-profile/my-listing')
         }
+        return
       } else {
         await Promise.all([
           customAxios.post(

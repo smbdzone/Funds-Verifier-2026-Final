@@ -305,9 +305,17 @@ export default function EvaluatorJewelryEditableDetails({
           <label className={labelClass}>Project Number</label>
           <input
             type='text'
+            inputMode='numeric'
             className={editInputClass}
             value={pickValue(draft?.dldNumber, property.dldNumber)}
-            onChange={(e) => setField('dldNumber', e.target.value)}
+            onChange={(e) =>
+              setField('dldNumber', e.target.value.replace(/[^\d]/g, ''))
+            }
+            onKeyDown={(e) => {
+              if (e.key === '-' || e.key === 'e' || e.key === 'E' || e.key === '+') {
+                e.preventDefault()
+              }
+            }}
           />
         </div>
 

@@ -957,34 +957,32 @@ const Page = () => {
               : 'Submitted successfully. Evaluator will evaluate it.',
         )
 
+        // After update (ready market + off-plan), go to My Listing
         if (id) {
-          await fetchData('property')
           if (typeof window !== 'undefined') {
-            window.location.reload()
-            return
+            window.location.assign('/seller-profile/my-listing')
+          } else {
+            router.push('/seller-profile/my-listing')
           }
+          return
         }
 
-        if (!id) {
-          flagListingPendingApprovalNotice({
-            assetKind: isOffPlan ? 'offplan' : 'property',
-          })
-        }
+        flagListingPendingApprovalNotice({
+          assetKind: isOffPlan ? 'offplan' : 'property',
+        })
 
-        // Reset everything
+        // Reset everything (create flow only)
         setDropdowns(dropdownData)
         setOffPlanMedia(emptyOffPlanMedia())
         setTitleDeedFile(null)
         setAgencyAgreementFile(null)
-        if (!id) {
-          router.push('/seller-profile/my-listing')
-          resetForm()
-          setFormData(initialFormData)
-          localStorage.removeItem('FormPayment')
-          localStorage.removeItem('checkoutSessionId')
-          localStorage.removeItem('checkoutSession')
-          localStorage.removeItem('pendingListingDraft')
-        }
+        router.push('/seller-profile/my-listing')
+        resetForm()
+        setFormData(initialFormData)
+        localStorage.removeItem('FormPayment')
+        localStorage.removeItem('checkoutSessionId')
+        localStorage.removeItem('checkoutSession')
+        localStorage.removeItem('pendingListingDraft')
       } else {
         setErrors(validationErrors)
         handleScroll()
@@ -1022,6 +1020,11 @@ const Page = () => {
       }
     } else if (name === 'sizeSQFT' || name === 'sizeSQM') {
       // Handled by PropertySizeField via handleSizeChange
+    } else if (name === 'dldNumber') {
+      setFormData((prevFormData) => ({
+        ...prevFormData,
+        [name]: value.replace(/[^\d]/g, ''),
+      }))
     } else {
       setFormData({
         ...formData,

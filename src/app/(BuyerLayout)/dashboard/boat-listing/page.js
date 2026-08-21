@@ -714,11 +714,12 @@ function Page() {
             : 'Submitted successfully. Evaluator will evaluate it.'
         )
         if (id) {
-          await fetchData('boat')
           if (typeof window !== 'undefined') {
-            window.location.reload()
-            return
+            window.location.assign('/seller-profile/my-listing')
+          } else {
+            router.push('/seller-profile/my-listing')
           }
+          return
         }
         if (!id) {
           flagListingPendingApprovalNotice({ assetKind: 'boat' })

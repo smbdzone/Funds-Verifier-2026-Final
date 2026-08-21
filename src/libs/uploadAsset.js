@@ -179,11 +179,19 @@ const handleDeleteImg = async (id) => {
 
 /** Persist additional-picture order (and removals) on the ImageAsset gallery. */
 const persistListingGalleryOrder = async (assetId, images = []) => {
-  const id = assetId && typeof assetId === 'object' ? assetId._id || assetId.id : assetId
+  const id =
+    assetId && typeof assetId === 'object' ? assetId._id || assetId.id : assetId
   if (!id) return null
   const order = (Array.isArray(images) ? images : [])
-    .filter((img) => img && !(typeof File !== 'undefined' && img instanceof File))
+    .filter(
+      (img) =>
+        img &&
+        !img?.isDeleted &&
+        !(typeof File !== 'undefined' && img instanceof File),
+    )
     .map((img) => ({
+      s3Key: img.s3Key || '',
+      public_id: img.public_id || '',
       originalName: img.originalName || '',
       size: img.size,
       uploadedAt: img.uploadedAt,

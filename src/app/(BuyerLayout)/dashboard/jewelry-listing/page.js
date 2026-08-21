@@ -753,22 +753,21 @@ function Page() {
               : 'Submitted successfully. Evaluator will evaluate it.'
           )
           if (id) {
-            await fetchData('jewelry')
-            // Hard refresh so form, map embed, and media fully sync from server
             if (typeof window !== 'undefined') {
-              window.location.reload()
-              return
+              window.location.assign('/seller-profile/my-listing')
+            } else {
+              router.push('/seller-profile/my-listing')
             }
-          } else {
-            flagListingPendingApprovalNotice({ assetKind: 'jewelry' })
-            router.push('/seller-profile/my-listing')
-            resetForm()
-            setFormData(initialFormData)
-            localStorage.removeItem('FormPayment')
-            localStorage.removeItem('checkoutSessionId')
-            localStorage.removeItem('checkoutSession')
-            localStorage.removeItem('pendingListingDraft')
+            return
           }
+          flagListingPendingApprovalNotice({ assetKind: 'jewelry' })
+          router.push('/seller-profile/my-listing')
+          resetForm()
+          setFormData(initialFormData)
+          localStorage.removeItem('FormPayment')
+          localStorage.removeItem('checkoutSessionId')
+          localStorage.removeItem('checkoutSession')
+          localStorage.removeItem('pendingListingDraft')
         }
         setLoading(false)
 
@@ -835,6 +834,9 @@ function Page() {
       if (value === '' || /^\d*\.?\d*$/.test(value)) {
         setFormData({ ...formData, [name]: value })
       }
+      setErrors({ ...errors, [name]: '' })
+    } else if (name === 'dldNumber') {
+      setFormData({ ...formData, [name]: value.replace(/[^\d]/g, '') })
       setErrors({ ...errors, [name]: '' })
     } else if (name === 'sizeSQFT') {
       const numericValue = value.replace(/\D/g, '')

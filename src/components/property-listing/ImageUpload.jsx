@@ -447,6 +447,7 @@ export const ImageUploadComponent = React.memo(
                 errorsMessage={errors.dldNumber}
                 name='dldNumber'
                 type='text'
+                inputMode='numeric'
                 disabled={isEvaluatorApprovedLocked}
               />
             </div>
