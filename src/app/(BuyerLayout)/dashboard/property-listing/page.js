@@ -1,5 +1,5 @@
 'use client'
-import { Suspense, useState, useEffect, useContext, useMemo } from 'react'
+import { Suspense, useState, useEffect, useContext, useMemo, useRef } from 'react'
 import axios from 'axios'
 import 'react-phone-number-input/style.css'
 import { isValidPhoneNumber } from 'libphonenumber-js'
@@ -66,6 +66,7 @@ import {
   premiumServiceRequestId,
   stripEmptyObjectIdRefs,
   sanitizeAssetHolderUpdatePayload,
+  withParentAssetId,
 } from '@/libs/listingMediaRef'
 import {
   hasConfirmedEvaluationPayment,
@@ -112,6 +113,8 @@ const Page = () => {
   const [offPlanMedia, setOffPlanMedia] = useState(emptyOffPlanMedia)
   const [agencyAgreementFile, setAgencyAgreementFile] = useState(null)
   const [titleDeedFile, setTitleDeedFile] = useState(null)
+  // Keys the user explicitly removed — only those are cleared on save.
+  const clearedLayoutKeysRef = useRef(new Set())
   const { user } = useProfile()
 
   const {
@@ -407,11 +410,21 @@ const Page = () => {
 
   useEffect(() => {
     if (!id) return
-    setOffPlanMedia({
-      unitLayout:
-        formData?.unitLayout?.images?.[0] ?? formData?.unitLayout ?? null,
-      floorPlan:
-        formData?.floorPlan?.images?.[0] ?? formData?.floorPlan ?? null,
+    // Sync each layout field independently so clearing unitLayout never
+    // wipes floorPlan (and vice versa), and local File picks are kept.
+    setOffPlanMedia((prev) => {
+      const next = { ...prev }
+      for (const key of READY_MARKET_LAYOUT_MEDIA_KEYS) {
+        if (prev[key] instanceof File) continue
+        const asset = formData?.[key]
+        if (asset == null) {
+          next[key] = null
+          continue
+        }
+        const preview = asset?.images?.[0] ?? asset
+        next[key] = withParentAssetId(preview, asset)
+      }
+      return next
     })
     if (formData?.agencyAgreement && !(agencyAgreementFile instanceof File)) {
       setAgencyAgreementFile(null)
@@ -419,16 +432,10 @@ const Page = () => {
     if (formData?.titleDeed && !(titleDeedFile instanceof File)) {
       setTitleDeedFile(null)
     }
-  }, [
-    id,
-    isOffPlan,
-    formData?.unitLayout,
-    formData?.floorPlan,
-    formData?.agencyAgreement,
-    formData?.titleDeed,
-    agencyAgreementFile,
-    titleDeedFile,
-  ])
+    // Intentionally omit agencyAgreementFile / titleDeedFile from deps so
+    // picking a PDF does not reset layout image previews.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- sync from server media only
+  }, [id, isOffPlan, formData?.unitLayout, formData?.floorPlan])
 
   const handleAgencyAgreementChange = (event) => {
     const selectedFile = event.target.files?.[0]
@@ -462,10 +469,19 @@ const Page = () => {
     setFormData((prev) => ({ ...prev, titleDeed: null }))
   }
 
+  const handleOffPlanImageRemove = (key) => {
+    if (!key || !READY_MARKET_LAYOUT_MEDIA_KEYS.includes(key)) return
+    // Clear ONLY this layout field — never touch the other.
+    clearedLayoutKeysRef.current.add(key)
+    setOffPlanMedia((prev) => ({ ...prev, [key]: null }))
+    setFormData((prev) => ({ ...prev, [key]: null }))
+  }
+
   const handleOffPlanImageChange = (key) => async (event) => {
     let selectedFile = event.target.files?.[0]
     event.target.value = null
     if (!selectedFile) return
+    clearedLayoutKeysRef.current.delete(key)
 
     try {
       if (selectedFile.size > LISTING_IMAGE_MAX_BYTES) {
@@ -494,11 +510,6 @@ const Page = () => {
         `Could not prepare ${selectedFile?.name || 'image'} (max ${LISTING_IMAGE_MAX_MB}MB)`,
       )
     }
-  }
-
-  const handleOffPlanImageRemove = (key) => {
-    setOffPlanMedia((prev) => ({ ...prev, [key]: null }))
-    setFormData((prev) => ({ ...prev, [key]: null }))
   }
 
   const handlePaymentPlanStepChange = (index, field, value) => {
@@ -812,8 +823,17 @@ const Page = () => {
           const uploaded = await handleImageUpload([media])
           layoutMediaRefs[key] =
             listingMediaRef(uploaded) ?? listingMediaRef(formData?.[key])
+          clearedLayoutKeysRef.current.delete(key)
+        } else if (media == null) {
+          // Only clear if the user explicitly removed THIS field.
+          if (clearedLayoutKeysRef.current.has(key)) {
+            layoutMediaRefs[key] = null
+          }
         } else {
-          layoutMediaRefs[key] = listingMediaRef(formData?.[key])
+          // Keep existing asset for this key only (preview may carry parent id).
+          const kept =
+            listingMediaRef(media) ?? listingMediaRef(formData?.[key])
+          if (kept) layoutMediaRefs[key] = kept
         }
       }
 

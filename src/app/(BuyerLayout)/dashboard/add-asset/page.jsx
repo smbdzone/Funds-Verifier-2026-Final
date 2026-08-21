@@ -217,6 +217,7 @@ const Page = () => {
   }
 
   const handleOffPlanImageRemove = (key) => {
+    if (!key) return
     setOffPlanMedia((prev) => ({ ...prev, [key]: null }))
     setFormData((prev) => ({ ...prev, [key]: null }))
   }

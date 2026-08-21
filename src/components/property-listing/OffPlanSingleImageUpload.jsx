@@ -22,7 +22,7 @@ const OffPlanSingleImageUpload = ({
     if (typeof image?.url === 'string' && image.url.startsWith('http')) {
       return image.url
     }
-    if (image instanceof File || (typeof image === 'object' && image)) {
+    if (image instanceof File || image instanceof Blob) {
       return URL.createObjectURL(image)
     }
     return null
@@ -65,8 +65,8 @@ const OffPlanSingleImageUpload = ({
         <label
           htmlFor={!disabled ? inputId : undefined}
           className={`flex flex-col items-center justify-center text-center ${disabled
-              ? 'cursor-not-allowed opacity-50 pointer-events-none'
-              : 'cursor-pointer'
+            ? 'cursor-not-allowed opacity-50 pointer-events-none'
+            : 'cursor-pointer'
             }`}
         >
           {!image ? (
@@ -128,8 +128,8 @@ const OffPlanSingleImageUpload = ({
       <label
         htmlFor={!disabled ? inputId : undefined}
         className={`flex h-[130px] w-[176px] shrink-0 flex-col items-center justify-center shadow-neonsm ${disabled
-            ? 'cursor-not-allowed opacity-50 pointer-events-none'
-            : 'cursor-pointer'
+          ? 'cursor-not-allowed opacity-50 pointer-events-none'
+          : 'cursor-pointer'
           }`}
       >
         <Image width={45} height={45} src='/listing/camera.svg' alt='Upload' />

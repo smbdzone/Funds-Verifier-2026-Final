@@ -123,6 +123,13 @@ export function sanitizeAssetHolderUpdatePayload(body = {}, formData = {}) {
 /** Remove empty / invalid ObjectId refs so MongoDB does not CastError. */
 export function stripEmptyObjectIdRefs(body) {
   if (!body || typeof body !== 'object') return body
+  // null means "clear this field on save" for layout/docs — keep it.
+  const CLEARABLE_WITH_NULL = new Set([
+    'unitLayout',
+    'floorPlan',
+    'titleDeed',
+    'agencyAgreement',
+  ])
   for (const key of [
     'technicalReport',
     'video3DWalkthrough',
@@ -138,6 +145,10 @@ export function stripEmptyObjectIdRefs(body) {
   ]) {
     if (!(key in body)) continue
     const value = body[key]
+    if (value === null && CLEARABLE_WITH_NULL.has(key)) {
+      body[key] = null
+      continue
+    }
     if (value === null || value === '' || value === undefined) {
       delete body[key]
       continue
