@@ -565,7 +565,18 @@ function Page() {
       }
 
       if (id) {
-        await persistListingGalleryOrder(formData?.pictures, images)
+        const galleryForPersist = (Array.isArray(images) ? images : []).filter(
+          (img) =>
+            img &&
+            !img?.isDeleted &&
+            !(typeof File !== 'undefined' && img instanceof File),
+        )
+        await persistListingGalleryOrder(
+          formData?.pictures,
+          galleryForPersist.length
+            ? galleryForPersist
+            : formData?.pictures?.images,
+        )
         await customAxios.put(
           `${process.env.NEXT_PUBLIC_BASE_URL}/car/${id}`,
           payloadToSave

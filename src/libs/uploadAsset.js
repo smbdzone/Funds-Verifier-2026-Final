@@ -161,14 +161,20 @@ const handleThumbnailUpload = async (image) => {
   }
 }
 
-const handleDeleteImg = async (id) => {
+const handleDeleteImg = async (id, options = {}) => {
   if (!id || typeof id !== 'string') return null
+  const assetId =
+    options.assetId && typeof options.assetId === 'object'
+      ? options.assetId._id || options.assetId.id
+      : options.assetId
   try {
     // s3Key often contains slashes — must go in the query string, not the path.
-    const response = await customAxios.delete(
-      `${process.env.NEXT_PUBLIC_BASE_URL}/delete-imgs`,
-      { params: { id } },
-    )
+    const response = await customAxios.delete(`/delete-imgs`, {
+      params: {
+        id,
+        ...(assetId ? { assetId: String(assetId) } : {}),
+      },
+    })
 
     return response.data
   } catch (error) {
@@ -182,7 +188,8 @@ const persistListingGalleryOrder = async (assetId, images = []) => {
   const id =
     assetId && typeof assetId === 'object' ? assetId._id || assetId.id : assetId
   if (!id) return null
-  const order = (Array.isArray(images) ? images : [])
+  const list = Array.isArray(images) ? images : []
+  const order = list
     .filter(
       (img) =>
         img &&
@@ -197,6 +204,15 @@ const persistListingGalleryOrder = async (assetId, images = []) => {
       uploadedAt: img.uploadedAt,
       signedUrl: String(img.signedUrl || img.url || '').split('?')[0],
     }))
+
+  // Never wipe a saved gallery just because the caller only had local File blobs.
+  const hadOnlyLocalFiles =
+    list.length > 0 &&
+    order.length === 0 &&
+    list.every(
+      (img) => typeof File !== 'undefined' && img instanceof File,
+    )
+  if (hadOnlyLocalFiles) return null
 
   try {
     const response = await customAxios.put(`/upload-imgs/${id}/order`, { order })

@@ -1,5 +1,5 @@
 'use client'
-import { handleImageUpload } from '@/libs/uploadAsset'
+import { handleImageUpload, handleDeleteImg, persistListingGalleryOrder } from '@/libs/uploadAsset'
 import axios from 'axios'
 import customAxios from '@/utils/apis/apis'
 import { getExampleNumber, parsePhoneNumber } from 'libphonenumber-js'
@@ -7,7 +7,6 @@ import metadata from 'libphonenumber-js/min/metadata'
 import { useSearchParams } from 'next/navigation'
 import React, { createContext, useEffect, useRef, useState } from 'react'
 import { toast } from 'react-toastify'
-import { handleDeleteImg } from '../../libs/uploadAsset'
 import { useProfile } from '../../context/UserContext'
 import {
   normalizeCountriesResponse,
@@ -846,27 +845,46 @@ const ListingsProvider = ({ children }) => {
         return true
       })
 
-    setImages((prev) => filterActiveListingImages(dropTarget(prev)))
+    const remaining = filterActiveListingImages(dropTarget(images))
+    const remainingInForm = filterActiveListingImages(
+      dropTarget(formData?.pictures?.images),
+    )
+    const galleryAsset = formData?.pictures
+    const assetId = galleryAsset?._id || galleryAsset?.id || galleryAsset
+
+    setImages(remaining)
     setFormData((prevFormData) => ({
       ...prevFormData,
       pictures: {
         ...prevFormData.pictures,
-        images: filterActiveListingImages(
-          dropTarget(prevFormData.pictures?.images),
-        ),
+        images: remainingInForm.length ? remainingInForm : remaining,
       },
     }))
 
-    // Soft-delete on the server so reload / re-open edit does not bring it back.
+    // New File not yet uploaded — local remove is enough.
+    if (typeof File !== 'undefined' && target instanceof File) return
+
     const deleteKey =
       (typeof idOrFile === 'string' && idOrFile) || getListingImageKey(target)
-    if (deleteKey) {
-      handleDeleteImg(deleteKey).then((result) => {
-        if (!result?.success) {
-          console.warn('Image delete API did not confirm success', deleteKey)
+
+      ; (async () => {
+        let deleted = false
+        if (deleteKey) {
+          const result = await handleDeleteImg(deleteKey, { assetId })
+          deleted = Boolean(result?.success)
         }
-      })
-    }
+
+        // Force gallery on server to match remaining UI images (covers soft-delete
+        // failures and race conditions on edit → save).
+        const synced = await persistListingGalleryOrder(
+          assetId || galleryAsset,
+          remaining.length ? remaining : remainingInForm,
+        )
+
+        if (!deleted && !synced && deleteKey) {
+          toast.error('Could not delete this picture. Please try again.')
+        }
+      })()
   }
 
   const handleVideoChange = (e) => {
