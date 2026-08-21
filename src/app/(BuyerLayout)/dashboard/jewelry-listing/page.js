@@ -821,7 +821,7 @@ function Page() {
     const { name, value } = e.target
 
     if (name === 'price') {
-      const rawValue = value.replace(/,/g, '')
+      const rawValue = value.replace(/[^\d]/g, '')
 
       if (/^\d*$/.test(rawValue)) {
         setFormData({ ...formData, [name]: rawValue })

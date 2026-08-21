@@ -839,7 +839,7 @@ function Page() {
   const handleChange = (e) => {
     const { name, value } = e.target
     if (name === 'price') {
-      const rawValue = value.replace(/,/g, '')
+      const rawValue = value.replace(/[^\d]/g, '')
       if (/^\d*$/.test(rawValue)) {
         setFormData({ ...formData, [name]: rawValue })
         const formattedValue = new Intl.NumberFormat('en-US').format(rawValue)

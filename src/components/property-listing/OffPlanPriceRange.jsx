@@ -3,6 +3,12 @@
 import React from 'react'
 import ListingFieldLabel from '@/components/ListingsForm/ListingFieldLabel'
 
+const blockNonPositiveKeys = (e) => {
+  if (e.key === '-' || e.key === 'e' || e.key === 'E' || e.key === '+') {
+    e.preventDefault()
+  }
+}
+
 const PriceInput = ({ label, name, value, onChange, onBlur, disabled, error }) => (
   <div className='flex items-center gap-1'>
     <span className='text-[15px] text-dark-grey/60 whitespace-nowrap'>{label}</span>
@@ -11,7 +17,14 @@ const PriceInput = ({ label, name, value, onChange, onBlur, disabled, error }) =
       inputMode='numeric'
       name={name}
       value={value || ''}
-      onChange={onChange}
+      onChange={(e) => {
+        const raw = e.target.value.replace(/[^\d]/g, '')
+        onChange?.({
+          ...e,
+          target: { name, value: raw },
+        })
+      }}
+      onKeyDown={blockNonPositiveKeys}
       onBlur={onBlur}
       disabled={disabled}
       maxLength={11}

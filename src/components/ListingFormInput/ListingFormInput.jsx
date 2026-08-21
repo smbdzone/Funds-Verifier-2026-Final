@@ -73,14 +73,26 @@ const ListingFormInput = ({
           </span>
           <input
             type='text'
+            inputMode='numeric'
             maxLength={maxLength}
+            disabled={disabled}
             className='h-full w-full border-l-0 pl-5 placeholder:text-dark-grey outline-with-opacity placeholder:text-[15px] placeholder:font-normal'
             required={required}
             placeholder={placeholder}
             name={name}
             value={formatNumber(value)}
+            onKeyDown={(e) => {
+              if (
+                e.key === '-' ||
+                e.key === 'e' ||
+                e.key === 'E' ||
+                e.key === '+'
+              ) {
+                e.preventDefault()
+              }
+            }}
             onChange={(e) => {
-              const raw = e.target.value.replace(/,/g, '')
+              const raw = e.target.value.replace(/[^\d]/g, '')
               handleChange({
                 ...e,
                 target: {
@@ -128,10 +140,11 @@ const ListingFormInput = ({
 }
 
 const formatNumber = (value) => {
-  const cleaned = value?.toString().replace(/,/g, '')
+  const cleaned = value?.toString().replace(/[^\d]/g, '')
+  if (!cleaned) return ''
   const number = parseInt(cleaned, 10)
 
-  if (isNaN(number)) return ''
+  if (isNaN(number) || number < 0) return ''
   return number.toLocaleString('en-US')
 }
 
