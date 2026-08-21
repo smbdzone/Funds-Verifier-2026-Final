@@ -242,15 +242,21 @@ const ListingsProvider = ({ children }) => {
             if (/^automatic(\s+transmission)?$/i.test(raw)) return 'Automatic'
             return d.transmissionType || ''
           })(),
-          mileageUnit:
-            d.mileageUnit === 'mile' || d.mileageUnit === 'km'
-              ? d.mileageUnit
-              : 'km',
+          mileageUnit: (() => {
+            const unit = String(d.mileageUnit || '')
+              .trim()
+              .toLowerCase()
+            return unit === 'mile' ? 'mile' : 'km'
+          })(),
           capacityWeight: d.capacityWeight ?? '',
-          capacityWeightUnit:
-            d.capacityWeightUnit === 'lb' || d.capacityWeightUnit === 'kg'
-              ? d.capacityWeightUnit
-              : 'kg',
+          capacityWeightUnit: (() => {
+            const unit = String(d.capacityWeightUnit || '')
+              .trim()
+              .toLowerCase()
+            return unit === 'lb' || unit === 'lbs' || unit === 'pound'
+              ? 'lb'
+              : 'kg'
+          })(),
           weightUnit: (() => {
             const unit = String(d.weightUnit || '')
               .trim()

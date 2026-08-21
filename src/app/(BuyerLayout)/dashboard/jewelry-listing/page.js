@@ -686,9 +686,12 @@ function Page() {
       const updatedFormData = {
         ...formData,
         userUUID: user?.uuid,
-        weightUnit: ['gm', 'kg', 'lb', 'oz'].includes(formData?.weightUnit)
-          ? formData.weightUnit
-          : 'gm',
+        weightUnit: (() => {
+          const unit = String(formData?.weightUnit || '')
+            .trim()
+            .toLowerCase()
+          return ['gm', 'kg', 'lb', 'oz'].includes(unit) ? unit : 'gm'
+        })(),
         pictures:
           listingMediaRef(imageID) ?? listingMediaRef(formData?.pictures),
         video: listingMediaRef(videoID) ?? listingMediaRef(formData?.video),
@@ -849,6 +852,15 @@ function Page() {
     } else if (name === 'dldNumber') {
       setFormData({ ...formData, [name]: value.replace(/[^\d]/g, '') })
       setErrors({ ...errors, [name]: '' })
+    } else if (name === 'weightUnit') {
+      const unit = String(value || '')
+        .trim()
+        .toLowerCase()
+      setFormData({
+        ...formData,
+        weightUnit: ['gm', 'kg', 'lb', 'oz'].includes(unit) ? unit : 'gm',
+      })
+      setErrors({ ...errors, weightUnit: '' })
     } else if (name === 'sizeSQFT') {
       const numericValue = value.replace(/\D/g, '')
       setTotalSize(numericValue)

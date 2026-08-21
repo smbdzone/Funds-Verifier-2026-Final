@@ -108,6 +108,12 @@ const SKIP_FIELD_NAMES = new Set([
 
   'paymentplantypecustom',
 
+  'mileageunit',
+
+  'capacityweightunit',
+
+  'weightunit',
+
 ])
 
 

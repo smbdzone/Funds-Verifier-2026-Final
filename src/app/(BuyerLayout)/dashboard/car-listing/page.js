@@ -516,9 +516,17 @@ function Page() {
         ...formData,
         userUUID: user?.uuid,
         mileageUnit:
-          formData?.mileageUnit === 'mile' ? 'mile' : 'km',
+          String(formData?.mileageUnit || '')
+            .trim()
+            .toLowerCase() === 'mile'
+            ? 'mile'
+            : 'km',
         capacityWeightUnit:
-          formData?.capacityWeightUnit === 'lb' ? 'lb' : 'kg',
+          String(formData?.capacityWeightUnit || '')
+            .trim()
+            .toLowerCase() === 'lb'
+            ? 'lb'
+            : 'kg',
         pictures:
           listingMediaRef(imageID) ?? listingMediaRef(formData?.pictures),
         video: listingMediaRef(videoID) ?? listingMediaRef(formData?.video),
@@ -654,6 +662,16 @@ function Page() {
           : next
       setFormData({ ...formData, [name]: sanitized })
       setErrors((prev) => ({ ...prev, [name]: '' }))
+    } else if (name === 'mileageUnit') {
+      setFormData({
+        ...formData,
+        mileageUnit: value === 'mile' ? 'mile' : 'km',
+      })
+    } else if (name === 'capacityWeightUnit') {
+      setFormData({
+        ...formData,
+        capacityWeightUnit: value === 'lb' ? 'lb' : 'kg',
+      })
     } else {
       setFormData({ ...formData, [name]: autoCapitalizeField(name, value) })
     }
