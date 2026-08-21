@@ -6,7 +6,14 @@ import {
   PROPERTY_SIZE_UNITS,
   formatPropertySizeNumber,
   parsePropertySizeInput,
+  sanitizePropertySizeTyping,
 } from '@/libs/propertySizeUnits'
+
+const blockNonPositiveKeys = (e) => {
+  if (e.key === '-' || e.key === 'e' || e.key === 'E' || e.key === '+') {
+    e.preventDefault()
+  }
+}
 
 const PropertySizeField = ({
   sizeSQFT = '',
@@ -51,7 +58,7 @@ const PropertySizeField = ({
   }
 
   const handleInputChange = (e) => {
-    const typed = e.target.value
+    const typed = sanitizePropertySizeTyping(e.target.value)
     setRawInput(typed)
     const next = parsePropertySizeInput(typed)
     if (sizeUnit === 'SQM') {
@@ -120,6 +127,7 @@ const PropertySizeField = ({
           value={displayValue}
           onFocus={handleFocus}
           onChange={handleInputChange}
+          onKeyDown={blockNonPositiveKeys}
           onBlur={handleBlur}
           placeholder={sizeUnit === 'SQM' ? 'Size in SQM' : 'Size in SQFT'}
           className='h-[50px] w-full border-0 pl-4 pr-3 placeholder:text-dark-grey outline-none placeholder:text-[15px] placeholder:font-normal'
