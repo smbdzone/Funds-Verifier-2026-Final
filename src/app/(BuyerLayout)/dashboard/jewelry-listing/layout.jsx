@@ -1,6 +1,12 @@
 'use client'
 
-/** Auth temporarily disabled so /dashboard/jewelry-listing can open without login. */
+import RequireAuth from '@/components/auth/RequireAuth'
+
+/** Listing forms (incl. Technical Report / 3D Walkthrough): Asset Holder & Deal Hunter only. */
 export default function JewelryListingLayout({ children }) {
-  return children
+  return (
+    <RequireAuth roles={['AssetHolder', 'DealHunter']} loginPath='/login'>
+      {children}
+    </RequireAuth>
+  )
 }
