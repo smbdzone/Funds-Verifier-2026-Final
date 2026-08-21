@@ -49,8 +49,15 @@ export default function JewelleryView({ data }) {
     () => [
       { label: 'Location', value: formatListingLocation(data), fullWidth: true },
       { label: 'Weight', value: formatJewelryWeight(data) },
+      { label: 'Category', value: data?.category },
+      { label: 'Type', value: data?.model },
       { label: 'Age', value: data?.age },
-      { label: 'Category', value: data?.model },
+      { label: 'Condition', value: data?.condition },
+      { label: 'Usage', value: data?.usage },
+      {
+        label: 'Warranty',
+        value: data?.warranty || data?.warrenty,
+      },
       {
         label: 'Materials',
         value: Array.isArray(data?.materials)
@@ -58,7 +65,6 @@ export default function JewelleryView({ data }) {
           : '',
         fullWidth: true,
       },
-      { label: 'Quantity', value: '01' },
       { label: 'Project Number', value: data?.dldNumber },
     ],
     [data],

@@ -12,6 +12,10 @@ export function resolveJewelryWeightUnit(listingOrUnit) {
     .trim()
     .toLowerCase()
   if (unit === 'pound' || unit === 'pounds') return 'lb'
+  if (unit === 'kilo' || unit === 'kilos' || unit === 'kilogram' || unit === 'kilograms') {
+    return 'kg'
+  }
+  if (unit === 'ounce' || unit === 'ounces') return 'oz'
   if (unit === 'g' || unit === 'gram' || unit === 'grams') return 'gm'
   if (JEWELRY_WEIGHT_UNITS.includes(unit)) return unit
   return 'gm'

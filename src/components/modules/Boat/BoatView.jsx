@@ -8,7 +8,10 @@ import Open3dModal from '@/components/3dModal/Open3dModal'
 import ListingSocialShare from '@/components/shared/ListingSocialShare'
 import Modal2 from '@/components/product-modal/modal2'
 import Modal from '@/components/product-modal/modal'
-import { formatNumberWithCommas } from '../../../utils/global-functions/global'
+import {
+  formatNumberWithCommas,
+  formatColorList,
+} from '../../../utils/global-functions/global'
 import { formatPriceUS } from '@/utils'
 import {
   getListingDetailMediaItems,
@@ -48,28 +51,35 @@ export default function BoatView({ data: boatData }) {
   const detailRows = useMemo(
     () => [
       { label: 'Location', value: formatListingLocation(data), fullWidth: true },
+      { label: 'Brand', value: data?.brands },
       { label: 'Model', value: data?.model },
-      { label: 'Age', value: data?.age },
+      { label: 'Category', value: data?.category },
       { label: 'Length', value: data?.length },
+      { label: 'Age', value: data?.age },
+      { label: 'Seats', value: data?.seats },
       { label: 'Condition', value: data?.condition },
+      { label: 'Usage', value: data?.usage },
+      {
+        label: 'Warranty',
+        value: data?.warranty || data?.warrenty,
+      },
+      { label: 'Weight', value: data?.weight },
+      {
+        label: 'Exterior Color',
+        value: formatColorList(data?.exteriorColor),
+      },
       {
         label: 'Interior Color',
-        value: Array.isArray(data?.interiorColor)
-          ? data.interiorColor.filter(Boolean).join(', ')
-          : '',
+        value: formatColorList(data?.interiorColor),
         fullWidth: true,
       },
       {
         label: 'Exterior Two Tone',
-        value: Array.isArray(data?.exteriorTwoTone)
-          ? data.exteriorTwoTone.filter(Boolean).join(', ')
-          : '',
+        value: formatColorList(data?.exteriorTwoTone),
       },
       {
         label: 'Interior Two Tone',
-        value: Array.isArray(data?.interiorTwoTone)
-          ? data.interiorTwoTone.filter(Boolean).join(', ')
-          : '',
+        value: formatColorList(data?.interiorTwoTone),
       },
       { label: 'Project Number', value: data?.dldNumber },
     ],
