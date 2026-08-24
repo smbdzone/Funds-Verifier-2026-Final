@@ -38,6 +38,12 @@ import { extrasList } from '@/constants/boat-listings'
 import { extras as carExtrasList, colors as carColorOptions } from '@/constants/car-listings'
 import { formatBedBathCount } from '@/libs/bedBathCount'
 import {
+  fetchCatalogCities,
+  fetchCatalogNeighbourhoods,
+  mergeCityPredictions,
+  mergeNeighbourhoodRows,
+} from '@/libs/listingLocationCatalog'
+import {
   ensureWithinSize,
 } from '@/libs/imageCompression'
 import { applyListingWatermark } from '@/libs/applyListingWatermark'
@@ -444,8 +450,17 @@ const ListingsProvider = ({ children }) => {
       return
     }
 
+    const catalogCities =
+      countryCode === 'AE' ? await fetchCatalogCities() : []
+
+    const applyCities = (base) => {
+      setCities(mergeCityPredictions(base, catalogCities, searchQueryCity))
+    }
+
     const applyDummyAeCities = () => {
-      setCities(filterDummyCitiesByQuery(DUMMY_UAE_CITY_PREDICTIONS, searchQueryCity))
+      applyCities(
+        filterDummyCitiesByQuery(DUMMY_UAE_CITY_PREDICTIONS, searchQueryCity),
+      )
     }
 
     if (isDummyUaeLocationsEnabled && countryCode === 'AE') {
@@ -474,31 +489,37 @@ const ListingsProvider = ({ children }) => {
           searchQueryCity,
         )
       }
-      setCities(normalized)
+      applyCities(normalized)
     } catch (error) {
       console.error('Error fetching cities:', error)
       if (countryCode === 'AE') {
         applyDummyAeCities()
       } else {
-        setCities([])
+        applyCities([])
       }
     } finally {
       setLoading(false)
     }
   }
 
-  const fetchNeighbourhoods = async () => {
-    if (!isCity) return
+  const fetchNeighbourhoods = async (cityName) => {
+    const city = formatCityLabel(cityName || isCity)
+    if (!city) return
 
-    if (hasDummyNeighbourhoodsForCity(isCity)) {
-      setNeighbourhoods(getDummyNeighbourhoodsForCity(isCity))
+    const catalogRows = await fetchCatalogNeighbourhoods(city)
+    const apply = (base) => {
+      setNeighbourhoods(mergeNeighbourhoodRows(base, catalogRows))
+    }
+
+    if (hasDummyNeighbourhoodsForCity(city)) {
+      apply(getDummyNeighbourhoodsForCity(city))
       setLoading(false)
       return
     }
 
     try {
       const response = await fetch(
-        `/api/neighbourhoods?address=${encodeURIComponent(isCity)}`,
+        `/api/neighbourhoods?address=${encodeURIComponent(city)}`,
       )
 
       if (!response.ok) {
@@ -506,10 +527,10 @@ const ListingsProvider = ({ children }) => {
       }
       const data = await response.json()
       const places = Array.isArray(data?.places) ? data.places : []
-      setNeighbourhoods(places)
+      apply(places)
     } catch (error) {
       console.error('Error fetching neighbourhoods:', error)
-      setNeighbourhoods([])
+      apply([])
     } finally {
       setLoading(false)
     }

@@ -1,11 +1,14 @@
 import axios from 'axios'
 import Link from 'next/link'
+import { redirect } from 'next/navigation'
 import { Suspense } from 'react'
 import ProductView from '@/components/views/ProductView'
 import RelatedAssetListings from '@/components/shared/RelatedAssetListings'
 import GlobalLoader from '@/utils/GlobalLoader'
 import { withPublicApiRetry } from '@/libs/publicApiClient'
 import { buildListingPageMetadata } from '@/libs/listingMetadata'
+import { isOffPlanListing } from '@/libs/filterMyListingTab'
+import { getListingDetailId } from '@/libs/listingSlug'
 import { cache } from 'react'
 
 export const dynamic = 'force-dynamic'
@@ -85,6 +88,11 @@ export default async function Page({ params }) {
   }
 
   const { relatedListings, propertyInfo } = data
+
+  if (isOffPlanListing(propertyInfo)) {
+    const offPlanId = getListingDetailId(propertyInfo) || slug
+    redirect(`/offplan/${offPlanId}`)
+  }
 
   return (
     <div className='w-full sm:pb-8'>
