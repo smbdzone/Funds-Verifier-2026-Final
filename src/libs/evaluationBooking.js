@@ -109,7 +109,7 @@ function listingEvaluationCategory(formData = {}) {
     return String(formData?.carType || formData?.category || '').trim()
   }
   if (assetType.includes('boat')) {
-    return String(formData?.brands || formData?.category || '').trim()
+    return String(formData?.category || formData?.evaluationFeeCategory || '').trim()
   }
   if (assetType.includes('jewel')) {
     return String(
@@ -132,7 +132,7 @@ function matchDropdownLabel(saved, dropdown) {
   const ci = labels.find(
     (label) => label.toLowerCase() === token.toLowerCase(),
   )
-  return ci || token
+  return ci || ''
 }
 
 /** Fill missing paid-fee snapshot from the listing after a successful evaluation. */

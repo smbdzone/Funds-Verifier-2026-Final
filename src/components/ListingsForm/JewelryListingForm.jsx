@@ -406,6 +406,8 @@ const JewelryListingForm = ({
               productId={formData?.uuid}
               userUUID={data?.uuid}
               listingPhone={formData?.phoneNumber || phoneNumber || ''}
+              existingRequest={formData?.technicalReport}
+              listingFormData={formData}
             />
           </div>
           <div className='relative-placeholder w-full'>
@@ -448,6 +450,8 @@ const JewelryListingForm = ({
               productTitle={formData?.title}
               userUUID={data2?.uuid}
               listingPhone={formData?.phoneNumber || phoneNumber || ''}
+              existingRequest={formData?.video3DWalkthrough}
+              listingFormData={formData}
             />
           </div>
           <div className='relative flex flex-col gap-4 w-full dropdown-container'>

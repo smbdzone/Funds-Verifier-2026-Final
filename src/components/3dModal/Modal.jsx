@@ -14,6 +14,13 @@ import { applyFullPayDiscount } from '@/libs/paymentDiscount'
 import { useProfile } from '../../context/UserContext'
 import { clearServiceAppointmentSelection } from '@/libs/slotBooking'
 import BookingContactPhonePicker from '@/components/booking/BookingContactPhonePicker'
+import {
+  formatPremiumServiceDateTime,
+  premiumServicePaidBaseline,
+  resolvePremiumServiceFeePrefill,
+  updatePremiumServiceBooking,
+} from '@/libs/premiumServiceExtraFee'
+import { isPremiumServicePaid } from '@/libs/listingPremiumStatus'
 
 const Modal = ({
   isOpen,
@@ -28,6 +35,8 @@ const Modal = ({
   productId,
   productTitle,
   listingPhone = '',
+  existingRequest = null,
+  listingFormData = null,
 }) => {
   const [isModalOpen, setModalOpen] = useState(false)
   const [isChecked, setIsChecked] = useState(false)
@@ -40,6 +49,7 @@ const Modal = ({
   const { user } = useProfile()
   const [showPaymentChoice, setShowPaymentChoice] = useState(false)
   const [paymentLoading, setPaymentLoading] = useState(false)
+  const [paidBaseline, setPaidBaseline] = useState(0)
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -57,6 +67,25 @@ const Modal = ({
   useEffect(() => {
     if (!isOpen) return
     const uaePhone = user?.phone || ''
+    const prefill = resolvePremiumServiceFeePrefill({
+      existingRequest,
+      listingFormData,
+      type,
+      dropdown3D,
+      dropdown,
+    })
+    setCategory(prefill.category)
+    setSubCategory(prefill.subCategory)
+    setValue(prefill.value)
+    setPrice(prefill.price || 0)
+    const snapshotPaid = premiumServicePaidBaseline(existingRequest)
+    setPaidBaseline(
+      snapshotPaid > 0
+        ? snapshotPaid
+        : isPremiumServicePaid(existingRequest)
+          ? Number(prefill.price) || 0
+          : 0,
+    )
     setFormData((prev) => ({
       ...prev,
       name: user?.displayName || user?.name || prev.name || '',
@@ -65,6 +94,14 @@ const Modal = ({
       productId,
       productTitle,
       assetType: type,
+      dateTime:
+        formatPremiumServiceDateTime(existingRequest?.dateTime) ||
+        prev.dateTime ||
+        '',
+      category: prefill.category,
+      subCategory: prefill.subCategory,
+      value: prefill.value,
+      price: prefill.price || 0,
     }))
   }, [isOpen, user, listingPhone, productId, productTitle, type])
 
@@ -75,6 +112,20 @@ const Modal = ({
     formData.phone &&
     formData.assetType &&
     isChecked
+
+  const extraFee =
+    paidBaseline > 0 ? Math.max(0, (Number(price) || 0) - paidBaseline) : 0
+  const chargeAmount =
+    paidBaseline > 0 ? extraFee : Number(price) || 0
+
+  useEffect(() => {
+    if (!isOpen) return
+    if (type === 'Property For Sale') {
+      if (subCategory && value) fetchPrice(value)
+    } else if (category) {
+      fetchPrice(category)
+    }
+  }, [isOpen, category, subCategory, value, type])
 
   const buildPaymentPayload = () => {
     const origin =
@@ -90,7 +141,9 @@ const Modal = ({
     return {
       userUUID: user?.uuid,
       service: '_3dwalkthrough',
-      price: formData?.price,
+      price: chargeAmount,
+      fullPrice: Number(price) || Number(formData?.price) || 0,
+      isPremiumTopUp: paidBaseline > 0 && extraFee > 0,
       productTitle,
       productId,
       dateTime: formData?.dateTime,
@@ -107,7 +160,7 @@ const Modal = ({
     }
   }
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!isChecked) {
       setShowCheckboxError(true)
       return
@@ -115,6 +168,40 @@ const Modal = ({
     setShowCheckboxError(false)
     if (!user?.uuid) {
       toast.error('User not found. Please login.')
+      return
+    }
+    if (paidBaseline > 0 && extraFee <= 0) {
+      try {
+        await updatePremiumServiceBooking({
+          service: '_3dwalkthrough',
+          productId,
+          assetType: type,
+          dateTime: formData?.dateTime,
+          phone: formData?.phone,
+          category,
+          subCategory,
+          value,
+          price: Number(price) || 0,
+        })
+        onSave({
+          ...formData,
+          price,
+          category,
+          subCategory,
+          value,
+          dateTime: formData?.dateTime,
+        })
+        toast.success(
+          '3D walkthrough booking updated. No extra payment required.',
+        )
+        onClose()
+      } catch (error) {
+        toast.error(
+          error?.response?.data?.message ||
+            error?.message ||
+            'Could not update the booking.',
+        )
+      }
       return
     }
     setShowPaymentChoice(true)
@@ -131,7 +218,7 @@ const Modal = ({
       const APiRequestedData = buildPaymentPayload()
       const data = await initiateServiceSubscription({
         ...APiRequestedData,
-        price: applyFullPayDiscount(formData?.price).discounted,
+        price: applyFullPayDiscount(chargeAmount).discounted,
       })
       onSave(APiRequestedData)
       if (data?.url) {
@@ -379,6 +466,15 @@ const Modal = ({
               />
             </div>
           </div>
+          {paidBaseline > 0 && extraFee > 0 ? (
+            <p className='mb-4 text-sm text-amber-800'>
+              {type === 'Property For Sale'
+                ? 'Changing property type or bedrooms requires an extra 3D walkthrough fee of '
+                : `Changing ${String(title || 'the category').toLowerCase()} requires an extra 3D walkthrough fee of `}
+              {extraFee} AED. You must pay this extra amount before saving.
+              Changing only the date/time does not require extra payment.
+            </p>
+          ) : null}
           <div className='flex items-center my-2 gap-2'>
             <input
               type='checkbox'
@@ -420,7 +516,7 @@ const Modal = ({
           <PaymentChoiceModal
             show={showPaymentChoice}
             onClose={handlePaymentAbandoned}
-            amount={price}
+            amount={chargeAmount}
             loading={paymentLoading}
             onPayFull={handleStripePay}
             onPayInstallments={handleClozerPay}

@@ -418,6 +418,8 @@ const CarListingForm = ({
                 productId={formData?.uuid}
                 userUUID={data?.uuid}
                 listingPhone={formData?.phoneNumber || phoneNumber || ''}
+                existingRequest={formData?.technicalReport}
+                listingFormData={formData}
               />
             </div>
           </div>
@@ -479,6 +481,8 @@ const CarListingForm = ({
                 title='Cars'
                 userUUID={data2?.uuid}
                 listingPhone={formData?.phoneNumber || phoneNumber || ''}
+                existingRequest={formData?.video3DWalkthrough}
+                listingFormData={formData}
               />
             </div>
             <div className='relative-placeholder dropdown-container flex flex-col w-full'>

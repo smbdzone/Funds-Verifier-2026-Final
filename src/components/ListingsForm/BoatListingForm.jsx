@@ -372,11 +372,13 @@ const BoatListingForm = ({
                 onSave={handleRequestTechnicalModalData}
                 type={'Boats For Sale'}
                 dropdown={groupedData}
-                title='Boats'
+                title='Boat Type'
                 userUUID={data?.uuid}
                 productTitle={formData?.title}
                 productId={formData?.uuid}
                 listingPhone={formData?.phoneNumber || phoneNumber || ''}
+                existingRequest={formData?.technicalReport}
+                listingFormData={formData}
               />
             </div>
           </div>
@@ -402,7 +404,7 @@ const BoatListingForm = ({
               setFormData={setFormData}
               assetType='Boats For Sale'
               dropdown={groupedData}
-              title='Boat Brand'
+              title='Boat Type'
               lockFeeFields={isEvaluatorApprovedLocked}
             />
           </div>
@@ -442,11 +444,13 @@ const BoatListingForm = ({
               setFormData={setFormData}
               type={'Boats For Sale'}
               dropdown={groupedData}
-              title='Boats'
+              title='Boat Type'
               productId={formData?.uuid}
               productTitle={formData?.title}
               userUUID={data2?.uuid}
               listingPhone={formData?.phoneNumber || phoneNumber || ''}
+              existingRequest={formData?.video3DWalkthrough}
+              listingFormData={formData}
             />
           </div>
           <div className='relative dropdown-container'>

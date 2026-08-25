@@ -744,6 +744,8 @@ export const ImageUploadComponent = React.memo(
                 title='Bedrooms'
                 userUUID={data2?.uuid}
                 listingPhone={formData?.phoneNumber || phoneNumber || ''}
+                existingRequest={formData?.video3DWalkthrough}
+                listingFormData={formData}
               />
             </div>
             {formData.assetType === 'Property For Lease' && (
@@ -839,6 +841,8 @@ export const ImageUploadComponent = React.memo(
                 productId={formData?.uuid}
                 userUUID={data?.uuid}
                 listingPhone={formData?.phoneNumber || phoneNumber || ''}
+                existingRequest={formData?.technicalReport}
+                listingFormData={formData}
               />
             </div>
             <div className='relative w-full dropdown-container'>

@@ -50,13 +50,14 @@ export function isPremiumServicePaid(ref) {
   return hasSuccessfulPremiumPayment(ref)
 }
 
-/** Block re-requesting only after payment succeeded (not on abandoned Clozer/Stripe attempts). */
+/** Block re-requesting after the service has been delivered. Paid-but-pending
+ *  bookings stay editable so sellers can change the slot or pay a fee increase. */
 export function blocksPremiumServiceRequest(ref) {
-  return isPremiumServicePaid(ref)
+  return isPremiumServiceDelivered(ref)
 }
 
 /** True when the 3D link or technical report file has been delivered. */
-function isPremiumServiceDelivered(ref) {
+export function isPremiumServiceDelivered(ref) {
   if (!ref || typeof ref !== 'object') return false
   if (String(ref.status || '').toLowerCase() !== 'successful') return false
 

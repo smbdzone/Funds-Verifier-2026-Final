@@ -362,9 +362,7 @@ const EvaluationModal = ({
       ...(isProperty && subCategory ? { propertyType: subCategory } : {}),
       ...(isProperty && value !== '' && value != null ? { bedrooms: value } : {}),
       ...(assetType === 'Car For Sale' && category ? { carType: category } : {}),
-      ...(assetType === 'Boats For Sale' && category
-        ? { brands: category, category }
-        : {}),
+      ...(assetType === 'Boats For Sale' && category ? { category } : {}),
       ...(assetType === 'Jewellery For Sale' && category
         ? { make: category, brands: category, category }
         : {}),
