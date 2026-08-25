@@ -195,6 +195,9 @@ export function evaluationFeeFieldsChanged(formData = {}, options = {}) {
 
 /** Extra AED to collect when fee-related fields change on edit. Time-only = 0. */
 export function getEvaluationTopUpAmount(formData = {}) {
+  const explicit = Number(formData?.evaluationTopUpAmount)
+  if (Number.isFinite(explicit) && explicit > 0) return explicit
+
   const nextPrice = Number(formData?.evaluationFeePrice) || 0
   const paid = Number(formData?.evaluationFeePaidAmount)
   const paidSafe = Number.isFinite(paid) && paid > 0 ? paid : 0
@@ -202,6 +205,47 @@ export function getEvaluationTopUpAmount(formData = {}) {
   if (nextPrice <= 0) return 0
   if (paidSafe <= 0) return 0
   return Math.max(0, nextPrice - paidSafe)
+}
+
+/** Amount already paid for evaluation. Missing snapshot uses the last stored fee. */
+export function paidEvaluationFeeBaseline(formData = {}) {
+  const paid = Number(formData?.evaluationFeePaidAmount)
+  if (Number.isFinite(paid) && paid > 0) return paid
+  if (!formData?.evaluationDateTime) return 0
+  const previousPrice = Number(formData?.evaluationFeePrice) || 0
+  return previousPrice > 0 ? previousPrice : 0
+}
+
+export function markEvaluationTopUpJustPaid() {
+  try {
+    sessionStorage.setItem('fv.evaluationTopUpJustPaid', '1')
+  } catch {
+    /* ignore */
+  }
+}
+
+export function consumeEvaluationTopUpJustPaid() {
+  try {
+    const due = sessionStorage.getItem('fv.evaluationTopUpJustPaid') === '1'
+    if (due) sessionStorage.removeItem('fv.evaluationTopUpJustPaid')
+    return due
+  } catch {
+    return false
+  }
+}
+
+/** Edit save must collect extra fee when the new price is higher than what was paid. */
+export function shouldCollectEvaluationTopUp(formData = {}, listingId) {
+  if (!listingId) return false
+  if (getEvaluationTopUpAmount(formData) <= 0) return false
+  try {
+    if (sessionStorage.getItem('fv.evaluationTopUpJustPaid') === '1') {
+      return false
+    }
+  } catch {
+    /* ignore */
+  }
+  return true
 }
 
 export function withEvaluationFeePaid(formData = {}) {
@@ -215,6 +259,12 @@ export function withEvaluationFeePaid(formData = {}) {
 }
 
 export function applyPaidEvaluationFeeIfConfirmed(formData = {}, listingId) {
+  if (getEvaluationTopUpAmount(formData) > 0) {
+    if (consumeEvaluationTopUpJustPaid()) {
+      return withEvaluationFeePaid(formData)
+    }
+    return formData
+  }
   if (!listingId) return withEvaluationFeePaid(formData)
   if (hasConfirmedEvaluationPayment(formData)) {
     return withEvaluationFeePaid(formData)

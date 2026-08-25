@@ -16,6 +16,7 @@ import {
   formatEvaluationDateTimeDisplay,
   parseEvaluationDateTimeSelection,
   resolveEvaluationFeePrefill,
+  paidEvaluationFeeBaseline,
 } from '@/libs/evaluationBooking'
 
 const getToday = () => {
@@ -301,8 +302,9 @@ const EvaluationModal = ({
       slot.time === selectedTime ? { ...slot, isBooked: true } : slot,
     )
 
-    const paid = Number(parentFormData?.evaluationFeePaidAmount) || 0
-    const extraFee = paid > 0 ? Math.max(0, Number(price) - paid) : 0
+    const paidBaseline = paidEvaluationFeeBaseline(parentFormData)
+    const extraFee =
+      paidBaseline > 0 ? Math.max(0, Number(price) - paidBaseline) : 0
 
     setFormData((prevData) => ({
       ...prevData,
@@ -316,6 +318,11 @@ const EvaluationModal = ({
       evaluationFeeCategory: category,
       evaluationFeeSubCategory: subCategory,
       evaluationFeeBedrooms: value,
+      evaluationFeePaidAmount:
+        paidBaseline > 0
+          ? paidBaseline
+          : Number(prevData?.evaluationFeePaidAmount) || 0,
+      evaluationTopUpAmount: extraFee,
       evaluationContactName: modalForm.name,
       evaluationContactEmail: modalForm.email,
       evaluationContactPhone: modalForm.phone,
@@ -326,7 +333,7 @@ const EvaluationModal = ({
     toast.success(
       extraFee > 0
         ? `Evaluation updated. Extra fee of ${extraFee} AED is required before saving.`
-        : paid > 0
+        : paidBaseline > 0
           ? 'Evaluation slot updated. Save the listing to keep this time.'
           : 'Evaluation slot selected. Complete payment to confirm your booking.',
     )
@@ -496,14 +503,15 @@ const EvaluationModal = ({
             </div>
           </div>
           {!lockFeeFields &&
-            Number(parentFormData?.evaluationFeePaidAmount) > 0 &&
-            price > Number(parentFormData.evaluationFeePaidAmount) ? (
+          paidEvaluationFeeBaseline(parentFormData) > 0 &&
+          price > paidEvaluationFeeBaseline(parentFormData) ? (
             <p className='mb-4 text-sm text-amber-800'>
               {isProperty
                 ? 'Changing property type or bedrooms requires an extra evaluation fee of '
                 : 'Changing the evaluation category requires an extra evaluation fee of '}
-              {price - Number(parentFormData.evaluationFeePaidAmount)} AED.
-              Changing only the date/time does not require extra payment.
+              {price - paidEvaluationFeeBaseline(parentFormData)} AED. You must
+              pay this extra amount before saving. Changing only the date/time
+              does not require extra payment.
             </p>
           ) : null}
 

@@ -53,6 +53,14 @@ function ClozerReturnContent() {
                 clozer_transaction_id: transactionId,
               }),
             )
+            try {
+              const returnUrl = localStorage.getItem('clozerReturnUrl') || ''
+              if (/[?&]id=/.test(returnUrl)) {
+                sessionStorage.setItem('fv.evaluationTopUpJustPaid', '1')
+              }
+            } catch {
+              /* ignore */
+            }
           }
 
           if (data.data?.service_type === 'purchase') {

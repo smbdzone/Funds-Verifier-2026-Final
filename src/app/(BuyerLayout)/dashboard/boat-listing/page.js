@@ -26,6 +26,7 @@ import {
   stripEvaluationBookingMeta,
   getEvaluationTopUpAmount,
   applyPaidEvaluationFeeIfConfirmed,
+  shouldCollectEvaluationTopUp,
 } from '@/libs/evaluationBooking'
 import axios from 'axios'
 import { Suspense, useContext, useEffect, useMemo, useState } from 'react'
@@ -570,6 +571,16 @@ function Page() {
 
   const finalizeSubmission = async (isPaymentSuccessful) => {
     try {
+      if (shouldCollectEvaluationTopUp(formData, id)) {
+        const topUp = getEvaluationTopUpAmount(formData)
+        setLoading(false)
+        setFormData((prev) => ({ ...prev, evaluationTopUpAmount: topUp }))
+        setShowPayment(true)
+        toast.error(
+          'Please pay the additional evaluation fee before saving. Time-only changes stay free.',
+        )
+        return
+      }
       const requests = []
       let video3DWalkthroughID = null
       let technicalReportID = null

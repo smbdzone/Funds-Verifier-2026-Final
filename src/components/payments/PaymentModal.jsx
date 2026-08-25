@@ -20,7 +20,7 @@ import {
   getFullPayDiscountPercent,
   loadFullPayDiscountPercent,
 } from '@/libs/paymentDiscount'
-import { clearAbandonedEvaluationPaymentDraft } from '@/libs/evaluationBooking'
+import { clearAbandonedEvaluationPaymentDraft, markEvaluationTopUpJustPaid } from '@/libs/evaluationBooking'
 import { savePendingListingDraft } from '@/libs/pendingListingDraft'
 import {
   handleImageUpload,
@@ -334,6 +334,9 @@ const PaymentModal = ({
           }),
         )
         toast.success('Payment successful!')
+        if (isEvaluationTopUp) {
+          markEvaluationTopUpJustPaid()
+        }
         HandleFormSubmit()
         onClose()
       }
