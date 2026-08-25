@@ -6,6 +6,7 @@ import {
   handleThumbnailUpload,
   handleVideoUpload,
   persistListingGalleryOrder,
+  resolveListingGalleryAsset,
 } from '@/libs/uploadAsset'
 import { autoCapitalizeField } from '@/libs/autoCapitalizeText'
 import { flagListingPendingApprovalNotice } from '@/libs/listingPendingApprovalNotice'
@@ -647,7 +648,7 @@ function Page() {
       if (!id) {
         const [uploadedImages, uploadedVideo, uploadedThumbnail, uploadedQrScan] =
           await Promise.all([
-            images.length > 0 ? handleImageUpload(images) : imageID,
+            resolveListingGalleryAsset(images, imageID),
             videos.length ? handleVideoUpload(videos) : videoID,
             // file ? handleFileUpload(file) : fileID,
             thumbnail instanceof File
@@ -670,6 +671,11 @@ function Page() {
         if (qrScan instanceof File) {
           qrScanID = await handleImageUpload([qrScan])
         }
+        const appendedGallery = await resolveListingGalleryAsset(
+          images,
+          imageID,
+        )
+        if (appendedGallery) imageID = appendedGallery
       }
 
       const updatedFormData = {

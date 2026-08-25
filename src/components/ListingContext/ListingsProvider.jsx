@@ -38,6 +38,7 @@ import { createDefaultOffPlanPaymentPlan, sanitizeOffPlanPaymentPlan, facilities
 import { extrasList } from '@/constants/boat-listings'
 import { extras as carExtrasList, colors as carColorOptions } from '@/constants/car-listings'
 import { formatBedBathCount } from '@/libs/bedBathCount'
+import { listingMediaObjectKey } from '@/libs/listingCardMedia'
 import {
   fetchCatalogCities,
   fetchCatalogNeighbourhoods,
@@ -61,7 +62,7 @@ const isActiveListingImage = (img) => Boolean(img) && !img?.isDeleted
 const getListingImageKey = (img) => {
   if (!img) return ''
   if (typeof File !== 'undefined' && img instanceof File) return ''
-  return String(img.s3Key || img.public_id || '').trim()
+  return listingMediaObjectKey(img)
 }
 
 const filterActiveListingImages = (images = []) =>

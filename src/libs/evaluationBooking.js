@@ -103,6 +103,38 @@ function sameFeeToken(a, b) {
   return studio(left) && studio(right)
 }
 
+function listingEvaluationCategory(formData = {}) {
+  const assetType = String(formData?.assetType || '').toLowerCase()
+  if (assetType.includes('car')) {
+    return String(formData?.carType || formData?.category || '').trim()
+  }
+  if (assetType.includes('boat')) {
+    return String(formData?.brands || formData?.category || '').trim()
+  }
+  if (assetType.includes('jewel')) {
+    return String(
+      formData?.make || formData?.category || formData?.brands || '',
+    ).trim()
+  }
+  return String(formData?.category || formData?.carType || '').trim()
+}
+
+function matchDropdownLabel(saved, dropdown) {
+  const token = String(saved || '').trim()
+  if (!token) return ''
+  const labels = (Array.isArray(dropdown) ? dropdown : [])
+    .map((item) =>
+      typeof item === 'string' ? item : String(item?.text || item?.value || ''),
+    )
+    .filter(Boolean)
+  const exact = labels.find((label) => label === token)
+  if (exact) return exact
+  const ci = labels.find(
+    (label) => label.toLowerCase() === token.toLowerCase(),
+  )
+  return ci || token
+}
+
 /** Fill missing paid-fee snapshot from the listing after a successful evaluation. */
 export function seedEvaluationFeeSnapshot(formData = {}) {
   if (!formData || typeof formData !== 'object') return formData
@@ -119,6 +151,10 @@ export function seedEvaluationFeeSnapshot(formData = {}) {
   ) {
     next.evaluationFeeBedrooms = String(next.bedrooms).trim()
   }
+  if (!String(next.evaluationFeeCategory || '').trim()) {
+    const listingCategory = listingEvaluationCategory(next)
+    if (listingCategory) next.evaluationFeeCategory = listingCategory
+  }
 
   const price = Number(next.evaluationFeePrice) || 0
   const paid = Number(next.evaluationFeePaidAmount)
@@ -131,6 +167,7 @@ export function seedEvaluationFeeSnapshot(formData = {}) {
 export function resolveEvaluationFeePrefill(formData = {}, options = {}) {
   const isProperty = Boolean(options.isProperty)
   const dropdown3D = options.dropdown3D
+  const dropdown = options.dropdown
   const preferListingFields = !options.lockFeeFields
 
   let category = String(formData?.evaluationFeeCategory || '').trim()
@@ -165,8 +202,14 @@ export function resolveEvaluationFeePrefill(formData = {}, options = {}) {
       )
       category = String(parent?.text || '').trim()
     }
-  } else if (!category) {
-    category = String(formData?.evaluationFeeCategory || '').trim()
+  } else {
+    const listingCategory = listingEvaluationCategory(formData)
+    if (preferListingFields && listingCategory) {
+      category = listingCategory
+    } else if (!category && listingCategory) {
+      category = listingCategory
+    }
+    category = matchDropdownLabel(category, dropdown)
   }
 
   return { category, subCategory, value, price }

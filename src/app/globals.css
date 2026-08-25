@@ -390,6 +390,23 @@ html {
   height: 100% !important;
 }
 
+.listing-card-media-swiper .swiper-pagination {
+  display: flex !important;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+  row-gap: 6px;
+  width: 100%;
+  max-width: 100%;
+  padding: 0 8px 6px;
+}
+
+.listing-card-media-swiper .swiper-pagination-bullet {
+  flex-shrink: 0;
+  margin: 0 !important;
+}
+
 /* Testimonials thumbnail column: vertical Swiper slots stay aligned; global
    width:inherit on slide images was stretching avatars and crowding text. */
 .testimonials-thumb-swiper .swiper-slide {

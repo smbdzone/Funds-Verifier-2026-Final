@@ -26,6 +26,7 @@ import {
   handleImageUpload,
   handleThumbnailUpload,
   handleVideoUpload,
+  resolveListingGalleryAsset,
 } from '@/libs/uploadAsset'
 import { getCsrfHeaders } from '@/utils/csrf'
 import { CloseIcon } from '@/components/Icons'
@@ -121,7 +122,10 @@ const PaymentModal = ({
             (item) => item instanceof File || item instanceof Blob,
           )
           if (fileImages.length) {
-            const uploaded = await handleImageUpload(fileImages)
+            const uploaded = await resolveListingGalleryAsset(
+              fileImages,
+              draftForm.pictures,
+            )
             if (uploaded) {
               draftForm = { ...draftForm, pictures: uploaded }
               draftImages = uploaded?.images || draftImages

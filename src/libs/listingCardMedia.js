@@ -1,5 +1,26 @@
 const PLACEHOLDER = '/listing/camera.svg'
 
+/** Stable identity for a media URL (ignore CloudFront signature query). */
+export function listingMediaSrcKey(src) {
+  if (typeof src !== 'string' || !src.trim()) return ''
+  const pathOnly = src.split('?')[0].trim()
+  try {
+    return decodeURIComponent(new URL(pathOnly).pathname.replace(/^\//, ''))
+  } catch {
+    return pathOnly.replace(/^\//, '')
+  }
+}
+
+/** s3Key / public_id, or the pathname from a signed/unsigned URL. */
+export function listingMediaObjectKey(img = {}) {
+  if (!img || typeof img === 'string') {
+    return listingMediaSrcKey(typeof img === 'string' ? img : '')
+  }
+  const explicit = String(img.s3Key || img.public_id || '').trim()
+  if (explicit) return explicit
+  return listingMediaSrcKey(img.signedUrl || img.url || img.path || '')
+}
+
 /**
  * Prefer `signedUrl` because the listing GET endpoints regenerate it fresh on
  * every read (see refreshAssetSignedUrls in the backend). Fall back to the
@@ -61,8 +82,10 @@ export function getListingCarouselItems(listing) {
 
   const pushImage = (img) => {
     const src = getListingImageSrc(img)
-    if (!src || src === PLACEHOLDER || seen.has(src)) return
-    seen.add(src)
+    if (!src || src === PLACEHOLDER) return
+    const key = listingMediaSrcKey(src) || src
+    if (seen.has(key)) return
+    seen.add(key)
     items.push({ type: 'image', src })
   }
 
@@ -131,8 +154,10 @@ export function getListingDetailMediaItems(listing) {
 
   const pushImage = (img) => {
     const src = getListingImageSrc(img)
-    if (!src || src === PLACEHOLDER || seen.has(src)) return
-    seen.add(src)
+    if (!src || src === PLACEHOLDER) return
+    const key = listingMediaSrcKey(src) || src
+    if (seen.has(key)) return
+    seen.add(key)
     items.push({ type: 'image', src })
   }
 

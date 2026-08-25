@@ -114,6 +114,7 @@ const EvaluationModal = ({
     const prefill = resolveEvaluationFeePrefill(parentFormData, {
       isProperty,
       dropdown3D,
+      dropdown,
       lockFeeFields,
     })
     setCategory(prefill.category)
@@ -134,6 +135,12 @@ const EvaluationModal = ({
     parentFormData?.evaluationDateTime,
     parentFormData?.evaluationSlotDate,
     parentFormData?.evaluationSlotTime,
+    parentFormData?.evaluationFeeCategory,
+    parentFormData?.evaluationFeePrice,
+    parentFormData?.carType,
+    parentFormData?.category,
+    parentFormData?.brands,
+    parentFormData?.make,
     assetType,
     lockFeeFields,
   ])
@@ -274,13 +281,15 @@ const EvaluationModal = ({
       )
       const matched = res?.data?.[0]
       const nextPrice = Number(matched?.price) || 0
-      setPrice(nextPrice)
-      setCategory(value1)
-      setModalForm((prev) => ({
-        ...prev,
-        price: nextPrice,
-        category: value1,
-      }))
+      if (nextPrice > 0) {
+        setPrice(nextPrice)
+        setCategory(value1)
+        setModalForm((prev) => ({
+          ...prev,
+          price: nextPrice,
+          category: value1,
+        }))
+      }
     } catch (error) {
       console.error('Error fetching evaluation price:', error?.message)
       setPrice(0)
@@ -328,6 +337,7 @@ const EvaluationModal = ({
       evaluationContactPhone: modalForm.phone,
       ...(isProperty && subCategory ? { propertyType: subCategory } : {}),
       ...(isProperty && value !== '' && value != null ? { bedrooms: value } : {}),
+      ...(assetType === 'Car For Sale' && category ? { carType: category } : {}),
     }))
 
     toast.success(
@@ -363,9 +373,9 @@ const EvaluationModal = ({
         <div className='max-h-[90vh] overflow-y-auto relative bg-white p-5 rounded shadow-lg w-11/12 md:w-3/4 lg:w-2/3 text-[#002D4F]'>
           <h2 className='text-3xl font-semibold mb-2'>Request Evaluation</h2>
           <p className='mb-6 md:w-[80%]'>
-            Enter your details, choose property type and bedrooms, then pick an
-            available evaluation slot. The fee is based on your evaluator&apos;s
-            price list.
+            {isProperty
+              ? 'Enter your details, choose property type and bedrooms, then pick an available evaluation slot. The fee is based on your evaluator’s price list.'
+              : `Enter your details, choose ${String(title || 'category').toLowerCase()}, then pick an available evaluation slot. The fee is based on your evaluator’s price list.`}
           </p>
           {currentBookingLabel ? (
             <div className='mb-4 rounded-md border border-[#B7A55E]/50 bg-[#faf8f3] px-3 py-2 text-sm text-[#002D4F]'>
