@@ -858,7 +858,10 @@ function Page() {
       interiorColorsHydratedRef.current = true
       return
     }
-    if (!formData?.uuid && !formData?._id) return
+    const loaded =
+      (formData?.uuid && String(formData.uuid) === String(id)) ||
+      (formData?._id && String(formData._id) === String(id))
+    if (!loaded) return
 
     if (!exteriorColorsHydratedRef.current) {
       const { selected, other } = splitBoatColors(formData.exteriorColor, colors)
