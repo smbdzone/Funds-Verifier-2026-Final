@@ -57,6 +57,8 @@ const EvaluationModal = ({
   const [subCategory, setSubCategory] = useState('')
   const [value, setValue] = useState('')
   const [price, setPrice] = useState(0)
+  const [paidBaseline, setPaidBaseline] = useState(0)
+  const [bookedFeeCategory, setBookedFeeCategory] = useState('')
   const [modalForm, setModalForm] = useState({
     name: '',
     email: '',
@@ -121,6 +123,16 @@ const EvaluationModal = ({
     setSubCategory(prefill.subCategory)
     setValue(prefill.value)
     setPrice(prefill.price)
+    setBookedFeeCategory(prefill.category)
+    const snapshotPaid = paidEvaluationFeeBaseline(parentFormData)
+    const isExistingListing = Boolean(parentFormData?.uuid)
+    const inferredPaid =
+      isExistingListing &&
+        parentFormData?.evaluationDateTime &&
+        snapshotPaid <= 0
+        ? Number(prefill.price) || 0
+        : 0
+    setPaidBaseline(snapshotPaid > 0 ? snapshotPaid : inferredPaid)
     setModalForm((prev) => ({
       ...prev,
       category: prefill.category,
@@ -284,6 +296,19 @@ const EvaluationModal = ({
       if (nextPrice > 0) {
         setPrice(nextPrice)
         setCategory(value1)
+        setPaidBaseline((currentPaid) => {
+          if (currentPaid > 0) return currentPaid
+          if (!parentFormData?.uuid || !parentFormData?.evaluationDateTime) {
+            return currentPaid
+          }
+          if (
+            bookedFeeCategory &&
+            String(value1).trim() !== String(bookedFeeCategory).trim()
+          ) {
+            return currentPaid
+          }
+          return nextPrice
+        })
         setModalForm((prev) => ({
           ...prev,
           price: nextPrice,
@@ -292,7 +317,7 @@ const EvaluationModal = ({
       }
     } catch (error) {
       console.error('Error fetching evaluation price:', error?.message)
-      setPrice(0)
+      if (!parentFormData?.evaluationDateTime) setPrice(0)
     }
   }
 
@@ -311,7 +336,6 @@ const EvaluationModal = ({
       slot.time === selectedTime ? { ...slot, isBooked: true } : slot,
     )
 
-    const paidBaseline = paidEvaluationFeeBaseline(parentFormData)
     const extraFee =
       paidBaseline > 0 ? Math.max(0, Number(price) - paidBaseline) : 0
 
@@ -338,6 +362,12 @@ const EvaluationModal = ({
       ...(isProperty && subCategory ? { propertyType: subCategory } : {}),
       ...(isProperty && value !== '' && value != null ? { bedrooms: value } : {}),
       ...(assetType === 'Car For Sale' && category ? { carType: category } : {}),
+      ...(assetType === 'Boats For Sale' && category
+        ? { brands: category, category }
+        : {}),
+      ...(assetType === 'Jewellery For Sale' && category
+        ? { make: category, brands: category, category }
+        : {}),
     }))
 
     toast.success(
@@ -512,16 +542,14 @@ const EvaluationModal = ({
               />
             </div>
           </div>
-          {!lockFeeFields &&
-          paidEvaluationFeeBaseline(parentFormData) > 0 &&
-          price > paidEvaluationFeeBaseline(parentFormData) ? (
+          {!lockFeeFields && paidBaseline > 0 && price > paidBaseline ? (
             <p className='mb-4 text-sm text-amber-800'>
               {isProperty
                 ? 'Changing property type or bedrooms requires an extra evaluation fee of '
-                : 'Changing the evaluation category requires an extra evaluation fee of '}
-              {price - paidEvaluationFeeBaseline(parentFormData)} AED. You must
-              pay this extra amount before saving. Changing only the date/time
-              does not require extra payment.
+                : `Changing ${String(title || 'the evaluation category').toLowerCase()} requires an extra evaluation fee of `}
+              {price - paidBaseline} AED. You must pay this extra amount before
+              saving. Changing only the date/time does not require extra
+              payment.
             </p>
           ) : null}
 

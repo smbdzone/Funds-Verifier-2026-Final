@@ -1079,8 +1079,7 @@ function Page() {
                   mapUrl={formData.mapUrl}
                 />
               </div>
-              {!id && (
-                <StripeElement>
+              <StripeElement>
                   <PaymentModal
                     show={showPayment}
                     onClose={() => setShowPayment(false)}
@@ -1089,7 +1088,6 @@ function Page() {
                     HandleFormSubmit={() => HandleFormSubmit()}
                   />
                 </StripeElement>
-              )}
             </main>
           </div>
         </section>

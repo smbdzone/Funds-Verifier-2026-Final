@@ -231,6 +231,13 @@ export function evaluationFeeFieldsChanged(formData = {}, options = {}) {
     if (listingBeds && snapBeds && !sameFeeToken(listingBeds, snapBeds)) {
       return true
     }
+    return false
+  }
+
+  const listingCategory = listingEvaluationCategory(formData)
+  const snapCategory = String(formData.evaluationFeeCategory || '').trim()
+  if (listingCategory && snapCategory && !sameFeeToken(listingCategory, snapCategory)) {
+    return true
   }
 
   return false
