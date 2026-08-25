@@ -35,7 +35,7 @@ import {
   LISTING_VIDEO_MAX_COUNT,
 } from '@/constants/listingUploadLimits'
 import { createDefaultOffPlanPaymentPlan, sanitizeOffPlanPaymentPlan, facilities, getExtraFacilities, materials } from '@/constants/listing-data'
-import { extrasList } from '@/constants/boat-listings'
+import { extrasList, colors as boatColorOptions } from '@/constants/boat-listings'
 import { extras as carExtrasList, colors as carColorOptions } from '@/constants/car-listings'
 import { formatBedBathCount } from '@/libs/bedBathCount'
 import { listingMediaObjectKey } from '@/libs/listingCardMedia'
@@ -231,10 +231,16 @@ const ListingsProvider = ({ children }) => {
             ? getExtraFacilities(d.extras, [], [...extrasList, ...carExtrasList])
             : [],
           customExteriorColors: Array.isArray(d.exteriorColor)
-            ? getExtraFacilities(d.exteriorColor, [], carColorOptions)
+            ? getExtraFacilities(d.exteriorColor, [], [
+                ...carColorOptions,
+                ...boatColorOptions,
+              ])
             : [],
           customInteriorColors: Array.isArray(d.interiorColor)
-            ? getExtraFacilities(d.interiorColor, [], carColorOptions)
+            ? getExtraFacilities(d.interiorColor, [], [
+                ...carColorOptions,
+                ...boatColorOptions,
+              ])
             : [],
           paymentPlan: (() => {
             const cleaned = sanitizeOffPlanPaymentPlan(d.paymentPlan)

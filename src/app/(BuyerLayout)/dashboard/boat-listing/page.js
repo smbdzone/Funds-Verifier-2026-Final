@@ -30,7 +30,7 @@ import {
   shouldCollectEvaluationTopUp,
 } from '@/libs/evaluationBooking'
 import axios from 'axios'
-import { Suspense, useContext, useEffect, useMemo, useState } from 'react'
+import { Suspense, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import flags from 'react-phone-number-input/flags'
 import 'react-phone-number-input/style.css'
 import { toast, ToastContainer } from 'react-toastify'
@@ -60,6 +60,25 @@ import {
 } from '@/libs/pendingListingDraft'
 import customAxios from '../../../../utils/apis/apis'
 
+function splitBoatColors(values = [], presetList = []) {
+  const presetByLower = new Map(
+    (presetList || []).map((color) => [String(color).toLowerCase(), color]),
+  )
+  const selected = []
+  const other = []
+  for (const raw of Array.isArray(values) ? values : []) {
+    const value = String(raw || '').trim()
+    if (!value) continue
+    const preset = presetByLower.get(value.toLowerCase())
+    if (preset) {
+      if (!selected.includes(preset)) selected.push(preset)
+    } else if (!other.includes(value)) {
+      other.push(value)
+    }
+  }
+  return { selected, other: other.join(', ') }
+}
+
 function Page() {
   const [selectedExteriorColors, setSelectedExteriorColors] = useState([])
   const [otherExteriorColor, setOtherExteriorColor] = useState('')
@@ -70,8 +89,9 @@ function Page() {
   const [selectedCategory, setSelectedCategory] = useState('Any')
   const [models, setModels] = useState(['1', '2', '3', '4'])
   const [boatListings, setBoatListings] = useState(['Private', 'Public'])
-  const [selectedExtras, setSelectedExtras] = useState([])
   const [isOpenModal, setIsOpenModal] = useState(false)
+  const exteriorColorsHydratedRef = useRef(false)
+  const interiorColorsHydratedRef = useRef(false)
   const { user } = useProfile()
 
   const router = useRouter()
@@ -828,33 +848,79 @@ function Page() {
   }
 
   useEffect(() => {
+    exteriorColorsHydratedRef.current = false
+    interiorColorsHydratedRef.current = false
+  }, [id])
+
+  useEffect(() => {
+    if (!id) {
+      exteriorColorsHydratedRef.current = true
+      interiorColorsHydratedRef.current = true
+      return
+    }
+    if (!formData?.uuid && !formData?._id) return
+
+    if (!exteriorColorsHydratedRef.current) {
+      const { selected, other } = splitBoatColors(formData.exteriorColor, colors)
+      setSelectedExteriorColors(selected)
+      setOtherExteriorColor(other)
+      exteriorColorsHydratedRef.current = true
+    }
+    if (!interiorColorsHydratedRef.current) {
+      const { selected, other } = splitBoatColors(formData.interiorColor, colors)
+      setSelectedInteriorColors(selected)
+      setOtherInteriorColor(other)
+      interiorColorsHydratedRef.current = true
+    }
+  }, [
+    id,
+    formData?.uuid,
+    formData?._id,
+    formData.exteriorColor,
+    formData.interiorColor,
+  ])
+
+  useEffect(() => {
+    if (id && !exteriorColorsHydratedRef.current) return
     const allSelectedExteriorColors = otherExteriorColor
       ? [...selectedExteriorColors, otherExteriorColor]
       : selectedExteriorColors
 
-    setFormData((prev) => ({
-      ...prev,
-      exteriorColor: allSelectedExteriorColors,
-    }))
-  }, [selectedExteriorColors, otherExteriorColor])
+    setFormData((prev) => {
+      const prevList = Array.isArray(prev.exteriorColor) ? prev.exteriorColor : []
+      if (
+        prevList.length === allSelectedExteriorColors.length &&
+        prevList.every((color, i) => color === allSelectedExteriorColors[i])
+      ) {
+        return prev
+      }
+      return {
+        ...prev,
+        exteriorColor: allSelectedExteriorColors,
+      }
+    })
+  }, [id, selectedExteriorColors, otherExteriorColor, setFormData])
 
   useEffect(() => {
+    if (id && !interiorColorsHydratedRef.current) return
     const allSelectedInteriorColors = otherInteriorColor
       ? [...selectedInteriorColors, otherInteriorColor]
       : selectedInteriorColors
 
-    setFormData((prev) => ({
-      ...prev,
-      interiorColor: allSelectedInteriorColors,
-    }))
-  }, [selectedInteriorColors, otherInteriorColor])
-
-  useEffect(() => {
-    setFormData((prev) => ({
-      ...prev,
-      extras: selectedExtras,
-    }))
-  }, [selectedExtras])
+    setFormData((prev) => {
+      const prevList = Array.isArray(prev.interiorColor) ? prev.interiorColor : []
+      if (
+        prevList.length === allSelectedInteriorColors.length &&
+        prevList.every((color, i) => color === allSelectedInteriorColors[i])
+      ) {
+        return prev
+      }
+      return {
+        ...prev,
+        interiorColor: allSelectedInteriorColors,
+      }
+    })
+  }, [id, selectedInteriorColors, otherInteriorColor, setFormData])
 
   const toggleDropdown = () => {
     setDropdownVisible(!dropdownVisible)
