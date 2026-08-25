@@ -354,7 +354,6 @@ const JewelryListingForm = ({
                 errorMessage={errors.evaluationDateTime}
                 handleOpenModal={handleOpenModal1}
                 customPlaceholder='Request Evaluation'
-                disabled={isEvaluatorApprovedLocked}
               />
               <EvaluationModal
                 isOpen={isModal1Open}
@@ -364,6 +363,7 @@ const JewelryListingForm = ({
                 assetType='Jewellery For Sale'
                 dropdown={groupedData}
                 title='Jewellery Brand'
+                lockFeeFields={isEvaluatorApprovedLocked}
               />
             </div>
           </div>

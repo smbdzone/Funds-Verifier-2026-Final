@@ -38,6 +38,8 @@ const APPROVED_ASSET_HOLDER_UPDATE_KEYS = [
   'paymentMethod',
   'payment_provider',
   'clozer_transaction_id',
+  'evaluationDateTime',
+  'evaluatorUUID',
 ]
 
 /**

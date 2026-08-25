@@ -24,6 +24,8 @@ import {
   hasConfirmedEvaluationPayment,
   bookEvaluationTimeslotFromFormData,
   stripEvaluationBookingMeta,
+  getEvaluationTopUpAmount,
+  applyPaidEvaluationFeeIfConfirmed,
 } from '@/libs/evaluationBooking'
 import axios from 'axios'
 import { Suspense, useContext, useEffect, useMemo, useState } from 'react'
@@ -456,6 +458,12 @@ function Page() {
     const validationErrors = validateForm(formData)
 
     if (id) {
+      const topUp = getEvaluationTopUpAmount(formData)
+      if (topUp > 0) {
+        setFormData((prev) => ({ ...prev, evaluationTopUpAmount: topUp }))
+        setShowPayment(true)
+        return
+      }
       finalizeSubmission()
       return
     }
@@ -671,6 +679,10 @@ function Page() {
         video3DWalkthroughID,
         technicalReportID,
       })
+      Object.assign(
+        updatedFormData,
+        applyPaidEvaluationFeeIfConfirmed(updatedFormData, id),
+      )
 
       const listingPayload = sanitizeAssetHolderUpdatePayload(
         stripEmptyObjectIdRefs(

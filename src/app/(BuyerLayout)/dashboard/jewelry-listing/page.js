@@ -26,6 +26,8 @@ import {
   hasConfirmedEvaluationPayment,
   bookEvaluationTimeslotFromFormData,
   stripEvaluationBookingMeta,
+  getEvaluationTopUpAmount,
+  applyPaidEvaluationFeeIfConfirmed,
 } from '@/libs/evaluationBooking'
 import 'react-phone-number-input/style.css'
 import PaymentModal from '@/components/payments/PaymentModal'
@@ -483,6 +485,12 @@ function Page() {
     const validationErrors = validateForm(formData, thumbnail, images)
 
     if (id) {
+      const topUp = getEvaluationTopUpAmount(formData)
+      if (topUp > 0) {
+        setFormData((prev) => ({ ...prev, evaluationTopUpAmount: topUp }))
+        setShowPayment(true)
+        return
+      }
       finalizeSubmission()
       return
     }
@@ -707,6 +715,10 @@ function Page() {
         video3DWalkthroughID,
         technicalReportID,
       })
+      Object.assign(
+        updatedFormData,
+        applyPaidEvaluationFeeIfConfirmed(updatedFormData, id),
+      )
 
       const validationErrors = validateForm(updatedFormData, thumbnail)
       if (Object.keys(validationErrors).length === 0) {

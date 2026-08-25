@@ -389,7 +389,6 @@ const BoatListingForm = ({
                 ''
               }
               handleChange={handleChange}
-              disabled={isEvaluatorApprovedLocked}
               required={true}
               errors={errors.evaluationDateTime && !formData.evaluationDateTime}
               errorMessage={errors.evaluationDateTime}
@@ -404,6 +403,7 @@ const BoatListingForm = ({
               assetType='Boats For Sale'
               dropdown={groupedData}
               title='Boat Brand'
+              lockFeeFields={isEvaluatorApprovedLocked}
             />
           </div>
           <div className='relative-placeholder w-full'>

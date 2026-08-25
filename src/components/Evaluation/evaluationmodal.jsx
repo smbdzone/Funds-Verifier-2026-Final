@@ -15,6 +15,7 @@ import BookingContactPhonePicker from '@/components/booking/BookingContactPhoneP
 import {
   formatEvaluationDateTimeDisplay,
   parseEvaluationDateTimeSelection,
+  resolveEvaluationFeePrefill,
 } from '@/libs/evaluationBooking'
 
 const getToday = () => {
@@ -39,6 +40,7 @@ const EvaluationModal = ({
   dropdown,
   bedroomsDropDown,
   title = 'Bedrooms',
+  lockFeeFields = false,
 }) => {
   const { user } = useProfile()
   const [selectedDate, setSelectedDate] = useState(getToday())
@@ -76,8 +78,7 @@ const EvaluationModal = ({
     modalForm.phone &&
     selectedDate &&
     selectedTime &&
-    hasCategorySelection &&
-    price > 0 &&
+    (lockFeeFields || (hasCategorySelection && price > 0)) &&
     isChecked
 
   useEffect(() => {
@@ -108,6 +109,23 @@ const EvaluationModal = ({
     setIsChecked(false)
     setShowCheckboxError(false)
     getEvaluatorProvider()
+
+    const prefill = resolveEvaluationFeePrefill(parentFormData, {
+      isProperty,
+      dropdown3D,
+      lockFeeFields,
+    })
+    setCategory(prefill.category)
+    setSubCategory(prefill.subCategory)
+    setValue(prefill.value)
+    setPrice(prefill.price)
+    setModalForm((prev) => ({
+      ...prev,
+      category: prefill.category,
+      subCategory: prefill.subCategory,
+      value: prefill.value,
+      price: prefill.price,
+    }))
   }, [
     isOpen,
     user,
@@ -116,7 +134,18 @@ const EvaluationModal = ({
     parentFormData?.evaluationSlotDate,
     parentFormData?.evaluationSlotTime,
     assetType,
+    lockFeeFields,
   ])
+
+  useEffect(() => {
+    if (!isOpen || !evaluator?.uuid) return
+    if (lockFeeFields && price > 0) return
+    if (isProperty && subCategory && value) {
+      fetchPrice(value)
+    } else if (!isProperty && category) {
+      fetchPrice(category)
+    }
+  }, [isOpen, evaluator?.uuid, category, subCategory, value, lockFeeFields])
 
   useEffect(() => {
     if (isOpen) {
@@ -217,13 +246,14 @@ const EvaluationModal = ({
     setModalForm((prev) => ({ ...prev, [name]: fieldValue }))
   }
 
-  const fetchPrice = async (value1) => {
+  const fetchPrice = async (value1, nextSubCategory) => {
     if (!evaluator?.uuid) return
+    const sub = nextSubCategory || subCategory
 
     try {
-      if (isProperty && subCategory && value1) {
+      if (isProperty && sub && value1) {
         const res = await customAxios.get(
-          `${process.env.NEXT_PUBLIC_BASE_URL}/price/filter-price?userUUID=${evaluator.uuid}&assetType=${encodeURIComponent(assetType)}&subCategory=${encodeURIComponent(subCategory)}&value=${encodeURIComponent(value1)}`,
+          `${process.env.NEXT_PUBLIC_BASE_URL}/price/filter-price?userUUID=${evaluator.uuid}&assetType=${encodeURIComponent(assetType)}&subCategory=${encodeURIComponent(sub)}&value=${encodeURIComponent(value1)}`,
         )
         const matched = res?.data?.[0]
         const nextPrice = Number(matched?.price) || 0
@@ -232,7 +262,7 @@ const EvaluationModal = ({
         setModalForm((prev) => ({
           ...prev,
           price: nextPrice,
-          subCategory,
+          subCategory: sub,
           value: value1,
         }))
         return
@@ -271,6 +301,9 @@ const EvaluationModal = ({
       slot.time === selectedTime ? { ...slot, isBooked: true } : slot,
     )
 
+    const paid = Number(parentFormData?.evaluationFeePaidAmount) || 0
+    const extraFee = paid > 0 ? Math.max(0, Number(price) - paid) : 0
+
     setFormData((prevData) => ({
       ...prevData,
       evaluationDateTime: dateTime.toISOString(),
@@ -286,10 +319,16 @@ const EvaluationModal = ({
       evaluationContactName: modalForm.name,
       evaluationContactEmail: modalForm.email,
       evaluationContactPhone: modalForm.phone,
+      ...(isProperty && subCategory ? { propertyType: subCategory } : {}),
+      ...(isProperty && value !== '' && value != null ? { bedrooms: value } : {}),
     }))
 
     toast.success(
-      'Evaluation slot selected. Complete payment to confirm your booking.',
+      extraFee > 0
+        ? `Evaluation updated. Extra fee of ${extraFee} AED is required before saving.`
+        : paid > 0
+          ? 'Evaluation slot updated. Save the listing to keep this time.'
+          : 'Evaluation slot selected. Complete payment to confirm your booking.',
     )
     onClose()
   }
@@ -373,9 +412,65 @@ const EvaluationModal = ({
               <>
                 <div className='flex flex-col'>
                   <label className='mb-1 text-xl'>Property Type</label>
-                  <div className='w-full rounded border border-gray-300 px-3 py-2.5'>
+                  {lockFeeFields ? (
+                    <input
+                      type='text'
+                      value={subCategory || ''}
+                      readOnly
+                      className='w-full p-2 border rounded bg-gray-50'
+                    />
+                  ) : (
+                    <div className='w-full rounded border border-gray-300 px-3 py-2.5'>
+                      <DropDown
+                        dropdown3D={dropdown3D}
+                        setCategory={setCategory}
+                        subCategory={subCategory}
+                        category={category}
+                        setSubCategory={setSubCategory}
+                        setFormData={setModalForm}
+                        formData={modalForm}
+                        fetchPrice={fetchPrice}
+                      />
+                    </div>
+                  )}
+                </div>
+                <div className='flex flex-col'>
+                  <label className='mb-1 text-xl'>{title}</label>
+                  {lockFeeFields ? (
+                    <input
+                      type='text'
+                      value={value ? `${value} bedroom` : ''}
+                      readOnly
+                      className='w-full p-2 border rounded bg-gray-50'
+                    />
+                  ) : (
+                    <div className='w-full rounded border border-gray-300 px-3 py-2.5'>
+                      <DropDown
+                        bedroomsDropDown={bedroomsDropDown}
+                        setFormData={setModalForm}
+                        formData={modalForm}
+                        setValue={setValue}
+                        value={value}
+                        fetchPrice={fetchPrice}
+                      />
+                    </div>
+                  )}
+                </div>
+              </>
+            ) : (
+              <div className='flex flex-col md:col-span-2'>
+                <label className='mb-1 text-xl'>{title}</label>
+                {lockFeeFields ? (
+                  <input
+                    type='text'
+                    value={category || ''}
+                    readOnly
+                    className='w-full p-2 border rounded bg-gray-50'
+                  />
+                ) : (
+                  <div className='w-full p-2 border rounded'>
                     <DropDown
-                      dropdown3D={dropdown3D}
+                      dropdown={dropdown}
                       setCategory={setCategory}
                       subCategory={subCategory}
                       category={category}
@@ -385,36 +480,7 @@ const EvaluationModal = ({
                       fetchPrice={fetchPrice}
                     />
                   </div>
-                </div>
-                <div className='flex flex-col'>
-                  <label className='mb-1 text-xl'>{title}</label>
-                  <div className='w-full rounded border border-gray-300 px-3 py-2.5'>
-                    <DropDown
-                      bedroomsDropDown={bedroomsDropDown}
-                      setFormData={setModalForm}
-                      formData={modalForm}
-                      setValue={setValue}
-                      value={value}
-                      fetchPrice={fetchPrice}
-                    />
-                  </div>
-                </div>
-              </>
-            ) : (
-              <div className='flex flex-col md:col-span-2'>
-                <label className='mb-1 text-xl'>{title}</label>
-                <div className='w-full p-2 border rounded'>
-                  <DropDown
-                    dropdown={dropdown}
-                    setCategory={setCategory}
-                    subCategory={subCategory}
-                    category={category}
-                    setSubCategory={setSubCategory}
-                    setFormData={setModalForm}
-                    formData={modalForm}
-                    fetchPrice={fetchPrice}
-                  />
-                </div>
+                )}
               </div>
             )}
 
@@ -429,6 +495,17 @@ const EvaluationModal = ({
               />
             </div>
           </div>
+          {!lockFeeFields &&
+            Number(parentFormData?.evaluationFeePaidAmount) > 0 &&
+            price > Number(parentFormData.evaluationFeePaidAmount) ? (
+            <p className='mb-4 text-sm text-amber-800'>
+              {isProperty
+                ? 'Changing property type or bedrooms requires an extra evaluation fee of '
+                : 'Changing the evaluation category requires an extra evaluation fee of '}
+              {price - Number(parentFormData.evaluationFeePaidAmount)} AED.
+              Changing only the date/time does not require extra payment.
+            </p>
+          ) : null}
 
           <h3 className='text-xl font-semibold mb-3'>Select Date and Time</h3>
           <div className='flex flex-col xl:flex-row gap-4'>

@@ -13,6 +13,7 @@ import {
   normalizeCitiesResponse,
 } from '@/libs/normalizeCountriesResponse'
 import { normalizeListingPremiumRefs, isPremiumServicePaid } from '@/libs/listingPremiumStatus'
+import { seedEvaluationFeeSnapshot } from '@/libs/evaluationBooking'
 import { clearServiceSlotFields } from '@/libs/slotBooking'
 import {
   DUMMY_FALLBACK_COUNTRIES,
@@ -274,7 +275,7 @@ const ListingsProvider = ({ children }) => {
           // Store E.164 phone in formData so PhoneInputField (which reads formData.phoneNumber in edit mode) shows the correct flag
           phoneNumber: e164Phone,
         }
-        setFormData(normalized)
+        setFormData(seedEvaluationFeeSnapshot(normalized))
         restorePendingPremiumModals(normalized)
         if (countryNorm) {
           setSelectedCountry(countryNorm)

@@ -78,9 +78,12 @@ const PaymentModal = ({
   if (!show) return null
 
   const evaluationAmount =
-    Number(formData?.evaluationFeePrice) > 0
-      ? Number(formData.evaluationFeePrice)
-      : EVALUATION_CLOZER_AMOUNT
+    Number(formData?.evaluationTopUpAmount) > 0
+      ? Number(formData.evaluationTopUpAmount)
+      : Number(formData?.evaluationFeePrice) > 0
+        ? Number(formData.evaluationFeePrice)
+        : EVALUATION_CLOZER_AMOUNT
+  const isEvaluationTopUp = Number(formData?.evaluationTopUpAmount) > 0
 
   const handleClozerPay = async () => {
     if (!user?.uuid) {
@@ -285,7 +288,9 @@ const PaymentModal = ({
         headers: csrfHeaders,
         credentials: 'include',
         body: JSON.stringify({
-          amount: 200,
+          amount: isEvaluationTopUp
+            ? Math.max(200, Math.round(evaluationAmount * 100))
+            : 200,
           customerId: user?.uuid,
           email: user.email.trim(),
         }),
@@ -314,6 +319,11 @@ const PaymentModal = ({
           EvaluationPaymentStatus: true,
           paymentMethod: paymentIntent.payment_method,
           customerId: clientIntent.customerId,
+          evaluationFeePaidAmount:
+            Number(prev?.evaluationFeePrice) ||
+            Number(prev?.evaluationFeePaidAmount) ||
+            0,
+          evaluationTopUpAmount: 0,
         }))
         localStorage.setItem(
           'checkoutSession',
@@ -399,7 +409,11 @@ const PaymentModal = ({
             onClose={handleClose}
             amount={evaluationAmount}
             loading={clozerLoading}
-            title='Payment for Evaluation'
+            title={
+              isEvaluationTopUp
+                ? 'Additional evaluation fee'
+                : 'Payment for Evaluation'
+            }
             onPayFull={() => {
               persistDraftThen(() => setPaymentStep('stripe'))
             }}

@@ -775,7 +775,6 @@ export const ImageUploadComponent = React.memo(
               <ListingModalInputComponent
                 maxLength={50}
                 name='evaluationDateTime'
-                disabled={isEvaluatorApprovedLocked}
                 value={
                   formatEvaluationDateTimeDisplay(formData.evaluationDateTime) ||
                   ''
@@ -796,6 +795,7 @@ export const ImageUploadComponent = React.memo(
                 dropdown3D={dropdown3D}
                 bedroomsDropDown={bedroomsOptions}
                 title='Bedrooms'
+                lockFeeFields={isEvaluatorApprovedLocked}
               />
             </div>
             <div className='relative-placeholder w-full'>

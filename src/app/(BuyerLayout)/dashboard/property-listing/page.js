@@ -72,6 +72,9 @@ import {
   hasConfirmedEvaluationPayment,
   bookEvaluationTimeslotFromFormData,
   stripEvaluationBookingMeta,
+  getEvaluationTopUpAmount,
+  applyPaidEvaluationFeeIfConfirmed,
+  evaluationFeeFieldsChanged,
 } from '@/libs/evaluationBooking'
 import { isListingEvaluatorApprovedLocked, buildApprovedAssetHolderUpdatePayload } from '@/libs/listingEditLock'
 
@@ -575,6 +578,20 @@ const Page = () => {
     const validationErrors = validateForm(formData)
 
     if (id) {
+      if (!isOffPlan) {
+        if (evaluationFeeFieldsChanged(formData, { isProperty: true })) {
+          toast.error(
+            'Property type or bedrooms changed. Open Request Evaluation to confirm the updated fee before saving.',
+          )
+          return
+        }
+        const topUp = getEvaluationTopUpAmount(formData)
+        if (topUp > 0) {
+          setFormData((prev) => ({ ...prev, evaluationTopUpAmount: topUp }))
+          setShowPayment(true)
+          return
+        }
+      }
       setLoading(true)
       finalizeSubmission()
       return
@@ -923,6 +940,10 @@ const Page = () => {
         video3DWalkthroughID,
         technicalReportID,
       })
+      Object.assign(
+        updatedFormData,
+        applyPaidEvaluationFeeIfConfirmed(updatedFormData, id),
+      )
 
       // Validate form
       const validationErrors = validateForm(updatedFormData)

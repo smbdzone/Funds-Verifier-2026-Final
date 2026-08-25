@@ -87,7 +87,151 @@ export function stripEvaluationBookingMeta(data) {
   delete next.evaluationSlotDate
   delete next.evaluationSlotTime
   delete next.evaluationSlotTimeslots
+  delete next.evaluationTopUpAmount
   return next
+}
+
+function sameFeeToken(a, b) {
+  const left = String(a ?? '')
+    .trim()
+    .toLowerCase()
+  const right = String(b ?? '')
+    .trim()
+    .toLowerCase()
+  if (left === right) return true
+  const studio = (v) => v === '0' || v === 'studio'
+  return studio(left) && studio(right)
+}
+
+/** Fill missing paid-fee snapshot from the listing after a successful evaluation. */
+export function seedEvaluationFeeSnapshot(formData = {}) {
+  if (!formData || typeof formData !== 'object') return formData
+  if (!formData.evaluationDateTime) return formData
+
+  const next = { ...formData }
+  if (!String(next.evaluationFeeSubCategory || '').trim() && next.propertyType) {
+    next.evaluationFeeSubCategory = String(next.propertyType).trim()
+  }
+  if (
+    !String(next.evaluationFeeBedrooms ?? '').trim() &&
+    next.bedrooms != null &&
+    next.bedrooms !== ''
+  ) {
+    next.evaluationFeeBedrooms = String(next.bedrooms).trim()
+  }
+
+  const price = Number(next.evaluationFeePrice) || 0
+  const paid = Number(next.evaluationFeePaidAmount)
+  if (!(Number.isFinite(paid) && paid > 0) && price > 0) {
+    next.evaluationFeePaidAmount = price
+  }
+  return next
+}
+
+export function resolveEvaluationFeePrefill(formData = {}, options = {}) {
+  const isProperty = Boolean(options.isProperty)
+  const dropdown3D = options.dropdown3D
+  const preferListingFields = !options.lockFeeFields
+
+  let category = String(formData?.evaluationFeeCategory || '').trim()
+  let subCategory = String(formData?.evaluationFeeSubCategory || '').trim()
+  let value = String(
+    formData?.evaluationFeeBedrooms ?? formData?.value ?? '',
+  ).trim()
+  let price = Number(formData?.evaluationFeePrice) || 0
+
+  if (isProperty) {
+    if (preferListingFields && formData?.propertyType) {
+      subCategory = String(formData.propertyType).trim()
+    } else if (!subCategory && formData?.propertyType) {
+      subCategory = String(formData.propertyType).trim()
+    }
+    if (
+      preferListingFields &&
+      formData?.bedrooms != null &&
+      formData.bedrooms !== ''
+    ) {
+      value = String(formData.bedrooms).trim()
+    } else if (!value && formData?.bedrooms != null && formData.bedrooms !== '') {
+      value = String(formData.bedrooms).trim()
+    }
+    if (!category && subCategory && Array.isArray(dropdown3D)) {
+      const parent = dropdown3D.find((item) =>
+        (item?.mapData || []).some(
+          (row) =>
+            String(row?.value || '').trim() === subCategory ||
+            String(row?.text || '').trim() === subCategory,
+        ),
+      )
+      category = String(parent?.text || '').trim()
+    }
+  } else if (!category) {
+    category = String(formData?.evaluationFeeCategory || '').trim()
+  }
+
+  return { category, subCategory, value, price }
+}
+
+/** True when listing type/bedrooms no longer match the fee that was already paid. */
+export function evaluationFeeFieldsChanged(formData = {}, options = {}) {
+  const isProperty = Boolean(options.isProperty)
+  if (!formData?.evaluationDateTime) return false
+
+  if (isProperty) {
+    const listingType = String(formData.propertyType || '').trim()
+    const listingBeds = String(formData.bedrooms ?? '').trim()
+    const snapType = String(formData.evaluationFeeSubCategory || '').trim()
+    const snapBeds = String(formData.evaluationFeeBedrooms ?? '').trim()
+    if (listingType && snapType && !sameFeeToken(listingType, snapType)) {
+      return true
+    }
+    if (listingBeds && snapBeds && !sameFeeToken(listingBeds, snapBeds)) {
+      return true
+    }
+  }
+
+  return false
+}
+
+/** Extra AED to collect when fee-related fields change on edit. Time-only = 0. */
+export function getEvaluationTopUpAmount(formData = {}) {
+  const nextPrice = Number(formData?.evaluationFeePrice) || 0
+  const paid = Number(formData?.evaluationFeePaidAmount)
+  const paidSafe = Number.isFinite(paid) && paid > 0 ? paid : 0
+
+  if (nextPrice <= 0) return 0
+  if (paidSafe <= 0) return 0
+  return Math.max(0, nextPrice - paidSafe)
+}
+
+export function withEvaluationFeePaid(formData = {}) {
+  const nextPrice = Number(formData?.evaluationFeePrice) || 0
+  if (nextPrice <= 0) return formData
+  return {
+    ...formData,
+    evaluationFeePaidAmount: nextPrice,
+    evaluationTopUpAmount: 0,
+  }
+}
+
+export function applyPaidEvaluationFeeIfConfirmed(formData = {}, listingId) {
+  if (!listingId) return withEvaluationFeePaid(formData)
+  if (hasConfirmedEvaluationPayment(formData)) {
+    return withEvaluationFeePaid(formData)
+  }
+  try {
+    const raw =
+      typeof window !== 'undefined'
+        ? localStorage.getItem('checkoutSession')
+        : null
+    const session = raw ? JSON.parse(raw) : null
+    if (hasConfirmedEvaluationPayment(session)) {
+      return withEvaluationFeePaid(formData)
+    }
+  } catch {
+    /* ignore */
+  }
+  return formData
 }
 
 /** Clear incomplete payment session only — keep listing draft so fields stay filled. */

@@ -20,6 +20,8 @@ import {
   hasConfirmedEvaluationPayment,
   bookEvaluationTimeslotFromFormData,
   stripEvaluationBookingMeta,
+  getEvaluationTopUpAmount,
+  applyPaidEvaluationFeeIfConfirmed,
 } from '@/libs/evaluationBooking'
 import { carBrands } from '@/utils'
 import axios from 'axios'
@@ -324,6 +326,12 @@ function Page() {
     const validationErrors = validateForm(formData)
 
     if (id) {
+      const topUp = getEvaluationTopUpAmount(formData)
+      if (topUp > 0) {
+        setFormData((prev) => ({ ...prev, evaluationTopUpAmount: topUp }))
+        setShowPayment(true)
+        return
+      }
       finalizeSubmission()
       return
     }
@@ -544,6 +552,10 @@ function Page() {
         video3DWalkthroughID,
         technicalReportID,
       })
+      Object.assign(
+        updatedFormData,
+        applyPaidEvaluationFeeIfConfirmed(updatedFormData, id),
+      )
 
       // Validate form data
       const validationErrors = validateForm(updatedFormData)

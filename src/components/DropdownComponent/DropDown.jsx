@@ -49,6 +49,9 @@ const DropDown = ({
     setIsDropdownOpen(false);
     setSubCategory(val);
     setFormData({ ...formData, subCategory: val });
+    if (typeof fetchPrice === "function" && value) {
+      fetchPrice(value, val);
+    }
   };
 
   const handleBedroomChange = (bedrooms) => {

@@ -490,7 +490,6 @@ const CarListingForm = ({
                   ''
                 }
                 handleChange={handleChange}
-                disabled={isEvaluatorApprovedLocked}
                 required={true}
                 errors={
                   errors.evaluationDateTime && !formData.evaluationDateTime
@@ -508,6 +507,7 @@ const CarListingForm = ({
                 assetType='Car For Sale'
                 dropdown={groupedData}
                 title='Car Type'
+                lockFeeFields={isEvaluatorApprovedLocked}
               />
             </div>
           </div>
