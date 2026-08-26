@@ -357,7 +357,7 @@ const ListingCard = ({
                         className='cursor-pointer'
                       />
                     </button>
-                    <span className='pointer-events-none absolute bottom-full left-1/2 z-[120] mb-1 hidden -translate-x-1/2 whitespace-nowrap rounded bg-white px-2 py-1 text-xs font-medium text-black shadow-md ring-1 ring-black/10 group-hover/pending:flex'>
+                    <span className='pointer-events-none absolute left-1/2 top-full z-[120] mt-1 hidden -translate-x-1/2 whitespace-nowrap rounded bg-white px-2 py-1 text-xs font-medium text-black shadow-md ring-1 ring-black/10 group-hover/pending:flex'>
                       Pending
                     </span>
                   </div>
@@ -401,7 +401,7 @@ const ListingCard = ({
               </div>
               <ListingCardQrThumb
                 listing={listing}
-                className='hidden sm:block'
+                className='relative z-0 hidden sm:block'
               />
             </div>
 
