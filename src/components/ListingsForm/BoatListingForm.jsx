@@ -40,6 +40,7 @@ import {
   blocksPremiumServiceRequest,
   premiumServiceFieldLabel,
 } from '@/libs/listingPremiumStatus'
+import { shouldShowProjectNumber } from '@/libs/listingLocationUtils'
 
 const BoatListingForm = ({
   formData,
@@ -129,6 +130,7 @@ const BoatListingForm = ({
   const [modalOpen, setModalOpen] = useState(false)
   const [RequestService, setRequestService] = useState('')
   const isEvaluatorApprovedLocked = isListingEvaluatorApprovedLocked(formData)
+  const showProjectNumber = shouldShowProjectNumber(formData)
   const isPriceLocked = isListingPriceLocked(formData)
   const canRequestPremium = canRequestPremiumServices(formData)
   const blocksTechnicalReport = blocksPremiumServiceRequest(formData?.technicalReport)
@@ -277,16 +279,18 @@ const BoatListingForm = ({
             />
           </ListingImageUploadLayout>
           <div className='relative w-full dropdown-container'>
-            <div className='relative-placeholder w-full'>
-              <ListingCustomPlacholderInput
-                value={formData.dldNumber || ''}
-                handleChange={handleChange}
-                name='dldNumber'
-                customPlaceholder='Project Number'
-                disabled={isEvaluatorApprovedLocked}
-              />
-            </div>
-            <div className='mt-5 w-full'>
+            {showProjectNumber ? (
+              <div className='relative-placeholder w-full'>
+                <ListingCustomPlacholderInput
+                  value={formData.dldNumber || ''}
+                  handleChange={handleChange}
+                  name='dldNumber'
+                  customPlaceholder='Project Number'
+                  disabled={isEvaluatorApprovedLocked}
+                />
+              </div>
+            ) : null}
+            <div className={`${showProjectNumber ? 'mt-5' : ''} w-full`}>
               <ListingTextareaComponent
                 errors={
                   errors.description ||

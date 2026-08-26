@@ -49,6 +49,7 @@ import {
   blocksPremiumServiceRequest,
   premiumServiceFieldLabel,
 } from '@/libs/listingPremiumStatus'
+import { shouldShowProjectNumber } from '@/libs/listingLocationUtils'
 export const ImageUploadComponent = React.memo(
   ({
     formData,
@@ -121,6 +122,7 @@ export const ImageUploadComponent = React.memo(
     const [data2, setData2] = useState()
 
     const isOffPlan = formData?.assetType === 'Property Off Plan For Sale'
+    const showProjectNumber = shouldShowProjectNumber(formData)
 
     const getIdByRole = async () => {
       try {
@@ -436,21 +438,23 @@ export const ImageUploadComponent = React.memo(
                 disabled={isEvaluatorApprovedLocked}
               />
             </div>
-            <div className='relative w-full dropdown-container'>
-              <ListingFormInput
-                errors={errors.dldNumber && !formData.dldNumber}
-                value={formData.dldNumber || ''}
-                handleChange={handleChange}
-                handleBlur={handleBlur}
-                placeholder='Project Number'
-                fieldLabel='Project Number'
-                errorsMessage={errors.dldNumber}
-                name='dldNumber'
-                type='text'
-                inputMode='numeric'
-                disabled={isEvaluatorApprovedLocked}
-              />
-            </div>
+            {showProjectNumber ? (
+              <div className='relative w-full dropdown-container'>
+                <ListingFormInput
+                  errors={errors.dldNumber && !formData.dldNumber}
+                  value={formData.dldNumber || ''}
+                  handleChange={handleChange}
+                  handleBlur={handleBlur}
+                  placeholder='Project Number'
+                  fieldLabel='Project Number'
+                  errorsMessage={errors.dldNumber}
+                  name='dldNumber'
+                  type='text'
+                  inputMode='numeric'
+                  disabled={isEvaluatorApprovedLocked}
+                />
+              </div>
+            ) : null}
             <div className='relative w-full dropdown-container'>
               <ListingsDropdownInputComponents
                 errors={errors.bedrooms && !formData.bedrooms}
@@ -660,15 +664,17 @@ export const ImageUploadComponent = React.memo(
               </div>
             </div>
             <div className='relative w-full dropdown-container space-y-6'>
-              <div className='relative-placeholder w-full'>
-                <ListingCustomPlacholderInput
-                  value={formData.dldNumber || ''}
-                  handleChange={handleChange}
-                  name='dldNumber'
-                  customPlaceholder='Project Number'
-                  disabled={isEvaluatorApprovedLocked}
-                />
-              </div>
+              {showProjectNumber ? (
+                <div className='relative-placeholder w-full'>
+                  <ListingCustomPlacholderInput
+                    value={formData.dldNumber || ''}
+                    handleChange={handleChange}
+                    name='dldNumber'
+                    customPlaceholder='Project Number'
+                    disabled={isEvaluatorApprovedLocked}
+                  />
+                </div>
+              ) : null}
               <PropertySizeField
                 label='Select Size Type'
                 sizeSQFT={formData.sizeSQFT || formData.sizeSQFTFrom || ''}

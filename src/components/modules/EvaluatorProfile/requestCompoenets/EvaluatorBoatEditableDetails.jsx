@@ -12,6 +12,7 @@ import {
   age as ageOptions,
 } from '@/constants/boat-listings'
 import EvaluatorMapUrlField from './EvaluatorMapUrlField'
+import { shouldShowProjectNumber } from '@/libs/listingLocationUtils'
 import ColorTwoToneField from '@/components/ListingFormInput/ColorTwoToneField'
 
 const editInputClass =
@@ -136,6 +137,11 @@ export default function EvaluatorBoatEditableDetails({
   const setField = (key, value) => {
     onDraftChange?.({ ...(draft || {}), [key]: value })
   }
+
+  const showProjectNumber = shouldShowProjectNumber({
+    ...property,
+    ...(draft || {}),
+  })
 
   return (
     <section className='mb-6 rounded-lg border border-[#8d7c3b]/40 bg-[#faf8f3] p-4 sm:p-5'>
@@ -288,15 +294,17 @@ export default function EvaluatorBoatEditableDetails({
           </select>
         </div>
 
-        <div>
-          <label className={labelClass}>Project Number</label>
-          <input
-            type='text'
-            className={editInputClass}
-            value={pickValue(draft?.dldNumber, property.dldNumber)}
-            onChange={(e) => setField('dldNumber', e.target.value)}
-          />
-        </div>
+        {showProjectNumber ? (
+          <div>
+            <label className={labelClass}>Project Number</label>
+            <input
+              type='text'
+              className={editInputClass}
+              value={pickValue(draft?.dldNumber, property.dldNumber)}
+              onChange={(e) => setField('dldNumber', e.target.value)}
+            />
+          </div>
+        ) : null}
 
         <div>
           <label className={labelClass}>Listing</label>

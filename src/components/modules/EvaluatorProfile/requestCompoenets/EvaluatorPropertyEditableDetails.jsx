@@ -12,6 +12,7 @@ import { formatBedBathCount, parseBedBathCount } from '@/libs/bedBathCount'
 import { getListingAmenities } from '@/libs/listingAmenities'
 import { getListingSizeUnitForEvaluator } from './evaluatorPriceHandlers'
 import EvaluatorMapUrlField from './EvaluatorMapUrlField'
+import { shouldShowProjectNumber } from '@/libs/listingLocationUtils'
 
 const editInputClass =
   'focus:outline-none mt-1 block w-full px-3 py-3 rounded-md bg-white text-gray-800 text-sm sm:text-base border border-[#8d7c3b]'
@@ -74,6 +75,11 @@ export default function EvaluatorPropertyEditableDetails({
   const setField = (key, value) => {
     onDraftChange?.({ ...(draft || {}), [key]: value })
   }
+
+  const showProjectNumber = shouldShowProjectNumber({
+    ...property,
+    ...(draft || {}),
+  })
 
   const toggleAmenity = (name) => {
     const current = Array.isArray(draft?.facilities)
@@ -348,23 +354,25 @@ export default function EvaluatorPropertyEditableDetails({
           />
         </div>
 
-        <div>
-          <label className={labelClass}>DLD Number</label>
-          <input
-            type='text'
-            inputMode='numeric'
-            className={editInputClass}
-            value={pickValue(draft?.dldNumber, property.dldNumber)}
-            onChange={(e) =>
-              setField('dldNumber', e.target.value.replace(/[^\d]/g, ''))
-            }
-            onKeyDown={(e) => {
-              if (e.key === '-' || e.key === 'e' || e.key === 'E' || e.key === '+') {
-                e.preventDefault()
+        {showProjectNumber ? (
+          <div>
+            <label className={labelClass}>DLD Number</label>
+            <input
+              type='text'
+              inputMode='numeric'
+              className={editInputClass}
+              value={pickValue(draft?.dldNumber, property.dldNumber)}
+              onChange={(e) =>
+                setField('dldNumber', e.target.value.replace(/[^\d]/g, ''))
               }
-            }}
-          />
-        </div>
+              onKeyDown={(e) => {
+                if (e.key === '-' || e.key === 'e' || e.key === 'E' || e.key === '+') {
+                  e.preventDefault()
+                }
+              }}
+            />
+          </div>
+        ) : null}
 
         <EvaluatorMapUrlField
           value={pickValue(draft?.mapUrl, property.mapUrl)}

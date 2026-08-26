@@ -54,6 +54,7 @@ import {
   isCompressionConfigured,
 } from '@/libs/imageCompression'
 import { listingMediaRef } from '@/libs/listingMediaRef'
+import { shouldShowProjectNumber } from '@/libs/listingLocationUtils'
 
 export const dynamic = 'force-dynamic'
 const Page = () => {
@@ -248,11 +249,16 @@ const Page = () => {
     }))
   }
 
+  const getListingFormFields = () =>
+    (isOffPlan ? offPlanGlobalFormInputFields : globalFormInputFields).filter(
+      (field) => field.name !== 'dldNumber' || shouldShowProjectNumber(formData),
+    )
+
   const getValidationErrors = () => {
     if (isOffPlan) {
-      return validateOffPlanAsset(formData, offPlanGlobalFormInputFields)
+      return validateOffPlanAsset(formData, getListingFormFields())
     }
-    return validateAsset(formData, globalFormInputFields)
+    return validateAsset(formData, getListingFormFields())
   }
 
   // Dropdown open handling
@@ -657,9 +663,7 @@ const Page = () => {
           <NewListing formData={formData} setFormData={setFormData} />
 
           <form className='w-full  min-w-full p-10 grid grid-cols-1 lg:grid-cols-2 gap-5'>
-            {(isOffPlan ? offPlanGlobalFormInputFields : globalFormInputFields).map(
-              (field) => renderField(field),
-            )}
+            {getListingFormFields().map((field) => renderField(field))}
 
             {isOffPlan && (
               <AddAssetOffPlanFields

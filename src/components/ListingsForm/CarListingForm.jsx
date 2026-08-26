@@ -48,6 +48,7 @@ import {
   blocksPremiumServiceRequest,
   premiumServiceFieldLabel,
 } from '@/libs/listingPremiumStatus'
+import { shouldShowProjectNumber } from '@/libs/listingLocationUtils'
 
 const CarListingForm = ({
   formData,
@@ -140,6 +141,7 @@ const CarListingForm = ({
   const [modalOpen, setModalOpen] = useState(false)
   const [RequestService, setRequestService] = useState('')
   const isEvaluatorApprovedLocked = isListingEvaluatorApprovedLocked(formData)
+  const showProjectNumber = shouldShowProjectNumber(formData)
   const isPriceLocked = isListingPriceLocked(formData)
   const canRequestPremium = canRequestPremiumServices(formData)
   const blocksTechnicalReport = blocksPremiumServiceRequest(formData?.technicalReport)
@@ -286,17 +288,19 @@ const CarListingForm = ({
               errorMessage={errors.qrScan}
             />
           </ListingImageUploadLayout>
-          <div className='relative w-full dropdown-container'>
-            <div className='relative-placeholder w-full'>
-              <ListingCustomPlacholderInput
-                value={formData.dldNumber || ''}
-                handleChange={handleChange}
-                name='dldNumber'
-                customPlaceholder='Project Number'
-                disabled={isEvaluatorApprovedLocked}
-              />
+          {showProjectNumber ? (
+            <div className='relative w-full dropdown-container'>
+              <div className='relative-placeholder w-full'>
+                <ListingCustomPlacholderInput
+                  value={formData.dldNumber || ''}
+                  handleChange={handleChange}
+                  name='dldNumber'
+                  customPlaceholder='Project Number'
+                  disabled={isEvaluatorApprovedLocked}
+                />
+              </div>
             </div>
-          </div>
+          ) : null}
           <div className='relative w-full dropdown-container'>
             <ListingFormInput
               errors={

@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { materials as jewelryMaterials } from '@/constants/listing-data'
 import EvaluatorMapUrlField from './EvaluatorMapUrlField'
+import { shouldShowProjectNumber } from '@/libs/listingLocationUtils'
 
 const editInputClass =
   'focus:outline-none mt-1 block w-full px-3 py-3 rounded-md bg-white text-gray-800 text-sm sm:text-base border border-[#8d7c3b]'
@@ -144,6 +145,11 @@ export default function EvaluatorJewelryEditableDetails({
   const setField = (key, value) => {
     onDraftChange?.({ ...(draft || {}), [key]: value })
   }
+
+  const showProjectNumber = shouldShowProjectNumber({
+    ...property,
+    ...(draft || {}),
+  })
 
   return (
     <section className='mb-6 rounded-lg border border-[#8d7c3b]/40 bg-[#faf8f3] p-4 sm:p-5'>
@@ -297,23 +303,25 @@ export default function EvaluatorJewelryEditableDetails({
           </select>
         </div>
 
-        <div>
-          <label className={labelClass}>Project Number</label>
-          <input
-            type='text'
-            inputMode='numeric'
-            className={editInputClass}
-            value={pickValue(draft?.dldNumber, property.dldNumber)}
-            onChange={(e) =>
-              setField('dldNumber', e.target.value.replace(/[^\d]/g, ''))
-            }
-            onKeyDown={(e) => {
-              if (e.key === '-' || e.key === 'e' || e.key === 'E' || e.key === '+') {
-                e.preventDefault()
+        {showProjectNumber ? (
+          <div>
+            <label className={labelClass}>Project Number</label>
+            <input
+              type='text'
+              inputMode='numeric'
+              className={editInputClass}
+              value={pickValue(draft?.dldNumber, property.dldNumber)}
+              onChange={(e) =>
+                setField('dldNumber', e.target.value.replace(/[^\d]/g, ''))
               }
-            }}
-          />
-        </div>
+              onKeyDown={(e) => {
+                if (e.key === '-' || e.key === 'e' || e.key === 'E' || e.key === '+') {
+                  e.preventDefault()
+                }
+              }}
+            />
+          </div>
+        ) : null}
 
         <div>
           <label className={labelClass}>Listing</label>

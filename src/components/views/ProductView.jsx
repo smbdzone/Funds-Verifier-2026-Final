@@ -23,7 +23,7 @@ import ListingDetailsHeading from '@/components/shared/ListingDetailsHeading'
 import ArrangeViewingButton from '@/components/shared/ArrangeViewingButton'
 import OffPlanLayoutFloorPlanDisplay from '@/components/offplan/OffPlanLayoutFloorPlanDisplay'
 import { getListingAmenities } from '@/libs/listingAmenities'
-import { formatListingLocation } from '@/libs/listingLocationUtils'
+import { formatListingLocation, shouldShowProjectNumber } from '@/libs/listingLocationUtils'
 import { resolveLayoutImageSrc } from '@/libs/offPlanListings'
 
 const TABS = ['Description', 'Reviews', 'Amenities', 'Layout & Floor Plan']
@@ -88,7 +88,7 @@ export default function ProductView({ data }) {
 
   const detailRows = useMemo(
     () => [
-      { label: 'Location', value: formatListingLocation(data), fullWidth: true },
+      { label: 'Location', value: formatListingLocation(data) },
       { label: 'Developer', value: data?.developer },
       { label: 'Property Type', value: data?.propertyType },
       { label: 'Bedrooms', value: pad(data?.bedrooms) },
@@ -100,7 +100,10 @@ export default function ProductView({ data }) {
       { label: 'Furnished', value: data?.isFurnished },
       { label: 'Occupancy Status', value: data?.occupancyStatus },
       { label: 'Advertisement ID', value: data?.advertisementId },
-      { label: 'Project Number', value: data?.dldNumber },
+      {
+        label: 'Project Number',
+        value: shouldShowProjectNumber(data) ? data?.dldNumber : '',
+      },
       {
         label: 'Garage',
         value: parseInt(data?.garages, 10) ? pad(data?.garages) : '',
@@ -135,8 +138,6 @@ export default function ProductView({ data }) {
             <ListingDetailsHeading listing={data} />
             <ListingDetailsGrid
               rows={detailRows}
-              className='grid w-full grid-cols-1 gap-3 rounded-md border border-black/10 bg-white p-4 shadow min-[700px]:grid-cols-2 min-[700px]:gap-4 min-[700px]:p-5'
-              itemClassName='flex min-w-0 items-start break-words text-xs sm:text-sm'
             />
           </div>
 

@@ -100,3 +100,13 @@ export function formatListingLocation(listing) {
 
 export const UAE_ONLY_COUNTRY_OPTIONS = [LISTING_COUNTRY_UAE_LABEL]
 
+/** Project Number (DLD) is Dubai-only. Neighbourhoods like "Downtown Dubai" do not count. */
+export function shouldShowProjectNumber(listingOrCity) {
+  const raw =
+    typeof listingOrCity === 'string' || listingOrCity == null
+      ? listingOrCity
+      : listingOrCity.city
+  const city = formatCityLabel(raw).toLowerCase().trim()
+  return city === 'dubai' || city === 'دبي'
+}
+

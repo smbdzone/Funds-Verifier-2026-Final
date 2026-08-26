@@ -9,6 +9,7 @@ import { formatJewelryWeight } from '@/libs/jewelryUnits'
 import { toast } from 'react-toastify'
 import Modal from '../../../components/documents/modal'
 import customAxios from '../../../utils/apis/apis'
+import { formatBedBathCount } from '@/libs/bedBathCount'
 
 const AssetDetails = () => {
   const [selectedProperty, setSelectedProperty] = useState(null) // State to store selected property details
@@ -102,7 +103,7 @@ const AssetDetails = () => {
         label: 'Size in square feet',
         value: formatNumberWithCommas(selectedProperty?.sizeSQFT),
       },
-      { label: 'Bedrooms', value: selectedProperty?.bedrooms },
+      { label: 'Bedrooms', value: formatBedBathCount(selectedProperty?.bedrooms) },
       { label: 'Bathrooms', value: selectedProperty?.bathrooms },
       { label: 'Developer', value: selectedProperty?.developer },
       {

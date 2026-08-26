@@ -18,6 +18,7 @@ import {
   horsepowerOptions,
 } from '@/constants/car-listings'
 import EvaluatorMapUrlField from './EvaluatorMapUrlField'
+import { shouldShowProjectNumber } from '@/libs/listingLocationUtils'
 import ColorTwoToneField from '@/components/ListingFormInput/ColorTwoToneField'
 
 const editInputClass =
@@ -150,6 +151,11 @@ export default function EvaluatorCarEditableDetails({
   const setField = (key, value) => {
     onDraftChange?.({ ...(draft || {}), [key]: value })
   }
+
+  const showProjectNumber = shouldShowProjectNumber({
+    ...property,
+    ...(draft || {}),
+  })
 
   return (
     <section className='mb-6 rounded-lg border border-[#8d7c3b]/40 bg-[#faf8f3] p-4 sm:p-5'>
@@ -446,23 +452,25 @@ export default function EvaluatorCarEditableDetails({
           />
         </div>
 
-        <div>
-          <label className={labelClass}>Project Number</label>
-          <input
-            type='text'
-            inputMode='numeric'
-            className={editInputClass}
-            value={pickValue(draft?.dldNumber, property.dldNumber)}
-            onChange={(e) =>
-              setField('dldNumber', e.target.value.replace(/[^\d]/g, ''))
-            }
-            onKeyDown={(e) => {
-              if (e.key === '-' || e.key === 'e' || e.key === 'E' || e.key === '+') {
-                e.preventDefault()
+        {showProjectNumber ? (
+          <div>
+            <label className={labelClass}>Project Number</label>
+            <input
+              type='text'
+              inputMode='numeric'
+              className={editInputClass}
+              value={pickValue(draft?.dldNumber, property.dldNumber)}
+              onChange={(e) =>
+                setField('dldNumber', e.target.value.replace(/[^\d]/g, ''))
               }
-            }}
-          />
-        </div>
+              onKeyDown={(e) => {
+                if (e.key === '-' || e.key === 'e' || e.key === 'E' || e.key === '+') {
+                  e.preventDefault()
+                }
+              }}
+            />
+          </div>
+        ) : null}
 
         {/* ── Colors ── */}
         <CheckboxGroup

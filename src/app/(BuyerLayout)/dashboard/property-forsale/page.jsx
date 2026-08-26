@@ -23,6 +23,12 @@ import {
   normalizeCountriesResponse,
   normalizeCitiesResponse,
 } from '@/libs/normalizeCountriesResponse'
+import {
+  fetchCatalogCountries,
+  fetchCatalogCities,
+  mergeCountryOptions,
+  mergeCityPredictions,
+} from '@/libs/listingLocationCatalog'
 import 'react-phone-number-input/style.css'
 import PhoneInput from 'react-phone-number-input'
 import flags from 'react-phone-number-input/flags'
@@ -357,16 +363,26 @@ function Page() {
         const response = await fetch('/api/countries')
         const data = await response.json()
         const list = normalizeCountriesResponse(data)
+        const catalogCountries = await fetchCatalogCountries()
         if (!cancelled) {
           setCountryOptions(
-            filterCountriesToUaeOnly(
-              list.length > 0 ? list : [...DUMMY_FALLBACK_COUNTRIES],
+            mergeCountryOptions(
+              filterCountriesToUaeOnly(
+                list.length > 0 ? list : [...DUMMY_FALLBACK_COUNTRIES],
+              ),
+              catalogCountries,
             ),
           )
         }
       } catch {
         if (!cancelled) {
-          setCountryOptions(filterCountriesToUaeOnly([...DUMMY_FALLBACK_COUNTRIES]))
+          const catalogCountries = await fetchCatalogCountries()
+          setCountryOptions(
+            mergeCountryOptions(
+              filterCountriesToUaeOnly([...DUMMY_FALLBACK_COUNTRIES]),
+              catalogCountries,
+            ),
+          )
         }
       }
     }
@@ -393,16 +409,25 @@ function Page() {
 
     const load = async () => {
       const code = resolveCode()
-      if (!code) {
+      const catalogCities = formData.country
+        ? await fetchCatalogCities(formData.country)
+        : []
+      const apply = (base) => {
+        if (!cancelled) {
+          setCityOptions(mergeCityPredictions(base, catalogCities, ''))
+        }
+      }
+
+      if (!code && !formData.country) {
         if (!cancelled) setCityOptions([])
         return
       }
       if (isDummyUaeLocationsEnabled && code === 'AE') {
-        if (!cancelled) {
-          setCityOptions(
-            filterDummyCitiesByQuery(DUMMY_UAE_CITY_PREDICTIONS, ''),
-          )
-        }
+        apply(filterDummyCitiesByQuery(DUMMY_UAE_CITY_PREDICTIONS, ''))
+        return
+      }
+      if (!/^[A-Z]{2}$/.test(String(code || '').toUpperCase())) {
+        apply([])
         return
       }
       try {
@@ -413,16 +438,12 @@ function Page() {
         if (code === 'AE' && normalized.length === 0) {
           normalized = filterDummyCitiesByQuery(DUMMY_UAE_CITY_PREDICTIONS, '')
         }
-        if (!cancelled) setCityOptions(normalized)
+        apply(normalized)
       } catch {
-        if (!cancelled) {
-          if (code === 'AE') {
-            setCityOptions(
-              filterDummyCitiesByQuery(DUMMY_UAE_CITY_PREDICTIONS, ''),
-            )
-          } else {
-            setCityOptions([])
-          }
+        if (code === 'AE') {
+          apply(filterDummyCitiesByQuery(DUMMY_UAE_CITY_PREDICTIONS, ''))
+        } else {
+          apply([])
         }
       }
     }

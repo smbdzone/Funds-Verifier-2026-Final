@@ -24,6 +24,7 @@ import {
 import customAxios from '@/utils/apis/apis'
 import { isOffPlanListing } from '@/libs/filterMyListingTab'
 import { formatPropertySizeDisplay } from '@/libs/propertySizeUnits'
+import { formatListingBedsLabel } from '@/libs/bedBathCount'
 
 const PROPERTY_UI_ONLY_PARAMS = new Set(['assetType'])
 
@@ -259,7 +260,7 @@ export const AuctionData = () => {
               type='property'
               item={item}
               attributes={[
-                item.bedrooms + ' Beds',
+                formatListingBedsLabel(item.bedrooms),
                 item.bathrooms + ' Baths',
                 formatPropertySizeDisplay(item) ||
                   formatNumberWithCommas(item.sizeSQFT) + ' Sqft',

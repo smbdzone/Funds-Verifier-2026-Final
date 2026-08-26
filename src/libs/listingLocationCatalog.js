@@ -1,10 +1,24 @@
-import { formatCityLabel } from '@/libs/dummyLocationData'
+import { formatCityLabel, toUnitedArabEmiratesListingCountryName } from '@/libs/dummyLocationData'
 import { normalizeCitiesResponse } from '@/libs/normalizeCountriesResponse'
 import customAxios from '@/utils/apis/apis'
 
-export async function fetchCatalogCities() {
+export async function fetchCatalogCountries() {
   try {
-    const { data } = await customAxios.get('/location-catalog/cities')
+    const { data } = await customAxios.get('/location-catalog/countries')
+    return Array.isArray(data?.countries) ? data.countries : []
+  } catch {
+    return []
+  }
+}
+
+export async function fetchCatalogCities(countryName) {
+  try {
+    const country =
+      toUnitedArabEmiratesListingCountryName(countryName) ||
+      String(countryName || '').trim()
+    const { data } = await customAxios.get('/location-catalog/cities', {
+      params: country ? { country } : {},
+    })
     return Array.isArray(data?.cities) ? data.cities : []
   } catch {
     return []
@@ -69,4 +83,24 @@ export function mergeNeighbourhoodRows(base, catalogRows) {
     })
 
   return [...existing, ...extras]
+}
+
+/** UAE first; extra Super Admin countries appended if not already in the picker. */
+export function mergeCountryOptions(base, catalogCountries) {
+  const existing = Array.isArray(base) && base.length ? [...base] : []
+  const seen = new Set(
+    existing.map((row) => String(row?.country || '').toLowerCase().trim()),
+  )
+  for (const row of catalogCountries || []) {
+    const name = String(row?.name || row?.country || '').trim()
+    if (!name) continue
+    const key = name.toLowerCase()
+    if (seen.has(key)) continue
+    seen.add(key)
+    existing.push({
+      country: name,
+      code: String(row?.code || '').toUpperCase().trim(),
+    })
+  }
+  return existing
 }

@@ -7,6 +7,7 @@ import { formatJewelryWeight } from '@/libs/jewelryUnits'
 import { formatListingCardPrice, formatListingPriceDisplay } from '@/libs/listingPriceDisplay'
 import { isOffPlanListing } from '@/libs/filterMyListingTab'
 import { formatPropertySizeDisplay } from '@/libs/propertySizeUnits'
+import { formatBedBathCount } from '@/libs/bedBathCount'
 import { toast } from 'react-toastify'
 import Loader from '../../EvaluatorProfile/requestCompoenets/Loader'
 import Modal from '../../../documents/modal'
@@ -128,7 +129,7 @@ const EvaluationDetails = () => {
         label: 'Property size',
         value: formatPropertySizeDisplay(selectedProperty),
       },
-      { label: 'Bedrooms', value: selectedProperty?.bedrooms },
+      { label: 'Bedrooms', value: formatBedBathCount(selectedProperty?.bedrooms) },
       { label: 'Bathrooms', value: selectedProperty?.bathrooms },
       { label: 'Developer', value: selectedProperty?.developer },
       {

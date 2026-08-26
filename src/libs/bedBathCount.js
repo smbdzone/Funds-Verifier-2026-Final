@@ -26,3 +26,12 @@ export function displayBedBathCount(value) {
   if (Number.isFinite(num)) return String(num).padStart(2, '0')
   return String(value)
 }
+
+/** Listing cards: "Studio" instead of "0 Beds". */
+export function formatListingBedsLabel(value) {
+  if (value === '' || value == null) return ''
+  if (Number(value) === 0 || /^studio$/i.test(String(value).trim())) {
+    return 'Studio'
+  }
+  return `${value} Beds`
+}

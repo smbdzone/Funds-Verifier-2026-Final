@@ -26,7 +26,7 @@ import ListingDetailsHeading from '@/components/shared/ListingDetailsHeading'
 import ArrangeViewingButton from '@/components/shared/ArrangeViewingButton'
 import ListingAmenitiesPanel from '@/components/shared/ListingAmenitiesPanel'
 import { getListingAmenities } from '@/libs/listingAmenities'
-import { formatListingLocation } from '@/libs/listingLocationUtils'
+import { formatListingLocation, shouldShowProjectNumber } from '@/libs/listingLocationUtils'
 
 const TABS = ['Description', 'Reviews', 'Amenities']
 
@@ -47,7 +47,7 @@ export default function JewelleryView({ data }) {
 
   const detailRows = useMemo(
     () => [
-      { label: 'Location', value: formatListingLocation(data), fullWidth: true },
+      { label: 'Location', value: formatListingLocation(data) },
       { label: 'Weight', value: formatJewelryWeight(data) },
       { label: 'Category', value: data?.category },
       { label: 'Type', value: data?.model },
@@ -63,9 +63,11 @@ export default function JewelleryView({ data }) {
         value: Array.isArray(data?.materials)
           ? data.materials.filter(Boolean).join(', ')
           : '',
-        fullWidth: true,
       },
-      { label: 'Project Number', value: data?.dldNumber },
+      {
+        label: 'Project Number',
+        value: shouldShowProjectNumber(data) ? data?.dldNumber : '',
+      },
     ],
     [data],
   )
@@ -100,8 +102,6 @@ export default function JewelleryView({ data }) {
             <ListingDetailsHeading listing={data} />
             <ListingDetailsGrid
               rows={detailRows}
-              className='grid w-full grid-cols-1 gap-3 rounded-md border border-black/10 bg-white p-4 shadow min-[700px]:grid-cols-2 min-[700px]:gap-4 min-[700px]:p-5'
-              itemClassName='flex min-w-0 items-start break-words text-xs sm:text-sm'
             />
           </div>
 

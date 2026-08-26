@@ -7,8 +7,8 @@ import { GoDotFill } from 'react-icons/go'
  */
 export default function ListingDetailsGrid({
   rows = [],
-  className = 'grid w-full grid-cols-1 gap-3 rounded-md border border-black/10 bg-white p-4 shadow sm:grid-cols-2 sm:gap-4 sm:p-5',
-  itemClassName = 'flex items-start text-xs md:text-sm',
+  className = 'grid w-full grid-cols-1 gap-x-8 gap-y-2 rounded-md border border-black/10 bg-white px-4 py-4 shadow min-[700px]:grid-cols-2',
+  itemClassName = 'flex min-w-0 items-start leading-normal text-xs sm:text-sm',
   showEmpty = false,
 }) {
   const visible = (rows || []).filter((row) => {
@@ -27,9 +27,9 @@ export default function ListingDetailsGrid({
       {visible.map((row) => (
         <span
           key={row.label}
-          className={`${itemClassName} ${row.fullWidth ? 'sm:col-span-2' : ''}`.trim()}
+          className={`${itemClassName} ${row.fullWidth ? 'min-[700px]:col-span-2' : ''}`.trim()}
         >
-          <GoDotFill className='mr-2 mt-0.5 flex shrink-0 text-gold-800' />
+          <GoDotFill className='mr-1.5 mt-0.5 flex shrink-0 text-gold-800' />
           <span className='min-w-0 break-words'>
             {row.label}: {row.value}
           </span>

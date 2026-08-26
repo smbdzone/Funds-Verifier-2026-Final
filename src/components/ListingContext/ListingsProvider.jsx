@@ -40,8 +40,10 @@ import { extras as carExtrasList, colors as carColorOptions } from '@/constants/
 import { formatBedBathCount } from '@/libs/bedBathCount'
 import { listingMediaObjectKey } from '@/libs/listingCardMedia'
 import {
+  fetchCatalogCountries,
   fetchCatalogCities,
   fetchCatalogNeighbourhoods,
+  mergeCountryOptions,
   mergeCityPredictions,
   mergeNeighbourhoodRows,
 } from '@/libs/listingLocationCatalog'
@@ -432,11 +434,15 @@ const ListingsProvider = ({ children }) => {
           list = [...DUMMY_FALLBACK_COUNTRIES]
         }
         list = filterCountriesToUaeOnly(list)
-        setCountries(list)
+        const catalogCountries = await fetchCatalogCountries()
+        setCountries(mergeCountryOptions(list, catalogCountries))
         // Keep "Select Country" until the user picks — do not auto-fill UAE.
       } catch (error) {
         console.error('Error fetching countries data:', error)
-        setCountries([...DUMMY_FALLBACK_COUNTRIES])
+        const catalogCountries = await fetchCatalogCountries()
+        setCountries(
+          mergeCountryOptions([...DUMMY_FALLBACK_COUNTRIES], catalogCountries),
+        )
       }
     }
 
@@ -444,22 +450,42 @@ const ListingsProvider = ({ children }) => {
   }, [])
 
   useEffect(() => {
+    if (!formData?.country) return
+    const match = (countries || []).find(
+      (c) =>
+        String(c.country || '').toLowerCase() ===
+        String(formData.country).toLowerCase(),
+    )
+    if (match?.code && match.code !== countryCode) {
+      setCountryCode(match.code)
+    }
+  }, [countries, formData?.country])
+
+  useEffect(() => {
     fetchCities()
-  }, [searchQueryCity, countryCode])
+  }, [searchQueryCity, countryCode, selectedCountry])
 
   useEffect(() => {
     fetchNeighbourhoods()
   }, [isCity])
 
   const fetchCities = async () => {
-    if (!countryCode) {
+    const catalogCountry =
+      selectedCountry && selectedCountry !== 'Select Country'
+        ? selectedCountry
+        : ''
+    const iso = String(countryCode || '').toUpperCase()
+    const useGoogle = /^[A-Z]{2}$/.test(iso)
+
+    if (!iso && !catalogCountry) {
       setCities([])
       setLoading(false)
       return
     }
 
-    const catalogCities =
-      countryCode === 'AE' ? await fetchCatalogCities() : []
+    const catalogCities = catalogCountry
+      ? await fetchCatalogCities(catalogCountry)
+      : []
 
     const applyCities = (base) => {
       setCities(mergeCityPredictions(base, catalogCities, searchQueryCity))
@@ -471,15 +497,21 @@ const ListingsProvider = ({ children }) => {
       )
     }
 
-    if (isDummyUaeLocationsEnabled && countryCode === 'AE') {
+    if (isDummyUaeLocationsEnabled && iso === 'AE') {
       applyDummyAeCities()
+      setLoading(false)
+      return
+    }
+
+    if (!useGoogle) {
+      applyCities([])
       setLoading(false)
       return
     }
 
     try {
       const response = await fetch(
-        `/api/country?name=${countryCode}&query=${searchQueryCity}`,
+        `/api/country?name=${iso}&query=${searchQueryCity}`,
         {
           next: { revalidate: 10 },
         },
@@ -491,7 +523,7 @@ const ListingsProvider = ({ children }) => {
       const data = await response.json()
 
       let normalized = normalizeCitiesResponse(data)
-      if (countryCode === 'AE' && normalized.length === 0) {
+      if (iso === 'AE' && normalized.length === 0) {
         normalized = filterDummyCitiesByQuery(
           DUMMY_UAE_CITY_PREDICTIONS,
           searchQueryCity,
@@ -500,7 +532,7 @@ const ListingsProvider = ({ children }) => {
       applyCities(normalized)
     } catch (error) {
       console.error('Error fetching cities:', error)
-      if (countryCode === 'AE') {
+      if (iso === 'AE') {
         applyDummyAeCities()
       } else {
         applyCities([])
@@ -549,9 +581,8 @@ const ListingsProvider = ({ children }) => {
       toUnitedArabEmiratesListingCountryName(country.country) ||
       country.country
     setSelectedCountry(countryLabel)
-    setCountryCode(country.code)
+    setCountryCode(country.code || '')
     setIsOpen(false)
-    fetchCities(country.code)
     setSelectedCountryPhone(countryLabel)
     setFormData((prevFormData) => ({
       ...prevFormData,

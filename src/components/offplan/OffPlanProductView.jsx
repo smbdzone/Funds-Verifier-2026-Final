@@ -16,7 +16,7 @@ import ArrangeViewingButton from '@/components/shared/ArrangeViewingButton'
 import { formatOffPlanPriceRange } from '@/constants/offPlanDummyListings'
 import { formatPropertySizeDisplay } from '@/libs/propertySizeUnits'
 import { getListingAmenities } from '@/libs/listingAmenities'
-import { formatListingLocation } from '@/libs/listingLocationUtils'
+import { formatListingLocation, shouldShowProjectNumber } from '@/libs/listingLocationUtils'
 import { getListingDetailMediaItems } from '@/libs/listingCardMedia'
 import { getProfileImageSrc } from '@/utils/global-functions/global'
 import Image from 'next/image'
@@ -83,12 +83,12 @@ export default function OffPlanProductView({ data }) {
     }
 
     return [
-      { label: 'Location', value: formatListingLocation(data), fullWidth: true },
+      { label: 'Location', value: formatListingLocation(data) },
       { label: 'Developer', value: data?.developer },
       { label: 'Property Type', value: data?.propertyType },
       { label: 'Bedrooms', value: pad(data?.bedrooms) },
       { label: 'Bathrooms', value: pad(data?.bathrooms) },
-      { label: 'Size', value: sizeLabel, fullWidth: true },
+      { label: 'Size', value: sizeLabel },
       {
         label: 'Payment Plan',
         value: data?.paymentPlanLabel || data?.paymentPlanType,
@@ -96,11 +96,13 @@ export default function OffPlanProductView({ data }) {
       { label: 'Layout', value: data?.layout },
       { label: 'Number of Floors', value: data?.numberOfFloors },
       { label: 'Available Apartments', value: data?.availableApartment },
-      { label: 'Project Number', value: data?.dldNumber },
+      {
+        label: 'Project Number',
+        value: shouldShowProjectNumber(data) ? data?.dldNumber : '',
+      },
       {
         label: 'Price Range',
         value: formatOffPlanPriceRange(data?.priceFrom, data?.priceTo),
-        fullWidth: true,
       },
     ]
   }, [data])
@@ -139,8 +141,6 @@ export default function OffPlanProductView({ data }) {
             <ListingDetailsHeading listing={data} />
             <ListingDetailsGrid
               rows={detailRows}
-              className='grid w-full grid-cols-1 gap-3 rounded-md border border-black/10 bg-white p-4 shadow min-[700px]:grid-cols-2 min-[700px]:gap-4 min-[700px]:p-5'
-              itemClassName='flex min-w-0 items-start break-words text-xs sm:text-sm'
             />
           </div>
 
@@ -199,7 +199,7 @@ export default function OffPlanProductView({ data }) {
           <div className='space-y-4'>
             {data?.description ? <Description text={data.description} /> : null}
             {data?.additionalDescription &&
-            data.additionalDescription !== data?.description ? (
+              data.additionalDescription !== data?.description ? (
               <Description text={data.additionalDescription} />
             ) : null}
             {!data?.description && !data?.additionalDescription ? (

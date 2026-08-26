@@ -42,6 +42,7 @@ import { getListingDetailId } from '@/libs/listingSlug'
 import { hasPendingDocumentRequests } from '@/utils/requestDocumentUtils'
 import ListingCarouselNavButton from '@/components/cards/ListingCarouselNavButton'
 import { useProfile } from '@/context/UserContext'
+import { formatListingBedsLabel } from '@/libs/bedBathCount'
 
 const renderListingDetails = (listing, hasFeaturedStyling) => {
   switch (listing.assetType) {
@@ -58,7 +59,7 @@ const renderListingDetails = (listing, hasFeaturedStyling) => {
               : 'text-prussianBlue'
               }`}
           >
-            {listing.bedrooms} Beds
+            {formatListingBedsLabel(listing.bedrooms)}
           </span>
           <span className='bg-[#F5F5F5] shrink-0 rounded-full h-[25px] w-[25px] '></span>
           <span
@@ -300,7 +301,7 @@ const ListingCard = ({
       return (
         <>
           <div
-            className={`group relative my-5 flex w-full flex-col items-stretch gap-2 rounded-lg p-2 custom-shadow overflow-x-hidden sm:flex-row sm:items-center sm:gap-4 md:gap-4 md:p-5 xl:gap-10 ${hasFeaturedStyling ? '' : 'bg-white'
+            className={`relative my-5 flex w-full flex-col items-stretch gap-2 overflow-visible rounded-lg p-2 custom-shadow sm:flex-row sm:items-center sm:gap-4 md:gap-4 md:p-5 xl:gap-10 ${hasFeaturedStyling ? '' : 'bg-white'
               }`}
             style={
               hasFeaturedStyling
@@ -308,56 +309,58 @@ const ListingCard = ({
                 : undefined
             }
           >
-            <div className='absolute top-2 right-2 z-50 flex w-auto flex-col items-end gap-1.5'>
-              <div className='flex w-full items-center justify-end gap-2'>
+            <div className='absolute top-2 right-2 z-[60] flex w-auto flex-col items-end gap-1.5 overflow-visible'>
+              <div className='relative z-[90] flex w-full items-center justify-end gap-2'>
                 {documentRequestedPending ? (
-                  <div className='relative group'>
+                  <div className='relative group/badge'>
                     <span className='inline-flex items-center rounded bg-yellow-400 px-2.5 py-1 text-xs font-semibold text-black shadow-sm'>
                       Document Requested
                     </span>
-                    <span className='absolute top-full left-1/2 z-50 mt-1 hidden -translate-x-1/2 whitespace-nowrap rounded bg-white px-2 py-1 text-xs text-black shadow-md group-hover:flex'>
+                    <span className='absolute top-full left-1/2 z-[80] mt-1 hidden -translate-x-1/2 whitespace-nowrap rounded bg-white px-2 py-1 text-xs text-black shadow-md group-hover/badge:flex'>
                       Upload requested documents in Documents Storage
                     </span>
                   </div>
                 ) : null}
                 {String(listing?.offPlanApprovalFeeStatus || '') === 'requested' ? (
-                  <div className='relative group'>
+                  <div className='relative group/badge'>
                     <span className='inline-flex items-center rounded bg-sky-500 px-2.5 py-1 text-xs font-semibold text-white shadow-sm'>
                       Approval Fee Due
                     </span>
-                    <span className='absolute top-full left-1/2 z-50 mt-1 hidden -translate-x-1/2 whitespace-nowrap rounded bg-white px-2 py-1 text-xs text-black shadow-md group-hover:flex'>
+                    <span className='absolute top-full left-1/2 z-[80] mt-1 hidden -translate-x-1/2 whitespace-nowrap rounded bg-white px-2 py-1 text-xs text-black shadow-md group-hover/badge:flex'>
                       Pay the optional off-plan approval fee under Invoices
                     </span>
                   </div>
                 ) : null}
                 {String(listing?.offPlanApprovalFeeStatus || '') === 'paid' ? (
-                  <div className='relative group'>
+                  <div className='relative group/badge'>
                     <span className='inline-flex items-center rounded bg-emerald-600 px-2.5 py-1 text-xs font-semibold text-white shadow-sm'>
                       Invoice
                     </span>
-                    <span className='absolute top-full left-1/2 z-50 mt-1 hidden -translate-x-1/2 whitespace-nowrap rounded bg-white px-2 py-1 text-xs text-black shadow-md group-hover:flex'>
+                    <span className='absolute top-full left-1/2 z-[80] mt-1 hidden -translate-x-1/2 whitespace-nowrap rounded bg-white px-2 py-1 text-xs text-black shadow-md group-hover/badge:flex'>
                       Off-plan approval fee paid — view under Invoices
                     </span>
                   </div>
                 ) : null}
                 {/* status */}
                 {listing.status === 0 ? (
-                  <>
-                    <div className='relative group'>
-                      <button className='bg-blue-500 text-black py-2 rounded'>
-                        <Image
-                          src='/icons/pending1.svg'
-                          height={20}
-                          width={20}
-                          alt='Pending'
-                          className='cursor-pointer'
-                        />
-                      </button>
-                      <span className='absolute top-full left-1/2 transform bg-white shadow-md rounded -translate-x-1/2 mt-0 hidden group-hover:flex whitespace-nowrap bg-gray-800 text-black text-xs py-1 px-2'>
-                        Pending
-                      </span>
-                    </div>
-                  </>
+                  <div className='group/pending relative z-[100] overflow-visible'>
+                    <button
+                      type='button'
+                      className='rounded bg-blue-500 py-2 text-black'
+                      aria-label='Pending'
+                    >
+                      <Image
+                        src='/icons/pending1.svg'
+                        height={20}
+                        width={20}
+                        alt='Pending'
+                        className='cursor-pointer'
+                      />
+                    </button>
+                    <span className='pointer-events-none absolute bottom-full left-1/2 z-[120] mb-1 hidden -translate-x-1/2 whitespace-nowrap rounded bg-white px-2 py-1 text-xs font-medium text-black shadow-md ring-1 ring-black/10 group-hover/pending:flex'>
+                      Pending
+                    </span>
+                  </div>
                 ) : (
                   <button
                     className='border rounded px-2 py-0.5 gradient text-white text-sm'
