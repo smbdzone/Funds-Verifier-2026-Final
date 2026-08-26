@@ -23,6 +23,11 @@ import ColorTwoToneField from '@/components/ListingFormInput/ColorTwoToneField'
 const editInputClass =
   'focus:outline-none mt-1 block w-full px-3 py-3 rounded-md bg-white text-gray-800 text-sm sm:text-base border border-[#8d7c3b]'
 const labelClass = 'block text-sm sm:text-base font-medium text-gray-700'
+const splitFieldWrapClass = 'mt-1 grid w-full grid-cols-[minmax(0,1fr)_5.75rem]'
+const splitFieldInputClass =
+  'box-border focus:outline-none h-[46px] w-full min-w-0 px-3 rounded-l-md rounded-r-none bg-white text-gray-800 text-sm sm:text-base border border-[#8d7c3b]'
+const splitFieldSelectClass =
+  'box-border focus:outline-none h-[46px] w-full min-w-0 max-w-full px-2 rounded-r-md rounded-l-none bg-white text-gray-800 text-sm sm:text-base border border-[#8d7c3b] border-l-0'
 const checkboxGridClass =
   'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-1 max-h-48 overflow-y-auto rounded-md border border-[#8d7c3b]/30 bg-white p-3'
 const sectionHeadClass = 'mt-5 mb-2 text-sm sm:text-base font-semibold text-prussianBlue'
@@ -224,11 +229,11 @@ export default function EvaluatorCarEditableDetails({
 
         <div>
           <label className={labelClass}>How much driven</label>
-          <div className='mt-1 flex items-stretch gap-0'>
+          <div className={splitFieldWrapClass}>
             <input
               type='text'
               inputMode='numeric'
-              className={`${editInputClass} rounded-r-none`}
+              className={splitFieldInputClass}
               value={formatWithCommas(pickValue(draft?.kilometers, property.kilometers))}
               onChange={(e) => setField('kilometers', e.target.value.replace(/[^\d]/g, ''))}
               onKeyDown={(e) => {
@@ -236,9 +241,11 @@ export default function EvaluatorCarEditableDetails({
                   e.preventDefault()
                 }
               }}
+              placeholder='How much driven'
             />
             <select
-              className={`${editInputClass} mt-0 w-[110px] shrink-0 rounded-l-none border-l-0`}
+              className={splitFieldSelectClass}
+              style={{ minWidth: 0 }}
               value={pickValue(draft?.mileageUnit, property.mileageUnit) || 'km'}
               onChange={(e) => setField('mileageUnit', e.target.value)}
               aria-label='Distance unit'
@@ -361,11 +368,11 @@ export default function EvaluatorCarEditableDetails({
 
         <div>
           <label className={labelClass}>Capacity/Weight</label>
-          <div className='mt-1 flex items-stretch gap-0'>
+          <div className={splitFieldWrapClass}>
             <input
               type='text'
               inputMode='decimal'
-              className={`${editInputClass} rounded-r-none`}
+              className={splitFieldInputClass}
               value={pickValue(draft?.capacityWeight, property.capacityWeight)}
               onChange={(e) => {
                 const next = e.target.value.replace(/[^\d.]/g, '')
@@ -381,9 +388,11 @@ export default function EvaluatorCarEditableDetails({
                   e.preventDefault()
                 }
               }}
+              placeholder='Enter weight'
             />
             <select
-              className={`${editInputClass} mt-0 w-[90px] shrink-0 rounded-l-none border-l-0`}
+              className={splitFieldSelectClass}
+              style={{ minWidth: 0 }}
               value={
                 pickValue(draft?.capacityWeightUnit, property.capacityWeightUnit) ||
                 'kg'

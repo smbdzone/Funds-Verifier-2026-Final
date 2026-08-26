@@ -24,7 +24,7 @@ export function resolveJewelryWeightUnit(listingOrUnit) {
 /** e.g. "60 gm" or "1.5 kg" — same unit asset holder selected */
 export function formatJewelryWeight(listing) {
   if (listing == null) return ''
-  const value = listing.grams
+  const value = listing.grams ?? listing.weight
   if (value == null || value === '') return ''
   const unit = resolveJewelryWeightUnit(listing)
   return `${formatNumberWithCommas(value)} ${unit}`

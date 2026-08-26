@@ -165,12 +165,12 @@ export default function EvaluatorBoatEditableDetails({
         </div>
 
         <div>
-          <label className={labelClass}>Make</label>
+          <label className={labelClass}>Brands</label>
           <input
             type='text'
             className={editInputClass}
-            value={pickValue(draft?.make, property.make)}
-            onChange={(e) => setField('make', e.target.value)}
+            value={pickValue(draft?.brands, property.brands)}
+            onChange={(e) => setField('brands', e.target.value)}
           />
         </div>
 
@@ -181,16 +181,6 @@ export default function EvaluatorBoatEditableDetails({
             className={editInputClass}
             value={pickValue(draft?.model, property.model)}
             onChange={(e) => setField('model', e.target.value)}
-          />
-        </div>
-
-        <div>
-          <label className={labelClass}>Year</label>
-          <input
-            type='text'
-            className={editInputClass}
-            value={pickValue(draft?.year, property.year)}
-            onChange={(e) => setField('year', e.target.value)}
           />
         </div>
 
@@ -283,26 +273,6 @@ export default function EvaluatorBoatEditableDetails({
             className={editInputClass}
             value={pickValue(draft?.category, property.category)}
             onChange={(e) => setField('category', e.target.value)}
-          />
-        </div>
-
-        <div>
-          <label className={labelClass}>Brand</label>
-          <input
-            type='text'
-            className={editInputClass}
-            value={pickValue(draft?.brands, property.brands)}
-            onChange={(e) => setField('brands', e.target.value)}
-          />
-        </div>
-
-        <div>
-          <label className={labelClass}>Weight</label>
-          <input
-            type='text'
-            className={editInputClass}
-            value={pickValue(draft?.weight, property.weight)}
-            onChange={(e) => setField('weight', e.target.value)}
           />
         </div>
 

@@ -7,6 +7,11 @@ import EvaluatorMapUrlField from './EvaluatorMapUrlField'
 const editInputClass =
   'focus:outline-none mt-1 block w-full px-3 py-3 rounded-md bg-white text-gray-800 text-sm sm:text-base border border-[#8d7c3b]'
 const labelClass = 'block text-sm sm:text-base font-medium text-gray-700'
+const splitFieldWrapClass = 'mt-1 grid w-full grid-cols-[minmax(0,1fr)_7rem]'
+const splitFieldInputClass =
+  'box-border focus:outline-none h-[46px] w-full min-w-0 px-3 rounded-l-md rounded-r-none bg-white text-gray-800 text-sm sm:text-base border border-[#8d7c3b]'
+const splitFieldSelectClass =
+  'box-border focus:outline-none h-[46px] w-full min-w-0 max-w-full px-2 rounded-r-md rounded-l-none bg-white text-gray-800 text-sm sm:text-base border border-[#8d7c3b] border-l-0'
 const checkboxGridClass =
   'grid grid-cols-2 sm:grid-cols-3 gap-1 max-h-56 overflow-y-auto rounded-md border border-[#8d7c3b]/30 bg-white p-3'
 const sectionHeadClass = 'mt-5 mb-2 text-sm sm:text-base font-semibold text-prussianBlue'
@@ -178,22 +183,12 @@ export default function EvaluatorJewelryEditableDetails({
         </div>
 
         <div>
-          <label className={labelClass}>Sub Category (Model)</label>
+          <label className={labelClass}>Subcategory</label>
           <input
             type='text'
             className={editInputClass}
             value={pickValue(draft?.model, property.model)}
             onChange={(e) => setField('model', e.target.value)}
-          />
-        </div>
-
-        <div>
-          <label className={labelClass}>Make</label>
-          <input
-            type='text'
-            className={editInputClass}
-            value={pickValue(draft?.make, property.make)}
-            onChange={(e) => setField('make', e.target.value)}
           />
         </div>
 
@@ -211,26 +206,25 @@ export default function EvaluatorJewelryEditableDetails({
 
         <div>
           <label className={labelClass}>Weight</label>
-          <input
-            type='text'
-            className={editInputClass}
-            value={pickValue(draft?.weight, property.weight)}
-            onChange={(e) => setField('weight', e.target.value)}
-          />
-        </div>
-
-        <div>
-          <label className={labelClass}>Weight</label>
-          <div className='mt-1 flex items-stretch gap-0'>
+          <div className={splitFieldWrapClass}>
             <input
               type='text'
               inputMode='decimal'
-              className={`${editInputClass} rounded-r-none`}
-              value={pickValue(draft?.grams, property.grams)}
+              className={splitFieldInputClass}
+              value={pickValue(
+                draft?.grams,
+                property.grams,
+                draft?.weight,
+                property.weight,
+              )}
               onChange={(e) => {
                 const next = e.target.value
                 if (next === '' || /^\d*\.?\d*$/.test(next)) {
-                  setField('grams', next)
+                  onDraftChange?.({
+                    ...(draft || {}),
+                    grams: next,
+                    weight: next,
+                  })
                 }
               }}
               onKeyDown={(e) => {
@@ -238,9 +232,11 @@ export default function EvaluatorJewelryEditableDetails({
                   e.preventDefault()
                 }
               }}
+              placeholder='Weight'
             />
             <select
-              className={`${editInputClass} mt-0 w-[120px] shrink-0 rounded-l-none border-l-0`}
+              className={splitFieldSelectClass}
+              style={{ minWidth: 0 }}
               value={pickValue(draft?.weightUnit, property.weightUnit) || 'gm'}
               onChange={(e) => setField('weightUnit', e.target.value)}
               aria-label='Weight unit'

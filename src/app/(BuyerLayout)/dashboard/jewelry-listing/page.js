@@ -717,6 +717,7 @@ function Page() {
             .toLowerCase()
           return ['gm', 'kg', 'lb', 'oz'].includes(unit) ? unit : 'gm'
         })(),
+        weight: formData.grams || formData.weight || '',
         pictures:
           listingMediaRef(imageID) ?? listingMediaRef(formData?.pictures),
         video: listingMediaRef(videoID) ?? listingMediaRef(formData?.video),
