@@ -1552,11 +1552,12 @@ export const reindexOffPlanPaymentPlan = (steps = []) =>
     paymentLabel: getOffPlanPaymentLabel(index, steps.length),
   }));
 
-/** Keep only steps the seller actually filled (share % and/or payment title). */
+/** Keep only steps the seller actually filled with a percent above 0. */
 export const isOffPlanPaymentStepFilled = (step) => {
-  const share = String(step?.sharePercent ?? "").trim();
-  const milestone = String(step?.milestone ?? "").trim();
-  return share !== "" || milestone !== "";
+  const share = String(step?.sharePercent ?? "").replace(/%/g, "").trim();
+  if (share === "") return false;
+  const n = Number(share);
+  return Number.isFinite(n) && n > 0;
 };
 
 /** Drop empty steps and reindex — used on save and public display. */
