@@ -26,6 +26,7 @@ import ListingCarouselNavButton from '@/components/cards/ListingCarouselNavButto
 import ListingCardQrThumb from '@/components/shared/ListingCardQrThumb'
 import ListingCardViewCount from '@/components/shared/ListingCardViewCount'
 import ListingCardCertificates from '@/components/shared/ListingCardCertificates'
+import PrivateListingGate from '@/components/shared/PrivateListingGate'
 
 const ProductCard = ({
   type,
@@ -69,6 +70,7 @@ const ProductCard = ({
     getListingDocumentSrc(evaluationCertificate) &&
     video3DWalkthrough?.link
   return (
+    <PrivateListingGate listing={item}>
     <div
       key={item.uuid}
       className={`group relative flex w-full flex-col items-stretch gap-3 rounded-[12px] p-3 sm:flex-row sm:items-center sm:gap-4 sm:pr-0 xl:gap-5 ${hasAdditionalContent ? 'custom-shadow' : 'bg-white shadow-xl'
@@ -256,6 +258,7 @@ const ProductCard = ({
         </div>
       </div>
     </div>
+    </PrivateListingGate>
   )
 }
 

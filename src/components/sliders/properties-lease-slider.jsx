@@ -21,6 +21,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import ListingCardViewCount from '@/components/shared/ListingCardViewCount'
 import ListingCardQrThumb from '@/components/shared/ListingCardQrThumb'
+import PrivateListingGate from '@/components/shared/PrivateListingGate'
 
 export default function PropertyLeaseSlider() {
   const { propertiesForLease } = useAppContext()
@@ -150,6 +151,7 @@ export default function PropertyLeaseSlider() {
               className='listing-card-slide !h-auto shrink-0 w-full'
               key={index}
             >
+              <PrivateListingGate listing={propertyForLease}>
               <div className='listing-card mx-1 my-1 h-full w-full rounded-md bg-white'>
                 {(() => {
                   const imageSrc = getListingCardImageSrc(propertyForLease)
@@ -270,6 +272,7 @@ export default function PropertyLeaseSlider() {
                   </div>
                 </div>
               </div>
+              </PrivateListingGate>
             </SwiperSlide>
           ))}
         </Swiper>

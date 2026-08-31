@@ -26,6 +26,7 @@ import ListingCarouselNavButton from '@/components/cards/ListingCarouselNavButto
 import ListingCardViewCount from '@/components/shared/ListingCardViewCount'
 import ListingCardQrThumb from '@/components/shared/ListingCardQrThumb'
 import ListingCardCertificates from '@/components/shared/ListingCardCertificates'
+import PrivateListingGate from '@/components/shared/PrivateListingGate'
 
 const ProductCard = ({
   type,
@@ -60,6 +61,7 @@ const ProductCard = ({
   const walkthroughUrl = getListingWalkthroughUrl(item)
 
   return (
+    <PrivateListingGate listing={item}>
     <div
       key={item.uuid}
       className='group relative flex w-full flex-col items-stretch gap-3 rounded-[12px] bg-white p-3 shadow-xl sm:flex-row sm:items-center sm:gap-4 sm:pr-0 xl:gap-5'
@@ -224,6 +226,7 @@ const ProductCard = ({
         </div>
       </div>
     </div>
+    </PrivateListingGate>
   )
 }
 

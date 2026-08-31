@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { Disclosure } from '@headlessui/react'
 import Modal from '@/components/Avator/Modal'
 import { OpenDisclosure, CloseDisclosure } from '@/components/Icons'
@@ -35,6 +35,8 @@ export const ProfileTab = () => {
   const [cities, setCities] = useState([])
   const [searchQueryCity, setSearchQueryCity] = useState('')
   const [countryCode, setCountryCode] = useState('')
+  const [highlightFinance, setHighlightFinance] = useState(false)
+  const financeSectionRef = useRef(null)
 
   useEffect(() => {
     const fetchCountries = async () => {
@@ -102,6 +104,24 @@ export const ProfileTab = () => {
   useEffect(() => {
     fetchProfile()
   }, [])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('highlight') === 'financial') {
+      setHighlightFinance(true)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!highlightFinance || !user) return
+    const node = financeSectionRef.current
+    if (!node) return
+    const timer = window.setTimeout(() => {
+      node.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 250)
+    return () => window.clearTimeout(timer)
+  }, [highlightFinance, user])
 
   useEffect(() => {
     const savedCountry = user?.financialInfo?.country
@@ -223,39 +243,60 @@ export const ProfileTab = () => {
         </Disclosure>
 
         {/* Financial Info */}
-        <Disclosure as='div'>
+        <Disclosure
+          as='div'
+          key={highlightFinance ? 'finance-highlight' : 'finance'}
+          defaultOpen={highlightFinance}
+        >
           {({ open }) => (
             <>
-              <Disclosure.Button
-                className={`w-full btn-gradient rounded py-3 px-7 gap-4 justify-between items-center flex ${open && 'mb-3'
-                  }`}
+              <div
+                ref={financeSectionRef}
+                id='financial-information'
+                className={
+                  highlightFinance
+                    ? 'rounded-md ring-2 ring-[#A2913E] ring-offset-2 ring-offset-white'
+                    : ''
+                }
               >
-                <span className='whitespace-nowrap sm:text-xl font-medium text-white'>
-                  Financial Information
-                </span>
+                <Disclosure.Button
+                  className={`w-full btn-gradient rounded py-3 px-7 gap-4 justify-between items-center flex ${open && 'mb-3'
+                    }`}
+                >
+                  <span className='whitespace-nowrap sm:text-xl font-medium text-white'>
+                    Financial Information
+                  </span>
 
-                <span className='flex-shrink-0'>
-                  {open ? (
-                    <OpenDisclosure className='text-white' />
-                  ) : (
-                    <CloseDisclosure className='text-white' />
-                  )}
-                </span>
-              </Disclosure.Button>
+                  <span className='flex-shrink-0'>
+                    {open ? (
+                      <OpenDisclosure className='text-white' />
+                    ) : (
+                      <CloseDisclosure className='text-white' />
+                    )}
+                  </span>
+                </Disclosure.Button>
 
-              <Disclosure.Panel>
-                <BankForm
-                  user={user}
-                  countries={countries}
-                  cities={cities}
-                  fetchCities={fetchCities}
-                  fetchData={fetchProfile}
-                  setUser={setUser}
-                  setSearchQueryCity={setSearchQueryCity}
-                  searchQueryCity={searchQueryCity}
-                  setCountryCode={setCountryCode}
-                />
-              </Disclosure.Panel>
+                <Disclosure.Panel>
+                  {highlightFinance ? (
+                    <p className='px-4 pt-3 text-sm font-medium text-[#002d4f] sm:px-8'>
+                      Fill this bank form (certificate PDF, funds verification
+                      amount, bank name/branch, country, and city) to view
+                      private listings your funds cover.
+                    </p>
+                  ) : null}
+                  <BankForm
+                    user={user}
+                    countries={countries}
+                    cities={cities}
+                    fetchCities={fetchCities}
+                    fetchData={fetchProfile}
+                    setUser={setUser}
+                    setSearchQueryCity={setSearchQueryCity}
+                    searchQueryCity={searchQueryCity}
+                    setCountryCode={setCountryCode}
+                  />
+                </Disclosure.Panel>
+              </div>
             </>
           )}
         </Disclosure>

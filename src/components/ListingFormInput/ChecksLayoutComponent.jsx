@@ -1,6 +1,7 @@
 import React from 'react'
 import FacilitiesChecklist from '@/components/property-listing/FacilitiesChecklist'
 import ColorTwoToneField from '@/components/ListingFormInput/ColorTwoToneField'
+import { meetsPrivateListingThreshold } from '@/libs/listingVisibilityThresholds'
 
 const colorGridClassName =
   'mt-[10px] grid xl:grid-cols-8 lg:grid-cols-6 md:grid-cols-4 sm:grid-cols-3 xxs:grid-cols-2 justify-between gap-y-[10px]'
@@ -18,7 +19,7 @@ const ChecksLayoutComponent = ({
   return (
     <>
       <div className='px-[19px]'>
-        {formData.price >= 200000 ? (
+        {meetsPrivateListingThreshold('car', formData.price) ? (
           <>
             <h2 className='text-dark-black text-xl font-medium pt-5'>
               Listing
@@ -59,9 +60,9 @@ const ChecksLayoutComponent = ({
               const next =
                 typeof updater === 'function'
                   ? updater({
-                      facilities: prev.exteriorColor || [],
-                      customFacilities: prev.customExteriorColors || [],
-                    })
+                    facilities: prev.exteriorColor || [],
+                    customFacilities: prev.customExteriorColors || [],
+                  })
                   : updater
               return {
                 ...prev,
@@ -99,9 +100,9 @@ const ChecksLayoutComponent = ({
                 const next =
                   typeof updater === 'function'
                     ? updater({
-                        facilities: prev.interiorColor || [],
-                        customFacilities: prev.customInteriorColors || [],
-                      })
+                      facilities: prev.interiorColor || [],
+                      customFacilities: prev.customInteriorColors || [],
+                    })
                     : updater
                 return {
                   ...prev,
@@ -159,9 +160,9 @@ const ChecksLayoutComponent = ({
               const next =
                 typeof updater === 'function'
                   ? updater({
-                      facilities: prev.extras || [],
-                      customFacilities: prev.customExtras || [],
-                    })
+                    facilities: prev.extras || [],
+                    customFacilities: prev.customExtras || [],
+                  })
                   : updater
               return {
                 ...prev,

@@ -24,6 +24,7 @@ function RelatedCard({ listing }) {
       slug={listing.slug}
       uuid={listing.uuid}
       assetType={listing.assetType}
+      listing={listing.listing}
       className='!mx-0 !max-w-none w-full'
     />
   )

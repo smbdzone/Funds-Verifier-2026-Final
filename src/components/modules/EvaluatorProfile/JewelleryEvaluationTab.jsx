@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import customAxios from '@/utils/apis/apis'
 import { useRouter } from 'next/navigation'
 import { SlArrowRight } from 'react-icons/sl'
@@ -19,6 +19,10 @@ import {
   isAssetAssignedToSubEvaluator,
   unassignAssetFromSubEvaluator,
 } from '@/libs/evaluatorAssign'
+import HistoryEvaluatedFilters, {
+  useHistoryEvaluatedFilters,
+} from './HistoryEvaluatedFilters'
+import { applyHistoryEvaluatedFilters } from '@/libs/filterHistoryEvaluatedListings'
 
 export const JewelleryEvaluationTab = () => {
   const [propertyListings, setPropertyListings] = useState([])
@@ -32,6 +36,19 @@ export const JewelleryEvaluationTab = () => {
   const debouncedQuery = useDebounce(searchTerm, 500)
   const menuAnchorRef = useRef(null)
   const router = useRouter()
+  const {
+    nameQuery,
+    setNameQuery,
+    dateFrom,
+    setDateFrom,
+    dateTo,
+    setDateTo,
+    sortOrder,
+    setSortOrder,
+    historyFilters,
+    historyFiltersActive,
+    resetHistoryFilters,
+  } = useHistoryEvaluatedFilters()
 
   const closeActionMenu = () => {
     setOpenDropdown(null)
@@ -161,6 +178,18 @@ export const JewelleryEvaluationTab = () => {
     setCertificateUrl('')
   }
 
+  const pendingListings = useMemo(
+    () =>
+      (propertyListings || []).filter(
+        (property) => property.status === 0 || !('status' in property),
+      ),
+    [propertyListings],
+  )
+  const historyListings = useMemo(
+    () => applyHistoryEvaluatedFilters(propertyListings, historyFilters),
+    [propertyListings, historyFilters],
+  )
+
   return (
     <>
       <div className='flex flex-wrap justify-between items-center mb-4'>
@@ -228,6 +257,20 @@ export const JewelleryEvaluationTab = () => {
                     </Disclosure.Button>
                     <Disclosure.Panel className='overflow-visible'>
                       <div className='overflow-x-auto md:px-5 px-3 pb-2'>
+                        {index === 1 ? (
+                          <HistoryEvaluatedFilters
+                            nameQuery={nameQuery}
+                            onNameQueryChange={setNameQuery}
+                            dateFrom={dateFrom}
+                            onDateFromChange={setDateFrom}
+                            dateTo={dateTo}
+                            onDateToChange={setDateTo}
+                            sortOrder={sortOrder}
+                            onSortOrderChange={setSortOrder}
+                            onReset={resetHistoryFilters}
+                            showReset={historyFiltersActive}
+                          />
+                        ) : null}
                         <table className='w-full text-sm sm:text-base bg-white'>
                           <thead>
                             <tr>
@@ -253,13 +296,7 @@ export const JewelleryEvaluationTab = () => {
                             </tr>
                           </thead>
                           <tbody>
-                            {propertyListings
-                              .filter((property) =>
-                                index === 0
-                                  ? property.status === 0 ||
-                                  !('status' in property)
-                                  : property.status === 1
-                              )
+                            {(index === 0 ? pendingListings : historyListings)
                               .map((property) => {
                                 const rawDateTime =
                                   property?.evaluationDateTime ||
@@ -469,6 +506,21 @@ export const JewelleryEvaluationTab = () => {
                                   </tr>
                                 )
                               })}
+                            {(index === 0
+                              ? pendingListings
+                              : historyListings
+                            ).length === 0 ? (
+                              <tr>
+                                <td
+                                  colSpan={4}
+                                  className='px-4 py-6 text-sm text-gray-500'
+                                >
+                                  {index === 1
+                                    ? 'No evaluated assets match these filters.'
+                                    : 'No pending evaluations.'}
+                                </td>
+                              </tr>
+                            ) : null}
                           </tbody>
                         </table>
                       </div>

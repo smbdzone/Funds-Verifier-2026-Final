@@ -50,6 +50,7 @@ function OffPlanCardItem({ listing }) {
       slug={listing.slug}
       uuid={listing.uuid}
       assetType={listing.assetType}
+      listing={listing.listing}
       className='max-w-none'
     />
   )

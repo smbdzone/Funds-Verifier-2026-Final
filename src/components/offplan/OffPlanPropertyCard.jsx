@@ -8,6 +8,7 @@ import { formatOffPlanPriceRange } from '@/constants/offPlanDummyListings'
 import { getProfileImageSrc } from '@/utils/global-functions/global'
 import ListingCardViewCount from '@/components/shared/ListingCardViewCount'
 import ListingCardQrThumb from '@/components/shared/ListingCardQrThumb'
+import PrivateListingGate from '@/components/shared/PrivateListingGate'
 
 const OffPlanPropertyCard = ({
   title,
@@ -32,6 +33,7 @@ const OffPlanPropertyCard = ({
   slug = '',
   uuid = '',
   assetType = 'Property Off Plan For Sale',
+  listing: listingVisibility = 'Public',
 }) => {
   const mediaList = useMemo(() => {
     if (!Array.isArray(images) || !images.length) {
@@ -270,13 +272,43 @@ const OffPlanPropertyCard = ({
 
   if (href) {
     return (
-      <Link href={href} className='flex h-full w-full transition-opacity hover:opacity-95'>
-        {card}
-      </Link>
+      <PrivateListingGate
+        listing={{
+          listing: listingVisibility,
+          uuid,
+          slug,
+          title,
+          assetType,
+          priceFrom,
+          priceTo,
+          price: priceFrom,
+          status: 1,
+        }}
+      >
+        <Link href={href} className='flex h-full w-full transition-opacity hover:opacity-95'>
+          {card}
+        </Link>
+      </PrivateListingGate>
     )
   }
 
-  return card
+  return (
+    <PrivateListingGate
+      listing={{
+        listing: listingVisibility,
+        uuid,
+        slug,
+        title,
+        assetType,
+        priceFrom,
+        priceTo,
+        price: priceFrom,
+        status: 1,
+      }}
+    >
+      {card}
+    </PrivateListingGate>
+  )
 }
 
 export default OffPlanPropertyCard

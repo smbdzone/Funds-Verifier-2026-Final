@@ -18,6 +18,7 @@ import { getProfileImageSrc } from '@/utils/global-functions/global'
 import { isOffPlanListing } from '@/libs/filterMyListingTab'
 import ListingCardViewCount from '@/components/shared/ListingCardViewCount'
 import ListingCardQrThumb from '@/components/shared/ListingCardQrThumb'
+import PrivateListingGate from '@/components/shared/PrivateListingGate'
 
 function truncateTitle(title) {
   const text = String(title || '').trim()
@@ -94,9 +95,10 @@ export default function RelatedListingCard({ listing, className = '' }) {
   const reviewCount = getReviewCount(listing)
 
   return (
+    <PrivateListingGate listing={listing} className={className}>
     <Link
       href={href}
-      className={`listing-card flex h-full w-full flex-col overflow-hidden rounded-md bg-white transition-opacity hover:opacity-95 ${className}`}
+      className='listing-card flex h-full w-full flex-col overflow-hidden rounded-md bg-white transition-opacity hover:opacity-95'
     >
       {imageSrc ? (
         <div className='relative h-[190px] w-full shrink-0 overflow-hidden rounded-t-md sm:h-[220px] lg:h-[275px]'>
@@ -209,5 +211,6 @@ export default function RelatedListingCard({ listing, className = '' }) {
         </div>
       </div>
     </Link>
+    </PrivateListingGate>
   )
 }

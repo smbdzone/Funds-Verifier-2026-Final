@@ -1,6 +1,7 @@
 import { Suspense } from 'react'
 import BoatView from '@/components/modules/Boat/BoatView'
 import RelatedAssetListings from '@/components/shared/RelatedAssetListings'
+import PrivateListingDetailGate from '@/components/shared/PrivateListingDetailGate'
 import axios from 'axios'
 import Link from 'next/link'
 import GlobalLoader from '@/utils/GlobalLoader'
@@ -93,7 +94,9 @@ export default async function Page({ params }) {
           </div>
         </div>
 
-        <BoatView data={boatInfo} />
+        <PrivateListingDetailGate listing={boatInfo}>
+          <BoatView data={boatInfo} />
+        </PrivateListingDetailGate>
 
         <RelatedAssetListings
           title='Related Boats'

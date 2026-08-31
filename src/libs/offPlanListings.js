@@ -163,6 +163,7 @@ export function mapApiListingToOffPlanCard(listing) {
     approvalBadge: approvalBadge || null,
     userUUID: listing?.userUUID,
     trusteeUUID: listing?.trusteeUUID,
+    listing: listing?.listing || 'Public',
   }
 }
 

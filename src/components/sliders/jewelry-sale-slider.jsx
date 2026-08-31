@@ -22,6 +22,7 @@ import arrow_right from '@/assets/vector1.svg'
 import { getProfileImageSrc } from '@/utils/global-functions/global'
 import ListingCardViewCount from '@/components/shared/ListingCardViewCount'
 import ListingCardQrThumb from '@/components/shared/ListingCardQrThumb'
+import PrivateListingGate from '@/components/shared/PrivateListingGate'
 import { useAppContext } from '@/context/AppContext'
 
 function getProducts(payload) {
@@ -172,6 +173,7 @@ export default function JewelrySaleSlider() {
 
               return (
                 <SwiperSlide className='listing-card-slide !h-auto w-full' key={item.uuid}>
+                  <PrivateListingGate listing={item}>
                   <div className='listing-card mx-1 my-1 h-full w-full rounded-md bg-white'>
                     {imageSrc ? (
                       <div className='listing-card-image relative h-[190px] w-full shrink-0 overflow-hidden rounded-md md:h-[240px] lg:h-[275px]'>
@@ -286,6 +288,7 @@ export default function JewelrySaleSlider() {
                         </div>
                       </div>
                     </div></div>
+                  </PrivateListingGate>
                 </SwiperSlide>
               )
             })}

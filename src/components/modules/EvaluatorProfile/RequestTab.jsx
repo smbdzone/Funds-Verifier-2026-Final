@@ -20,6 +20,7 @@ import {
   normalizeListingForEvaluator,
 } from './requestCompoenets/evaluatorPriceHandlers'
 import { handleFileUpload } from '@/libs/uploadAsset'
+import { getEvaluatorEvaluationListPath } from '@/libs/evaluatorEvaluationRoutes'
 import Loader from './requestCompoenets/Loader'
 import { formatListingCardPrice } from '@/libs/listingPriceDisplay'
 import { useProfile } from '../../../context/UserContext'
@@ -44,6 +45,7 @@ import { isOffPlanListing } from '@/libs/filterMyListingTab'
 export const RequestTab = () => {
   const path = usePathname()
   const propertyId = path.split('/')[3]
+  const router = useRouter()
 
   const [property, setProperty] = useState({})
   const [roi, setRoi] = useState('')
@@ -94,11 +96,17 @@ export const RequestTab = () => {
 
       setFileName(selectedFile)
       setUploadedFileId(fileUpload._id)
-      toast.success(
-        property?.status === 1
-          ? 'Invoice uploaded successfully.'
-          : 'Certificate uploaded successfully.',
-      )
+
+      if (Number(property?.status) === 1) {
+        await customAxios.put(`/property/${propertyId}`, {
+          invoice: fileUpload._id,
+        })
+        toast.success('Invoice uploaded successfully.')
+        router.replace(getEvaluatorEvaluationListPath(path))
+        return
+      }
+
+      toast.success('Certificate uploaded successfully.')
     } catch (error) {
       setFileName('')
       setUploadedFileId(null)
@@ -157,7 +165,6 @@ export const RequestTab = () => {
     }
   }
 
-  const router = useRouter()
   const [requestDocument, setRequestDocument] = useState([])
   const [newDocument, setNewDocument] = useState('')
   const [newDocumentDate, setNewDocumentDate] = useState('')
@@ -300,7 +307,7 @@ export const RequestTab = () => {
         )
 
         toast.success('Invoice uploaded successfully')
-        router.replace('/evaluator-profile/property-evaluation')
+        router.replace(getEvaluatorEvaluationListPath(path))
       } else {
         // This is an evaluation certificate upload
         if (uploadedFile) {
@@ -323,12 +330,7 @@ export const RequestTab = () => {
           )
 
           toast.success('Asset approved successfully')
-          const role = user?.role
-          if (role === 'Evaluator') {
-            router.replace('/evaluator-profile/property-evaluation')
-          } else {
-            router.replace('/sub-evaluator-profile/property-evaluation')
-          }
+          router.replace(getEvaluatorEvaluationListPath(path))
         } else {
           toast.error('All fields are required')
         }

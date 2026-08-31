@@ -23,6 +23,7 @@ import Link from 'next/link'
 import { swiperCanLoop } from '@/utils/swiperLoop'
 import ListingCardViewCount from '@/components/shared/ListingCardViewCount'
 import ListingCardQrThumb from '@/components/shared/ListingCardQrThumb'
+import PrivateListingGate from '@/components/shared/PrivateListingGate'
 
 // Utility function to shuffle an array
 const shuffleArray = (array) => {
@@ -147,6 +148,7 @@ export default function CarForSale() {
 
             return (
               <SwiperSlide className='listing-card-slide !h-auto' key={car.uuid || index}>
+                <PrivateListingGate listing={car}>
                 <div className='listing-card mx-1 my-1 h-full w-full rounded-md bg-white'>
                   <figure className='listing-card-image relative h-[190px] w-full overflow-hidden rounded-md md:h-[240px] lg:h-[275px]'>
                     {imageSrc ? (
@@ -260,6 +262,7 @@ export default function CarForSale() {
                       </div>
                     </div>
                   </div></div>
+                </PrivateListingGate>
               </SwiperSlide>
             )
           })}

@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import JewelleryView from '@/components/modules/Jewelry/JewelleryView'
 import RelatedAssetListings from '@/components/shared/RelatedAssetListings'
+import PrivateListingDetailGate from '@/components/shared/PrivateListingDetailGate'
 import { api } from '@/config'
 import GlobalLoader from '@/utils/GlobalLoader'
 import { buildListingPageMetadata } from '@/libs/listingMetadata'
@@ -103,7 +104,9 @@ export default async function page({ params }) {
           </div>
         </div>
 
-        <JewelleryView data={propertyInfo || {}} />
+        <PrivateListingDetailGate listing={propertyInfo}>
+          <JewelleryView data={propertyInfo || {}} />
+        </PrivateListingDetailGate>
 
         <RelatedAssetListings
           title='Related Jewellery'

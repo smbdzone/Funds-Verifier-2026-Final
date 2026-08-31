@@ -1,6 +1,7 @@
 import { Suspense } from 'react'
 import CarView from '@/components/views/CarView'
 import RelatedCarsListings from '@/components/car/RelatedCarsListings'
+import PrivateListingDetailGate from '@/components/shared/PrivateListingDetailGate'
 import axios from 'axios'
 import Link from 'next/link'
 import GlobalLoader from '@/utils/GlobalLoader'
@@ -90,7 +91,9 @@ export default async function Page({ params }) {
           </div>
         </div>
 
+        <PrivateListingDetailGate listing={carInfo}>
         <CarView data={carInfo} />
+        </PrivateListingDetailGate>
 
         <RelatedCarsListings listings={relatedListings} />
       </Suspense>

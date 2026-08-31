@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import { Suspense } from 'react'
 import ProductView from '@/components/views/ProductView'
 import RelatedAssetListings from '@/components/shared/RelatedAssetListings'
+import PrivateListingDetailGate from '@/components/shared/PrivateListingDetailGate'
 import GlobalLoader from '@/utils/GlobalLoader'
 import { withPublicApiRetry } from '@/libs/publicApiClient'
 import { buildListingPageMetadata } from '@/libs/listingMetadata'
@@ -112,7 +113,9 @@ export default async function Page({ params }) {
           </div>
         </div>
 
+        <PrivateListingDetailGate listing={propertyInfo}>
         <ProductView data={propertyInfo} />
+        </PrivateListingDetailGate>
 
         <RelatedAssetListings
           title='Related Properties'

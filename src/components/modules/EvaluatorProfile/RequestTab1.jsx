@@ -20,12 +20,12 @@ import {
 import EvaluatorCarEditableDetails from './requestCompoenets/EvaluatorCarEditableDetails'
 import { technicalFeatures, extras as carExtras } from '@/constants/car-listings'
 import { handleFileUpload } from '@/libs/uploadAsset'
+import { getEvaluatorEvaluationListPath } from '@/libs/evaluatorEvaluationRoutes'
 import Loader from './requestCompoenets/Loader'
 import { formatNumberWithCommas } from '../../../utils/global-functions/global'
 import { formatListingCardPrice } from '@/libs/listingPriceDisplay'
 import { getCookie } from 'cookies-next'
 import customAxios from '../../../utils/apis/apis'
-import { useProfile } from '../../../context/UserContext'
 import EvaluatorListingMedia from './requestCompoenets/EvaluatorListingMedia'
 import EvaluatorDateField from './requestCompoenets/EvaluatorDateField'
 import RequestDocumentsActions from './requestCompoenets/RequestDocumentsActions'
@@ -44,7 +44,6 @@ import {
 } from '@/utils/requestDocumentUtils'
 
 export const RequestTab1 = () => {
-  const { user } = useProfile()
   const path = usePathname()
   const propertyId = path.split('/')[3]
   const [property, setProperty] = useState({})
@@ -95,11 +94,17 @@ export const RequestTab1 = () => {
 
       setFileName(selectedFile)
       setUploadedFileId(fileUpload._id)
-      toast.success(
-        property?.status === 1
-          ? 'Invoice uploaded successfully.'
-          : 'Certificate uploaded successfully.',
-      )
+
+      if (Number(property?.status) === 1) {
+        await customAxios.put(`/car/${propertyId}`, {
+          invoice: fileUpload._id,
+        })
+        toast.success('Invoice uploaded successfully.')
+        router.replace(getEvaluatorEvaluationListPath(path))
+        return
+      }
+
+      toast.success('Certificate uploaded successfully.')
     } catch (error) {
       setFileName('')
       setUploadedFileId(null)
@@ -304,26 +309,11 @@ export const RequestTab1 = () => {
         }))
 
         if (invoiceUpload._id) {
-          const role = user?.role
-          if (role === 'Evaluator') {
-            router.replace('/evaluator-profile/cars-evaluation')
-          }
-          if (role === 'Sub-Evaluator') {
-            router.replace('/sub-evaluator-profile/car-evaluation')
-          }
-
-          toast.success('Invoice Uploaded successfully')
+          toast.success('Invoice uploaded successfully')
         } else {
-          const role = user?.role
-          if (role === 'Evaluator') {
-            router.replace('/evaluator-profile/cars-evaluation')
-          }
-          if (role === 'Sub-Evaluator') {
-            router.replace('/sub-evaluator-profile/car-evaluation')
-          }
-
           toast.success('Asset approved successfully')
         }
+        router.replace(getEvaluatorEvaluationListPath(path))
       } else if (certificateId || property?.status === 1) {
         await customAxios.put(
           `${process.env.NEXT_PUBLIC_BASE_URL}/car/${propertyId}`,

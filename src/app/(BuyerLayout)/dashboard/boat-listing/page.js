@@ -21,6 +21,7 @@ import {
   isListingEvaluatorApprovedLocked,
   buildApprovedAssetHolderUpdatePayload,
 } from '@/libs/listingEditLock'
+import { meetsPrivateListingThreshold } from '@/libs/listingVisibilityThresholds'
 import {
   hasConfirmedEvaluationPayment,
   bookEvaluationTimeslotFromFormData,
@@ -1069,7 +1070,7 @@ function Page() {
 
                 <div className='pt-[30px]'>
                   <div className='px-[19px]'>
-                    {formData.price >= 1000000 ? (
+                    {meetsPrivateListingThreshold('boat', formData.price) ? (
                       <>
                         <h2 className='text-dark-black text-xl font-medium pt-5'>
                           Listing
@@ -1240,14 +1241,14 @@ function Page() {
                   />
                 </div>
                 <StripeElement>
-                    <PaymentModal
-                      show={showPayment}
-                      onClose={() => setShowPayment(false)}
-                      formData={formData}
-                      setFormData={setFormData}
-                      HandleFormSubmit={() => HandleFormSubmit()}
-                    />
-                  </StripeElement>
+                  <PaymentModal
+                    show={showPayment}
+                    onClose={() => setShowPayment(false)}
+                    formData={formData}
+                    setFormData={setFormData}
+                    HandleFormSubmit={() => HandleFormSubmit()}
+                  />
+                </StripeElement>
               </main>
             </div>
           </div>

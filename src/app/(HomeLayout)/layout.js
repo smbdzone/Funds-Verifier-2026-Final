@@ -10,6 +10,7 @@ import { ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 import { UserProvider } from '../../context/UserContext'
 import { PublicTokenProvider } from '../../utils/PublicTokenProvider.'
+import { PrivateListingRequestProvider } from '@/context/PrivateListingRequestContext'
 import { resolveSiteOrigin } from '@/libs/listingSocialShare'
 
 // Cache public pages (ISR). Listing/home data refreshes every 60s.
@@ -35,12 +36,14 @@ export default function RootLayout({ children }) {
           <Loadingbar />
           <UserProvider>
             <PublicTokenProvider>
-              <ClientHeader />
-              <ToastContainer />
-              <ServerComponent>
-                <>{children}</>
-              </ServerComponent>
-              <ClientFooter />
+              <PrivateListingRequestProvider>
+                <ClientHeader />
+                <ToastContainer />
+                <ServerComponent>
+                  <>{children}</>
+                </ServerComponent>
+                <ClientFooter />
+              </PrivateListingRequestProvider>
             </PublicTokenProvider>
           </UserProvider>
         </div>

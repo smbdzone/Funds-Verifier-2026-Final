@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { Suspense } from 'react'
 import OffPlanProductView from '@/components/offplan/OffPlanProductView'
 import RelatedOffPlanListings from '@/components/offplan/RelatedOffPlanListings'
+import PrivateListingDetailGate from '@/components/shared/PrivateListingDetailGate'
 import GlobalLoader from '@/utils/GlobalLoader'
 import {
   fetchApprovedOffPlanListings,
@@ -62,7 +63,9 @@ export default async function OffPlanDetailPage({ params }) {
           </div>
         </div>
 
-        <OffPlanProductView data={listing} />
+        <PrivateListingDetailGate listing={listing}>
+          <OffPlanProductView data={listing} />
+        </PrivateListingDetailGate>
 
         <RelatedOffPlanListings listings={relatedListings} />
       </Suspense>
