@@ -118,12 +118,21 @@ const BankForm = ({
         enableReinitialize
         onSubmit={async (values) => {
           try {
+            const financialInfo = {
+              ...values,
+              fundsVerification: String(values.fundsVerification || '').replace(
+                /,/g,
+                '',
+              ),
+            }
             const res = await customAxios.put(
               `${process.env.NEXT_PUBLIC_BASE_URL}/user/update/${user?.uuid}`,
-              { financialInfo: values }
+              { financialInfo }
             )
             if (res?.status === 200) {
-              toast.success('Financial information saved successfully')
+              toast.success(
+                'Submitted for Super Admin approval. After approval you can see private listings.',
+              )
               if (setUser && res.data) {
                 setUser((prev) => ({ ...prev, ...res.data }))
               }

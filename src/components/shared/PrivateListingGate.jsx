@@ -2,8 +2,8 @@
 
 import { useProfile } from '@/context/UserContext'
 import {
+  getPrivateListingLockCopy,
   goToDealHunterFinance,
-  isDealHunterRole,
   shouldLockPrivateListing,
 } from '@/libs/privateListing'
 
@@ -13,9 +13,7 @@ export default function PrivateListingGate({ listing, children, className = '' }
 
   if (!locked) return children
 
-  const ctaLabel = isDealHunterRole(user)
-    ? 'Put your finance information'
-    : 'Login and put your finance information'
+  const { message, ctaLabel } = getPrivateListingLockCopy(user, listing)
 
   return (
     <div className={`group relative isolate h-full w-full overflow-hidden ${className}`}>
@@ -31,7 +29,7 @@ export default function PrivateListingGate({ listing, children, className = '' }
           Private listing
         </span>
         <span className='max-w-[16rem] text-sm font-medium text-white drop-shadow opacity-90 sm:opacity-0 sm:group-hover:opacity-100'>
-          Complete finance information to view this listing.
+          {message}
         </span>
         <span
           className='rounded-md px-3 py-1.5 text-xs font-semibold text-[#002d4f] opacity-100 sm:opacity-0 sm:group-hover:opacity-100'

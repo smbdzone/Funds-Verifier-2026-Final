@@ -21,14 +21,28 @@ const UNLOCK_ROLES = new Set([
 function filled(value) {
   if (value == null || value === '') return false
   if (typeof value === 'object') {
-    return Boolean(value._id || value.uuid || value.Certificate || value.id)
+    if (value._id || value.uuid || value.Certificate || value.id) return true
+    const asString =
+      typeof value.toString === 'function' ? String(value.toString()) : ''
+    return Boolean(asString && asString !== '[object Object]')
   }
   return String(value).trim().length > 0
 }
 
+export function parseMoneyAmount(value) {
+  if (value == null || value === '') return NaN
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : NaN
+  }
+  const cleaned = String(value).replace(/,/g, '').trim()
+  if (!cleaned) return NaN
+  const amount = Number(cleaned)
+  return Number.isFinite(amount) ? amount : NaN
+}
+
 export function getListingUnlockPrice(listing) {
-  const from = Number(listing?.priceFrom)
-  const price = Number(listing?.price)
+  const from = parseMoneyAmount(listing?.priceFrom)
+  const price = parseMoneyAmount(listing?.price)
   if (Number.isFinite(from) && from > 0) return from
   if (Number.isFinite(price) && price > 0) return price
   return 0
@@ -37,10 +51,12 @@ export function getListingUnlockPrice(listing) {
 export function hasCompleteDealHunterFinance(user) {
   const info = user?.financialInfo
   if (!info) return false
+  const funds = parseMoneyAmount(info.fundsVerification)
   return (
     filled(info.verificationCertificate) &&
     filled(info.fundsVerification) &&
-    Number(info.fundsVerification) > 0 &&
+    Number.isFinite(funds) &&
+    funds > 0 &&
     filled(info.bankName) &&
     filled(info.bankBranch) &&
     filled(info.city) &&
@@ -53,7 +69,7 @@ export function isDealHunterFinanceApproved(user) {
 }
 
 export function getDealHunterFundsAmount(user) {
-  const amount = Number(user?.financialInfo?.fundsVerification)
+  const amount = parseMoneyAmount(user?.financialInfo?.fundsVerification)
   return Number.isFinite(amount) ? amount : 0
 }
 
@@ -74,6 +90,53 @@ export function dealHunterCanViewPrivateListing(user, listing) {
   const listingPrice = getListingUnlockPrice(listing)
   if (listingPrice <= 0) return false
   return getDealHunterFundsAmount(user) >= listingPrice
+}
+
+export function getPrivateListingLockCopy(user, listing) {
+  if (!user || !isDealHunterRole(user)) {
+    return {
+      message: 'Complete finance information to view this listing.',
+      detail:
+        'Login with UAE Pass and add your finance information. If your funds verification covers this listing price, you can view it.',
+      ctaLabel: 'Login and put your finance information',
+    }
+  }
+
+  if (!hasCompleteDealHunterFinance(user)) {
+    return {
+      message: 'Complete finance information to view this listing.',
+      detail:
+        'Fill the bank form (certificate PDF, funds verification amount, bank name/branch, country, and city) to view this listing.',
+      ctaLabel: 'Put your finance information',
+    }
+  }
+
+  if (!isDealHunterFinanceApproved(user)) {
+    return {
+      message: 'Waiting for Super Admin approval to view this listing.',
+      detail:
+        'Your finance information is submitted. After Super Admin approval you can see private listings your funds cover.',
+      ctaLabel: 'View finance information',
+    }
+  }
+
+  const listingPrice = getListingUnlockPrice(listing)
+  const funds = getDealHunterFundsAmount(user)
+  if (listingPrice > 0 && funds < listingPrice) {
+    return {
+      message: 'Your funds verification does not cover this listing price.',
+      detail:
+        'Update your funds verification amount if it now covers this listing.',
+      ctaLabel: 'Update finance information',
+    }
+  }
+
+  return {
+    message: 'Complete finance information to view this listing.',
+    detail:
+      'Fill the bank form to view private listings your funds cover.',
+    ctaLabel: 'Put your finance information',
+  }
 }
 
 export function canUnlockPrivateListing(listing, user, { staffUnlock = true } = {}) {

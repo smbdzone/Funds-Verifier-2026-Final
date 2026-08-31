@@ -19,6 +19,10 @@ import {
   filterDummyCitiesByQuery,
   isDummyUaeLocationsEnabled,
 } from '@/libs/dummyLocationData'
+import {
+  hasCompleteDealHunterFinance,
+  isDealHunterFinanceApproved,
+} from '@/libs/privateListing'
 
 const Loader = () => (
   <div className='w-full flex justify-center py-10'>
@@ -277,11 +281,13 @@ export const ProfileTab = () => {
                 </Disclosure.Button>
 
                 <Disclosure.Panel>
-                  {highlightFinance ? (
+                  {highlightFinance || hasCompleteDealHunterFinance(user) ? (
                     <p className='px-4 pt-3 text-sm font-medium text-[#002d4f] sm:px-8'>
-                      Fill this bank form (certificate PDF, funds verification
-                      amount, bank name/branch, country, and city) to view
-                      private listings your funds cover.
+                      {hasCompleteDealHunterFinance(user)
+                        ? isDealHunterFinanceApproved(user)
+                          ? 'Your finance information is approved. Private listings at or below your funds verification amount are visible.'
+                          : 'Your bank form is submitted. After Super Admin approval you can see private listings your funds cover.'
+                        : 'Fill this bank form (certificate PDF, funds verification amount, bank name/branch, country, and city) to view private listings your funds cover.'}
                     </p>
                   ) : null}
                   <BankForm

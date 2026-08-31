@@ -2,8 +2,8 @@
 
 import { useProfile } from '@/context/UserContext'
 import {
+  getPrivateListingLockCopy,
   goToDealHunterFinance,
-  isDealHunterRole,
   shouldLockPrivateListing,
 } from '@/libs/privateListing'
 import { getListingCardImageSrc, PLACEHOLDER } from '@/libs/listingCardMedia'
@@ -17,9 +17,7 @@ export default function PrivateListingLockedView({ listing }) {
   if (!locked) return null
 
   const imageSrc = getListingCardImageSrc(listing) || PLACEHOLDER
-  const ctaLabel = isDealHunterRole(user)
-    ? 'Put your finance information'
-    : 'Login and put your finance information'
+  const { detail, ctaLabel } = getPrivateListingLockCopy(user, listing)
 
   return (
     <div className='mx-auto w-full max-w-3xl px-4 py-10 sm:px-6 sm:py-14'>
@@ -37,10 +35,7 @@ export default function PrivateListingLockedView({ listing }) {
             <h1 className='text-xl font-semibold text-white sm:text-2xl'>
               {listing?.title || 'This listing is private'}
             </h1>
-            <p className='max-w-md text-sm text-white/90'>
-              Login with UAE Pass and add your finance information. If your
-              funds verification covers this listing price, you can view it.
-            </p>
+            <p className='max-w-md text-sm text-white/90'>{detail}</p>
             <button
               type='button'
               onClick={() => goToDealHunterFinance(user)}
