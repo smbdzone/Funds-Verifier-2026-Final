@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { materials as jewelryMaterials } from '@/constants/listing-data'
 import EvaluatorMapUrlField from './EvaluatorMapUrlField'
 import { shouldShowProjectNumber } from '@/libs/listingLocationUtils'
+import { shouldShowListingVisibility } from '@/libs/listingVisibilityThresholds'
 
 const editInputClass =
   'focus:outline-none mt-1 block w-full px-3 py-3 rounded-md bg-white text-gray-800 text-sm sm:text-base border border-[#8d7c3b]'
@@ -323,6 +324,11 @@ export default function EvaluatorJewelryEditableDetails({
           </div>
         ) : null}
 
+        {shouldShowListingVisibility(
+          'jewelry',
+          pickValue(draft?.price, property.price),
+          pickValue(draft?.listing, property.listing),
+        ) ? (
         <div>
           <label className={labelClass}>Listing</label>
           <select
@@ -334,6 +340,7 @@ export default function EvaluatorJewelryEditableDetails({
             {LISTING_OPTIONS.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
           </select>
         </div>
+        ) : null}
 
         <div>
           <label className={labelClass}>Country</label>

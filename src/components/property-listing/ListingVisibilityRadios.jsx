@@ -1,13 +1,15 @@
 'use client'
 
-import { PROPERTY_LISTING_VISIBILITY_THRESHOLD } from '@/libs/listingVisibilityThresholds'
+import {
+  parseListingPriceAmount,
+  PROPERTY_LISTING_VISIBILITY_THRESHOLD,
+} from '@/libs/listingVisibilityThresholds'
 
 export { PROPERTY_LISTING_VISIBILITY_THRESHOLD }
 
 /**
  * Public / Private listing radios — shown when price reaches the
- * visibility threshold (property AED 5M+) or when editing an existing listing.
- * Sits beside Price: “Listing” label + radios on one row.
+ * visibility threshold (property AED 5M+). Same rule on create and edit.
  */
 export default function ListingVisibilityRadios({
   listings = ['Private', 'Public'],
@@ -51,15 +53,15 @@ export function shouldShowPropertyListingVisibility({
   price,
   priceFrom,
   isOffPlan = false,
-  listingId,
-  fieldsLocked = false,
-}) {
-  const amount = Number(
-    isOffPlan ? priceFrom || price || 0 : price || 0,
-  )
-  return (
-    amount >= PROPERTY_LISTING_VISIBILITY_THRESHOLD ||
-    Boolean(listingId) ||
-    Boolean(fieldsLocked)
-  )
+  currentListing = '',
+} = {}) {
+  const raw = isOffPlan ? priceFrom || price || 0 : price || 0
+  const amount = parseListingPriceAmount(raw)
+  if (
+    Number.isFinite(amount) &&
+    amount >= PROPERTY_LISTING_VISIBILITY_THRESHOLD
+  ) {
+    return true
+  }
+  return String(currentListing || '').trim() === 'Private'
 }

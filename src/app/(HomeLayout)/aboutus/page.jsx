@@ -23,7 +23,7 @@ function page() {
     {
       title: "Automatic Visibility Thresholds",
       description:
-        "Our platform features automatic visibility thresholds for different asset categories. This means that assets priced below specific amounts—such as properties under 5 million AED, cars under 200,000 AED, boats under 1 million AED, and jewelry under 100,000 AED are readily visible to deal hunters.",
+        "Our platform features automatic visibility thresholds for different asset categories. This means that assets priced below specific amounts—such as properties under 5 million AED, cars under 250,000 AED, boats under 1 million AED, and jewelry under 250,000 AED are readily visible to deal hunters.",
     },
     {
       title: "Real-Time Transaction Monitoring",

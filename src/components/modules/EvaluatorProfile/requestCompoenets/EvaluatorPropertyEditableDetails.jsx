@@ -13,6 +13,7 @@ import { getListingAmenities } from '@/libs/listingAmenities'
 import { getListingSizeUnitForEvaluator } from './evaluatorPriceHandlers'
 import EvaluatorMapUrlField from './EvaluatorMapUrlField'
 import { shouldShowProjectNumber } from '@/libs/listingLocationUtils'
+import { shouldShowListingVisibility } from '@/libs/listingVisibilityThresholds'
 
 const editInputClass =
   'focus:outline-none mt-1 block w-full px-3 py-3 rounded-md bg-white text-gray-800 text-sm sm:text-base border border-[#8d7c3b]'
@@ -269,6 +270,11 @@ export default function EvaluatorPropertyEditableDetails({
           </select>
         </div>
 
+        {shouldShowListingVisibility(
+          'property',
+          pickValue(draft?.price, property.price, property.priceFrom),
+          pickValue(draft?.listing, property.listing),
+        ) ? (
         <div>
           <label className={labelClass}>Listing</label>
           <select
@@ -284,6 +290,7 @@ export default function EvaluatorPropertyEditableDetails({
             ))}
           </select>
         </div>
+        ) : null}
 
         {isLease ? (
           <div>

@@ -59,6 +59,7 @@ import {
   LISTING_IMAGE_FORMATS_LABEL,
   LISTING_VIDEO_FORMATS_LABEL,
 } from '@/constants/listingUploadLimits'
+import { shouldShowListingVisibility } from '@/libs/listingVisibilityThresholds'
 
 const initialFormData = {
   assetType: 'Property for lease',
@@ -2043,30 +2044,38 @@ function Page() {
               {/* input two  */}
               <div className='pt-[30px]'>
                 <div className='px-[19px] space-y-3'>
-                  <h2 className='text-dark-black text-xl font-medium pt-5'>
-                    Listing
-                  </h2>
-                  <form className='mt-[10px] grid xl:grid-cols-5 lg:grid-cols-3 md:grid-cols-2 sm:grid-cols-2 xxs:grid-cols-1  justify-between gap-y-[10px]'>
-                    {listings.map((listing, index) => (
-                      <div key={index} className='radio-container flex'>
-                        <input
-                          className='custom-radio visually-hidden custom-checkbox'
-                          type='radio'
-                          name='listing'
-                          value={listing}
-                          id={`listing-${index}`}
-                          checked={formData.listing === listing}
-                          onChange={(e) => handleRadioChange(e, 'listing')}
-                        />
-                        <label
-                          className='custom-label'
-                          htmlFor={`listing-${index}`}
-                        >
-                          {listing}
-                        </label>
-                      </div>
-                    ))}
-                  </form>
+                  {shouldShowListingVisibility(
+                    'property',
+                    formData.price,
+                    formData.listing,
+                  ) ? (
+                    <>
+                      <h2 className='text-dark-black text-xl font-medium pt-5'>
+                        Listing
+                      </h2>
+                      <form className='mt-[10px] grid xl:grid-cols-5 lg:grid-cols-3 md:grid-cols-2 sm:grid-cols-2 xxs:grid-cols-1  justify-between gap-y-[10px]'>
+                        {listings.map((listing, index) => (
+                          <div key={index} className='radio-container flex'>
+                            <input
+                              className='custom-radio visually-hidden custom-checkbox'
+                              type='radio'
+                              name='listing'
+                              value={listing}
+                              id={`listing-${index}`}
+                              checked={formData.listing === listing}
+                              onChange={(e) => handleRadioChange(e, 'listing')}
+                            />
+                            <label
+                              className='custom-label'
+                              htmlFor={`listing-${index}`}
+                            >
+                              {listing}
+                            </label>
+                          </div>
+                        ))}
+                      </form>
+                    </>
+                  ) : null}
 
                   {/* 4 */}
 

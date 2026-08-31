@@ -13,6 +13,7 @@ import {
 } from '@/constants/boat-listings'
 import EvaluatorMapUrlField from './EvaluatorMapUrlField'
 import { shouldShowProjectNumber } from '@/libs/listingLocationUtils'
+import { shouldShowListingVisibility } from '@/libs/listingVisibilityThresholds'
 import ColorTwoToneField from '@/components/ListingFormInput/ColorTwoToneField'
 
 const editInputClass =
@@ -306,6 +307,11 @@ export default function EvaluatorBoatEditableDetails({
           </div>
         ) : null}
 
+        {shouldShowListingVisibility(
+          'boat',
+          pickValue(draft?.price, property.price),
+          pickValue(draft?.listing, property.listing),
+        ) ? (
         <div>
           <label className={labelClass}>Listing</label>
           <select
@@ -317,6 +323,7 @@ export default function EvaluatorBoatEditableDetails({
             {LISTING_OPTIONS.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
           </select>
         </div>
+        ) : null}
 
         <div>
           <label className={labelClass}>Country</label>

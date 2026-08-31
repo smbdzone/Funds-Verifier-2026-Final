@@ -1,7 +1,7 @@
 import React from 'react'
 import FacilitiesChecklist from '@/components/property-listing/FacilitiesChecklist'
 import ColorTwoToneField from '@/components/ListingFormInput/ColorTwoToneField'
-import { meetsPrivateListingThreshold } from '@/libs/listingVisibilityThresholds'
+import { shouldShowListingVisibility } from '@/libs/listingVisibilityThresholds'
 
 const colorGridClassName =
   'mt-[10px] grid xl:grid-cols-8 lg:grid-cols-6 md:grid-cols-4 sm:grid-cols-3 xxs:grid-cols-2 justify-between gap-y-[10px]'
@@ -19,7 +19,7 @@ const ChecksLayoutComponent = ({
   return (
     <>
       <div className='px-[19px]'>
-        {meetsPrivateListingThreshold('car', formData.price) ? (
+        {shouldShowListingVisibility('car', formData.price, formData.listing) ? (
           <>
             <h2 className='text-dark-black text-xl font-medium pt-5'>
               Listing

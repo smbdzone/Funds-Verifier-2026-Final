@@ -169,8 +169,7 @@ export const ImageUploadComponent = React.memo(
       price: formData?.price,
       priceFrom: formData?.priceFrom,
       isOffPlan,
-      listingId: id,
-      fieldsLocked: isEvaluatorApprovedLocked,
+      currentListing: formData?.listing,
     })
     const canRequestPremium = canRequestPremiumServices(formData)
     const blocksTechnicalReport = blocksPremiumServiceRequest(formData?.technicalReport)

@@ -23,7 +23,7 @@ import {
   isListingEvaluatorApprovedLocked,
   buildApprovedAssetHolderUpdatePayload,
 } from '@/libs/listingEditLock'
-import { meetsPrivateListingThreshold } from '@/libs/listingVisibilityThresholds'
+import { shouldShowListingVisibility } from '@/libs/listingVisibilityThresholds'
 import {
   hasConfirmedEvaluationPayment,
   bookEvaluationTimeslotFromFormData,
@@ -1013,7 +1013,11 @@ function Page() {
               />
               <div className='pt-[30px]'>
                 <div className='px-[19px]'>
-                  {meetsPrivateListingThreshold('jewelry', formData.price) ? (
+                  {shouldShowListingVisibility(
+                    'jewelry',
+                    formData.price,
+                    formData.listing,
+                  ) ? (
                     <>
                       <h2 className='text-dark-black text-xl font-medium pt-5'>
                         Listing
