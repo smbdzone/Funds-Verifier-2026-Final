@@ -102,8 +102,35 @@ export default function Login() {
 
     toast.success(data?.message || 'Login Successful!')
 
-    const role = data?.role === 'AssetHolder' ? 'AssetHolder' : 'DealHunter'
     const intended = consumePostLoginRedirect()
+    let role = data?.role === 'AssetHolder' ? 'AssetHolder' : 'DealHunter'
+
+    // Private-listing finance is Deal Hunter only. An existing Asset Holder
+    // account must switch so they land on /profile, not seller-profile.
+    const wantsDealHunterProfile =
+      typeof intended === 'string' && intended.startsWith('/profile')
+    if (wantsDealHunterProfile && role === 'AssetHolder' && data?.uuid) {
+      try {
+        const switched = await customAxios.put(
+          `/user/switch-user/${data.uuid}`,
+          { role: 'DealHunter' },
+          { withCredentials: true },
+        )
+        const nextUser = switched?.data?.user
+        if (switched?.data?.accessToken) {
+          setAccessToken(switched.data.accessToken)
+          sessionStorage.setItem(
+            POST_LOGIN_BOOTSTRAP_KEY,
+            switched.data.accessToken,
+          )
+        }
+        if (nextUser) applyUserFromLogin?.(nextUser)
+        role = 'DealHunter'
+      } catch (switchError) {
+        console.warn('Could not switch to Deal Hunter after UAE Pass', switchError)
+      }
+    }
+
     window.location.replace(
       resolveRoleSafeRedirect(intended, role) || getRoleHomeRoute(role),
     )

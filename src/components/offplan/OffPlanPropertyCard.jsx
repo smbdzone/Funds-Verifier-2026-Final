@@ -34,6 +34,9 @@ const OffPlanPropertyCard = ({
   uuid = '',
   assetType = 'Property Off Plan For Sale',
   listing: listingVisibility = 'Public',
+  city = '',
+  neighbourhood = '',
+  roi,
 }) => {
   const mediaList = useMemo(() => {
     if (!Array.isArray(images) || !images.length) {
@@ -283,6 +286,9 @@ const OffPlanPropertyCard = ({
           priceTo,
           price: priceFrom,
           status: 1,
+          city,
+          neighbourhood: neighbourhood || location,
+          roi,
         }}
       >
         <Link href={href} className='flex h-full w-full transition-opacity hover:opacity-95'>
@@ -304,6 +310,9 @@ const OffPlanPropertyCard = ({
         priceTo,
         price: priceFrom,
         status: 1,
+        city,
+        neighbourhood: neighbourhood || location,
+        roi,
       }}
     >
       {card}

@@ -25,6 +25,9 @@ function RelatedCard({ listing }) {
       uuid={listing.uuid}
       assetType={listing.assetType}
       listing={listing.listing}
+      city={listing.city}
+      neighbourhood={listing.neighbourhood}
+      roi={listing.roi}
       className='!mx-0 !max-w-none w-full'
     />
   )

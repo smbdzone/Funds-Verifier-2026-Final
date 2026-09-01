@@ -51,6 +51,9 @@ function OffPlanCardItem({ listing }) {
       uuid={listing.uuid}
       assetType={listing.assetType}
       listing={listing.listing}
+      city={listing.city}
+      neighbourhood={listing.neighbourhood}
+      roi={listing.roi}
       className='max-w-none'
     />
   )

@@ -349,8 +349,15 @@ async function handleLoginRoutes(request, pathname) {
   const { role } = session
 
   // Arrange Viewing: staff sessions must reach /login so UAE Pass can start.
+  // Private-listing finance: Asset Holder must not bounce to seller-profile.
   const forceUaePass = request.nextUrl.searchParams.get('uaepass') === '1'
+  const wantsDealHunterProfile = String(
+    request.nextUrl.searchParams.get('redirect') || '',
+  ).includes('/profile')
   if (forceUaePass && !CONSUMER_ROLES.has(role)) {
+    return NextResponse.next()
+  }
+  if (forceUaePass && role === 'AssetHolder' && wantsDealHunterProfile) {
     return NextResponse.next()
   }
 

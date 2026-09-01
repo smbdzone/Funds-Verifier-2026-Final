@@ -1,4 +1,6 @@
 import { isOwnListing } from '@/libs/isOwnListing'
+import { formatCityLabel } from '@/libs/dummyLocationData'
+import { formatListingCardPrice } from '@/libs/listingPriceDisplay'
 import { setPostLoginRedirect } from '@/utils/auth/postLoginRedirect'
 
 export const DEAL_HUNTER_FINANCE_PATH = '/profile?highlight=financial'
@@ -73,13 +75,19 @@ export function getDealHunterFundsAmount(user) {
   return Number.isFinite(amount) ? amount : 0
 }
 
+function normalizeRoleKey(role) {
+  return String(role || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_-]/g, '')
+}
+
 export function isDealHunterRole(user) {
-  return (
-    String(user?.role || '')
-      .trim()
-      .toLowerCase()
-      .replace(/[\s_-]/g, '') === 'dealhunter'
-  )
+  return normalizeRoleKey(user?.role) === 'dealhunter'
+}
+
+export function isAssetHolderRole(user) {
+  return normalizeRoleKey(user?.role) === 'assetholder'
 }
 
 /** Deal Hunter with approved, complete finance whose funds cover this listing. */
@@ -158,12 +166,67 @@ export function shouldLockPrivateListing(listing, user, options) {
   return !canUnlockPrivateListing(listing, user, options)
 }
 
+function firstFilled(...values) {
+  for (const value of values) {
+    const text = String(value ?? '').trim()
+    if (text) return text
+  }
+  return ''
+}
+
+export function formatPrivateListingRoi(listing) {
+  const raw = listing?.roi
+  if (raw == null || raw === '') return ''
+  const text = String(raw).trim()
+  if (!text) return ''
+  return text.includes('%') ? text : `${text}%`
+}
+
+function isCarBoatOrJewelryListing(listing) {
+  const t = String(listing?.assetType || listing?.type || '')
+    .toLowerCase()
+    .replace(/[_-]+/g, ' ')
+  return t.includes('car') || t.includes('boat') || t.includes('jewel')
+}
+
+/** City, area, and price stay visible on locked cards. ROI is property-only. */
+export function getPrivateListingPreviewFacts(listing) {
+  const city = formatCityLabel(listing?.city)
+  const area = firstFilled(
+    listing?.neighbourhood,
+    listing?.area,
+    listing?.location,
+    listing?.locateBoat,
+    listing?.locateJewelry,
+  )
+  const price = formatListingCardPrice(listing)
+  const facts = [
+    { key: 'city', label: 'City', value: city || '—' },
+    { key: 'area', label: 'Area', value: area || '—' },
+    { key: 'price', label: 'Price', value: price ? `AED ${price}` : '—' },
+  ]
+
+  if (!isCarBoatOrJewelryListing(listing)) {
+    facts.push({
+      key: 'roi',
+      label: 'ROI',
+      value: formatPrivateListingRoi(listing) || '—',
+    })
+  }
+
+  return facts
+}
+
 /** UAE Pass login (if needed), then Deal Hunter profile finance section. */
-export function goToDealHunterFinance(user) {
+export async function goToDealHunterFinance(user, { switchUserRole } = {}) {
   if (typeof window === 'undefined') return
   const path = DEAL_HUNTER_FINANCE_PATH
   if (user && isDealHunterRole(user)) {
     window.location.assign(path)
+    return
+  }
+  if (user && isAssetHolderRole(user) && typeof switchUserRole === 'function') {
+    await switchUserRole('DealHunter', { redirectTo: path })
     return
   }
   setPostLoginRedirect(path)

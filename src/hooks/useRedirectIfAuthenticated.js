@@ -52,11 +52,16 @@ export function useRedirectIfAuthenticated({ blockConsumerOnUserLogin = false } 
     const role = user?.role
     if (!role) return
 
-    // Staff arranging a viewing: stay on /login so UAE Pass can start.
-    if (
-      searchParams?.get?.('uaepass') === '1' &&
-      !CONSUMER_ROLES.has(role)
-    ) {
+    // Staff arranging a viewing, or Asset Holder opening Deal Hunter finance:
+    // stay on /login so UAE Pass can start instead of bouncing to seller-profile.
+    const forceUaePass = searchParams?.get?.('uaepass') === '1'
+    const wantsDealHunterProfile = String(
+      searchParams?.get?.('redirect') || '',
+    ).includes('/profile')
+    if (forceUaePass && !CONSUMER_ROLES.has(role)) {
+      return
+    }
+    if (forceUaePass && role === 'AssetHolder' && wantsDealHunterProfile) {
       return
     }
 

@@ -34,9 +34,16 @@ export default function Login() {
     if (loading) return
     if (searchParams.get('code')) return
     if (searchParams.get('uaepass') !== '1') return
+    const isDealHunter =
+      user?.role === 'DealHunter' && isAuthenticated
     const isConsumer =
       user?.role && CONSUMER_ROLES.has(user.role) && isAuthenticated
-    if (isConsumer) return
+    const wantsDealHunterProfile = String(
+      searchParams.get('redirect') || '',
+    ).includes('/profile')
+    // Already a Deal Hunter, or a consumer on a normal login: stay off UAE Pass.
+    // Asset Holder opening private-listing finance must continue UAE Pass / switch.
+    if (isDealHunter || (isConsumer && !wantsDealHunterProfile)) return
     autoStartedUaePass.current = true
     captureRedirectQueryParam(searchParams)
     window.location.href = buildUaePassAuthorizeUrl()
