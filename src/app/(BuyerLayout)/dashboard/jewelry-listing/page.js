@@ -4,11 +4,11 @@ import axios from 'axios'
 import { Suspense } from 'react'
 import {
   handleImageUpload,
-  handleVideoUpload,
   handleFileUpload,
   handleThumbnailUpload,
   persistListingGalleryOrder,
   resolveListingGalleryAsset,
+  resolveListingVideoAsset,
 } from '@/libs/uploadAsset'
 import { autoCapitalizeField } from '@/libs/autoCapitalizeText'
 import { flagListingPendingApprovalNotice } from '@/libs/listingPendingApprovalNotice'
@@ -207,6 +207,7 @@ function Page() {
     modalData,
     resetPremiumPaymentDrafts,
     handleVideoChange,
+    handleVideoRemove,
     handlePhoneNumberChange,
     id,
     handleRadioChange,
@@ -327,10 +328,6 @@ function Page() {
     }))
     setIsCityDropdownOpen(false)
   }
-  const handleVideoRemove = () => {
-    setVideo(null)
-  }
-
   const handleBlur = (e) => {
     const { name, value } = e.target
     validateField(name, value)
@@ -680,7 +677,7 @@ function Page() {
         const [uploadedImages, uploadedVideo, uploadedThumbnail, uploadedQrScan] =
           await Promise.all([
             resolveListingGalleryAsset(images, imageID),
-            videos.length ? handleVideoUpload(videos) : videoID,
+            resolveListingVideoAsset(videos, videoID),
             // file ? handleFileUpload(file) : fileID,
             thumbnail instanceof File
               ? handleThumbnailUpload(thumbnail)
@@ -694,8 +691,7 @@ function Page() {
         thumbnailID = uploadedThumbnail
         qrScanID = uploadedQrScan
       } else {
-        const newVideos = videos.filter((v) => v instanceof File)
-        if (newVideos.length) videoID = await handleVideoUpload(newVideos)
+        videoID = await resolveListingVideoAsset(videos, videoID)
         if (thumbnail instanceof File) {
           thumbnailID = await handleThumbnailUpload(thumbnail)
         }
@@ -721,7 +717,10 @@ function Page() {
         weight: formData.grams || formData.weight || '',
         pictures:
           listingMediaRef(imageID) ?? listingMediaRef(formData?.pictures),
-        video: listingMediaRef(videoID) ?? listingMediaRef(formData?.video),
+        video:
+          videoID === null
+            ? undefined
+            : listingMediaRef(videoID) ?? listingMediaRef(formData?.video),
         // evaluationCertificate: fileID,
         thumbnailImg:
           listingMediaRef(thumbnailID) ??

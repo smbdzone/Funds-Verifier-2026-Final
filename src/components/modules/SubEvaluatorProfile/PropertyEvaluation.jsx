@@ -11,9 +11,11 @@ import HistoryEvaluatedFilters, {
   useHistoryEvaluatedFilters,
 } from '../EvaluatorProfile/HistoryEvaluatedFilters'
 import { applyHistoryEvaluatedFilters } from '@/libs/filterHistoryEvaluatedListings'
+import EvaluationTableStatusRow from '../EvaluatorProfile/EvaluationTableStatusRow'
 
 export const PropertyEvaluationTab = () => {
   const [propertyListings, setPropertyListings] = useState([])
+  const [listingsLoading, setListingsLoading] = useState(true)
   const [selected, setSelected] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
   const [openDropdown, setOpenDropdown] = useState(null)
@@ -35,6 +37,7 @@ export const PropertyEvaluationTab = () => {
   } = useHistoryEvaluatedFilters()
 
   const fetchListingsData = async () => {
+    setListingsLoading(true)
     try {
       const propertyResponse = await customAxios.get(
         `/property?sort=${selected}&title=${debouncedQuery}`,
@@ -43,6 +46,8 @@ export const PropertyEvaluationTab = () => {
       setPropertyListings(reversedData)
     } catch (error) {
       console.error('Error fetching listing data:', error)
+    } finally {
+      setListingsLoading(false)
     }
   }
 
@@ -112,9 +117,8 @@ export const PropertyEvaluationTab = () => {
                 {({ open }) => (
                   <>
                     <Disclosure.Button
-                      className={`w-full primary-gradient rounded px-5 py-3 sm:px-7 sm:py-4 flex justify-between items-center ${
-                        open && 'mb-3'
-                      }`}
+                      className={`w-full primary-gradient rounded px-5 py-3 sm:px-7 sm:py-4 flex justify-between items-center ${open && 'mb-3'
+                        }`}
                     >
                       <span className='text-base sm:text-lg font-medium text-white'>
                         {sectionTitle}
@@ -153,8 +157,8 @@ export const PropertyEvaluationTab = () => {
                             </tr>
                           </thead>
                           <tbody>
-                            {(index === 0 ? pendingListings : historyListings)
-                              .map((property) => {
+                            {!listingsLoading &&
+                              (index === 0 ? pendingListings : historyListings).map((property) => {
                                 const date = property?.evaluationDateTime
                                   ? new Date(property.evaluationDateTime)
                                   : null
@@ -163,17 +167,17 @@ export const PropertyEvaluationTab = () => {
                                   !Number.isNaN(date.getTime())
                                 const formattedDate = isValidDate
                                   ? date.toLocaleDateString('en-US', {
-                                      month: 'short',
-                                      day: 'numeric',
-                                      year: 'numeric',
-                                    })
+                                    month: 'short',
+                                    day: 'numeric',
+                                    year: 'numeric',
+                                  })
                                   : '--'
                                 const formattedTime = isValidDate
                                   ? date.toLocaleTimeString('en-US', {
-                                      hour: 'numeric',
-                                      minute: '2-digit',
-                                      hour12: true,
-                                    })
+                                    hour: 'numeric',
+                                    minute: '2-digit',
+                                    hour12: true,
+                                  })
                                   : '--'
 
                                 return (
@@ -232,21 +236,21 @@ export const PropertyEvaluationTab = () => {
                                   </tr>
                                 )
                               })}
-                            {(index === 0
-                              ? pendingListings
-                              : historyListings
-                            ).length === 0 ? (
-                              <tr>
-                                <td
-                                  colSpan={index === 0 ? 4 : 3}
-                                  className='px-4 py-6 text-sm text-gray-500'
-                                >
-                                  {index === 1
-                                    ? 'No evaluated assets match these filters.'
-                                    : 'No pending evaluations.'}
-                                </td>
-                              </tr>
-                            ) : null}
+                            <EvaluationTableStatusRow
+                              loading={listingsLoading}
+                              isEmpty={
+                                (index === 0
+                                  ? pendingListings
+                                  : historyListings
+                                ).length === 0
+                              }
+                              emptyMessage={
+                                index === 1
+                                  ? 'No evaluated assets match these filters.'
+                                  : 'No pending evaluations.'
+                              }
+                              colSpan={index === 0 ? 4 : 3}
+                            />
                           </tbody>
                         </table>
                       </div>

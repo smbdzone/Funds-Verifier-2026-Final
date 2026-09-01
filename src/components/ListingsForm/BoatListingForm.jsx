@@ -258,7 +258,6 @@ const BoatListingForm = ({
               handleVideoRemove={handleVideoRemove}
               fileInputRef={fileInputRef}
               handleVideoChange={handleVideoChange}
-              disabled={isEvaluatorApprovedLocked || Boolean(formData?.video?.uuid)}
             />
           </ListingImageUploadLayout>
           <ListingImageUploadLayout

@@ -121,6 +121,16 @@ const handleVideoUpload = async (video) => {
   }
 }
 
+/** Upload new video files; keep the existing asset when nothing changed. */
+const resolveListingVideoAsset = async (videos = [], existingVideo = null) => {
+  const list = Array.isArray(videos) ? videos : videos ? [videos] : []
+  const files = list.filter(isUploadableFile)
+  if (!list.length) return null
+  if (!files.length) return existingVideo
+  const uploaded = await handleVideoUpload(files)
+  return uploaded ?? existingVideo
+}
+
 const handleFileUpload = async (file) => {
   if (!file) {
     return
@@ -297,6 +307,7 @@ export {
   handleImageUpload,
   resolveListingGalleryAsset,
   handleVideoUpload,
+  resolveListingVideoAsset,
   handleFileUpload,
   resolveCertificateUploadUrl,
   fetchCertificateUrlByPublicId,

@@ -4,9 +4,9 @@ import {
   handleFileUpload,
   handleImageUpload,
   handleThumbnailUpload,
-  handleVideoUpload,
   persistListingGalleryOrder,
   resolveListingGalleryAsset,
+  resolveListingVideoAsset,
 } from '@/libs/uploadAsset'
 import { autoCapitalizeField } from '@/libs/autoCapitalizeText'
 import { flagListingPendingApprovalNotice } from '@/libs/listingPendingApprovalNotice'
@@ -211,6 +211,7 @@ function Page() {
     modalData,
     resetPremiumPaymentDrafts,
     handleVideoChange,
+    handleVideoRemove,
     handlePhoneNumberChange,
     id,
     handleRadioChange,
@@ -318,10 +319,6 @@ function Page() {
   const filteredCountries = countries.filter((country) =>
     country.country.toLowerCase().includes(searchQuery.toLowerCase())
   )
-
-  const handleVideoRemove = () => {
-    setVideo(null)
-  }
 
   const submitConfirmation = async (e) => {
     e.preventDefault()
@@ -505,7 +502,7 @@ function Page() {
           uploadedQrScan,
         ] = await Promise.all([
           resolveListingGalleryAsset(images, imageID),
-          videos.length ? handleVideoUpload(videos) : videoID,
+          resolveListingVideoAsset(videos, videoID),
           file ? handleFileUpload(file) : fileID,
           thumbnail instanceof File
             ? handleThumbnailUpload(thumbnail)
@@ -520,8 +517,7 @@ function Page() {
         qrScanID = uploadedQrScan
       } else {
         // For updates: only re-upload media that changed
-        const newVideos = videos.filter((v) => v instanceof File)
-        if (newVideos.length) videoID = await handleVideoUpload(newVideos)
+        videoID = await resolveListingVideoAsset(videos, videoID)
         if (file) fileID = await handleFileUpload(file)
         if (thumbnail instanceof File) {
           thumbnailID = await handleThumbnailUpload(thumbnail)
@@ -554,7 +550,10 @@ function Page() {
             : 'kg',
         pictures:
           listingMediaRef(imageID) ?? listingMediaRef(formData?.pictures),
-        video: listingMediaRef(videoID) ?? listingMediaRef(formData?.video),
+        video:
+          videoID === null
+            ? undefined
+            : listingMediaRef(videoID) ?? listingMediaRef(formData?.video),
         evaluationCertificate:
           listingMediaRef(fileID) ??
           listingMediaRef(formData?.evaluationCertificate),
@@ -996,14 +995,14 @@ function Page() {
                 />
               </div>
               <StripeElement>
-                  <PaymentModal
-                    show={showPayment}
-                    onClose={() => setShowPayment(false)}
-                    formData={formData}
-                    setFormData={setFormData}
-                    HandleFormSubmit={() => HandleFormSubmit()}
-                  />
-                </StripeElement>
+                <PaymentModal
+                  show={showPayment}
+                  onClose={() => setShowPayment(false)}
+                  formData={formData}
+                  setFormData={setFormData}
+                  HandleFormSubmit={() => HandleFormSubmit()}
+                />
+              </StripeElement>
             </main>
           </div>
         </section>

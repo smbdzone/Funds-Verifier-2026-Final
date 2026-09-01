@@ -30,6 +30,7 @@ const APPROVED_ASSET_HOLDER_UPDATE_KEYS = [
   'priceFrom',
   'priceTo',
   'listing',
+  'video',
   'video3DWalkthrough',
   'technicalReport',
   'uploadDocument',

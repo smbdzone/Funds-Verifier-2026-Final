@@ -234,15 +234,15 @@ const ListingsProvider = ({ children }) => {
             : [],
           customExteriorColors: Array.isArray(d.exteriorColor)
             ? getExtraFacilities(d.exteriorColor, [], [
-                ...carColorOptions,
-                ...boatColorOptions,
-              ])
+              ...carColorOptions,
+              ...boatColorOptions,
+            ])
             : [],
           customInteriorColors: Array.isArray(d.interiorColor)
             ? getExtraFacilities(d.interiorColor, [], [
-                ...carColorOptions,
-                ...boatColorOptions,
-              ])
+              ...carColorOptions,
+              ...boatColorOptions,
+            ])
             : [],
           paymentPlan: (() => {
             const cleaned = sanitizeOffPlanPaymentPlan(d.paymentPlan)
@@ -360,7 +360,7 @@ const ListingsProvider = ({ children }) => {
           thumbnailImg: d?.thumbnailImg ?? prev?.thumbnailImg ?? null,
           qrScan: d?.qrScan ?? prev?.qrScan ?? null,
           pictures: d?.pictures ?? prev?.pictures ?? null,
-          video: d?.video ?? prev?.video ?? null,
+          video: d?.video?._id || d?.video || prev?.video || null,
         }))
         if (Array.isArray(d?.video?.videos) && d.video.videos.length) {
           setVideos(

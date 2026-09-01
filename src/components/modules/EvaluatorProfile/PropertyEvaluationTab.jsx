@@ -25,10 +25,12 @@ import HistoryEvaluatedFilters, {
   useHistoryEvaluatedFilters,
 } from './HistoryEvaluatedFilters'
 import { applyHistoryEvaluatedFilters } from '@/libs/filterHistoryEvaluatedListings'
+import EvaluationTableStatusRow from './EvaluationTableStatusRow'
 
 export const PropertyEvaluationTab = () => {
   const { user } = useProfile()
   const [propertyListings, setPropertyListings] = useState([])
+  const [listingsLoading, setListingsLoading] = useState(true)
   const [subEvaluators, setSubEvaluators] = useState([])
   const [selected, setSelected] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
@@ -81,6 +83,7 @@ export const PropertyEvaluationTab = () => {
   }, [])
 
   const fetchListingsData = async () => {
+    setListingsLoading(true)
     try {
       const products = await fetchEvaluatorListings('property', {
         sort: selected,
@@ -89,6 +92,8 @@ export const PropertyEvaluationTab = () => {
       setPropertyListings(products.reverse())
     } catch (error) {
       console.error('Error fetching listing data:', error)
+    } finally {
+      setListingsLoading(false)
     }
   }
 
@@ -297,8 +302,8 @@ export const PropertyEvaluationTab = () => {
                             </tr>
                           </thead>
                           <tbody>
-                            {(index === 0 ? pendingListings : historyListings)
-                              .map((property) => {
+                            {!listingsLoading &&
+                              (index === 0 ? pendingListings : historyListings).map((property) => {
                                 const rawDateTime =
                                   property?.evaluationDateTime ||
                                   property?.updatedAt ||
@@ -509,21 +514,20 @@ export const PropertyEvaluationTab = () => {
                                   </tr>
                                 )
                               })}
-                            {(index === 0
-                              ? pendingListings
-                              : historyListings
-                            ).length === 0 ? (
-                              <tr>
-                                <td
-                                  colSpan={4}
-                                  className='px-4 py-6 text-sm text-gray-500'
-                                >
-                                  {index === 1
-                                    ? 'No evaluated assets match these filters.'
-                                    : 'No pending evaluations.'}
-                                </td>
-                              </tr>
-                            ) : null}
+                            <EvaluationTableStatusRow
+                              loading={listingsLoading}
+                              isEmpty={
+                                (index === 0
+                                  ? pendingListings
+                                  : historyListings
+                                ).length === 0
+                              }
+                              emptyMessage={
+                                index === 1
+                                  ? 'No evaluated assets match these filters.'
+                                  : 'No pending evaluations.'
+                              }
+                            />
                           </tbody>
                         </table>
                       </div>
