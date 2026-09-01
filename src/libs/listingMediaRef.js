@@ -33,6 +33,18 @@ export function listingMediaRef(uploadOrExisting) {
   return asObjectIdString(uploadOrExisting)
 }
 
+/** Empty video list → clear on update (`null`); omit on create. */
+export function listingVideoPayloadValue(
+  videos,
+  videoID,
+  existingVideo,
+  isUpdate,
+) {
+  const list = Array.isArray(videos) ? videos : videos ? [videos] : []
+  if (!list.length) return isUpdate ? null : undefined
+  return listingMediaRef(videoID) ?? listingMediaRef(existingVideo)
+}
+
 /** Resolve ObjectId from /upload-certificate (or populated EvaluationCertificate). */
 export function listingCertificateRef(uploadOrExisting) {
   return asObjectIdString(uploadOrExisting)
@@ -129,6 +141,7 @@ export function stripEmptyObjectIdRefs(body) {
     'floorPlan',
     'titleDeed',
     'agencyAgreement',
+    'video',
   ])
   for (const key of [
     'technicalReport',

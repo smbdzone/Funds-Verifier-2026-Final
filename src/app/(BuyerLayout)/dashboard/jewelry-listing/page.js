@@ -15,6 +15,7 @@ import { flagListingPendingApprovalNotice } from '@/libs/listingPendingApprovalN
 import {
   applyPremiumServiceRefs,
   listingMediaRef,
+  listingVideoPayloadValue,
   premiumServiceRequestId,
   stripEmptyObjectIdRefs,
   sanitizeAssetHolderUpdatePayload,
@@ -717,10 +718,12 @@ function Page() {
         weight: formData.grams || formData.weight || '',
         pictures:
           listingMediaRef(imageID) ?? listingMediaRef(formData?.pictures),
-        video:
-          videoID === null
-            ? undefined
-            : listingMediaRef(videoID) ?? listingMediaRef(formData?.video),
+        video: listingVideoPayloadValue(
+          videos,
+          videoID,
+          formData?.video,
+          Boolean(id),
+        ),
         // evaluationCertificate: fileID,
         thumbnailImg:
           listingMediaRef(thumbnailID) ??
@@ -1068,6 +1071,7 @@ function Page() {
                         })
                       }}
                       gridClassName='mt-[10px] grid xl:grid-cols-5 lg:grid-cols-4 md:grid-cols-3 sm:grid-cols-2 xxs:grid-cols-2 justify-between gap-y-[10px]'
+                      disabled={isListingEvaluatorApprovedLocked(formData)}
                     />
                   </div>
                 </div>

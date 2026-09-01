@@ -17,6 +17,7 @@ export default function ColorTwoToneField({
   onChange,
   placeholder = 'e.g. red/black',
   className = 'mt-4',
+  disabled = false,
 }) {
   const [showInput, setShowInput] = useState(false)
   const [draft, setDraft] = useState('')
@@ -24,6 +25,7 @@ export default function ColorTwoToneField({
   const list = Array.isArray(values) ? values.filter(Boolean) : []
 
   const addValue = () => {
+    if (disabled) return
     const val = capitalizeFirstLetter(draft.trim())
     if (!val) return
     const exists = list.some((item) => item.toLowerCase() === val.toLowerCase())
@@ -35,6 +37,7 @@ export default function ColorTwoToneField({
   }
 
   const removeValue = (item) => {
+    if (disabled) return
     onChange?.(list.filter((v) => v !== item))
   }
 
@@ -42,15 +45,17 @@ export default function ColorTwoToneField({
     <div className={className}>
       <div className='mb-2 flex items-center gap-2'>
         <h2 className='text-dark-black text-xl font-medium'>{title}</h2>
-        <button
-          type='button'
-          onClick={() => setShowInput((v) => !v)}
-          className='flex h-5 w-5 items-center justify-center rounded-full border border-[#8d7c3b] text-sm font-bold text-[#8d7c3b] hover:bg-[#8d7c3b]/10'
-          title={`Add ${title.toLowerCase()}`}
-          aria-label={`Add ${title}`}
-        >
-          +
-        </button>
+        {!disabled ? (
+          <button
+            type='button'
+            onClick={() => setShowInput((v) => !v)}
+            className='flex h-5 w-5 items-center justify-center rounded-full border border-[#8d7c3b] text-sm font-bold text-[#8d7c3b] hover:bg-[#8d7c3b]/10'
+            title={`Add ${title.toLowerCase()}`}
+            aria-label={`Add ${title}`}
+          >
+            +
+          </button>
+        ) : null}
       </div>
 
       {showInput ? (
@@ -86,14 +91,16 @@ export default function ColorTwoToneField({
               className='inline-flex items-center gap-1 rounded-full border border-[#8d7c3b]/40 bg-[#faf8f3] px-3 py-1 text-xs text-[#002D4F]'
             >
               {item}
-              <button
-                type='button'
-                onClick={() => removeValue(item)}
-                className='ml-1 text-sm leading-none text-[#8d7c3b]'
-                aria-label={`Remove ${item}`}
-              >
-                ×
-              </button>
+              {!disabled ? (
+                <button
+                  type='button'
+                  onClick={() => removeValue(item)}
+                  className='ml-1 text-sm leading-none text-[#8d7c3b]'
+                  aria-label={`Remove ${item}`}
+                >
+                  ×
+                </button>
+              ) : null}
             </span>
           ))}
         </div>

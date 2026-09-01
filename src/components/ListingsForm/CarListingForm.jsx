@@ -268,6 +268,7 @@ const CarListingForm = ({
               handleVideoRemove={handleVideoRemove}
               fileInputRef={fileInputRef}
               handleVideoChange={handleVideoChange}
+              disabled={isEvaluatorApprovedLocked}
             />
           </ListingImageUploadLayout>
           <ListingImageUploadLayout

@@ -11,11 +11,11 @@ import GlobalLoader from '@/utils/GlobalLoader'
 import PaymentModal from '@/components/payments/PaymentModal'
 import {
   handleImageUpload,
-  handleVideoUpload,
   handleFileUpload,
   handleThumbnailUpload,
   persistListingGalleryOrder,
   resolveListingGalleryAsset,
+  resolveListingVideoAsset,
 } from '@/libs/uploadAsset'
 import { toast, ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
@@ -63,6 +63,7 @@ import customAxios from '../../../../utils/apis/apis'
 import {
   applyPremiumServiceRefs,
   listingMediaRef,
+  listingVideoPayloadValue,
   listingCertificateRef,
   premiumServiceRequestId,
   stripEmptyObjectIdRefs,
@@ -803,7 +804,7 @@ const Page = () => {
           uploadedQrScan,
         ] = await Promise.all([
           resolveListingGalleryAsset(images, imageID),
-          videos.length ? handleVideoUpload(videos) : videoID,
+          resolveListingVideoAsset(videos, videoID),
           file ? handleFileUpload(file) : fileID,
           thumbnail instanceof File
             ? handleThumbnailUpload(thumbnail)
@@ -825,8 +826,7 @@ const Page = () => {
         }
       } else {
         // For updates: only re-upload media that changed
-        const newVideos = videos.filter((v) => v instanceof File)
-        if (newVideos.length) videoID = await handleVideoUpload(newVideos)
+        videoID = await resolveListingVideoAsset(videos, videoID)
         if (file) fileID = await handleFileUpload(file)
         if (thumbnail instanceof File) {
           thumbnailID = await handleThumbnailUpload(thumbnail)
@@ -915,7 +915,12 @@ const Page = () => {
         userUUID: user?.uuid,
         pictures:
           listingMediaRef(imageID) ?? listingMediaRef(formData?.pictures),
-        video: listingMediaRef(videoID) ?? listingMediaRef(formData?.video),
+        video: listingVideoPayloadValue(
+          videos,
+          videoID,
+          formData?.video,
+          Boolean(id),
+        ),
         ...checkoutSession,
         evaluationCertificate:
           listingMediaRef(fileID) ??

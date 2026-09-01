@@ -2,6 +2,7 @@ import React from 'react'
 import FacilitiesChecklist from '@/components/property-listing/FacilitiesChecklist'
 import ColorTwoToneField from '@/components/ListingFormInput/ColorTwoToneField'
 import { shouldShowListingVisibility } from '@/libs/listingVisibilityThresholds'
+import { isListingEvaluatorApprovedLocked } from '@/libs/listingEditLock'
 
 const colorGridClassName =
   'mt-[10px] grid xl:grid-cols-8 lg:grid-cols-6 md:grid-cols-4 sm:grid-cols-3 xxs:grid-cols-2 justify-between gap-y-[10px]'
@@ -16,6 +17,7 @@ const ChecksLayoutComponent = ({
   formData,
   setFormData,
 }) => {
+  const fieldsLocked = isListingEvaluatorApprovedLocked(formData)
   return (
     <>
       <div className='px-[19px]'>
@@ -73,6 +75,7 @@ const ChecksLayoutComponent = ({
             })
           }}
           gridClassName={colorGridClassName}
+          disabled={fieldsLocked}
         />
 
         <ColorTwoToneField
@@ -85,6 +88,7 @@ const ChecksLayoutComponent = ({
             }))
           }
           placeholder='e.g. red/black'
+          disabled={fieldsLocked}
         />
 
         <div className='pt-5'>
@@ -113,6 +117,7 @@ const ChecksLayoutComponent = ({
               })
             }}
             gridClassName={colorGridClassName}
+            disabled={fieldsLocked}
           />
         </div>
 
@@ -126,6 +131,7 @@ const ChecksLayoutComponent = ({
             }))
           }
           placeholder='e.g. red/black'
+          disabled={fieldsLocked}
         />
 
         <h2 className='text-dark-black text-xl font-medium pt-5'>
@@ -142,6 +148,7 @@ const ChecksLayoutComponent = ({
                   technicalFeature,
                 )}
                 onChange={(e) => handleCheckboxChange(e, 'technicalFeatures')}
+                disabled={fieldsLocked}
               />
               <label className='custom-label'>{technicalFeature}</label>
             </div>
@@ -172,6 +179,7 @@ const ChecksLayoutComponent = ({
             })
           }}
           gridClassName='grid xl:grid-cols-5 lg:grid-cols-3 md:grid-cols-2 sm:grid-cols-2 xxs:grid-cols-1'
+          disabled={fieldsLocked}
         />
       </div>
     </>

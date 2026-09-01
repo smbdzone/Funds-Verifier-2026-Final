@@ -5,8 +5,8 @@ import {
 
 /**
  * Asset-holder edit lock: after evaluator approval (status 1) and an
- * evaluation certificate exists, only price, Public/Private listing, and
- * optional service requests stay editable.
+ * evaluation certificate exists, only price, Public/Private listing,
+ * 3D walkthrough, and technical report stay editable.
  *
  * While status is pending (no certificate yet), the full listing stays editable
  * on the dashboard edit form — evaluation payment alone does not lock fields.
@@ -30,7 +30,6 @@ const APPROVED_ASSET_HOLDER_UPDATE_KEYS = [
   'priceFrom',
   'priceTo',
   'listing',
-  'video',
   'video3DWalkthrough',
   'technicalReport',
   'uploadDocument',

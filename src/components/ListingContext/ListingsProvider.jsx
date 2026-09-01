@@ -986,7 +986,12 @@ const ListingsProvider = ({ children }) => {
   }
 
   const handleVideoRemove = (index) => {
-    setVideos((prev) => prev.filter((_, i) => i !== index))
+    const current = Array.isArray(videos) ? videos : videos ? [videos] : []
+    const next = current.filter((_, i) => i !== index)
+    setVideos(next)
+    if (!next.length) {
+      setFormData((fd) => ({ ...fd, video: null }))
+    }
   }
 
   const validateImageFile = (file) =>

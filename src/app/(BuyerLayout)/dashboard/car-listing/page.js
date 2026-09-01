@@ -13,6 +13,7 @@ import { flagListingPendingApprovalNotice } from '@/libs/listingPendingApprovalN
 import {
   applyPremiumServiceRefs,
   listingMediaRef,
+  listingVideoPayloadValue,
   premiumServiceRequestId,
   stripEmptyObjectIdRefs,
   sanitizeAssetHolderUpdatePayload,
@@ -550,10 +551,12 @@ function Page() {
             : 'kg',
         pictures:
           listingMediaRef(imageID) ?? listingMediaRef(formData?.pictures),
-        video:
-          videoID === null
-            ? undefined
-            : listingMediaRef(videoID) ?? listingMediaRef(formData?.video),
+        video: listingVideoPayloadValue(
+          videos,
+          videoID,
+          formData?.video,
+          Boolean(id),
+        ),
         evaluationCertificate:
           listingMediaRef(fileID) ??
           listingMediaRef(formData?.evaluationCertificate),

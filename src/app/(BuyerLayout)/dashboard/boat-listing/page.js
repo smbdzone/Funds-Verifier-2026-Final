@@ -13,6 +13,7 @@ import { flagListingPendingApprovalNotice } from '@/libs/listingPendingApprovalN
 import {
   applyPremiumServiceRefs,
   listingMediaRef,
+  listingVideoPayloadValue,
   premiumServiceRequestId,
   stripEmptyObjectIdRefs,
   sanitizeAssetHolderUpdatePayload,
@@ -699,10 +700,12 @@ function Page() {
         ...formData,
         pictures:
           listingMediaRef(imageID) ?? listingMediaRef(formData?.pictures),
-        video:
-          videoID === null
-            ? undefined
-            : listingMediaRef(videoID) ?? listingMediaRef(formData?.video),
+        video: listingVideoPayloadValue(
+          videos,
+          videoID,
+          formData?.video,
+          Boolean(id),
+        ),
         userUUID: user?.uuid,
         // evaluationCertificate: fileID,
         thumbnailImg:
@@ -1107,127 +1110,138 @@ function Page() {
                       <></>
                     )}
 
-                    <h2 className='text-dark-black text-xl font-medium'>
-                      Exterior Color
-                    </h2>
-                    <form className='mt-[10px] grid xl:grid-cols-8 lg:grid-cols-6 md:grid-cols-4 sm:grid-cols-3 xxs:grid-cols-2 justify-between gap-y-[10px]'>
-                      {colors.map((color) => (
-                        <div className='flex' key={color}>
-                          <input
-                            type='checkbox'
-                            className='custom-checkbox'
-                            value={color}
-                            checked={selectedExteriorColors.includes(color)}
-                            onChange={handleExteriorCheckboxChange}
-                          />
-                          <label className='custom-label'>{color}</label>
-                        </div>
-                      ))}
-                      <div className='flex space-x-[7px] items-center'>
-                        <div>
-                          <input
-                            type='checkbox'
-                            className='custom-checkbox'
-                            value='Other'
-                            checked={!!otherExteriorColor}
-                            onChange={() => setOtherExteriorColor('')}
-                          />
-                        </div>
-                        <input
-                          type='text'
-                          className='shadow-neonsm w-[167px] h-[24px] placeholder:text-light-black
-            placeholder:text-xs placeholder:font-normal pl-[10px]'
-                          placeholder='Type Other Color'
-                          value={otherExteriorColor}
-                          onChange={handleOtherExteriorColorChange}
-                        />
-                      </div>
-                    </form>
-
-                    <ColorTwoToneField
-                      title='Exterior Two Tone'
-                      values={formData.exteriorTwoTone || []}
-                      onChange={(next) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          exteriorTwoTone: next,
-                        }))
+                    <div
+                      className={
+                        isListingEvaluatorApprovedLocked(formData)
+                          ? 'pointer-events-none opacity-60'
+                          : undefined
                       }
-                      placeholder='e.g. red/black'
-                    />
-
-                    <h2 className='text-dark-black text-xl font-medium pt-5'>
-                      Interior Color
-                    </h2>
-                    <form className='mt-[10px] grid xl:grid-cols-8 lg:grid-cols-6 md:grid-cols-4 sm:grid-cols-3 xxs:grid-cols-2 justify-between gap-y-[10px]'>
-                      {colors.map((color) => (
-                        <div key={color}>
+                    >
+                      <h2 className='text-dark-black text-xl font-medium'>
+                        Exterior Color
+                      </h2>
+                      <form className='mt-[10px] grid xl:grid-cols-8 lg:grid-cols-6 md:grid-cols-4 sm:grid-cols-3 xxs:grid-cols-2 justify-between gap-y-[10px]'>
+                        {colors.map((color) => (
+                          <div className='flex' key={color}>
+                            <input
+                              type='checkbox'
+                              className='custom-checkbox'
+                              value={color}
+                              checked={selectedExteriorColors.includes(color)}
+                              onChange={handleExteriorCheckboxChange}
+                            />
+                            <label className='custom-label'>{color}</label>
+                          </div>
+                        ))}
+                        <div className='flex space-x-[7px] items-center'>
+                          <div>
+                            <input
+                              type='checkbox'
+                              className='custom-checkbox'
+                              value='Other'
+                              checked={!!otherExteriorColor}
+                              onChange={() => setOtherExteriorColor('')}
+                            />
+                          </div>
                           <input
-                            type='checkbox'
-                            className='custom-checkbox'
-                            value={color}
-                            checked={selectedInteriorColors.includes(color)}
-                            onChange={handleInteriorCheckboxChange}
-                          />
-                          <label className='custom-label'>{color}</label>
-                        </div>
-                      ))}
-                      <div className='flex space-x-[7px] items-center'>
-                        <div>
-                          <input
-                            type='checkbox'
-                            className='custom-checkbox'
-                            value='Other'
-                            checked={!!otherInteriorColor}
-                            onChange={() => setOtherInteriorColor('')}
-                          />
-                        </div>
-                        <input
-                          type='text'
-                          className='shadow-neonsm w-[167px] h-[24px] placeholder:text-light-black
+                            type='text'
+                            className='shadow-neonsm w-[167px] h-[24px] placeholder:text-light-black
             placeholder:text-xs placeholder:font-normal pl-[10px]'
-                          placeholder='Type Other Color'
-                          value={otherInteriorColor}
-                          onChange={handleOtherInteriorColorChange}
-                        />
-                      </div>
-                    </form>
+                            placeholder='Type Other Color'
+                            value={otherExteriorColor}
+                            onChange={handleOtherExteriorColorChange}
+                          />
+                        </div>
+                      </form>
 
-                    <ColorTwoToneField
-                      title='Interior Two Tone'
-                      values={formData.interiorTwoTone || []}
-                      onChange={(next) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          interiorTwoTone: next,
-                        }))
-                      }
-                      placeholder='e.g. red/black'
-                    />
-
-                    <div className='pt-5'>
-                      <FacilitiesChecklist
-                        title='Extras'
-                        presetFacilities={extrasList}
-                        selectedFacilities={formData.extras || []}
-                        customFacilities={formData.customExtras || []}
-                        onCheckboxChange={(e) => handleCheckboxChange(e, 'extras')}
-                        setFormData={(updater) => {
-                          setFormData((prev) => {
-                            const next = typeof updater === 'function' ? updater({
-                              ...prev,
-                              facilities: prev.extras || [],
-                              customFacilities: prev.customExtras || [],
-                            }) : updater
-                            return {
-                              ...prev,
-                              extras: next.facilities ?? prev.extras,
-                              customExtras: next.customFacilities ?? prev.customExtras,
-                            }
-                          })
-                        }}
-                        gridClassName='mt-[10px] grid xl:grid-cols-5 lg:grid-cols-3 md:grid-cols-2 sm:grid-cols-2 xxs:grid-cols-1 justify-between gap-y-[10px]'
+                      <ColorTwoToneField
+                        title='Exterior Two Tone'
+                        values={formData.exteriorTwoTone || []}
+                        onChange={(next) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            exteriorTwoTone: next,
+                          }))
+                        }
+                        placeholder='e.g. red/black'
+                        disabled={isListingEvaluatorApprovedLocked(formData)}
                       />
+
+                      <h2 className='text-dark-black text-xl font-medium pt-5'>
+                        Interior Color
+                      </h2>
+                      <form className='mt-[10px] grid xl:grid-cols-8 lg:grid-cols-6 md:grid-cols-4 sm:grid-cols-3 xxs:grid-cols-2 justify-between gap-y-[10px]'>
+                        {colors.map((color) => (
+                          <div key={color}>
+                            <input
+                              type='checkbox'
+                              className='custom-checkbox'
+                              value={color}
+                              checked={selectedInteriorColors.includes(color)}
+                              onChange={handleInteriorCheckboxChange}
+                            />
+                            <label className='custom-label'>{color}</label>
+                          </div>
+                        ))}
+                        <div className='flex space-x-[7px] items-center'>
+                          <div>
+                            <input
+                              type='checkbox'
+                              className='custom-checkbox'
+                              value='Other'
+                              checked={!!otherInteriorColor}
+                              onChange={() => setOtherInteriorColor('')}
+                            />
+                          </div>
+                          <input
+                            type='text'
+                            className='shadow-neonsm w-[167px] h-[24px] placeholder:text-light-black
+            placeholder:text-xs placeholder:font-normal pl-[10px]'
+                            placeholder='Type Other Color'
+                            value={otherInteriorColor}
+                            onChange={handleOtherInteriorColorChange}
+                          />
+                        </div>
+                      </form>
+
+                      <ColorTwoToneField
+                        title='Interior Two Tone'
+                        values={formData.interiorTwoTone || []}
+                        onChange={(next) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            interiorTwoTone: next,
+                          }))
+                        }
+                        placeholder='e.g. red/black'
+                        disabled={isListingEvaluatorApprovedLocked(formData)}
+                      />
+
+                      <div className='pt-5'>
+                        <FacilitiesChecklist
+                          title='Extras'
+                          presetFacilities={extrasList}
+                          selectedFacilities={formData.extras || []}
+                          customFacilities={formData.customExtras || []}
+                          onCheckboxChange={(e) => handleCheckboxChange(e, 'extras')}
+                          setFormData={(updater) => {
+                            setFormData((prev) => {
+                              const next = typeof updater === 'function' ? updater({
+                                ...prev,
+                                facilities: prev.extras || [],
+                                customFacilities: prev.customExtras || [],
+                              }) : updater
+                              return {
+                                ...prev,
+                                extras: next.facilities ?? prev.extras,
+                                customExtras: next.customFacilities ?? prev.customExtras,
+                              }
+                            })
+                          }}
+                          gridClassName='mt-[10px] grid xl:grid-cols-5 lg:grid-cols-3 md:grid-cols-2 sm:grid-cols-2 xxs:grid-cols-1 justify-between gap-y-[10px]'
+                          disabled={isListingEvaluatorApprovedLocked(formData)}
+                        />
+                      </div>
                     </div>
                   </div>
                   <ListingsLowerComponent
