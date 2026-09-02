@@ -37,6 +37,7 @@ const OffPlanPropertyCard = ({
   city = '',
   neighbourhood = '',
   roi,
+  propertyType = '',
 }) => {
   const mediaList = useMemo(() => {
     if (!Array.isArray(images) || !images.length) {
@@ -289,6 +290,7 @@ const OffPlanPropertyCard = ({
           city,
           neighbourhood: neighbourhood || location,
           roi,
+          propertyType,
         }}
       >
         <Link href={href} className='flex h-full w-full transition-opacity hover:opacity-95'>
@@ -313,6 +315,7 @@ const OffPlanPropertyCard = ({
         city,
         neighbourhood: neighbourhood || location,
         roi,
+        propertyType,
       }}
     >
       {card}

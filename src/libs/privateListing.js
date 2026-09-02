@@ -182,11 +182,47 @@ export function formatPrivateListingRoi(listing) {
   return text.includes('%') ? text : `${text}%`
 }
 
-function isCarBoatOrJewelryListing(listing) {
-  const t = String(listing?.assetType || listing?.type || '')
+function listingAssetKind(listing) {
+  return String(listing?.assetType || listing?.type || '')
     .toLowerCase()
     .replace(/[_-]+/g, ' ')
+}
+
+function isCarBoatOrJewelryListing(listing) {
+  const t = listingAssetKind(listing)
   return t.includes('car') || t.includes('boat') || t.includes('jewel')
+}
+
+function prettyTypeLabel(value) {
+  const text = String(value || '').trim()
+  if (!text) return ''
+  return text.charAt(0).toUpperCase() + text.slice(1)
+}
+
+/** Villa / Apartment (or car/boat/jewelry type) for locked overlays. */
+export function getPrivateListingTypeLabel(listing) {
+  const t = listingAssetKind(listing)
+  if (t.includes('car')) {
+    return prettyTypeLabel(
+      firstFilled(listing?.carType, listing?.make, listing?.category),
+    )
+  }
+  if (t.includes('boat')) {
+    return prettyTypeLabel(
+      firstFilled(listing?.brands, listing?.boatType, listing?.category),
+    )
+  }
+  if (t.includes('jewel')) {
+    return prettyTypeLabel(
+      firstFilled(listing?.make, listing?.category, listing?.brands),
+    )
+  }
+
+  const propertyType = prettyTypeLabel(listing?.propertyType)
+  if (!propertyType) return prettyTypeLabel(listing?.assetType)
+  if (t.includes('off plan')) return propertyType
+  if (t.includes('lease')) return `${propertyType} For Lease`
+  return `${propertyType} For Sale`
 }
 
 /** City, area, and price stay visible on locked cards. ROI is property-only. */
@@ -200,11 +236,22 @@ export function getPrivateListingPreviewFacts(listing) {
     listing?.locateJewelry,
   )
   const price = formatListingCardPrice(listing)
-  const facts = [
+  const typeLabel = getPrivateListingTypeLabel(listing)
+  const facts = []
+
+  if (typeLabel) {
+    facts.push({
+      key: 'type',
+      label: isCarBoatOrJewelryListing(listing) ? 'Type' : 'Property Type',
+      value: typeLabel,
+    })
+  }
+
+  facts.push(
     { key: 'city', label: 'City', value: city || '—' },
     { key: 'area', label: 'Area', value: area || '—' },
     { key: 'price', label: 'Price', value: price ? `AED ${price}` : '—' },
-  ]
+  )
 
   if (!isCarBoatOrJewelryListing(listing)) {
     facts.push({

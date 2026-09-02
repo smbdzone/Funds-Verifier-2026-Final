@@ -54,6 +54,7 @@ function OffPlanCardItem({ listing }) {
       city={listing.city}
       neighbourhood={listing.neighbourhood}
       roi={listing.roi}
+      propertyType={listing.propertyType}
       className='max-w-none'
     />
   )

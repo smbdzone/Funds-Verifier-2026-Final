@@ -28,6 +28,7 @@ function RelatedCard({ listing }) {
       city={listing.city}
       neighbourhood={listing.neighbourhood}
       roi={listing.roi}
+      propertyType={listing.propertyType}
       className='!mx-0 !max-w-none w-full'
     />
   )
