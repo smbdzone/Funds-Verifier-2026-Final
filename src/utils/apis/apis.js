@@ -67,6 +67,15 @@ customAxios.interceptors.request.use(async (config) => {
     Object.assign(config.headers, csrfHeaders)
   }
 
+  if (typeof FormData !== 'undefined' && config.data instanceof FormData) {
+    if (typeof config.headers?.set === 'function') {
+      config.headers.set('Content-Type', false)
+    } else if (config.headers) {
+      delete config.headers['Content-Type']
+      delete config.headers['content-type']
+    }
+  }
+
   const token = getAccessToken()
   if (token) {
     config.headers.Authorization = `Bearer ${token}`

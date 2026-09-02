@@ -3,6 +3,7 @@ import { getTokenFromCookie } from '../utils/helper'
 import {
   getUploadErrorMessage,
   LISTING_IMAGE_MAX_MB,
+  LISTING_VIDEO_CHUNK_BYTES,
   LISTING_VIDEO_MAX_MB,
 } from '../constants/listingUploadLimits'
 import { listingMediaObjectKey } from './listingCardMedia'
@@ -99,23 +100,56 @@ const resolveListingGalleryAsset = async (images = [], existingAsset = null) => 
   return handleImageUpload(files, { appendToId: existingId || undefined })
 }
 
-const handleVideoUpload = async (video) => {
+const createVideoUploadId = () => {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID()
+  }
+  return `vid-${Date.now()}-${Math.random().toString(16).slice(2)}`
+}
+
+const postVideoChunks = async (file, appendToId) => {
+  const uploadId = createVideoUploadId()
+  const totalChunks = Math.max(1, Math.ceil(file.size / LISTING_VIDEO_CHUNK_BYTES))
+
+  for (let index = 0; index < totalChunks; index += 1) {
+    const start = index * LISTING_VIDEO_CHUNK_BYTES
+    const blob = file.slice(start, start + LISTING_VIDEO_CHUNK_BYTES)
+    const formData = new FormData()
+    formData.append('chunk', blob, file.name || 'video.mp4')
+    formData.append('uploadId', uploadId)
+    formData.append('chunkIndex', String(index))
+    formData.append('totalChunks', String(totalChunks))
+    formData.append('fileName', file.name || 'video.mp4')
+    formData.append('fileSize', String(file.size))
+    formData.append('fileType', file.type || 'video/mp4')
+    await customAxios.post('/upload-video/chunk', formData)
+  }
+
+  const response = await customAxios.post('/upload-video/complete', {
+    uploadId,
+    totalChunks,
+    fileName: file.name || 'video.mp4',
+    contentType: file.type || 'video/mp4',
+    size: file.size,
+    ...(galleryAssetId(appendToId) ? { assetId: galleryAssetId(appendToId) } : {}),
+  })
+  return response.data
+}
+
+const handleVideoUpload = async (video, options = {}) => {
   if (!video) return
 
   const files = (Array.isArray(video) ? video : [video]).filter(isUploadableFile)
   if (!files.length) return
 
-  const formData = new FormData()
-  files.forEach((file) => {
-    formData.append('video', file)
-  })
-
   try {
-    const response = await customAxios.post(
-      `${process.env.NEXT_PUBLIC_BASE_URL}/upload-video`,
-      formData,
-    )
-    return response.data
+    let assetId = galleryAssetId(options.appendToId || options.assetId || null)
+    let asset = null
+    for (const file of files) {
+      asset = await postVideoChunks(file, assetId)
+      assetId = galleryAssetId(asset) || assetId
+    }
+    return asset
   } catch (error) {
     wrapUploadError(error, 'Video', LISTING_VIDEO_MAX_MB)
   }
@@ -127,7 +161,9 @@ const resolveListingVideoAsset = async (videos = [], existingVideo = null) => {
   const files = list.filter(isUploadableFile)
   if (!list.length) return null
   if (!files.length) return existingVideo
-  const uploaded = await handleVideoUpload(files)
+  const uploaded = await handleVideoUpload(files, {
+    appendToId: galleryAssetId(existingVideo),
+  })
   return uploaded ?? existingVideo
 }
 

@@ -2,6 +2,7 @@ export const LISTING_IMAGE_MAX_BYTES = 2 * 1024 * 1024
 export const LISTING_VIDEO_MAX_BYTES = 30 * 1024 * 1024
 export const LISTING_IMAGE_MAX_COUNT = 10
 export const LISTING_VIDEO_MAX_COUNT = 2
+export const LISTING_VIDEO_CHUNK_BYTES = LISTING_IMAGE_MAX_BYTES
 
 export const LISTING_IMAGE_MAX_MB = LISTING_IMAGE_MAX_BYTES / (1024 * 1024)
 export const LISTING_VIDEO_MAX_MB = LISTING_VIDEO_MAX_BYTES / (1024 * 1024)
@@ -17,7 +18,7 @@ export const getUploadErrorMessage = (error, fileType, maxMB) => {
   const serverMsg = error?.response?.data?.message
 
   if (status === 413) {
-    return `${fileType} upload failed: file is too large. Maximum allowed size is ${maxMB}MB. Please compress or use a smaller file.`
+    return `${fileType} upload failed: the server rejected this request as too large. Maximum allowed size is ${maxMB}MB. Please try again.`
   }
 
   if (serverMsg) return serverMsg
