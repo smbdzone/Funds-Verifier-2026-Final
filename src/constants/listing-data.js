@@ -1,3 +1,9 @@
+import {
+  LISTING_VIDEO_FORMATS_LABEL,
+  LISTING_VIDEO_MAX_COUNT,
+  LISTING_VIDEO_MAX_MB,
+} from "@/constants/listingUploadLimits";
+
 export const globalFormInput = {
   assetType: "Select Asset Type",
   country: "",
@@ -90,8 +96,8 @@ export const globalFormInputFields = [
     type: "file",
     mediaType: "video",
     label: "Video",
-    acceptedFormats: "MP4, MOV. Optional — up to 2 videos, 5MB each",
-    maxSize: "5MB each (max 2)",
+    acceptedFormats: LISTING_VIDEO_FORMATS_LABEL,
+    maxSize: `${LISTING_VIDEO_MAX_MB}MB each (max ${LISTING_VIDEO_MAX_COUNT})`,
     files: [],
     formDataKey: "video",
     multiple: true,
@@ -211,8 +217,8 @@ export const offPlanGlobalFormInputFields = [
     mediaType: "video",
     name: "video",
     label: "Video",
-    acceptedFormats: "MP4, MOV. Optional — up to 2 videos, 5MB each",
-    maxSize: "5MB each (max 2)",
+    acceptedFormats: LISTING_VIDEO_FORMATS_LABEL,
+    maxSize: `${LISTING_VIDEO_MAX_MB}MB each (max ${LISTING_VIDEO_MAX_COUNT})`,
     files: [],
     formDataKey: "video",
     multiple: true,

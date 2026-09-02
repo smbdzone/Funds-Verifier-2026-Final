@@ -1,5 +1,5 @@
 export const LISTING_IMAGE_MAX_BYTES = 2 * 1024 * 1024
-export const LISTING_VIDEO_MAX_BYTES = 5 * 1024 * 1024
+export const LISTING_VIDEO_MAX_BYTES = 30 * 1024 * 1024
 export const LISTING_IMAGE_MAX_COUNT = 10
 export const LISTING_VIDEO_MAX_COUNT = 2
 
@@ -9,6 +9,7 @@ export const LISTING_VIDEO_MAX_MB = LISTING_VIDEO_MAX_BYTES / (1024 * 1024)
 export const LISTING_IMAGE_FORMATS_LABEL = `JPG, PNG, GIF. Up to ${LISTING_IMAGE_MAX_COUNT} images, ${LISTING_IMAGE_MAX_MB}MB each (select up to ${LISTING_IMAGE_MAX_COUNT} at once)`
 export const LISTING_THUMBNAIL_FORMATS_LABEL = `JPG, PNG, GIF. 1 image, ${LISTING_IMAGE_MAX_MB}MB`
 export const LISTING_VIDEO_FORMATS_LABEL = `MP4, MOV. Optional — up to ${LISTING_VIDEO_MAX_COUNT} videos, ${LISTING_VIDEO_MAX_MB}MB each`
+export const LISTING_VIDEO_UPLOAD_LABEL = `Add Video (${LISTING_VIDEO_MAX_MB}MB)`
 export const LISTING_QR_SCAN_FORMATS_LABEL = `JPG, PNG, GIF. 1 image, ${LISTING_IMAGE_MAX_MB}MB`
 
 export const getUploadErrorMessage = (error, fileType, maxMB) => {

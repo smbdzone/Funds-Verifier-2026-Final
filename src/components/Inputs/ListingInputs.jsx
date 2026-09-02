@@ -2,6 +2,7 @@ import Image from "next/image";
 import {
   LISTING_IMAGE_FORMATS_LABEL,
   LISTING_VIDEO_FORMATS_LABEL,
+  LISTING_VIDEO_UPLOAD_LABEL,
 } from '@/constants/listingUploadLimits';
 export const InputField = ({
   type = "text",
@@ -86,7 +87,7 @@ export const FileUpload = ({
             alt="Upload Image"
           />
           <span className="text-[17px] text-dark-grey font-normal pt-[18px]">
-            {placeholder}
+            {placeholder || (isVideo ? LISTING_VIDEO_UPLOAD_LABEL : 'Add Pictures')}
           </span>
         </label>
       </div>

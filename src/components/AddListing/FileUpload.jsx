@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
 import ListingFieldLabel from '@/components/ListingsForm/ListingFieldLabel'
 import QrDecodeHover from '@/components/shared/QrDecodeHover'
+import { LISTING_VIDEO_MAX_MB } from '@/constants/listingUploadLimits'
 
 const FileUpload = ({
   type,
@@ -136,8 +137,10 @@ const FileUpload = ({
               }
               alt={`Upload ${label}`}
             />
-            <span className='text-[17px] text-dark-grey font-normal pt-[18px]'>
-              Add {label}
+            <span className='text-[17px] text-dark-grey font-normal pt-[18px] text-center leading-tight'>
+              {type === 'video'
+                ? `Add ${label} (${LISTING_VIDEO_MAX_MB}MB)`
+                : `Add ${label}`}
             </span>
           </label>
         </div>

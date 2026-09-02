@@ -58,6 +58,7 @@ import {
   LISTING_VIDEO_MAX_COUNT,
   LISTING_IMAGE_FORMATS_LABEL,
   LISTING_VIDEO_FORMATS_LABEL,
+  LISTING_VIDEO_UPLOAD_LABEL,
 } from '@/constants/listingUploadLimits'
 import { shouldShowListingVisibility } from '@/libs/listingVisibilityThresholds'
 
@@ -1448,8 +1449,8 @@ function Page() {
                           src='/listing/video.svg'
                           alt='Upload Video'
                         />
-                        <span className='text-[17px] text-dark-grey font-normal pt-[17px]'>
-                          Add Video
+                        <span className='text-[17px] text-dark-grey font-normal pt-[17px] text-center leading-tight'>
+                          {LISTING_VIDEO_UPLOAD_LABEL}
                         </span>
                       </label>
                     </div>

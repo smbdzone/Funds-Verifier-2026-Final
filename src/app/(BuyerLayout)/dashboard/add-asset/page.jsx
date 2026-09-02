@@ -55,6 +55,7 @@ import {
 } from '@/libs/imageCompression'
 import { listingMediaRef } from '@/libs/listingMediaRef'
 import { shouldShowProjectNumber } from '@/libs/listingLocationUtils'
+import { LISTING_VIDEO_MAX_MB } from '@/constants/listingUploadLimits'
 
 export const dynamic = 'force-dynamic'
 const Page = () => {
@@ -422,7 +423,7 @@ const Page = () => {
               handleFileChange(
                 e,
                 field.mediaType,
-                field.mediaType === 'video' ? 5 : 2,
+                field.mediaType === 'video' ? LISTING_VIDEO_MAX_MB : 2,
               )
             }
             onFileRemove={handleFileRemove}

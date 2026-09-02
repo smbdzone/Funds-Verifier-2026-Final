@@ -1,6 +1,6 @@
 import Image from 'next/image'
 import React, { useEffect, useMemo, useState } from 'react'
-import { LISTING_VIDEO_MAX_COUNT } from '@/constants/listingUploadLimits'
+import { LISTING_VIDEO_MAX_COUNT, LISTING_VIDEO_UPLOAD_LABEL } from '@/constants/listingUploadLimits'
 import { getListingVideoSrc } from '@/libs/listingCardMedia'
 
 function resolveVideoPreviewSrc(video) {
@@ -28,7 +28,8 @@ const ListingsVideoComponent = ({
   handleVideoChange,
   disabled,
   inputId = 'listing-video-upload',
-  uploadLabel = 'Add Video',
+  uploadLabel = LISTING_VIDEO_UPLOAD_LABEL,
+
 }) => {
   const [blobUrls, setBlobUrls] = useState([])
 
