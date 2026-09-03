@@ -474,7 +474,9 @@ function Page() {
           uploadedQrScan,
         ] = await Promise.all([
           images.length > 0 ? handleImageUpload(images) : imageID,
-          videos.length ? handleVideoUpload(videos) : videoID,
+          videos.some((v) => v instanceof File)
+            ? handleVideoUpload(videos.filter((v) => v instanceof File))
+            : videoID,
           file ? handleFileUpload(file) : fileID,
           thumbnail instanceof File
             ? handleThumbnailUpload(thumbnail)
@@ -489,7 +491,8 @@ function Page() {
         qrScanID = uploadedQrScan
       } else {
         // For updates: only re-upload media that changed
-        if (videos.length) videoID = await handleVideoUpload(videos)
+        const newVideoFiles = videos.filter((v) => v instanceof File)
+        if (newVideoFiles.length) videoID = await handleVideoUpload(newVideoFiles)
         if (file) fileID = await handleFileUpload(file)
         if (thumbnail instanceof File) {
           thumbnailID = await handleThumbnailUpload(thumbnail)

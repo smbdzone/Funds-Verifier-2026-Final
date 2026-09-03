@@ -17,8 +17,8 @@ const SizeInput = ({
   disabled,
   error,
 }) => (
-  <div className='flex items-center gap-1'>
-    <span className='whitespace-nowrap text-[15px] text-dark-grey/60'>
+  <div className='flex min-w-0 flex-1 items-center gap-1'>
+    <span className='shrink-0 whitespace-nowrap text-[15px] text-dark-grey/60'>
       {label}
     </span>
     <input
@@ -30,7 +30,7 @@ const SizeInput = ({
       onBlur={onBlur}
       disabled={disabled}
       placeholder='0'
-      className={`h-8 w-[110px] rounded-sm border border-dark-grey/40 px-3 text-[15px] text-dark-grey outline-none disabled:opacity-60 ${error ? 'border-red-500' : ''}`}
+      className={`h-8 w-full min-w-0 max-w-[110px] rounded-sm border border-dark-grey/40 px-3 text-[15px] text-dark-grey outline-none disabled:opacity-60 ${error ? 'border-red-500' : ''}`}
     />
   </div>
 )
@@ -122,13 +122,13 @@ const OffPlanSizeRange = ({
     >
       <ListingFieldLabel label={label} required />
       <div
-        className={`flex h-[50px] w-full items-center justify-between px-[18px] shadow-neons ${errors ? 'input-field-error' : ''}`}
+        className={`flex min-h-[50px] w-full flex-wrap items-center gap-x-4 gap-y-2 px-[18px] py-2 shadow-neons ${errors ? 'input-field-error' : ''}`}
       >
-        <span className='text-[16px] font-semibold text-dark-grey/60'>
+        <span className='shrink-0 text-[16px] font-semibold text-dark-grey/60'>
           {label}
         </span>
-        <div className='flex items-center gap-[10px]'>
-          <div className='relative min-w-[72px] border-r border-dark-grey/20 pr-2'>
+        <div className='flex min-w-0 flex-1 flex-wrap items-center gap-[10px]'>
+          <div className='relative min-w-[72px] shrink-0 border-r border-dark-grey/20 pr-2'>
             <button
               type='button'
               disabled={disabled}

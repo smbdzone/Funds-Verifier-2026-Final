@@ -36,6 +36,7 @@ function OffPlanCardItem({ listing }) {
       title={listing.title}
       location={listing.location}
       projectName={listing.projectName}
+      developer={listing.developer}
       deliveryLabel={listing.deliveryLabel}
       paymentPlanLabel={listing.paymentPlanLabel}
       rating={listing.rating}

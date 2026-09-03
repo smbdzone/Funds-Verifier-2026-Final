@@ -646,7 +646,9 @@ function Page() {
         const [uploadedImages, uploadedVideo, uploadedThumbnail, uploadedQrScan] =
           await Promise.all([
             images.length > 0 ? handleImageUpload(images) : imageID,
-            videos.length ? handleVideoUpload(videos) : videoID,
+            videos.some((v) => v instanceof File)
+              ? handleVideoUpload(videos.filter((v) => v instanceof File))
+              : videoID,
             // file ? handleFileUpload(file) : fileID,
             thumbnail instanceof File
               ? handleThumbnailUpload(thumbnail)

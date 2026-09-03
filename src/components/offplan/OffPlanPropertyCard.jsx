@@ -15,6 +15,7 @@ const OffPlanPropertyCard = ({
   qrScanSrc,
   location,
   projectName,
+  developer,
   deliveryLabel,
   paymentPlanLabel,
   rating = 0,
@@ -233,8 +234,9 @@ const OffPlanPropertyCard = ({
 
                 <div className='flex min-h-[20px] w-full items-center justify-start gap-1.5 lg:min-h-[24px] lg:gap-2'>
                   {projectName ? (
-                    <span className='line-clamp-1 text-xs font-medium leading-4 text-prussianBlue lg:text-xl lg:leading-6'>
+                    <span className='line-clamp-1 text-xs leading-4 text-prussianBlue lg:text-base lg:leading-5'>
                       {projectName}
+                      {developer ? ` By ${developer}` : ''}
                     </span>
                   ) : null}
                 </div>
