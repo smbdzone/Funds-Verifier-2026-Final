@@ -66,6 +66,16 @@ const AddAssetOffPlanFields = ({
 
       <TextInput
         type='text'
+        name='projectName'
+        placeholder='Project Name'
+        value={formData.projectName || ''}
+        onChange={(e) => onInputChange('projectName', e.target.value)}
+        required
+        errors={errors}
+      />
+
+      <TextInput
+        type='text'
         name='developer'
         placeholder='Developer'
         value={formData.developer || ''}

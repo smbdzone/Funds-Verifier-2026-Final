@@ -13,6 +13,7 @@ const OffPlanPropertyCard = ({
   title,
   qrScanSrc,
   location,
+  projectName,
   deliveryLabel,
   paymentPlanLabel,
   rating = 0,
@@ -93,7 +94,19 @@ const OffPlanPropertyCard = ({
             </div>
           ) : null}
 
+<<<<<<< Updated upstream
           {imageList.length > 1 ? (
+=======
+          {deliveryLabel ? (
+            <div className='absolute left-2 top-2 rounded-[2px] px-1.5 py-0.5 shadow-[0px_0px_8px_rgba(0,0,0,0.15)] [background:linear-gradient(90deg,#A2913E_0%,#D7C590_35.28%,#A2913E_68.99%,#D7C58F_100%)] lg:left-[10px] lg:top-[10px] lg:px-2 lg:py-1'>
+              <span className='text-[9px] font-medium leading-3 text-prussianBlue lg:text-[10px]'>
+                {deliveryLabel}
+              </span>
+            </div>
+          ) : null}
+
+          {mediaList.length > 1 ? (
+>>>>>>> Stashed changes
             <>
               <button
                 type='button'
@@ -172,6 +185,7 @@ const OffPlanPropertyCard = ({
                   <p className='min-h-[52px] sm:min-h-[40px]' aria-hidden='true' />
                 )}
 
+<<<<<<< Updated upstream
                 <div className='flex min-h-[26px] w-full items-center justify-start gap-2 sm:min-h-[24px]'>
                   {deliveryLabel ? (
                     <>
@@ -182,6 +196,13 @@ const OffPlanPropertyCard = ({
                         {deliveryLabel}
                       </span>
                     </>
+=======
+                <div className='flex min-h-[20px] w-full items-center justify-start gap-1.5 lg:min-h-[24px] lg:gap-2'>
+                  {projectName ? (
+                    <span className='line-clamp-1 text-xs font-medium leading-4 text-prussianBlue lg:text-xl lg:leading-6'>
+                      {projectName}
+                    </span>
+>>>>>>> Stashed changes
                   ) : null}
                 </div>
               </div>

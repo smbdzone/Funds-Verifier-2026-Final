@@ -436,6 +436,7 @@ export const ImageUploadComponent = React.memo(
             </div>
             <div className='relative w-full dropdown-container'>
               <ListingFormInput
+<<<<<<< Updated upstream
                 errors={errors.dldNumber && !formData.dldNumber}
                 value={formData.dldNumber || ''}
                 handleChange={handleChange}
@@ -444,10 +445,41 @@ export const ImageUploadComponent = React.memo(
                 fieldLabel='Project Number'
                 errorsMessage={errors.dldNumber}
                 name='dldNumber'
+=======
+                errors={errors.projectName && !formData.projectName}
+                value={formData.projectName || ''}
+                handleChange={handleChange}
+                handleBlur={handleBlur}
+                required
+                placeholder='Project Name'
+                fieldLabel='Project Name'
+                errorsMessage={errors.projectName}
+                name='projectName'
+>>>>>>> Stashed changes
                 type='text'
                 disabled={isEvaluatorApprovedLocked}
               />
             </div>
+<<<<<<< Updated upstream
+=======
+            {showProjectNumber ? (
+              <div className='relative w-full dropdown-container'>
+                <ListingFormInput
+                  errors={errors.dldNumber && !formData.dldNumber}
+                  value={formData.dldNumber || ''}
+                  handleChange={handleChange}
+                  handleBlur={handleBlur}
+                  placeholder='Project Number'
+                  fieldLabel='Project Number'
+                  errorsMessage={errors.dldNumber}
+                  name='dldNumber'
+                  type='text'
+                  inputMode='numeric'
+                  disabled={isEvaluatorApprovedLocked}
+                />
+              </div>
+            ) : null}
+>>>>>>> Stashed changes
             <div className='relative w-full dropdown-container'>
               <ListingsDropdownInputComponents
                 errors={errors.bedrooms && !formData.bedrooms}
@@ -904,6 +936,20 @@ export const ImageUploadComponent = React.memo(
                   handleChange={handleChange}
                   name='developer'
                   customPlaceholder='Developer'
+                  disabled={isEvaluatorApprovedLocked}
+                />
+              </div>
+            </div>
+            <div className='relative w-full dropdown-container'>
+              <div className='relative-placeholder w-full'>
+                <ListingCustomPlacholderInput
+                  value={formData.projectName || ''}
+                  handleChange={handleChange}
+                  name='projectName'
+                  customPlaceholder='Project Name'
+                  required
+                  errors={errors.projectName && !formData.projectName}
+                  errorMessage={errors.projectName}
                   disabled={isEvaluatorApprovedLocked}
                 />
               </div>

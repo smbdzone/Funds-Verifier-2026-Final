@@ -129,6 +129,7 @@ const EvaluationDetails = () => {
       },
       { label: 'Bedrooms', value: selectedProperty?.bedrooms },
       { label: 'Bathrooms', value: selectedProperty?.bathrooms },
+      { label: 'Project Name', value: selectedProperty?.projectName },
       { label: 'Developer', value: selectedProperty?.developer },
       {
         label: 'Is it furnished',

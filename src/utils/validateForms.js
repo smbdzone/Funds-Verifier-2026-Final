@@ -79,6 +79,10 @@ export const validateOffPlanAsset = (formData, formFields) => {
     errors.deliveryTime = "Delivery time is required";
   }
 
+  if (!safeTrim(formData.projectName)) {
+    errors.projectName = "Project Name is required";
+  }
+
   if (!safeTrim(formData.developer)) {
     errors.developer = "Developer is required";
   }

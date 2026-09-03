@@ -199,7 +199,20 @@ export const login = async (values, router) => {
 
     return finalizeLoginSession(data, router)
   } catch (error) {
-    toast.error(error.response?.data?.message ?? 'Login failed')
+    const errorData = error.response?.data
+
+    // Backend can fail after the password check (e.g. OTP email send failure)
+    // and still return otpRequired so the client shows the OTP step instead
+    // of a dead-end error.
+    if (errorData?.otpRequired) {
+      toast.error(
+        errorData?.message ??
+          'We could not send your verification code right now. Please try again.',
+      )
+      return errorData
+    }
+
+    toast.error(errorData?.message ?? 'Login failed')
     console.error(error)
     throw error
   }

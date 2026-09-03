@@ -112,6 +112,7 @@ export function mapApiListingToOffPlanCard(listing) {
       listing?.userId?.profileImage ||
       '/avatar/Avatars 2.png',
     developer: listing?.developer,
+    projectName: listing?.projectName,
     propertyType: listing?.propertyType,
     bedrooms: listing?.bedrooms,
     bathrooms: listing?.bathrooms,

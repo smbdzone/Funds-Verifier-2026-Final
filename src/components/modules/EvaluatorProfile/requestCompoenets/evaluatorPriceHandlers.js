@@ -204,6 +204,7 @@ export const initPropertyDetailsDraft = (property = {}) => {
     bedrooms: toDraftString(normalized.bedrooms),
     bathrooms: toDraftString(normalized.bathrooms),
     developer: normalized.developer ?? '',
+    projectName: normalized.projectName ?? '',
     isFurnished: (() => {
       const raw = normalized.isFurnished
       if (raw === true || raw === 'Yes' || raw === 'yes') return true
@@ -260,6 +261,9 @@ export const buildPropertyDetailsUpdatePayload = (
   }
   if (draft.developer !== undefined) {
     payload.developer = String(draft.developer || '').trim()
+  }
+  if (draft.projectName !== undefined) {
+    payload.projectName = String(draft.projectName || '').trim()
   }
   if (draft.isFurnished !== undefined) {
     payload.isFurnished = draft.isFurnished ? 'Yes' : 'No'

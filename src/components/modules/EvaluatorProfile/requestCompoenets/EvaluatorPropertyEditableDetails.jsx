@@ -199,6 +199,16 @@ export default function EvaluatorPropertyEditableDetails({
         </div>
 
         <div>
+          <label className={labelClass}>Project Name</label>
+          <input
+            type='text'
+            className={editInputClass}
+            value={pickValue(draft?.projectName, property.projectName)}
+            onChange={(e) => setField('projectName', e.target.value)}
+          />
+        </div>
+
+        <div>
           <label className={labelClass}>Developer</label>
           <input
             type='text'

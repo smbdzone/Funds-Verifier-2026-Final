@@ -25,6 +25,41 @@ function filterOffPlanListings(listings, { country, city, minPrice, maxPrice }) 
   })
 }
 
+<<<<<<< Updated upstream
+=======
+function OffPlanCardItem({ listing }) {
+  return (
+    <OffPlanPropertyCard
+      href={`/offplan/${listing.slug}`}
+      title={listing.title}
+      location={listing.location}
+      projectName={listing.projectName}
+      deliveryLabel={listing.deliveryLabel}
+      paymentPlanLabel={listing.paymentPlanLabel}
+      rating={listing.rating}
+      reviewCount={listing.reviewCount}
+      listingRef={listing.ref}
+      qrScanSrc={listing.qrScanSrc}
+      priceFrom={listing.priceFrom}
+      priceTo={listing.priceTo}
+      images={listing.images}
+      developerAvatar={listing.developerAvatar}
+      approvalBadge={listing.approvalBadge}
+      analytics={listing.analytics}
+      slug={listing.slug}
+      uuid={listing.uuid}
+      assetType={listing.assetType}
+      listing={listing.listing}
+      city={listing.city}
+      neighbourhood={listing.neighbourhood}
+      roi={listing.roi}
+      propertyType={listing.propertyType}
+      className='max-w-none'
+    />
+  )
+}
+
+>>>>>>> Stashed changes
 export default function OffPlanPage() {
   const searchParams = useSearchParams()
   const [listings, setListings] = useState([])

@@ -60,7 +60,12 @@ export default function OffPlanProductView({ data }) {
     }
 
     return [
+<<<<<<< Updated upstream
       { label: 'Location', value: formatListingLocation(data), fullWidth: true },
+=======
+      { label: 'Location', value: formatListingLocation(data) },
+      { label: 'Project Name', value: data?.projectName },
+>>>>>>> Stashed changes
       { label: 'Developer', value: data?.developer },
       { label: 'Property Type', value: data?.propertyType },
       { label: 'Bedrooms', value: pad(data?.bedrooms) },

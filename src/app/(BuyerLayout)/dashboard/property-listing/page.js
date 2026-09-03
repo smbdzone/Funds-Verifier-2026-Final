@@ -250,6 +250,7 @@ const Page = () => {
     bedrooms: '',
     evaluationCompanies: '',
     developer: '',
+    projectName: '',
     bathrooms: '',
     isFurnished: '',
     sellerTransferFee: '',
@@ -1122,6 +1123,10 @@ const Page = () => {
       errors.title = 'Title must be less than 50 characters'
     } else if (!offPlan && data.title.length > 30) {
       errors.title = 'Title must be less than 30 characters'
+    }
+
+    if (!String(data.projectName || '').trim()) {
+      errors.projectName = 'Project Name is required'
     }
 
     if (offPlan) {
