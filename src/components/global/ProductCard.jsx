@@ -82,9 +82,6 @@ const ProductCard = ({
           onHoverChange={setQrHovered}
         />
       </div>
-<<<<<<< Updated upstream
-      <div className='w-full xl:w-1/2 relative'>
-=======
       <div className='listing-card-media-swiper relative mx-auto w-full shrink-0 overflow-hidden rounded-lg sm:mx-0'>
         {title ? (
           <div className='absolute left-2 top-2 z-20 max-w-[calc(100%-1rem)] rounded-[2px] px-1.5 py-0.5 shadow-[0px_0px_8px_rgba(0,0,0,0.15)] [background:linear-gradient(90deg,#A2913E_0%,#D7C590_35.28%,#A2913E_68.99%,#D7C58F_100%)]'>
@@ -93,7 +90,6 @@ const ProductCard = ({
             </span>
           </div>
         ) : null}
->>>>>>> Stashed changes
         {carouselSlides.length > 1 ? (
           <ListingCarouselNavButton
             direction='prev'

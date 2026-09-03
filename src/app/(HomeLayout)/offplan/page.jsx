@@ -3,10 +3,14 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Banner } from '@/components/modules/Banner'
-import PaginationComponent from '@/components/modules/Pagination'
 import OffPlanPropertyCard from '@/components/offplan/OffPlanPropertyCard'
 import OffPlanPageSkeleton from '@/components/offplan/OffPlanPageSkeleton'
 import { fetchApprovedOffPlanListings } from '@/libs/offPlanListings'
+
+const GOLD_GRADIENT =
+  '[background:linear-gradient(90deg,_#a2913e,_#d7c590_35.28%,_#a2913e_68.99%,_#d7c58f)]'
+const ABOVE_TABLET_STEP = 2
+const DESKTOP_STEP = 3
 
 function filterOffPlanListings(listings, { country, city, minPrice, maxPrice }) {
   return listings.filter((listing) => {
@@ -25,8 +29,6 @@ function filterOffPlanListings(listings, { country, city, minPrice, maxPrice }) 
   })
 }
 
-<<<<<<< Updated upstream
-=======
 function OffPlanCardItem({ listing }) {
   return (
     <OffPlanPropertyCard
@@ -59,16 +61,14 @@ function OffPlanCardItem({ listing }) {
   )
 }
 
->>>>>>> Stashed changes
 export default function OffPlanPage() {
   const searchParams = useSearchParams()
   const [listings, setListings] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
-  const [currentPage, setCurrentPage] = useState(1)
-  const [showFullListing, setShowFullListing] = useState(false)
   const [mobileCardIndex, setMobileCardIndex] = useState(0)
-  const itemsPerPage = 6
+  const [aboveTabletVisible, setAboveTabletVisible] = useState(ABOVE_TABLET_STEP)
+  const [desktopVisible, setDesktopVisible] = useState(DESKTOP_STEP)
 
   const country = searchParams.get('country') || ''
   const city = searchParams.get('city') || ''
@@ -117,42 +117,35 @@ export default function OffPlanPage() {
     [listings, country, city, minPrice, maxPrice],
   )
 
-  const hasActiveFilters = Boolean(country || city || minPrice || maxPrice)
-
   useEffect(() => {
-    setCurrentPage(1)
     setMobileCardIndex(0)
-    if (hasActiveFilters) {
-      setShowFullListing(true)
-    }
-  }, [country, city, minPrice, maxPrice, hasActiveFilters])
+    setAboveTabletVisible(ABOVE_TABLET_STEP)
+    setDesktopVisible(DESKTOP_STEP)
+  }, [country, city, minPrice, maxPrice, filteredListings.length])
 
   if (isLoading) {
     return <OffPlanPageSkeleton />
   }
 
-  const totalPages = Math.max(1, Math.ceil(filteredListings.length / itemsPerPage))
-  const paginatedListings = showFullListing
-    ? filteredListings.slice(
-      (currentPage - 1) * itemsPerPage,
-      currentPage * itemsPerPage,
-    )
-    : filteredListings.slice(0, 3)
-
-  const mobileListings = filteredListings
-  const mobileVisibleCard = mobileListings[mobileCardIndex]
+  const mobileVisibleCard = filteredListings[mobileCardIndex]
   const canGoMobilePrev = mobileCardIndex > 0
-  const canGoMobileNext = mobileCardIndex < mobileListings.length - 1
+  const canGoMobileNext = mobileCardIndex < filteredListings.length - 1
+
+  const aboveTabletData = filteredListings.slice(0, aboveTabletVisible)
+  const hasMoreAboveTablet = aboveTabletVisible < filteredListings.length
+
+  const desktopData = filteredListings.slice(0, desktopVisible)
+  const hasMoreDesktop = desktopVisible < filteredListings.length
 
   return (
     <>
       <Banner title='Off Plan Properties' />
 
-      <section className='bg-white py-10 sm:py-14 md:py-20'>
+      <section className='bg-white py-8 sm:py-12 md:py-16 lg:py-20'>
         <div className='theme-container mx-auto px-4 sm:px-6'>
-          <div className='mx-auto mb-8 flex w-full max-w-[670px] flex-col items-center gap-5 text-center'>
+          <div className='mx-auto mb-6 flex w-full max-w-[670px] flex-col items-center gap-4 text-center lg:mb-8 lg:gap-5'>
             <div className='flex w-full flex-col items-center gap-[14px]'>
-              <h2 className='w-full whitespace-nowrap text-center text-[25px] font-bold leading-[28px] text-prussianBlue sm:text-[40px] sm:leading-[49px]'>
+              <h2 className='w-full text-center text-[22px] font-bold leading-[28px] text-prussianBlue sm:text-[28px] sm:leading-[34px] lg:text-[40px] lg:leading-[49px]'>
                 Off-Plan Properties
               </h2>
               <div className='flex items-center gap-[6px]'>
@@ -160,7 +153,7 @@ export default function OffPlanPage() {
                 <div className='h-[5.62px] w-[84.91px] rounded-[18px] bg-[#8D7C3B]' />
               </div>
             </div>
-            <p className='w-full text-center text-[14px] font-normal leading-[24px] text-black sm:text-[19px] sm:leading-[30px]'>
+            <p className='w-full text-center text-[13px] font-normal leading-[20px] text-black sm:text-[15px] sm:leading-[24px] lg:text-[19px] lg:leading-[30px]'>
               Discover verified off-plan projects with flexible payment plans,
               trusted developers, and clear handover timelines across Dubai.
             </p>
@@ -176,126 +169,102 @@ export default function OffPlanPage() {
             </p>
           ) : (
             <>
-              <div className='hidden sm:grid grid-cols-1 items-stretch justify-items-stretch gap-6 sm:grid-cols-2 xl:grid-cols-3'>
-                {paginatedListings.map((listing) => (
-                  <div key={listing.id} className='flex h-full w-full min-h-0'>
-                    <OffPlanPropertyCard
-                      href={`/offplan/${listing.slug}`}
-                      title={listing.title}
-                      location={listing.location}
-                      deliveryLabel={listing.deliveryLabel}
-                      paymentPlanLabel={listing.paymentPlanLabel}
-                      rating={listing.rating}
-                      reviewCount={listing.reviewCount}
-                      listingRef={listing.ref}
-                      qrScanSrc={listing.qrScanSrc}
-                      priceFrom={listing.priceFrom}
-                      priceTo={listing.priceTo}
-                      images={listing.images}
-                      developerAvatar={listing.developerAvatar}
-                      approvalBadge={listing.approvalBadge}
-                      analytics={listing.analytics}
-                      slug={listing.slug}
-                      uuid={listing.uuid}
-                      assetType={listing.assetType}
-                      className='max-w-none'
-                    />
-                  </div>
-                ))}
-              </div>
-
-              <div className='sm:hidden'>
+              {/* Mobile: 1 small card + arrows */}
+              <div className='md:hidden'>
                 {mobileVisibleCard ? (
                   <>
-                    {mobileListings.length > 1 ? (
-                      <div className='mb-4 flex items-center justify-center gap-4'>
+                    {filteredListings.length > 1 ? (
+                      <div className='mb-3 flex items-center justify-center gap-3'>
                         <button
                           type='button'
                           onClick={() => setMobileCardIndex((prev) => prev - 1)}
                           disabled={!canGoMobilePrev}
-                          className='flex h-10 w-10 items-center justify-center rounded-sm [background:linear-gradient(90deg,_#a2913e,_#d7c590_35.28%,_#a2913e_68.99%,_#d7c58f)] disabled:cursor-not-allowed disabled:opacity-40'
+                          className={`flex h-8 w-8 items-center justify-center rounded-sm disabled:cursor-not-allowed disabled:opacity-40 ${GOLD_GRADIENT}`}
                           aria-label='Previous card'
                         >
                           <img
                             src='/icons/golden-arrow-previous.png'
                             alt=''
-                            className='h-3 w-3'
+                            className='h-2.5 w-2.5'
                           />
                         </button>
-                        <span className='text-[18px] font-medium text-prussianBlue'>
-                          {mobileCardIndex + 1} / {mobileListings.length}
+                        <span className='text-sm font-medium text-prussianBlue'>
+                          {mobileCardIndex + 1} / {filteredListings.length}
                         </span>
                         <button
                           type='button'
                           onClick={() => setMobileCardIndex((prev) => prev + 1)}
                           disabled={!canGoMobileNext}
-                          className='flex h-10 w-10 items-center justify-center rounded-sm [background:linear-gradient(90deg,_#a2913e,_#d7c590_35.28%,_#a2913e_68.99%,_#d7c58f)] disabled:cursor-not-allowed disabled:opacity-40'
+                          className={`flex h-8 w-8 items-center justify-center rounded-sm disabled:cursor-not-allowed disabled:opacity-40 ${GOLD_GRADIENT}`}
                           aria-label='Next card'
                         >
                           <img
                             src='/icons/golden-arrow-previous.png'
                             alt=''
-                            className='h-3 w-3 rotate-180'
+                            className='h-2.5 w-2.5 rotate-180'
                           />
                         </button>
                       </div>
                     ) : null}
 
-                    <OffPlanPropertyCard
-                      key={mobileVisibleCard.id}
-                      href={`/offplan/${mobileVisibleCard.slug}`}
-                      title={mobileVisibleCard.title}
-                      location={mobileVisibleCard.location}
-                      deliveryLabel={mobileVisibleCard.deliveryLabel}
-                      paymentPlanLabel={mobileVisibleCard.paymentPlanLabel}
-                      rating={mobileVisibleCard.rating}
-                      reviewCount={mobileVisibleCard.reviewCount}
-                      listingRef={mobileVisibleCard.ref}
-                      qrScanSrc={mobileVisibleCard.qrScanSrc}
-                      priceFrom={mobileVisibleCard.priceFrom}
-                      priceTo={mobileVisibleCard.priceTo}
-                      images={mobileVisibleCard.images}
-                      developerAvatar={mobileVisibleCard.developerAvatar}
-                      approvalBadge={mobileVisibleCard.approvalBadge}
-                      analytics={mobileVisibleCard.analytics}
-                      slug={mobileVisibleCard.slug}
-                      uuid={mobileVisibleCard.uuid}
-                      assetType={mobileVisibleCard.assetType}
-                    />
+                    <div className='mx-auto w-full max-w-[320px] sm:max-w-[360px]'>
+                      <OffPlanCardItem listing={mobileVisibleCard} />
+                    </div>
                   </>
                 ) : null}
               </div>
+
+              {/* Tablet / big tablet (incl. 1024): 2 cards + See more */}
+              <div className='hidden grid-cols-2 items-stretch justify-items-stretch gap-4 md:grid xl:hidden md:gap-5'>
+                {aboveTabletData.map((listing) => (
+                  <div key={listing.id} className='flex h-full w-full min-h-0'>
+                    <OffPlanCardItem listing={listing} />
+                  </div>
+                ))}
+              </div>
+
+              {hasMoreAboveTablet ? (
+                <div className='mt-8 hidden justify-center md:flex xl:hidden'>
+                  <button
+                    type='button'
+                    onClick={() =>
+                      setAboveTabletVisible((count) =>
+                        Math.min(count + ABOVE_TABLET_STEP, filteredListings.length),
+                      )
+                    }
+                    className={`inline-flex h-10 min-w-[140px] items-center justify-center rounded-sm px-6 text-sm font-medium text-white transition-opacity hover:opacity-90 ${GOLD_GRADIENT}`}
+                  >
+                    See more
+                  </button>
+                </div>
+              ) : null}
+
+              {/* Above big tablet (1280+): 3 cards + See more */}
+              <div className='hidden items-stretch justify-items-stretch gap-6 xl:grid xl:grid-cols-3'>
+                {desktopData.map((listing) => (
+                  <div key={listing.id} className='flex h-full w-full min-h-0'>
+                    <OffPlanCardItem listing={listing} />
+                  </div>
+                ))}
+              </div>
+
+              {hasMoreDesktop ? (
+                <div className='mt-8 hidden justify-center xl:flex'>
+                  <button
+                    type='button'
+                    onClick={() =>
+                      setDesktopVisible((count) =>
+                        Math.min(count + DESKTOP_STEP, filteredListings.length),
+                      )
+                    }
+                    className={`inline-flex h-11 min-w-[160px] items-center justify-center rounded-sm px-6 text-[18px] font-medium text-white transition-opacity hover:opacity-90 ${GOLD_GRADIENT}`}
+                  >
+                    See more
+                  </button>
+                </div>
+              ) : null}
             </>
           )}
-
-          {!showFullListing && filteredListings.length > 3 ? (
-            <div className='mt-8 hidden justify-center sm:flex'>
-              <button
-                type='button'
-                onClick={() => {
-                  setShowFullListing(true)
-                  setCurrentPage(1)
-                  setMobileCardIndex(0)
-                }}
-                className='inline-flex h-11 min-w-[160px] items-center justify-center rounded-sm px-6 text-[18px] font-medium text-white [background:linear-gradient(90deg,_#a2913e,_#d7c590_35.28%,_#a2913e_68.99%,_#d7c58f)] transition-opacity hover:opacity-90'
-              >
-                View More
-              </button>
-            </div>
-          ) : null}
-
-          {showFullListing && totalPages > 1 ? (
-            <div className='mt-8 flex justify-center'>
-              <PaginationComponent
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPageChange={(page) => {
-                  setCurrentPage(page)
-                  setMobileCardIndex(0)
-                }}
-              />
-            </div>
-          ) : null}
         </div>
       </section>
     </>

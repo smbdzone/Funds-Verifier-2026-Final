@@ -436,16 +436,6 @@ export const ImageUploadComponent = React.memo(
             </div>
             <div className='relative w-full dropdown-container'>
               <ListingFormInput
-<<<<<<< Updated upstream
-                errors={errors.dldNumber && !formData.dldNumber}
-                value={formData.dldNumber || ''}
-                handleChange={handleChange}
-                handleBlur={handleBlur}
-                placeholder='Project Number'
-                fieldLabel='Project Number'
-                errorsMessage={errors.dldNumber}
-                name='dldNumber'
-=======
                 errors={errors.projectName && !formData.projectName}
                 value={formData.projectName || ''}
                 handleChange={handleChange}
@@ -455,31 +445,24 @@ export const ImageUploadComponent = React.memo(
                 fieldLabel='Project Name'
                 errorsMessage={errors.projectName}
                 name='projectName'
->>>>>>> Stashed changes
                 type='text'
                 disabled={isEvaluatorApprovedLocked}
               />
             </div>
-<<<<<<< Updated upstream
-=======
-            {showProjectNumber ? (
-              <div className='relative w-full dropdown-container'>
-                <ListingFormInput
-                  errors={errors.dldNumber && !formData.dldNumber}
-                  value={formData.dldNumber || ''}
-                  handleChange={handleChange}
-                  handleBlur={handleBlur}
-                  placeholder='Project Number'
-                  fieldLabel='Project Number'
-                  errorsMessage={errors.dldNumber}
-                  name='dldNumber'
-                  type='text'
-                  inputMode='numeric'
-                  disabled={isEvaluatorApprovedLocked}
-                />
-              </div>
-            ) : null}
->>>>>>> Stashed changes
+            <div className='relative w-full dropdown-container'>
+              <ListingFormInput
+                errors={errors.dldNumber && !formData.dldNumber}
+                value={formData.dldNumber || ''}
+                handleChange={handleChange}
+                handleBlur={handleBlur}
+                placeholder='Project Number'
+                fieldLabel='Project Number'
+                errorsMessage={errors.dldNumber}
+                name='dldNumber'
+                type='text'
+                disabled={isEvaluatorApprovedLocked}
+              />
+            </div>
             <div className='relative w-full dropdown-container'>
               <ListingsDropdownInputComponents
                 errors={errors.bedrooms && !formData.bedrooms}
