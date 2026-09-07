@@ -7,7 +7,7 @@
     "build": "cross-env NEXT_IGNORE_INCORRECT_LOCKFILE=1 next build --webpack",
     "build:ci": "npm ci && npm run build",
     "start": "cross-env NODE_ENV=production node server.js",
-    "lint": "next lint",
+    "lint": "eslint .",
     "find:unused": "next-unused",
     "postinstall": "patch-package"
   },
@@ -75,7 +75,7 @@
     "@types/react": "^18",
     "baseline-browser-mapping": "^2.10.29",
     "cross-env": "^7.0.3",
-    "eslint": "^8.57.1",
+    "eslint": "^9.38.0",
     "eslint-config-next": "^16.1.2",
     "ignore-loader": "^0.1.2",
     "patch-package": "^8.0.1",
