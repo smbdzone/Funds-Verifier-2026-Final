@@ -58,14 +58,16 @@ export default function AdvertiserLogin() {
               </p>
             </div>
 
-            {/* Normal users sign in through the standard path */}
+            {/* Email/password sign-in (the standard path). Advertiser accounts
+                that use a password rather than UAE Pass sign in here and are
+                redirected back to the advertiser dashboard by role. */}
             <p className='text-[12px] text-center mt-6 text-gray-600'>
-              Not here to advertise?{' '}
+              Prefer email &amp; password?{' '}
               <Link
-                href='/login'
+                href='/user-login'
                 className='text-[rgba(141,124,59,1)] font-medium hover:underline'
               >
-                Go to the normal sign in
+                Sign in with email
               </Link>
             </p>
           </div>

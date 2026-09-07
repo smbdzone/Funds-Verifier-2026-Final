@@ -1,31 +1,74 @@
-import axios from 'axios'
 import customAxios from '../utils/apis/apis'
 import { getTokenFromCookie } from '../utils/helper'
+import {
+  getUploadErrorMessage,
+  LISTING_IMAGE_MAX_MB,
+  LISTING_VIDEO_MAX_MB,
+} from '../constants/listingUploadLimits'
 
-const handleImageUpload = async (images) => {
-  const formData = new FormData()
-  images.forEach((image) => {
-    formData.append('images', image)
-  })
+const wrapUploadError = (error, fileType, maxMB) => {
+  const message = getUploadErrorMessage(error, fileType, maxMB)
+  console.error(`Error uploading ${fileType.toLowerCase()}:`, message, error?.response?.data)
+  const wrapped = new Error(message)
+  wrapped.cause = error
+  throw wrapped
+}
+
+const handleImageUpload = async (images, options = {}) => {
+  const files = Array.isArray(images) ? images.filter(Boolean) : []
+  if (!files.length) return null
+
+  const appendToId =
+    options.appendToId ||
+    options.assetId ||
+    (typeof options === 'string' ? options : null)
+
+  const postBatch = async (batch, assetId) => {
+    const formData = new FormData()
+    batch.forEach((image) => {
+      formData.append('images', image)
+    })
+    if (assetId) {
+      formData.append('assetId', String(assetId))
+    }
+    const response = await customAxios.post(`/upload-imgs`, formData)
+    return response.data
+  }
 
   try {
-    // Do not set Content-Type manually — FormData needs the multipart boundary.
-    const response = await customAxios.post(
-      `${process.env.NEXT_PUBLIC_BASE_URL}/upload-imgs`,
-      formData,
-    )
-    return response.data
+    // One request → one ImageAsset (listing stores a single pictures ObjectId).
+    return await postBatch(files, appendToId)
   } catch (error) {
-    console.error('Error uploading images:', error)
-    throw error
+    // If the combined payload is too large, upload in small chunks and append
+    // into the same ImageAsset so all pictures stay on one gallery document.
+    if (error?.response?.status !== 413 || files.length <= 1) {
+      wrapUploadError(error, 'Image', LISTING_IMAGE_MAX_MB)
+    }
+
+    const chunkSize = 2
+    let asset = null
+    try {
+      for (let i = 0; i < files.length; i += chunkSize) {
+        const chunk = files.slice(i, i + chunkSize)
+        asset = await postBatch(chunk, asset?._id || appendToId || null)
+      }
+      return asset
+    } catch (chunkError) {
+      wrapUploadError(chunkError, 'Image', LISTING_IMAGE_MAX_MB)
+    }
   }
 }
 
 const handleVideoUpload = async (video) => {
   if (!video) return
 
+  const files = Array.isArray(video) ? video : [video]
+  if (!files.length) return
+
   const formData = new FormData()
-  formData.append('video', video)
+  files.forEach((file) => {
+    formData.append('video', file)
+  })
 
   try {
     const response = await customAxios.post(
@@ -34,8 +77,7 @@ const handleVideoUpload = async (video) => {
     )
     return response.data
   } catch (error) {
-    console.error('Error uploading video:', error)
-    throw error
+    wrapUploadError(error, 'Video', LISTING_VIDEO_MAX_MB)
   }
 }
 
@@ -54,16 +96,33 @@ const handleFileUpload = async (file) => {
     )
     return response.data
   } catch (error) {
-    const msg =
-      error?.response?.data?.error ||
-      error?.response?.data?.message ||
-      error?.message ||
-      'Upload failed'
-    console.error('Error uploading file', msg, error?.response?.data)
-    const wrapped = new Error(msg)
-    wrapped.cause = error
-    throw wrapped
+    wrapUploadError(error, 'Certificate PDF', 10)
   }
+}
+
+/** Map /upload-certificate response to a URL the app can store and open later. */
+const resolveCertificateUploadUrl = (data) => {
+  if (!data || typeof data !== 'object') return ''
+
+  const certUuid = data.certificate?.uuid || data.uuid
+  if (typeof certUuid === 'string' && certUuid.trim()) {
+    const base = (process.env.NEXT_PUBLIC_BASE_URL || '').trim().replace(/\/$/, '')
+    if (base) {
+      return `${base}/evaluation-certificate/${encodeURIComponent(certUuid.trim())}/pdf`
+    }
+  }
+
+  const signedUrl = data.signedUrl
+  if (typeof signedUrl === 'string' && signedUrl.startsWith('http')) {
+    return signedUrl.trim()
+  }
+
+  const legacyUrl = data.Certificate?.url || data.certificate?.url
+  if (typeof legacyUrl === 'string' && legacyUrl.startsWith('http')) {
+    return legacyUrl.trim()
+  }
+
+  return ''
 }
 
 const handleVerificationUpload = async (file) => {
@@ -79,8 +138,7 @@ const handleVerificationUpload = async (file) => {
     )
     return response.data
   } catch (error) {
-    console.error('Error uploading verification certificate:', error)
-    throw error
+    wrapUploadError(error, 'Verification certificate', 10)
   }
 }
 
@@ -96,8 +154,7 @@ const handleThumbnailUpload = async (image) => {
 
     return response.data
   } catch (error) {
-    console.error('Error uploading image:', error)
-    throw error
+    wrapUploadError(error, 'Thumbnail image', LISTING_IMAGE_MAX_MB)
   }
 }
 
@@ -109,31 +166,47 @@ const handleDeleteImg = async (id) => {
 
     return response.data
   } catch (error) {
-    console.error('Error uploading image:', error)
-    // Handle error (e.g., show error message)
+    console.error('Error deleting image:', error)
   }
 }
 
 const handleDownload = async (public_id) => {
-  const token = getTokenFromCookie()
-
-  const res = await fetch(
-    `${BASE_URL}/get-certificate-url?public_id=${public_id}`,
-    {
-      headers: { Authorization: `Bearer ${token}` },
-    }
-  )
-
-  const data = await res.json()
-
-  if (data?.url) {
-    window.open(data.url, '_blank')
+  const url = await fetchCertificateUrlByPublicId(public_id)
+  if (url) {
+    window.open(url, '_blank')
   }
 }
+
+const fetchCertificateUrlByPublicId = async (publicId) => {
+  if (!publicId) return ''
+
+  const token = getTokenFromCookie()
+  const base = (process.env.NEXT_PUBLIC_BASE_URL || '').trim().replace(/\/$/, '')
+  if (!base) return ''
+
+  try {
+    const res = await fetch(
+      `${base}/get-certificate-url?public_id=${encodeURIComponent(publicId)}`,
+      {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      },
+    )
+    const data = await res.json()
+    return typeof data?.url === 'string' && data.url.startsWith('http')
+      ? data.url.trim()
+      : ''
+  } catch (error) {
+    console.error('Error fetching certificate URL:', error)
+    return ''
+  }
+}
+
 export {
   handleImageUpload,
   handleVideoUpload,
   handleFileUpload,
+  resolveCertificateUploadUrl,
+  fetchCertificateUrlByPublicId,
   handleThumbnailUpload,
   handleVerificationUpload,
   handleDeleteImg,

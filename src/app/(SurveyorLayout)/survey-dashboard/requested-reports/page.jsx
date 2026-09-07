@@ -1,11 +1,10 @@
-import RequestedReports from "../../../../components/modules/surveyDashboard/RequestedReports";
+import { Suspense } from 'react'
+import RequestedReports from '../../../../components/modules/surveyDashboard/RequestedReports'
 
-const page = () => {
+export default function page() {
   return (
-    <div>
+    <Suspense fallback={<div>Loading…</div>}>
       <RequestedReports />
-    </div>
-  );
-};
-
-export default page;
+    </Suspense>
+  )
+}

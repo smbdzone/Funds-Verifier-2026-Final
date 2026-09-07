@@ -1,4 +1,5 @@
 import React from "react";
+import { ExternalLinkPreview } from "@/components/product-modal/DocumentPdfPreview";
 
 const ViewModal = ({ handleClickOutside, handleCloseModal, selectedMedia }) => {
   return (
@@ -7,7 +8,7 @@ const ViewModal = ({ handleClickOutside, handleCloseModal, selectedMedia }) => {
       className="fixed z-50 inset-0 bg-black bg-opacity-50 flex items-center justify-center"
       onClick={handleClickOutside}
     >
-      <div className="w-[50%] h-[70%] bg-white p-2 rounded-md relative">
+      <div className="relative w-full max-w-sm overflow-hidden rounded-lg bg-white p-4 shadow-lg">
         <button
           className="absolute top-2 right-2 text-4xl"
           onClick={handleCloseModal}
@@ -27,12 +28,10 @@ const ViewModal = ({ handleClickOutside, handleCloseModal, selectedMedia }) => {
             className="w-full h-full object-contain"
           />
         ) : (
-          <iframe
-            src={selectedMedia}
-            className="w-full h-full object-contain"
-            frameBorder="0"
-            allowFullScreen
+          <ExternalLinkPreview
+            href={selectedMedia}
             title="3D Walkthrough"
+            onDone={handleCloseModal}
           />
         )}
       </div>

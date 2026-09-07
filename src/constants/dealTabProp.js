@@ -133,7 +133,7 @@ export const dealTabProperties = [
       {
         id: 7,
         type: "escrowAccount",
-        label: "America",
+        label: "Latin America",
       },
       {
         id: 8,
@@ -325,7 +325,7 @@ export const dealTabCars = [
       {
         id: 7,
         type: "escrowAccount",
-        label: "America",
+        label: "Latin America",
       },
       {
         id: 8,
@@ -512,7 +512,7 @@ export const dealTabBoats = [
       {
         id: 7,
         type: "escrowAccount",
-        label: "America",
+        label: "Latin America",
       },
       {
         id: 8,
@@ -704,7 +704,7 @@ export const dealTabJewellary = [
       {
         id: 7,
         type: "escrowAccount",
-        label: "America",
+        label: "Latin America",
       },
       {
         id: 8,

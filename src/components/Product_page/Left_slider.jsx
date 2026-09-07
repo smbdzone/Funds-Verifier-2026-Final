@@ -9,6 +9,7 @@ import { IoIosArrowUp, IoIosArrowDown, IoIosPlay } from 'react-icons/io'
 import 'swiper/css'
 import 'swiper/css/pagination'
 import './styles.css'
+import { swiperCanLoop } from '@/utils/swiperLoop'
 
 SwiperCore.use([Mousewheel, Pagination]) // Initialize Swiper core modules
 
@@ -37,7 +38,7 @@ export default function ProductSlider({ setPreviewMedia, media = [] }) {
         slidesPerView={3}
         spaceBetween={2}
         ref={swiperRef}
-        loop={true}
+        loop={swiperCanLoop(media?.length || 0, 3)}
         breakpoints={{
           375: {
             slidesPerView: 1, // Mobile

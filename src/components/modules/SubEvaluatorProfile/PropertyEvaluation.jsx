@@ -103,6 +103,9 @@ export const PropertyEvaluationTab = () => {
                               <th className='py-2 px-4 text-left'>
                                 Evaluation Date & Time
                               </th>
+                              {index === 0 ? (
+                                <th className='py-2 px-4 text-left'>Status</th>
+                              ) : null}
                               <th className='py-2 px-4 text-left'>Action</th>
                             </tr>
                           </thead>
@@ -142,6 +145,13 @@ export const PropertyEvaluationTab = () => {
                                       {property.title}
                                     </td>
                                     <td className='py-3 truncate px-4'>{`${formattedDate} ${formattedTime}`}</td>
+                                    {index === 0 ? (
+                                      <td className='py-3 px-4'>
+                                        <span className='inline-flex rounded bg-amber-50 px-2 py-0.5 text-sm font-medium text-amber-800'>
+                                          Pending
+                                        </span>
+                                      </td>
+                                    ) : null}
                                     <td className='py-3 px-4'>
                                       <div className='relative inline-block text-left'>
                                         <button

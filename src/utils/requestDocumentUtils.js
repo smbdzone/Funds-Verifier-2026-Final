@@ -1,0 +1,213 @@
+export function formatDateForInput(value) {
+  if (!value) return ''
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return ''
+  return date.toISOString().slice(0, 10)
+}
+
+export function formatRequestDocumentDate(value) {
+  if (!value) return ''
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return ''
+  return date.toLocaleDateString('en-GB', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  })
+}
+
+/** Upload timestamp for evaluator "Uploaded documents" (asset-holder uploads). */
+export function getUploadedDocumentDate(doc) {
+  if (!doc || typeof doc !== 'object') return ''
+  const raw =
+    doc.uploadedAt || doc.createdAt || doc.updatedAt || doc.Certificate?.uploadedAt
+  return formatRequestDocumentDate(raw)
+}
+
+export function getRequestDocumentName(entry) {
+  if (!entry) return ''
+  if (typeof entry === 'string') return entry
+  return entry.name || ''
+}
+
+export function normalizeRequestDocuments(docs) {
+  if (!Array.isArray(docs)) return []
+  return docs
+    .map((entry) => {
+      if (typeof entry === 'string') {
+        const name = entry.trim()
+        return name ? { name, document: null, date: '' } : null
+      }
+      if (entry && typeof entry === 'object') {
+        const name = (entry.name || '').trim()
+        return name
+          ? {
+            name,
+            document: entry.document || null,
+            date: formatDateForInput(entry.date),
+            uploadedAt: entry.uploadedAt || null,
+          }
+          : null
+      }
+      return null
+    })
+    .filter(Boolean)
+}
+
+export function serializeRequestDocuments(docs) {
+  return normalizeRequestDocuments(docs).map(({ name, document, date }) => ({
+    name,
+    document: document?._id || document || null,
+    ...(date ? { date: new Date(date).toISOString() } : {}),
+  }))
+}
+
+export function isRequestDocumentFulfilled(entry) {
+  if (!entry || typeof entry !== 'object') return false
+  return Boolean(entry.document)
+}
+
+/** True when the listing has at least one unfulfilled document request. */
+export function hasPendingDocumentRequests(listingOrDocs) {
+  const docs = Array.isArray(listingOrDocs)
+    ? listingOrDocs
+    : listingOrDocs?.requestDocument
+  return normalizeRequestDocuments(docs).some(
+    (entry) => !isRequestDocumentFulfilled(entry),
+  )
+}
+
+/**
+ * Evaluator "Uploaded documents" list: fulfilled request docs first,
+ * then other uploadDocument files not already represented.
+ * Prefer getDocumentRefId / documentRefsMatch when comparing refs.
+ * Use buildEvaluatorUploadedDocuments() to build the visible list
+ * (includes Title Deed / Agency Agreement from Add Listing).
+ */
+export function getDocumentRefId(value) {
+  if (!value) return ''
+  if (typeof value === 'string') return value
+  if (typeof value === 'object') {
+    return String(value._id || value.id || value.uuid || '')
+  }
+  return ''
+}
+
+/** True when two document refs point at the same file (_id and/or uuid). */
+export function documentRefsMatch(a, b) {
+  if (!a || !b) return false
+  if (typeof a === 'string' || typeof b === 'string') {
+    const aId = getDocumentRefId(a)
+    const bId = getDocumentRefId(b)
+    if (aId && bId && aId === bId) return true
+    if (typeof a === 'object' && a.uuid && String(a.uuid) === String(b)) {
+      return true
+    }
+    if (typeof b === 'object' && b.uuid && String(b.uuid) === String(a)) {
+      return true
+    }
+    return false
+  }
+  const aIds = [a._id, a.id, a.uuid].filter(Boolean).map(String)
+  const bIds = [b._id, b.id, b.uuid].filter(Boolean).map(String)
+  return aIds.some((id) => bIds.includes(id))
+}
+
+export function buildEvaluatorUploadedDocuments(
+  requestDocument = [],
+  uploadDocument = [],
+  listingDocuments = {},
+) {
+  const listingExtras = []
+
+  const pushListingDoc = (doc, label) => {
+    if (!doc) return
+    if (typeof doc === 'string') {
+      if (!doc.trim()) return
+      listingExtras.push({
+        _id: doc,
+        Certificate: { name: label },
+        listingDocLabel: label,
+      })
+      return
+    }
+    if (typeof doc !== 'object') return
+    listingExtras.push({
+      ...doc,
+      Certificate: {
+        ...(doc.Certificate || {}),
+        name: label,
+      },
+      listingDocLabel: label,
+      uploadedAt: doc.uploadedAt || doc.createdAt || doc.updatedAt,
+    })
+  }
+
+  // Ready-market Title Deed only (off-plan Agency Agreement is shown on Super Admin)
+  pushListingDoc(listingDocuments?.titleDeed, 'Title Deed')
+
+  const fromRequests = normalizeRequestDocuments(requestDocument)
+    .filter(isRequestDocumentFulfilled)
+    .map((req) => {
+      const rawDoc = req.document
+      if (typeof rawDoc === 'string' && rawDoc) {
+        return {
+          _id: rawDoc,
+          Certificate: {
+            name: req.name || 'Document',
+          },
+          uploadedAt: req.uploadedAt || req.date,
+        }
+      }
+
+      const doc = rawDoc && typeof rawDoc === 'object' ? rawDoc : {}
+      return {
+        ...doc,
+        Certificate: {
+          ...(doc.Certificate || {}),
+          name: req.name || doc.Certificate?.name || 'Document',
+        },
+        uploadedAt: req.uploadedAt || req.date || doc.uploadedAt,
+      }
+    })
+
+  const seen = new Set()
+  for (const doc of [...listingExtras, ...fromRequests]) {
+    const id = String(doc?._id || doc?.uuid || '')
+    if (id) seen.add(id)
+  }
+
+  const extras = (Array.isArray(uploadDocument) ? uploadDocument : []).filter(
+    (doc) => {
+      const id = String(doc?._id || doc?.uuid || '')
+      return id ? !seen.has(id) : true
+    },
+  )
+
+  return [...listingExtras, ...fromRequests, ...extras]
+}
+
+export function requestDocumentsMissingDate(docs) {
+  return normalizeRequestDocuments(docs).some((doc) => !doc.date)
+}
+
+/** Open a document URL in a new tab; fall back to download if popup blocked. */
+export function openListingDocumentInNewTab(url, fileName = 'document.pdf') {
+  if (!url) return false
+  const opened = window.open(url, '_blank', 'noopener,noreferrer')
+  if (opened) return true
+
+  try {
+    const link = document.createElement('a')
+    link.href = url
+    link.download = fileName
+    link.target = '_blank'
+    link.rel = 'noopener noreferrer'
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    return true
+  } catch {
+    return false
+  }
+}

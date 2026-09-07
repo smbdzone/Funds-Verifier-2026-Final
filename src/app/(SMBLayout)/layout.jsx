@@ -1,7 +1,6 @@
 "use client";
 
 import { montserrat } from "@/lib/fonts";
-import Script from "next/script";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import "swiper/css";
@@ -27,9 +26,8 @@ export default function RootLayout({ children }) {
           <div className="flex flex-col lg:flex-row w-full h-full">
             {/* Sidebar */}
             <div
-              className={`fixed inset-0 z-30 bg-transparent transform lg:transform-none lg:static lg:z-auto w-[300px] h-full transition-transform ${
-                isSidebarOpen ? "translate-x-0" : "-translate-x-full"
-              }`}
+              className={`fixed inset-0 z-30 bg-transparent transform lg:transform-none lg:static lg:z-auto w-[300px] h-full transition-transform ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"
+                }`}
             >
               <SMBSidebar
                 selectedTab={selectedTab}
@@ -66,12 +64,11 @@ export default function RootLayout({ children }) {
                   </div>
                 }
               >
-                <main className="p-5">{children}</main>
+                <main className="p-5 min-w-0 max-w-full overflow-x-hidden">{children}</main>
               </Suspense>
             </div>
           </div>
         </UserProvider>
-        <Script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js" />
       </body>
     </html>
   );

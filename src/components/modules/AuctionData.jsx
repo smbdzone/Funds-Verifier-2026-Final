@@ -16,8 +16,67 @@ import {
 } from '@/utils/global-functions/global'
 import FooterAdd from '@/components/advertisementComponent/FooterAdd'
 import { getTokenFromCookie } from '@/utils/helper'
-import GlobalLoader from '@/utils/GlobalLoader'
+import { ListingCardSkeleton } from '@/components/global/ListingCardSkeleton'
+import {
+  hasListingSearchFilters,
+  ListingEmptyState,
+} from '@/components/global/ListingEmptyState'
 import customAxios from '@/utils/apis/apis'
+import { isOffPlanListing } from '@/libs/filterMyListingTab'
+import { formatPropertySizeDisplay } from '@/libs/propertySizeUnits'
+
+const PROPERTY_UI_ONLY_PARAMS = new Set(['assetType'])
+
+function buildPropertyApiParams(page, queryKeyForFetch) {
+  const paramsObj = Object.fromEntries(
+    new URLSearchParams(queryKeyForFetch).entries(),
+  )
+
+  PROPERTY_UI_ONLY_PARAMS.forEach((key) => {
+    delete paramsObj[key]
+  })
+
+  return {
+    page,
+    limit: 10,
+    statusFilter: 1,
+    ...paramsObj,
+  }
+}
+
+function filterPropertyProducts(products, queryKeyForFetch) {
+  const params = new URLSearchParams(queryKeyForFetch)
+  const assetType = params.get('assetType')
+  let list = Array.isArray(products) ? products : []
+
+  list = list.filter((item) => !isOffPlanListing(item))
+
+  const saleType = String(assetType || '').toLowerCase()
+  if (saleType.includes('for lease')) {
+    list = list.filter((item) => {
+      const type = String(item?.assetType || '').toLowerCase()
+      return (
+        type.includes('lease') ||
+        String(item?.propertyForLease || '').trim().toLowerCase() === 'yes'
+      )
+    })
+  } else if (!saleType || saleType.includes('for sale')) {
+    list = list.filter((item) => {
+      const type = String(item?.assetType || '').toLowerCase()
+      const forSale =
+        String(item?.propertyForSale || '').trim().toLowerCase() === 'yes' ||
+        type.includes('for sale')
+      const leaseOnly =
+        String(item?.propertyForLease || '').trim().toLowerCase() === 'yes' &&
+        !forSale &&
+        type.includes('for lease')
+
+      return forSale && !leaseOnly
+    })
+  }
+
+  return list
+}
 
 const DeleteModal = ({ onClose, onDelete }) => (
   <div className='fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50'>
@@ -52,7 +111,7 @@ export const AuctionData = () => {
   const [data, setData] = useState([])
   const [listingToDelete, setListingToDelete] = useState(null)
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
-  const [loading, setLoading] = useState(false) // Loading state
+  const [loading, setLoading] = useState(true)
   const [match, setMatch] = useState()
   const [modalCardId, setModalCardId] = useState(null)
   const token = getTokenFromCookie()
@@ -82,38 +141,21 @@ export const AuctionData = () => {
 
   const fetchData = async (page, token, queryKeyForFetch) => {
     setLoading(true)
-    // Parse the URL query string deterministically (avoid stale `searchParams` references).
-    const paramsObj = Object.fromEntries(
-      new URLSearchParams(queryKeyForFetch).entries(),
-    )
 
-    const params = {
-      page,
-      limit: 10,
-      statusFilter: 1,
-      ...paramsObj, // Dynamically add URL search params here
-    }
-
+    const params = buildPropertyApiParams(page, queryKeyForFetch)
     const queryString = buildQueryString(params).replace(/\+/g, '%20')
 
     try {
-      const headers = token ? { Authorization: `Bearer ${token}` } : {}
+      const { data: result } = await customAxios.get(`/property?${queryString}`)
 
-      // Important: use the backend filter endpoint so `propertyType` etc. are applied.
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/property/filter?${queryString}`,
-        { headers },
+      const products = filterPropertyProducts(
+        result?.products || [],
+        queryKeyForFetch,
       )
 
-      if (!res.ok) {
-        throw new Error(`HTTP error! status: ${res.status}`)
-      }
-
-      const result = await res.json()
-
-      setData(result?.products || [])
-      setTotalPages(result.totalPages || 1)
-      setCurrentPage(result.currentPage || 1)
+      setData(products)
+      setTotalPages(result?.totalPages || 1)
+      setCurrentPage(result?.currentPage || page)
     } catch (error) {
       console.error('Error fetching data:', error.message)
       setData([])
@@ -122,7 +164,17 @@ export const AuctionData = () => {
     }
   }
 
+  const queryKeyRef = useRef(queryKey)
+
   useEffect(() => {
+    const filtersChanged = queryKeyRef.current !== queryKey
+    queryKeyRef.current = queryKey
+
+    if (filtersChanged && currentPage !== 1) {
+      setCurrentPage(1)
+      return
+    }
+
     fetchData(currentPage, token, queryKey)
   }, [queryKey, currentPage, token])
 
@@ -183,10 +235,15 @@ export const AuctionData = () => {
     return title.length > limit ? `${title.slice(0, limit)}...` : title
   }
 
+  const listings = Array.isArray(data) ? data : []
+  const hasFilters = hasListingSearchFilters(searchParams)
+
   return (
     <div className='flex flex-col w-full xl:me-20 gap-6'>
       {loading ? (
-        <GlobalLoader />
+        <ListingCardSkeleton count={3} />
+      ) : listings.length === 0 ? (
+        <ListingEmptyState hasFilters={hasFilters} />
       ) : (
         modifiedData.map((item, index) => {
           if (item?.isAd) {
@@ -204,7 +261,8 @@ export const AuctionData = () => {
               attributes={[
                 item.bedrooms + ' Beds',
                 item.bathrooms + ' Baths',
-                formatNumberWithCommas(item.sizeSQFT) + ' Sqft',
+                formatPropertySizeDisplay(item) ||
+                  formatNumberWithCommas(item.sizeSQFT) + ' Sqft',
               ]}
               handlePrevSlide={handlePrevSlide}
               handleNextSlide={handleNextSlide}
@@ -223,11 +281,13 @@ export const AuctionData = () => {
           )
         })
       )}
-      <PaginationComponent
-        currentPage={currentPage}
-        totalPages={totalPages}
-        onPageChange={handlePageChange}
-      />
+      {!loading && listings.length > 0 && totalPages > 1 && (
+        <PaginationComponent
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={handlePageChange}
+        />
+      )}
       {isDeleteModalOpen && (
         <DeleteModal
           onClose={() => setIsDeleteModalOpen(false)}

@@ -6,6 +6,8 @@ import 'react-calendar/dist/Calendar.css'
 import './calender.css'
 import { toast } from 'react-toastify'
 import customAxios from '../../utils/apis/apis'
+import { NoSlotsAvailable } from '@/components/global/NoSlotsAvailable'
+import { getBookableSlotsForDate } from '@/libs/slotTimeFilters'
 
 const getToday = () => {
   const today = new Date()
@@ -39,7 +41,7 @@ const Modal2 = ({ isOpen, onClose, formData, setFormData, userUUID }) => {
 
     try {
       const response = await customAxios.get(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/arrange-view/slot-by-date?userUUID=${userUUID}&date=${formatLocalDate(date)}`
+        `/arrange-view/slot-by-date?userUUID=${userUUID}&date=${formatLocalDate(date)}&slotCategory=service`
       )
 
       setSlots(response?.data[0]?.times || [])
@@ -68,24 +70,25 @@ const Modal2 = ({ isOpen, onClose, formData, setFormData, userUUID }) => {
         `${selectedDate.toDateString()} ${selectedTime}`
       )
 
+      const newUpdatedSlot = slots.map((slot) => {
+        if (slot.time === selectedTime) {
+          return { ...slot, isBooked: true }
+        }
+        return slot
+      })
+
       setFormData((prevData) => ({
         ...prevData,
         dateTime,
+        slotTimeslotId: id,
+        slotDate: formatLocalDate(selectedDate),
+        slotTime: selectedTime,
+        slotTimeslots: newUpdatedSlot,
       }))
 
       try {
-        const newUpdatedSlot = slots.map((slot) => {
-          if (slot.time === selectedTime) {
-            return { ...slot, isBooked: true }
-          }
-          return slot
-        })
-
         customAxios
-          .put(
-            `${process.env.NEXT_PUBLIC_BASE_URL}/arrange-view/timeslot/update/${id}`,
-            { timeSlots: newUpdatedSlot }
-          )
+          .put(`/arrange-view/timeslot/update/${id}`, { timeSlots: newUpdatedSlot })
           .then(() => {
             toast.success('Time updated successfully!')
             fetchBookingsForDate(selectedDate)
@@ -100,8 +103,7 @@ const Modal2 = ({ isOpen, onClose, formData, setFormData, userUUID }) => {
     }
   }
 
-  const availableSlots =
-    slots?.filter((slot) => slot && !slot.isBooked) ?? []
+  const availableSlots = getBookableSlotsForDate(slots, selectedDate)
 
   const handleCheckboxChange = (e) => {
     setIsChecked(e.target.checked)
@@ -113,10 +115,12 @@ const Modal2 = ({ isOpen, onClose, formData, setFormData, userUUID }) => {
     <div className='fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50'>
       <div className='relative max-h-[90vh] overflow-auto bg-white p-5 rounded shadow-lg w-11/12 md:w-1/2 text-[#002D4F]'>
         <button
+          type='button'
           onClick={onClose}
-          className='absolute top-2 text-base right-2 bg-blue-500 text-black w-8 h-8 flex justify-center items-center'
+          className='absolute top-2 right-2 flex h-8 w-8 items-center justify-center rounded border-2 border-light-gold text-light-gold font-semibold hover:bg-light-gold/10'
+          aria-label='Close'
         >
-          x
+          X
         </button>
         <h2 className='text-3xl font-semibold mb-4'>Select Date and Time</h2>
         <p className='mb-8'>
@@ -172,22 +176,17 @@ const Modal2 = ({ isOpen, onClose, formData, setFormData, userUUID }) => {
                       key={time.uuid}
                       type='button'
                       onClick={() => handleTimeSelect(time.time)}
-                      className={`px-6 py-2 border border-[#B7A55E] text-[#B7A55E] rounded whitespace-nowrap ${
-                        selectedTime === time.time
-                          ? 'bg-blue-500 text-white btn-gradient'
-                          : 'bg-gray-200 text-black hover:bg-gray-300'
-                      }`}
+                      className={`px-6 py-2 border border-[#B7A55E] text-[#B7A55E] rounded whitespace-nowrap ${selectedTime === time.time
+                        ? 'bg-blue-500 text-white btn-gradient'
+                        : 'bg-gray-200 text-black hover:bg-gray-300'
+                        }`}
                     >
                       {time.time}
                     </button>
                   ))}
                 </div>
               ) : (
-                <div className='flex items-center justify-center h-32 text-gray-500'>
-                  <p className='text-center'>
-                    No slots are available for this date
-                  </p>
-                </div>
+                <NoSlotsAvailable variant='viewing' />
               )}
             </div>
           </div>
@@ -208,9 +207,8 @@ const Modal2 = ({ isOpen, onClose, formData, setFormData, userUUID }) => {
           <button
             type='button'
             onClick={handleSubmit}
-            className={`btn-gradient text-white px-8 py-2 font-bold ${
-              !selectedTime || !isChecked ? 'cursor-not-allowed opacity-50' : ''
-            }`}
+            className={`btn-gradient text-white px-8 py-2 font-bold ${!selectedTime || !isChecked ? 'cursor-not-allowed opacity-50' : ''
+              }`}
             disabled={!selectedTime || !isChecked}
           >
             Submit

@@ -1,24 +1,13 @@
-'use client'
-
 /** Backend decrypt stream: GET /evaluation-certificate/:uuid/pdf */
 export function isEvaluationCertificateStreamUrl(url) {
   if (typeof url !== 'string' || !url.trim()) return false
   return /\/evaluation-certificate\/[^/]+\/pdf(?:\?|$)/i.test(url.trim())
 }
 
-function resolveApiRequestUrl(url) {
+/** Absolute URL for open in new tab or download proxy. */
+export function getPdfOriginalSrc(url) {
+  if (!url || typeof url !== 'string') return ''
   const trimmed = url.trim()
-  const base = (process.env.NEXT_PUBLIC_BASE_URL || '').trim().replace(/\/$/, '')
-  if (base && trimmed.startsWith(base)) {
-    const path = trimmed.slice(base.length)
-    return path.startsWith('/') ? path : `/${path}`
-  }
-  return trimmed
-}
-
-function absoluteApiUrl(url) {
-  const trimmed = (url || '').trim()
-  if (!trimmed) return ''
   if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
     return trimmed
   }
@@ -28,107 +17,94 @@ function absoluteApiUrl(url) {
   return `${base}${path}`
 }
 
-function isPdfBlob(blob, contentType = '') {
-  const type = String(contentType).toLowerCase()
-  if (type.includes('pdf') || type.includes('octet-stream')) return true
-  if (blob?.type?.includes('pdf') || blob?.type?.includes('octet-stream')) return true
-  return !type || type === 'application/x-unknown'
-}
-
-async function loadStreamPdfBlob(url) {
-  const fullUrl = absoluteApiUrl(resolveApiRequestUrl(url))
-
-  const res = await fetch(fullUrl, {
-    method: 'GET',
-    credentials: 'omit',
-    cache: 'no-store',
-  })
-
-  const contentType = String(res.headers.get('content-type') || '').toLowerCase()
-
-  if (!res.ok || contentType.includes('json')) {
-    let message = 'Failed to load PDF document.'
-    try {
-      const parsed = await res.json()
-      message = parsed.message || message
-    } catch {
-      try {
-        const text = await res.text()
-        const parsed = JSON.parse(text)
-        message = parsed.message || message
-      } catch {
-        /* ignore */
-      }
-    }
-    return { blobUrl: null, error: message, directUrl: fullUrl }
-  }
-
-  const data = await res.blob()
-
-  if (!isPdfBlob(data, contentType)) {
-    return {
-      blobUrl: null,
-      error: 'The server did not return a valid PDF.',
-      directUrl: fullUrl,
-    }
-  }
-
-  return {
-    blobUrl: URL.createObjectURL(
-      data instanceof Blob ? data : new Blob([data], { type: 'application/pdf' }),
-    ),
-    error: null,
-    directUrl: null,
-  }
-}
-
-async function loadRemotePdfBlob(url) {
-  try {
-    const res = await fetch(url, { mode: 'cors', credentials: 'omit' })
-    if (!res.ok) {
-      return { blobUrl: null, error: null, directUrl: url }
-    }
-    const blob = await res.blob()
-    if (blob.type && blob.type.includes('json')) {
-      return { blobUrl: null, error: null, directUrl: url }
-    }
-    return {
-      blobUrl: URL.createObjectURL(blob),
-      error: null,
-      directUrl: null,
-    }
-  } catch {
-    return { blobUrl: null, error: null, directUrl: url }
-  }
+/** Same-origin proxy URL (download only; allowlist enforced server-side). */
+export function getPdfProxyFetchUrl(url) {
+  const original = getPdfOriginalSrc(url)
+  if (!original) return ''
+  if (typeof window === 'undefined') return ''
+  return `${window.location.origin}/api/pdf-preview?url=${encodeURIComponent(original)}`
 }
 
 /**
- * Load a PDF for in-app preview.
- * - API stream URLs → public decrypt stream + blob
- * - Signed S3 / CloudFront → fetch blob, or direct iframe URL as fallback
+ * Open any URL in a new tab. Do not rely on window.open's return value with
+ * noopener — browsers return null even when the tab opened successfully.
  */
-export async function loadPdfBlobUrlForViewer(url) {
-  if (!url || typeof url !== 'string') {
-    return {
-      blobUrl: null,
-      error: 'No document link is available.',
-      directUrl: null,
-    }
+export function openUrlInNewTab(href) {
+  if (!href || typeof href !== 'string') return false
+
+  let url
+  try {
+    url = new URL(href.trim()).href
+  } catch {
+    return false
+  }
+
+  const newWin = window.open(url, '_blank')
+  if (newWin) {
+    newWin.opener = null
+    return true
   }
 
   try {
-    if (isEvaluationCertificateStreamUrl(url)) {
-      return await loadStreamPdfBlob(url)
+    const anchor = document.createElement('a')
+    anchor.href = url
+    anchor.target = '_blank'
+    anchor.rel = 'noopener noreferrer'
+    document.body.appendChild(anchor)
+    anchor.click()
+    anchor.remove()
+    return true
+  } catch {
+    return false
+  }
+}
+
+export function openPdfInNewTab(url) {
+  const src = getPdfOriginalSrc(url)
+  if (!src) return false
+  // Decrypt stream is already a public API PDF — open it directly.
+  // Routing through /api/pdf-preview can fail when origins/env differ.
+  if (isEvaluationCertificateStreamUrl(src)) {
+    return openUrlInNewTab(src)
+  }
+  const openUrl = getPdfProxyFetchUrl(url) || src
+  return openUrlInNewTab(openUrl)
+}
+
+export async function downloadPdfFile(url, filename = 'document.pdf') {
+  const original = getPdfOriginalSrc(url)
+  if (!original) return false
+
+  const safeName =
+    typeof filename === 'string' && filename.trim() ? filename.trim() : 'document.pdf'
+
+  const fetchUrl = isEvaluationCertificateStreamUrl(original)
+    ? original
+    : getPdfProxyFetchUrl(url) || original
+
+  try {
+    const res = await fetch(fetchUrl, {
+      cache: 'no-store',
+      credentials: 'include',
+    })
+    if (!res.ok) throw new Error(`HTTP ${res.status}`)
+
+    const blob = await res.blob()
+    if (!blob?.size || blob.type?.includes('json')) {
+      throw new Error('Not a PDF response')
     }
-    return await loadRemotePdfBlob(url)
-  } catch (err) {
-    if (isEvaluationCertificateStreamUrl(url)) {
-      return {
-        blobUrl: null,
-        error: err?.message || 'Failed to load PDF document.',
-        directUrl: null,
-      }
-    }
-    return { blobUrl: null, error: null, directUrl: url }
+
+    const href = URL.createObjectURL(blob)
+    const anchor = document.createElement('a')
+    anchor.href = href
+    anchor.download = safeName.endsWith('.pdf') ? safeName : `${safeName}.pdf`
+    anchor.rel = 'noopener noreferrer'
+    document.body.appendChild(anchor)
+    anchor.click()
+    anchor.remove()
+    URL.revokeObjectURL(href)
+    return true
+  } catch {
+    return openPdfInNewTab(url)
   }
 }

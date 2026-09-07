@@ -15,16 +15,40 @@ import ListingModalInputComponent from '@/components/ListingsImageComponent/List
 import ListingCustomPlacholderInput from '@/components/ListingFormInput/ListingCustomPlacholderInput'
 import ListingCustomPlaceholderDropdown from '@/components/ListingsImageComponent/ListingCustomPlaceholderDropdown'
 import customAxios from '../../utils/apis/apis'
+import { toast } from 'react-toastify'
 import EvaluationModal from '@/components/Evaluation/evaluationmodal.jsx'
 import {
   LISTING_IMAGE_FORMATS_LABEL,
+  LISTING_QR_SCAN_FORMATS_LABEL,
+  LISTING_THUMBNAIL_FORMATS_LABEL,
   LISTING_VIDEO_FORMATS_LABEL,
 } from '@/constants/listingUploadLimits'
 import { XIcon } from 'lucide-react'
+import OffPlanPaymentPlanTypeField from '@/components/property-listing/OffPlanPaymentPlanTypeField'
 import {
   canRequestPremiumServices,
   isListingEvaluatorApprovedLocked,
+  isListingPriceLocked,
 } from '@/libs/listingEditLock'
+import ListingApprovedEditNotice from '@/components/ListingsForm/ListingApprovedEditNotice'
+import OffPlanPriceRange from '@/components/property-listing/OffPlanPriceRange'
+import OffPlanSizeRange from '@/components/property-listing/OffPlanSizeRange'
+import PropertySizeField from '@/components/property-listing/PropertySizeField'
+import DeliveryTimeField from '@/components/property-listing/DeliveryTimeField'
+import OffPlanLayoutFloorPlan from '@/components/property-listing/OffPlanLayoutFloorPlan'
+import OffPlanPaymentPlan from '@/components/property-listing/OffPlanPaymentPlan'
+import OffPlanAgencyAgreementUpload from '@/components/property-listing/OffPlanAgencyAgreementUpload'
+import ListingVisibilityRadios, {
+  shouldShowPropertyListingVisibility,
+} from '@/components/property-listing/ListingVisibilityRadios'
+import {
+  deliveryQuarterOptions,
+  deliveryYearOptions,
+} from '@/constants/listing-data'
+import {
+  blocksPremiumServiceRequest,
+  premiumServiceFieldLabel,
+} from '@/libs/listingPremiumStatus'
 export const ImageUploadComponent = React.memo(
   ({
     formData,
@@ -37,6 +61,9 @@ export const ImageUploadComponent = React.memo(
     handleOpenModal,
     handleThumbImageRemove,
     handleThumbImageChange,
+    qrScan,
+    handleQrScanChange,
+    handleQrScanRemove,
     handlePhoneNumberChange,
     handleCountryChange,
     selectedCountryPhone,
@@ -44,7 +71,7 @@ export const ImageUploadComponent = React.memo(
     handleImageChange,
     images,
     handleImageRemove,
-    video,
+    videos,
     handleVideoChange,
     handleVideoRemove,
     totalprice,
@@ -74,19 +101,40 @@ export const ImageUploadComponent = React.memo(
     isFurnishedOptions,
     type,
     dropdown3D,
+    handleSizeChange,
+    totalPriceFrom,
+    totalPriceTo,
+    offPlanMedia,
+    onOffPlanImageChange,
+    onOffPlanImageRemove,
+    onPaymentPlanStepChange,
+    onPaymentPlanStepRemove,
+    onPaymentPlanStepAdd,
+    agencyAgreementFile,
+    onAgencyAgreementChange,
+    onAgencyAgreementRemove,
+    listings = ['Private', 'Public'],
+    handleRadioChange,
   }) => {
     const [data, setData] = useState()
     const [data2, setData2] = useState()
 
+    const isOffPlan = formData?.assetType === 'Property Off Plan For Sale'
+
     const getIdByRole = async () => {
       try {
-        const response = await customAxios.get(`/user/role-id/TechnicalReport`) // Fetch user details
+        const response = await customAxios.get(
+          `/user/service-providers/TechnicalReport`,
+          { _skipAuthLogout: true },
+        )
 
-        if (response?.data) {
-          setData(response?.data[0])
+        const providers = Array.isArray(response?.data) ? response.data : []
+        if (providers.length > 0) {
+          setData(providers[0])
         }
       } catch (error) {
-        console.error('Error loading user:', error)
+        // Optional premium service — don't toast or kick the user out.
+        console.warn('Technical report provider unavailable:', error?.message)
       }
     }
     useEffect(() => {
@@ -96,20 +144,34 @@ export const ImageUploadComponent = React.memo(
 
     const getIdByRole3d = async () => {
       try {
-        const response = await customAxios.get(`/user/role-id/3dWalkthrough`) // Fetch user details
+        const response = await customAxios.get(
+          `/user/service-providers/3dWalkthrough`,
+          { _skipAuthLogout: true },
+        )
 
-        if (response?.data) {
-          setData2(response?.data[0])
+        const providers = Array.isArray(response?.data) ? response.data : []
+        if (providers.length > 0) {
+          setData2(providers[0])
         }
       } catch (error) {
-        console.error('Error loading user:', error)
+        console.warn('3D walkthrough provider unavailable:', error?.message)
       }
     }
 
     const [modalOpen, setModalOpen] = useState(false)
     const [RequestService, setRequestService] = useState('')
     const isEvaluatorApprovedLocked = isListingEvaluatorApprovedLocked(formData)
+    const isPriceLocked = isListingPriceLocked(formData)
+    const showListingVisibility = shouldShowPropertyListingVisibility({
+      price: formData?.price,
+      priceFrom: formData?.priceFrom,
+      isOffPlan,
+      listingId: id,
+      fieldsLocked: isEvaluatorApprovedLocked,
+    })
     const canRequestPremium = canRequestPremiumServices(formData)
+    const blocksTechnicalReport = blocksPremiumServiceRequest(formData?.technicalReport)
+    const blocks3DWalkthrough = blocksPremiumServiceRequest(formData?.video3DWalkthrough)
 
     const openPremiumGate = () => {
       setModalOpen(true)
@@ -159,112 +221,187 @@ export const ImageUploadComponent = React.memo(
     return (
       <form className='pt-[50px]'>
         <ConfirmationModal />
-        {isEvaluatorApprovedLocked && (
-          <p className='mb-6 rounded-md border border-[#8d7c3b]/40 bg-[#8d7c3b]/10 px-4 py-3 text-sm text-dark-grey'>
-            This listing is approved with an evaluation certificate. You can
-            update the price, request a 3D walkthrough, or request a technical
-            report. Other fields are locked.
-          </p>
-        )}
-        <div className='md:grid gap-6 md:space-y-0 space-y-5 md:grid-cols-2'>
-          <div className='relative w-full '>
-            <ListingFormInput
-              errors={errors.title && !formData.title}
-              value={formData.title || ''}
-              disabled={isEvaluatorApprovedLocked}
-              handleChange={handleChange}
-              handleBlur={handleBlur}
-              required={true}
-              placeholder='Title your property (max. 30 characters)'
-              errorsMessage={errors.title}
-              name='title'
-              maxLength={30}
-              type='text'
-            />
-          </div>
-          <div className='relative w-full '>
-            <PhoneInputComponent
-              flags={flags}
-              errors={errors.phoneNumber && !formData.phoneNumber}
-              value={phoneNumber || ''}
-              handlePhoneNumberChange={handlePhoneNumberChange}
-              handleCountryChange={handleCountryChange}
-              selectedCountryPhone={selectedCountryPhone}
-              maxLength={maxLength}
-              errorMessage={errors.phoneNumber}
-              disabled={isEvaluatorApprovedLocked}
-            />
-          </div>
-          <ListingImageUploadLayout
-            errors={errors.thumbnail && !thumbnail}
-            formats={LISTING_IMAGE_FORMATS_LABEL}
-          >
-            <ListingsImageComponent
-              errors={errors.thumbnail && !thumbnail}
-              image={thumbnail}
-              errorMessage={errors.thumbnail}
-              handleThumbImageChange={handleThumbImageChange}
-              handleImageRemove={handleThumbImageRemove}
-              disabled={isEvaluatorApprovedLocked}
-            />
-          </ListingImageUploadLayout>
-          <ListingImageUploadLayout
-            errors={errors.pictures && images.length === 0}
-            formats='JPG, PNG, GIF. Maximum file size: 2MB'
-          >
-            <ListingMultipleImageComponent
-              images={images}
-              handleImageRemove={handleImageRemove}
-              handleImageChange={handleImageChange}
-              errors={errors.pictures && images.length === 0}
-              errorMessage={errors.pictures}
-              disabled={isEvaluatorApprovedLocked}
-            />
-          </ListingImageUploadLayout>
-          <ListingImageUploadLayout formats={LISTING_VIDEO_FORMATS_LABEL}>
-            <ListingsVideoComponent
-              video={video}
-              handleVideoRemove={handleVideoRemove}
-              fileInputRef={fileInputRef}
-              handleVideoChange={handleVideoChange}
-              disabled={isEvaluatorApprovedLocked}
-            />
-          </ListingImageUploadLayout>
-          <div className='relative w-full dropdown-container space-y-6'>
-            <ListingTextareaComponent
-              errors={
-                errors.description ||
-                (String(formData.description).length > 300 &&
-                  !formData.description)
-              }
-              value={formData.description || ''}
-              name='description'
-              handleChange={handleChange}
-              handleBlur={handleBlur}
-              placeholder='Tell us about your Property (max. 300 characters)'
-              errorsMessage={errors.description}
-              maxLength={300} // Pass max length to the child
-              disabled={isEvaluatorApprovedLocked}
-            />
-            <div className='relative w-full dropdown-container'>
+        <ListingApprovedEditNotice formData={formData} />
+        {isOffPlan ? (
+          <div className='md:grid gap-6 md:space-y-0 space-y-5 md:grid-cols-2'>
+            <div className='relative w-full'>
               <ListingFormInput
-                errors={
-                  (errors.price && parseInt(totalprice) === 0) ||
-                  (!totalprice && errors.price)
-                }
-                value={totalprice || ''}
+                errors={errors.title && !formData.title}
+                value={formData.title || ''}
+                disabled={isEvaluatorApprovedLocked}
                 handleChange={handleChange}
-                onBlur={handleBlur}
+                handleBlur={handleBlur}
                 required={true}
-                placeholder='Price'
-                errorsMessage={errors.price}
-                name='price'
+                placeholder='Title your property (max. 50 characters)'
+                errorsMessage={errors.title}
+                name='title'
+                maxLength={50}
                 type='text'
               />
             </div>
-          </div>
-          <div className='col-span-2'>
-            <div className='w-full  '>
+            <div className='relative w-full'>
+              <PhoneInputComponent
+                flags={flags}
+                errors={errors.phoneNumber && !formData.phoneNumber}
+                value={phoneNumber || ''}
+                handlePhoneNumberChange={handlePhoneNumberChange}
+                handleCountryChange={handleCountryChange}
+                selectedCountryPhone={selectedCountryPhone}
+                maxLength={maxLength}
+                errorMessage={errors.phoneNumber}
+                disabled={isEvaluatorApprovedLocked}
+              />
+            </div>
+            <ListingImageUploadLayout
+              errors={errors.thumbnail && !thumbnail}
+              formats={LISTING_THUMBNAIL_FORMATS_LABEL}
+              label='Thumbnail'
+              required
+            >
+              <ListingsImageComponent
+                errors={errors.thumbnail && !thumbnail}
+                image={thumbnail}
+                errorMessage={errors.thumbnail}
+                handleThumbImageChange={handleThumbImageChange}
+                handleImageRemove={handleThumbImageRemove}
+                disabled={isEvaluatorApprovedLocked}
+                inputId='offplan-thumbnail'
+              />
+            </ListingImageUploadLayout>
+            <ListingImageUploadLayout
+              errors={errors.pictures && images.length === 0}
+              formats={LISTING_IMAGE_FORMATS_LABEL}
+              label='Pictures'
+              required
+            >
+              <ListingMultipleImageComponent
+                images={images}
+                handleImageRemove={handleImageRemove}
+                handleImageChange={handleImageChange}
+                errors={errors.pictures && images.length === 0}
+                errorMessage={errors.pictures}
+                disabled={isEvaluatorApprovedLocked}
+                inputId='offplan-additional-pictures'
+              />
+            </ListingImageUploadLayout>
+            <ListingImageUploadLayout
+              formats={LISTING_VIDEO_FORMATS_LABEL}
+              label='Video (optional)'
+            >
+              <ListingsVideoComponent
+                videos={videos}
+                handleVideoRemove={handleVideoRemove}
+                fileInputRef={fileInputRef}
+                handleVideoChange={handleVideoChange}
+                disabled={isEvaluatorApprovedLocked}
+              />
+            </ListingImageUploadLayout>
+            <ListingImageUploadLayout
+              formats={LISTING_QR_SCAN_FORMATS_LABEL}
+              label='Upload QR Scan'
+              required
+              errors={errors.qrScan && !qrScan}
+            >
+              <ListingsImageComponent
+                image={qrScan}
+                handleThumbImageChange={handleQrScanChange}
+                handleImageRemove={handleQrScanRemove}
+                disabled={isEvaluatorApprovedLocked}
+                inputId='qr-scan-offplan'
+                uploadLabel='Upload QR Scan'
+                errors={errors.qrScan && !qrScan}
+                errorMessage={errors.qrScan}
+              />
+            </ListingImageUploadLayout>
+            <div className='relative w-full dropdown-container space-y-6'>
+              <ListingTextareaComponent
+                errors={
+                  errors.description ||
+                  (String(formData.description).length > 300 &&
+                    !formData.description)
+                }
+                value={formData.description || ''}
+                name='description'
+                handleChange={handleChange}
+                handleBlur={handleBlur}
+                fieldLabel='Short description'
+                placeholder='Short description (max. 300 characters)'
+                errorsMessage={errors.description}
+                maxLength={300}
+                required
+                disabled={isEvaluatorApprovedLocked}
+              />
+              <div className='relative flex w-full flex-col gap-4 dropdown-container sm:flex-row sm:items-end sm:gap-6'>
+                <div className='relative min-w-0 flex-1'>
+                  <OffPlanPriceRange
+                    priceFrom={totalPriceFrom}
+                    priceTo={totalPriceTo}
+                    handleChange={handleChange}
+                    onBlur={handleBlur}
+                    disabled={isPriceLocked}
+                    errors={errors.price}
+                    errorsMessage={errors.price}
+                  />
+                </div>
+                {showListingVisibility ? (
+                  <ListingVisibilityRadios
+                    className='sm:w-auto sm:shrink-0 sm:pb-1'
+                    listings={listings}
+                    value={formData.listing || ''}
+                    onChange={handleRadioChange}
+                    idPrefix='offplan-listing-vis'
+                  />
+                ) : null}
+              </div>
+            </div>
+            <div className='relative w-full dropdown-container space-y-3'>
+              <OffPlanPaymentPlanTypeField
+                value={formData.paymentPlanType || ''}
+                errors={errors.paymentPlanType && !formData.paymentPlanType}
+                errorMessage={errors.paymentPlanType}
+                onChange={(next) => {
+                  handleChange({
+                    target: { name: 'paymentPlanType', value: next },
+                  })
+                }}
+                readOnly={isEvaluatorApprovedLocked}
+                disabled={isEvaluatorApprovedLocked}
+                required
+              />
+              <OffPlanSizeRange
+                label='Select Size Type'
+                sizeSQFTFrom={formData.sizeSQFTFrom || formData.sizeSQFT}
+                sizeSQFTTo={formData.sizeSQFTTo}
+                sizeSQMFrom={formData.sizeSQMFrom || formData.sizeSQM}
+                sizeSQMTo={formData.sizeSQMTo}
+                sizeUnit={formData.sizeUnit || formData.sizeType || 'SQFT'}
+                errors={errors.sizeSQFT}
+                errorsMessage={errors.sizeSQFT}
+                disabled={isEvaluatorApprovedLocked}
+                onSizeChange={handleSizeChange}
+                onBlur={handleBlur}
+              />
+              <DeliveryTimeField
+                deliveryQuarter={formData.deliveryQuarter}
+                deliveryYear={formData.deliveryYear}
+                quarterDropdownOpen={dropdowns.deliveryQuarter}
+                yearDropdownOpen={dropdowns.deliveryYear}
+                quarterOptions={deliveryQuarterOptions}
+                yearOptions={deliveryYearOptions}
+                onToggleQuarter={() => handleToggleDropdown('deliveryQuarter')}
+                onToggleYear={() => handleToggleDropdown('deliveryYear')}
+                onSelectQuarter={(option) =>
+                  handleSelectOption('deliveryQuarter', option)
+                }
+                onSelectYear={(option) =>
+                  handleSelectOption('deliveryYear', option)
+                }
+                disabled={isEvaluatorApprovedLocked}
+                errors={errors.deliveryTime}
+                errorsMessage={errors.deliveryTime}
+              />
+            </div>
+            <div className='col-span-2'>
               <ListingTextareaComponent
                 errors={
                   errors.additionalDescription &&
@@ -274,258 +411,552 @@ export const ImageUploadComponent = React.memo(
                 name='additionalDescription'
                 handleChange={handleChange}
                 handleBlur={handleBlur}
-                placeholder='Additional Description'
+                fieldLabel='Long description'
+                placeholder='Long description (max. 1000 characters)'
                 errorsMessage={errors.additionalDescription}
                 maxLength={1000}
+                required={false}
                 disabled={isEvaluatorApprovedLocked}
               />
             </div>
-          </div>
-          <div className='relative-placeholder w-full'>
-            <ListingModalInputComponent
-              maxLength={50}
-              disabled={
-                !canRequestPremium ||
-                !formData?.uuid ||
-                formData?.video3DWalkthrough?.uuid
-              }
-              name='video3DWalkthrough'
-              value={
-                formData?.video3DWalkthrough
-                  ? 'Completed'
-                  : modalData?.dateTime || ''
-              }
-              handleChange={handleChange}
-              required={true}
-              errors={errors.video3DWalkthrough}
-              errorMessage={errors.video3DWalkthrough}
-              dateTime={modalData.dateTime !== ''}
-              handleOpenModal={
-                !canRequestPremium
-                  ? openPremiumGate
-                  : formData?.uuid
-                    ? handleOpenModal
-                    : () => {
-                      setModalOpen(true)
-                      setRequestService('3D Walkthrough')
-                    }
-              }
-              customPlaceholder='3D Walkthrough Embedded Link'
-              subPlaceholder=' (Optional)'
-              icon='/icons/3dicon.png'
-            />
-            <Modal2
-              isOpen={isModalOpen}
-              type={type}
-              onClose={handleCloseModal}
-              onSave={handleRequestModalData}
-              productId={formData?.uuid}
-              productTitle={formData?.title}
-              setModalData={setModalData}
-              dropdown3D={dropdown3D}
-              bedroomsDropDown={bedroomsOptions}
-              title='Bedrooms'
-              userUUID={data2?.uuid}
-            />
-          </div>
-          <div className='relative flex flex-col justify-start space-y-5'>
-            <ListingFormInput
-              errors={
-                (errors.sizeSQFT && totalSize === 'Size in') ||
-                (!totalSize && errors.sizeSQFT)
-              }
-              value={
-                id ? `${formData.sizeSQFT || ''} SQFT` : `${totalSize} SQFT`
-              }
-              disabled={isEvaluatorApprovedLocked}
-              handleChange={handleChange}
-              onBlur={handleBlur}
-              required={true}
-              placeholder='Size in SQFT'
-              errorsMessage={errors.sizeSQFT}
-              maxLength={50}
-              name='sizeSQFT'
-              type='text'
-            />
-          </div>
-          {formData.assetType === 'Property For Lease' && (
             <div className='relative w-full dropdown-container'>
-              <ListingsDropdownInputComponents
-                errors={
-                  errors.leaseNumberofCheques && !formData.leaseNumberofCheques
-                }
-                errorMessage={errors.leaseNumberofCheques}
-                value={formData.leaseNumberofCheques || ''}
-                placeholder='Lease no of Cheques'
-                name='leaseNumberofCheques'
-                handleToggleDropdown={() =>
-                  handleToggleDropdown('leaseNumberofCheques')
-                }
-                dropdown={dropdowns.leaseNumberofCheques}
-                dropdownType='leaseNumberofCheques'
-                dropdownOptions={leaseNumberofChequesOptions}
-                handleSelectOption={(_, option) =>
-                  handleSelectOption('leaseNumberofCheques', option)
-                }
-                disabled={isEvaluatorApprovedLocked}
-                readOnly={isEvaluatorApprovedLocked}
-              />
-            </div>
-          )}
-          <div className='relative-placeholder w-full'>
-            <ListingModalInputComponent
-              maxLength={50}
-              name='evaluationDateTime'
-              disabled={isEvaluatorApprovedLocked}
-              value={
-                formData.evaluationDateTime
-                  ? formatDateTime(formData.evaluationDateTime).formattedDate
-                  : ''
-              }
-              handleChange={handleChange}
-              required={true}
-              errors={errors.evaluationDateTime && !formData.evaluationDateTime}
-              errorMessage={errors.evaluationDateTime}
-              handleOpenModal={handleOpenModal1}
-              customPlaceholder='Request Evaluation'
-            />
-            <EvaluationModal
-              isOpen={isModal1Open}
-              onClose={handleClose1Modal}
-              formData={formData}
-              setFormData={setFormData}
-            />
-          </div>
-          <div className='relative-placeholder w-full'>
-            <ListingModalInputComponent
-              maxLength={50}
-              disabled={!formData?.uuid || formData?.technicalReport?.uuid}
-              name='technicalReport'
-              value={
-                formData.technicalReport
-                  ? 'Completed'
-                  : technicalModalData.dateTime
-              }
-              handleChange={handleChange}
-              required={true}
-              errors={errors.technicalReport && !formData.technicalReport}
-              errorMessage={errors.technicalReport}
-              handleOpenModal={
-                !canRequestPremium
-                  ? openPremiumGate
-                  : formData?.uuid
-                    ? handleTechnicalModal
-                    : () => {
-                      setModalOpen(true)
-                      setRequestService('Technical Report')
-                    }
-              }
-              dateTime={technicalModalData.dateTime !== ''}
-              customPlaceholder='Request Technical Report'
-              subPlaceholder=' (Optional)'
-              icon='/icons/card2.png'
-            />
-            <TechnicalReport
-              isOpen={isTechnicalModalOpen}
-              onClose={handleCloseTechnicalModal}
-              onSave={handleRequestTechnicalModalData}
-              type={'Property For Sale'}
-              dropdown3D={dropdown3D}
-              bedroomsDropDown={bedroomsOptions}
-              title='Bedrooms'
-              productTitle={formData?.title}
-              productId={formData?.uuid}
-              userUUID={data?.uuid}
-            />
-          </div>
-          <div className='relative w-full dropdown-container'>
-            <ListingsDropdownInputComponents
-              errors={errors.bedrooms && !formData.bedrooms}
-              errorMessage={errors.bedrooms}
-              value={formData.bedrooms || ''}
-              placeholder='Bedrooms'
-              name='bedrooms'
-              handleToggleDropdown={() => handleToggleDropdown('bedrooms')}
-              dropdown={dropdowns.bedrooms}
-              dropdownType='bedrooms'
-              dropdownOptions={bedroomsOptions}
-              handleSelectOption={(_, option) =>
-                handleSelectOption('bedrooms', option)
-              }
-              readOnly={isEvaluatorApprovedLocked}
-              disabled={isEvaluatorApprovedLocked}
-            />
-          </div>
-          <div className='relative w-full dropdown-container'>
-            <ListingsDropdownInputComponents
-              errors={errors.bathrooms && !formData.bathrooms}
-              errorMessage={errors.bathrooms}
-              value={formData.bathrooms || ''}
-              placeholder='Bathrooms'
-              name='bathrooms'
-              handleToggleDropdown={() => handleToggleDropdown('bathrooms')}
-              dropdown={dropdowns.bathrooms}
-              dropdownType='bathrooms'
-              dropdownOptions={bathroomsOptions}
-              handleSelectOption={(_, option) =>
-                handleSelectOption('bathrooms', option)
-              }
-              readOnly={isEvaluatorApprovedLocked}
-              disabled={isEvaluatorApprovedLocked}
-            />
-          </div>
-          <div className='relative-placeholder w-full'>
-            <ListingsDropdownInputComponents
-              errors={errors.occupancyStatus && !formData.occupancyStatus}
-              errorMessage={errors.occupancyStatus}
-              value={formData.occupancyStatus || ''}
-              placeholder='Occupancy Status'
-              name='occupancyStatus'
-              handleToggleDropdown={() =>
-                handleToggleDropdown('occupancyStatus')
-              }
-              dropdown={dropdowns.occupancyStatus}
-              disabled={isEvaluatorApprovedLocked}
-              dropdownType='occupancyStatus'
-              dropdownOptions={occupancyStatusOptions}
-              handleSelectOption={(_, option) =>
-                handleSelectOption('occupancyStatus', option)
-              }
-              readOnly={isEvaluatorApprovedLocked}
-            />
-          </div>
-          <div className='relative w-full dropdown-container'>
-            <div className='relative-placeholder w-full'>
-              <ListingCustomPlacholderInput
+              <ListingFormInput
+                errors={errors.developer && !formData.developer}
                 value={formData.developer || ''}
                 handleChange={handleChange}
+                handleBlur={handleBlur}
+                required
+                placeholder='Developer'
+                fieldLabel='Developer'
+                errorsMessage={errors.developer}
                 name='developer'
-                customPlaceholder='Developer'
-                subPlaceholder=' (Optional)'
+                type='text'
                 disabled={isEvaluatorApprovedLocked}
               />
             </div>
-          </div>
-          <div className='relative w-full dropdown-container'>
-            <div className='relative-placeholder w-full'>
-              <ListingCustomPlaceholderDropdown
-                value={formData.isFurnished || ''}
-                name='isFurnished'
-                handleToggleDropdown={() => handleToggleDropdown('isFurnished')}
-                dropdown={dropdowns.isFurnished}
-                dropdownType='isFurnished'
-                dropdownOptions={isFurnishedOptions}
+            <div className='relative w-full dropdown-container'>
+              <ListingFormInput
+                errors={errors.projectName && !formData.projectName}
+                value={formData.projectName || ''}
+                handleChange={handleChange}
+                handleBlur={handleBlur}
+                required
+                placeholder='Project Name'
+                fieldLabel='Project Name'
+                errorsMessage={errors.projectName}
+                name='projectName'
+                type='text'
+                disabled={isEvaluatorApprovedLocked}
+              />
+            </div>
+            <div className='relative w-full dropdown-container'>
+              <ListingFormInput
+                errors={errors.dldNumber && !formData.dldNumber}
+                value={formData.dldNumber || ''}
+                handleChange={handleChange}
+                handleBlur={handleBlur}
+                placeholder='Project Number'
+                fieldLabel='Project Number'
+                errorsMessage={errors.dldNumber}
+                name='dldNumber'
+                type='text'
+                disabled={isEvaluatorApprovedLocked}
+              />
+            </div>
+            <div className='relative w-full dropdown-container'>
+              <ListingsDropdownInputComponents
+                errors={errors.bedrooms && !formData.bedrooms}
+                errorMessage={errors.bedrooms}
+                value={formData.bedrooms || ''}
+                placeholder='Bedrooms'
+                name='bedrooms'
+                handleToggleDropdown={() => handleToggleDropdown('bedrooms')}
+                dropdown={dropdowns.bedrooms}
+                dropdownType='bedrooms'
+                dropdownOptions={bedroomsOptions}
                 handleSelectOption={(_, option) =>
-                  handleSelectOption('isFurnished', option)
+                  handleSelectOption('bedrooms', option)
                 }
-                disabled={isEvaluatorApprovedLocked}
                 readOnly={isEvaluatorApprovedLocked}
-                customPlaceholder='Is it furnished? '
-                subPlaceholder='(Optional)'
+                disabled={isEvaluatorApprovedLocked}
+                required
+              />
+            </div>
+            <div className='relative w-full dropdown-container'>
+              <ListingsDropdownInputComponents
+                errors={errors.bathrooms && !formData.bathrooms}
+                errorMessage={errors.bathrooms}
+                value={formData.bathrooms || ''}
+                placeholder='Bathrooms'
+                name='bathrooms'
+                handleToggleDropdown={() => handleToggleDropdown('bathrooms')}
+                dropdown={dropdowns.bathrooms}
+                dropdownType='bathrooms'
+                dropdownOptions={bathroomsOptions}
+                handleSelectOption={(_, option) =>
+                  handleSelectOption('bathrooms', option)
+                }
+                readOnly={isEvaluatorApprovedLocked}
+                disabled={isEvaluatorApprovedLocked}
+                required
+              />
+            </div>
+            <OffPlanLayoutFloorPlan
+              formData={formData}
+              errors={errors}
+              dropdowns={dropdowns}
+              handleToggleDropdown={handleToggleDropdown}
+              handleSelectOption={handleSelectOption}
+              disabled={isEvaluatorApprovedLocked}
+              offPlanMedia={offPlanMedia}
+              onOffPlanImageChange={onOffPlanImageChange}
+              onOffPlanImageRemove={onOffPlanImageRemove}
+            />
+            <OffPlanPaymentPlan
+              paymentPlan={formData.paymentPlan}
+              disabled={isEvaluatorApprovedLocked}
+              errors={errors}
+              onStepChange={onPaymentPlanStepChange}
+              onStepRemove={onPaymentPlanStepRemove}
+              onStepAdd={onPaymentPlanStepAdd}
+            />
+            <div className='col-span-2'>
+              <OffPlanAgencyAgreementUpload
+                file={agencyAgreementFile}
+                existingDoc={
+                  agencyAgreementFile ? null : formData?.agencyAgreement
+                }
+                onChange={onAgencyAgreementChange}
+                onRemove={onAgencyAgreementRemove}
+                disabled={isEvaluatorApprovedLocked}
               />
             </div>
           </div>
-        </div>
+        ) : (
+          <div className='md:grid gap-6 md:space-y-0 space-y-5 md:grid-cols-2'>
+            <div className='relative w-full '>
+              <ListingFormInput
+                errors={errors.title && !formData.title}
+                value={formData.title || ''}
+                disabled={isEvaluatorApprovedLocked}
+                handleChange={handleChange}
+                handleBlur={handleBlur}
+                required={true}
+                placeholder='Title your property (max. 30 characters)'
+                errorsMessage={errors.title}
+                name='title'
+                maxLength={30}
+                type='text'
+              />
+            </div>
+            <div className='relative w-full '>
+              <PhoneInputComponent
+                flags={flags}
+                errors={errors.phoneNumber && !formData.phoneNumber}
+                value={phoneNumber || ''}
+                handlePhoneNumberChange={handlePhoneNumberChange}
+                handleCountryChange={handleCountryChange}
+                selectedCountryPhone={selectedCountryPhone}
+                maxLength={maxLength}
+                errorMessage={errors.phoneNumber}
+                disabled={isEvaluatorApprovedLocked}
+              />
+            </div>
+            <ListingImageUploadLayout
+              errors={errors.thumbnail && !thumbnail}
+              formats={LISTING_THUMBNAIL_FORMATS_LABEL}
+              label='Thumbnail'
+              required
+            >
+              <ListingsImageComponent
+                errors={errors.thumbnail && !thumbnail}
+                image={thumbnail}
+                errorMessage={errors.thumbnail}
+                handleThumbImageChange={handleThumbImageChange}
+                handleImageRemove={handleThumbImageRemove}
+                disabled={isEvaluatorApprovedLocked}
+                inputId='property-thumbnail'
+              />
+            </ListingImageUploadLayout>
+            <ListingImageUploadLayout
+              errors={errors.pictures && images.length === 0}
+              formats={LISTING_IMAGE_FORMATS_LABEL}
+              label='Additional pictures'
+              required
+            >
+              <ListingMultipleImageComponent
+                images={images}
+                handleImageRemove={handleImageRemove}
+                handleImageChange={handleImageChange}
+                errors={errors.pictures && images.length === 0}
+                errorMessage={errors.pictures}
+                disabled={isEvaluatorApprovedLocked}
+                inputId='property-additional-pictures'
+              />
+            </ListingImageUploadLayout>
+            <ListingImageUploadLayout
+              formats={LISTING_VIDEO_FORMATS_LABEL}
+              label='Video (optional)'
+            >
+              <ListingsVideoComponent
+                videos={videos}
+                handleVideoRemove={handleVideoRemove}
+                fileInputRef={fileInputRef}
+                handleVideoChange={handleVideoChange}
+                disabled={isEvaluatorApprovedLocked}
+              />
+            </ListingImageUploadLayout>
+            <ListingImageUploadLayout
+              formats={LISTING_QR_SCAN_FORMATS_LABEL}
+              label='Upload QR Scan'
+              required
+              errors={errors.qrScan && !qrScan}
+            >
+              <ListingsImageComponent
+                image={qrScan}
+                handleThumbImageChange={handleQrScanChange}
+                handleImageRemove={handleQrScanRemove}
+                disabled={isEvaluatorApprovedLocked}
+                inputId='qr-scan-property'
+                uploadLabel='Upload QR Scan'
+                errors={errors.qrScan && !qrScan}
+                errorMessage={errors.qrScan}
+              />
+            </ListingImageUploadLayout>
+            <div className='relative w-full dropdown-container space-y-6'>
+              <ListingTextareaComponent
+                errors={
+                  errors.description ||
+                  (String(formData.description).length > 300 &&
+                    !formData.description)
+                }
+                value={formData.description || ''}
+                name='description'
+                handleChange={handleChange}
+                handleBlur={handleBlur}
+                fieldLabel='Short description'
+                placeholder='Short description (max. 300 characters)'
+                errorsMessage={errors.description}
+                maxLength={300}
+                required
+                disabled={isEvaluatorApprovedLocked}
+              />
+              <div className='relative flex w-full flex-col gap-4 dropdown-container sm:flex-row sm:items-end sm:gap-6'>
+                <div className='relative min-w-0 flex-1'>
+                  <ListingFormInput
+                    errors={
+                      (errors.price && parseInt(totalprice) === 0) ||
+                      (!totalprice && errors.price)
+                    }
+                    value={totalprice || ''}
+                    handleChange={handleChange}
+                    onBlur={handleBlur}
+                    required={true}
+                    placeholder='Price'
+                    errorsMessage={errors.price}
+                    name='price'
+                    type='text'
+                    disabled={isPriceLocked}
+                  />
+                </div>
+                {showListingVisibility ? (
+                  <ListingVisibilityRadios
+                    className='sm:w-auto sm:shrink-0 sm:pb-1'
+                    listings={listings}
+                    value={formData.listing || ''}
+                    onChange={handleRadioChange}
+                    idPrefix='property-listing-vis'
+                  />
+                ) : null}
+              </div>
+            </div>
+            <div className='relative w-full dropdown-container space-y-6'>
+              <div className='relative-placeholder w-full'>
+                <ListingCustomPlacholderInput
+                  value={formData.dldNumber || ''}
+                  handleChange={handleChange}
+                  name='dldNumber'
+                  customPlaceholder='Project Number'
+                  disabled={isEvaluatorApprovedLocked}
+                />
+              </div>
+              <PropertySizeField
+                label='Select Size Type'
+                sizeSQFT={formData.sizeSQFT || formData.sizeSQFTFrom || ''}
+                sizeSQM={formData.sizeSQM || formData.sizeSQMFrom || ''}
+                sizeUnit={formData.sizeUnit || formData.sizeType || 'SQFT'}
+                errors={errors.sizeSQFT}
+                errorsMessage={errors.sizeSQFT}
+                disabled={isEvaluatorApprovedLocked}
+                onSizeChange={handleSizeChange}
+                onBlur={handleBlur}
+              />
+            </div>
+            <div className='col-span-2'>
+              <div className='w-full  '>
+                <ListingTextareaComponent
+                  errors={
+                    errors.additionalDescription &&
+                    String(formData.additionalDescription).length > 1000
+                  }
+                  value={formData.additionalDescription || ''}
+                  name='additionalDescription'
+                  handleChange={handleChange}
+                  handleBlur={handleBlur}
+                  fieldLabel='Long description'
+                  placeholder='Long description (max. 1000 characters)'
+                  errorsMessage={errors.additionalDescription}
+                  maxLength={1000}
+                  required
+                  disabled={isEvaluatorApprovedLocked}
+                />
+              </div>
+            </div>
+            <div className='relative-placeholder w-full'>
+              <ListingModalInputComponent
+                maxLength={50}
+                disabled={
+                  !canRequestPremium || !formData?.uuid || blocks3DWalkthrough
+                }
+                name='video3DWalkthrough'
+                value={
+                  premiumServiceFieldLabel(formData?.video3DWalkthrough) ||
+                  modalData?.dateTime ||
+                  ''
+                }
+                handleChange={handleChange}
+                required={false}
+                errors={errors.video3DWalkthrough}
+                errorMessage={errors.video3DWalkthrough}
+                dateTime={modalData.dateTime !== ''}
+                handleOpenModal={
+                  !canRequestPremium
+                    ? openPremiumGate
+                    : formData?.uuid
+                      ? handleOpenModal
+                      : () => {
+                        setModalOpen(true)
+                        setRequestService('3D Walkthrough')
+                      }
+                }
+                customPlaceholder='3D Walkthrough Embedded Link'
+                icon='/icons/3dicon.png'
+              />
+              <Modal2
+                isOpen={isModalOpen}
+                type={type}
+                onClose={handleCloseModal}
+                onSave={handleRequestModalData}
+                productId={formData?.uuid}
+                productTitle={formData?.title}
+                setModalData={setModalData}
+                dropdown3D={dropdown3D}
+                bedroomsDropDown={bedroomsOptions}
+                title='Bedrooms'
+                userUUID={data2?.uuid}
+                listingPhone={formData?.phoneNumber || phoneNumber || ''}
+              />
+            </div>
+            {formData.assetType === 'Property For Lease' && (
+              <div className='relative w-full dropdown-container'>
+                <ListingsDropdownInputComponents
+                  errors={
+                    errors.leaseNumberofCheques && !formData.leaseNumberofCheques
+                  }
+                  errorMessage={errors.leaseNumberofCheques}
+                  value={formData.leaseNumberofCheques || ''}
+                  placeholder='Lease no of Cheques'
+                  name='leaseNumberofCheques'
+                  handleToggleDropdown={() =>
+                    handleToggleDropdown('leaseNumberofCheques')
+                  }
+                  dropdown={dropdowns.leaseNumberofCheques}
+                  dropdownType='leaseNumberofCheques'
+                  dropdownOptions={leaseNumberofChequesOptions}
+                  handleSelectOption={(_, option) =>
+                    handleSelectOption('leaseNumberofCheques', option)
+                  }
+                  disabled={isEvaluatorApprovedLocked}
+                  readOnly={isEvaluatorApprovedLocked}
+                  required
+                />
+              </div>
+            )}
+            <div className='relative-placeholder w-full'>
+              <ListingModalInputComponent
+                maxLength={50}
+                name='evaluationDateTime'
+                disabled={isEvaluatorApprovedLocked}
+                value={
+                  formData.evaluationDateTime
+                    ? formatDateTime(formData.evaluationDateTime).formattedDate
+                    : ''
+                }
+                handleChange={handleChange}
+                required={true}
+                errors={errors.evaluationDateTime && !formData.evaluationDateTime}
+                errorMessage={errors.evaluationDateTime}
+                handleOpenModal={handleOpenModal1}
+                customPlaceholder='Request Evaluation'
+              />
+              <EvaluationModal
+                isOpen={isModal1Open}
+                onClose={handleClose1Modal}
+                formData={formData}
+                setFormData={setFormData}
+                assetType='Property For Sale'
+                dropdown3D={dropdown3D}
+                bedroomsDropDown={bedroomsOptions}
+                title='Bedrooms'
+              />
+            </div>
+            <div className='relative-placeholder w-full'>
+              <ListingModalInputComponent
+                maxLength={50}
+                disabled={
+                  !canRequestPremium || !formData?.uuid || blocksTechnicalReport
+                }
+                name='technicalReport'
+                value={
+                  premiumServiceFieldLabel(formData.technicalReport) ||
+                  technicalModalData.dateTime
+                }
+                handleChange={handleChange}
+                required={false}
+                errors={errors.technicalReport && !formData.technicalReport}
+                errorMessage={errors.technicalReport}
+                handleOpenModal={
+                  !canRequestPremium
+                    ? openPremiumGate
+                    : formData?.uuid
+                      ? handleTechnicalModal
+                      : () => {
+                        setModalOpen(true)
+                        setRequestService('Technical Report')
+                      }
+                }
+                dateTime={technicalModalData.dateTime !== ''}
+                customPlaceholder='Request Technical Report'
+                icon='/icons/card2.png'
+              />
+              <TechnicalReport
+                isOpen={isTechnicalModalOpen}
+                onClose={handleCloseTechnicalModal}
+                onSave={handleRequestTechnicalModalData}
+                type={'Property For Sale'}
+                dropdown3D={dropdown3D}
+                bedroomsDropDown={bedroomsOptions}
+                title='Bedrooms'
+                productTitle={formData?.title}
+                productId={formData?.uuid}
+                userUUID={data?.uuid}
+                listingPhone={formData?.phoneNumber || phoneNumber || ''}
+              />
+            </div>
+            <div className='relative w-full dropdown-container'>
+              <ListingsDropdownInputComponents
+                errors={errors.bedrooms && !formData.bedrooms}
+                errorMessage={errors.bedrooms}
+                value={formData.bedrooms || ''}
+                placeholder='Bedrooms'
+                name='bedrooms'
+                handleToggleDropdown={() => handleToggleDropdown('bedrooms')}
+                dropdown={dropdowns.bedrooms}
+                dropdownType='bedrooms'
+                dropdownOptions={bedroomsOptions}
+                handleSelectOption={(_, option) =>
+                  handleSelectOption('bedrooms', option)
+                }
+                readOnly={isEvaluatorApprovedLocked}
+                disabled={isEvaluatorApprovedLocked}
+                required
+              />
+            </div>
+            <div className='relative w-full dropdown-container'>
+              <ListingsDropdownInputComponents
+                errors={errors.bathrooms && !formData.bathrooms}
+                errorMessage={errors.bathrooms}
+                value={formData.bathrooms || ''}
+                placeholder='Bathrooms'
+                name='bathrooms'
+                handleToggleDropdown={() => handleToggleDropdown('bathrooms')}
+                dropdown={dropdowns.bathrooms}
+                dropdownType='bathrooms'
+                dropdownOptions={bathroomsOptions}
+                handleSelectOption={(_, option) =>
+                  handleSelectOption('bathrooms', option)
+                }
+                readOnly={isEvaluatorApprovedLocked}
+                disabled={isEvaluatorApprovedLocked}
+                required
+              />
+            </div>
+            <div className='relative-placeholder w-full'>
+              <ListingsDropdownInputComponents
+                errors={errors.occupancyStatus && !formData.occupancyStatus}
+                errorMessage={errors.occupancyStatus}
+                value={formData.occupancyStatus || ''}
+                placeholder='Occupancy Status'
+                name='occupancyStatus'
+                handleToggleDropdown={() =>
+                  handleToggleDropdown('occupancyStatus')
+                }
+                dropdown={dropdowns.occupancyStatus}
+                disabled={isEvaluatorApprovedLocked}
+                dropdownType='occupancyStatus'
+                dropdownOptions={occupancyStatusOptions}
+                handleSelectOption={(_, option) =>
+                  handleSelectOption('occupancyStatus', option)
+                }
+                readOnly={isEvaluatorApprovedLocked}
+                required
+              />
+            </div>
+            <div className='relative w-full dropdown-container'>
+              <div className='relative-placeholder w-full'>
+                <ListingCustomPlacholderInput
+                  value={formData.developer || ''}
+                  handleChange={handleChange}
+                  name='developer'
+                  customPlaceholder='Developer'
+                  disabled={isEvaluatorApprovedLocked}
+                />
+              </div>
+            </div>
+            <div className='relative w-full dropdown-container'>
+              <div className='relative-placeholder w-full'>
+                <ListingCustomPlacholderInput
+                  value={formData.projectName || ''}
+                  handleChange={handleChange}
+                  name='projectName'
+                  customPlaceholder='Project Name'
+                  required
+                  errors={errors.projectName && !formData.projectName}
+                  errorMessage={errors.projectName}
+                  disabled={isEvaluatorApprovedLocked}
+                />
+              </div>
+            </div>
+            <div className='relative w-full dropdown-container'>
+              <div className='relative-placeholder w-full'>
+                <ListingCustomPlaceholderDropdown
+                  value={formData.isFurnished || ''}
+                  name='isFurnished'
+                  handleToggleDropdown={() => handleToggleDropdown('isFurnished')}
+                  dropdown={dropdowns.isFurnished}
+                  dropdownType='isFurnished'
+                  dropdownOptions={isFurnishedOptions}
+                  handleSelectOption={(_, option) =>
+                    handleSelectOption('isFurnished', option)
+                  }
+                  disabled={isEvaluatorApprovedLocked}
+                  readOnly={isEvaluatorApprovedLocked}
+                  customPlaceholder='Is it furnished? '
+                />
+              </div>
+            </div>
+          </div>
+        )}
       </form>
     )
   }

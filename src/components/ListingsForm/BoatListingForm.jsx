@@ -22,14 +22,23 @@ import { boatForSale } from '../../constants/sidebar'
 import EvaluationModal from '@/components/Evaluation/evaluationmodal.jsx'
 import {
   LISTING_IMAGE_FORMATS_LABEL,
+  LISTING_QR_SCAN_FORMATS_LABEL,
+  LISTING_THUMBNAIL_FORMATS_LABEL,
   LISTING_VIDEO_FORMATS_LABEL,
 } from '@/constants/listingUploadLimits'
 import customAxios from '../../utils/apis/apis'
+import { toast } from 'react-toastify'
 import { XIcon } from 'lucide-react'
 import {
   canRequestPremiumServices,
   isListingEvaluatorApprovedLocked,
+  isListingPriceLocked,
 } from '@/libs/listingEditLock'
+import ListingApprovedEditNotice from '@/components/ListingsForm/ListingApprovedEditNotice'
+import {
+  blocksPremiumServiceRequest,
+  premiumServiceFieldLabel,
+} from '@/libs/listingPremiumStatus'
 
 const BoatListingForm = ({
   formData,
@@ -45,8 +54,11 @@ const BoatListingForm = ({
   maxLength,
   handleThumbImageChange,
   handleThumbImageRemove,
+  qrScan,
+  handleQrScanChange,
+  handleQrScanRemove,
   images,
-  video,
+  videos,
   handleImageRemove,
   handleImageChange,
   handleVideoRemove,
@@ -80,13 +92,16 @@ const BoatListingForm = ({
 
   const getIdByRole = async () => {
     try {
-      const response = await customAxios.get(`/user/role-id/TechnicalReport`) // Fetch user details
+      const response = await customAxios.get(
+        `/user/service-providers/TechnicalReport`
+      )
 
-      if (response?.data) {
-        setData(response?.data[0])
+      const providers = Array.isArray(response?.data) ? response.data : []
+      if (providers.length > 0) {
+        setData(providers[0])
       }
     } catch (error) {
-      console.error('Error loading user:', error)
+      console.warn('Technical report provider unavailable:', error?.message)
     }
   }
   useEffect(() => {
@@ -96,20 +111,26 @@ const BoatListingForm = ({
 
   const getIdByRole3d = async () => {
     try {
-      const response = await customAxios.get(`/user/role-id/3dWalkthrough`) // Fetch user details
+      const response = await customAxios.get(
+        `/user/service-providers/3dWalkthrough`
+      )
 
-      if (response?.data) {
-        setData2(response?.data[0])
+      const providers = Array.isArray(response?.data) ? response.data : []
+      if (providers.length > 0) {
+        setData2(providers[0])
       }
     } catch (error) {
-      console.error('Error loading user:', error)
+      console.warn('3D walkthrough provider unavailable:', error?.message)
     }
   }
 
   const [modalOpen, setModalOpen] = useState(false)
   const [RequestService, setRequestService] = useState('')
   const isEvaluatorApprovedLocked = isListingEvaluatorApprovedLocked(formData)
+  const isPriceLocked = isListingPriceLocked(formData)
   const canRequestPremium = canRequestPremiumServices(formData)
+  const blocksTechnicalReport = blocksPremiumServiceRequest(formData?.technicalReport)
+  const blocks3DWalkthrough = blocksPremiumServiceRequest(formData?.video3DWalkthrough)
 
   const openPremiumGate = () => {
     setModalOpen(true)
@@ -159,6 +180,7 @@ const BoatListingForm = ({
   return (
     <>
       <ConfirmationModal />
+      <ListingApprovedEditNotice formData={formData} />
       <form className='pt-[50px]'>
         <div className='md:grid gap-6 md:space-y-0 space-y-5 md:grid-cols-2'>
           <div className='relative flex flex-col justify-start'>
@@ -191,21 +213,10 @@ const BoatListingForm = ({
             />
           </div>
           <ListingImageUploadLayout
-            errors={errors.pictures && images.length === 0}
-            formats={LISTING_IMAGE_FORMATS_LABEL}
-          >
-            <ListingMultipleImageComponent
-              images={images}
-              handleImageRemove={handleImageRemove}
-              handleImageChange={handleImageChange}
-              errors={errors.pictures && images.length === 0}
-              errorMessage={errors.pictures}
-              disabled={isEvaluatorApprovedLocked}
-            />
-          </ListingImageUploadLayout>
-          <ListingImageUploadLayout
             errors={errors.thumbnail && !thumbnail}
-            formats={LISTING_IMAGE_FORMATS_LABEL}
+            formats={LISTING_THUMBNAIL_FORMATS_LABEL}
+            label='Thumbnail'
+            required
           >
             <ListingsImageComponent
               errors={errors.thumbnail && !thumbnail}
@@ -214,17 +225,65 @@ const BoatListingForm = ({
               handleThumbImageChange={handleThumbImageChange}
               handleImageRemove={handleThumbImageRemove}
               disabled={isEvaluatorApprovedLocked}
+              inputId='boat-thumbnail'
             />
           </ListingImageUploadLayout>
-          <ListingImageUploadLayout formats={LISTING_VIDEO_FORMATS_LABEL}>
+          <ListingImageUploadLayout
+            errors={errors.pictures && images.length === 0}
+            formats={LISTING_IMAGE_FORMATS_LABEL}
+            label='Additional pictures'
+            required
+          >
+            <ListingMultipleImageComponent
+              images={images}
+              handleImageRemove={handleImageRemove}
+              handleImageChange={handleImageChange}
+              errors={errors.pictures && images.length === 0}
+              errorMessage={errors.pictures}
+              disabled={isEvaluatorApprovedLocked}
+              inputId='boat-additional-pictures'
+            />
+          </ListingImageUploadLayout>
+          <ListingImageUploadLayout
+            formats={LISTING_VIDEO_FORMATS_LABEL}
+            label='Video (optional)'
+          >
             <ListingsVideoComponent
-              video={video}
+              videos={videos}
               handleVideoRemove={handleVideoRemove}
               fileInputRef={fileInputRef}
               handleVideoChange={handleVideoChange}
-              disabled={formData?.video?.uuid}
+              disabled={isEvaluatorApprovedLocked || Boolean(formData?.video?.uuid)}
             />
           </ListingImageUploadLayout>
+          <ListingImageUploadLayout
+            formats={LISTING_QR_SCAN_FORMATS_LABEL}
+            label='Upload QR Scan'
+            required
+            errors={errors.qrScan && !qrScan}
+          >
+            <ListingsImageComponent
+              image={qrScan}
+              handleThumbImageChange={handleQrScanChange}
+              handleImageRemove={handleQrScanRemove}
+              disabled={isEvaluatorApprovedLocked}
+              inputId='qr-scan-boat'
+              uploadLabel='Upload QR Scan'
+              errors={errors.qrScan && !qrScan}
+              errorMessage={errors.qrScan}
+            />
+          </ListingImageUploadLayout>
+          <div className='relative w-full dropdown-container'>
+            <div className='relative-placeholder w-full'>
+              <ListingCustomPlacholderInput
+                value={formData.dldNumber || ''}
+                handleChange={handleChange}
+                name='dldNumber'
+                customPlaceholder='DLD Number'
+                disabled={isEvaluatorApprovedLocked}
+              />
+            </div>
+          </div>
           <div className='relative dropdown-container'>
             <ListingsDropdownInputComponents
               errors={errors.condition && !formData.condition}
@@ -256,24 +315,21 @@ const BoatListingForm = ({
                 errorsMessage={errors.price}
                 name='price'
                 type='text'
+                disabled={isPriceLocked}
               />
             </div>
             <div className='mt-5 relative-placeholder w-full'>
               <ListingModalInputComponent
                 maxLength={50}
                 disabled={
-                  !canRequestPremium ||
-                  !formData?.uuid ||
-                  formData?.technicalReport?.uuid
+                  !canRequestPremium || !formData?.uuid || blocksTechnicalReport
                 }
                 name='technicalReport'
                 value={
-                  formData.technicalReport
-                    ? 'Completed'
-                    : technicalModalData.dateTime
+                  premiumServiceFieldLabel(formData.technicalReport) ||
+                  technicalModalData.dateTime
                 }
                 handleChange={handleChange}
-                required={true}
                 errors={errors.technicalReport && !formData.technicalReport}
                 errorMessage={errors.technicalReport}
                 handleOpenModal={
@@ -288,7 +344,6 @@ const BoatListingForm = ({
                 }
                 dateTime={technicalModalData.dateTime !== ''}
                 customPlaceholder='Request Technical Report'
-                subPlaceholder=' (Optional)'
                 icon='/icons/card2.png'
               />
               <TechnicalReport
@@ -301,6 +356,7 @@ const BoatListingForm = ({
                 userUUID={data?.uuid}
                 productTitle={formData?.title}
                 productId={formData?.uuid}
+                listingPhone={formData?.phoneNumber || phoneNumber || ''}
               />
             </div>
           </div>
@@ -322,6 +378,9 @@ const BoatListingForm = ({
               onClose={handleClose1Modal}
               formData={formData}
               setFormData={setFormData}
+              assetType='Boats For Sale'
+              dropdown={groupedData}
+              title='Boat Brand'
             />
           </div>
           <div className='relative-placeholder w-full'>
@@ -329,15 +388,13 @@ const BoatListingForm = ({
               maxLength={50}
               name='video3DWalkthrough'
               value={
-                formData.video3DWalkthrough ? 'Completed' : modalData.dateTime
+                premiumServiceFieldLabel(formData.video3DWalkthrough) ||
+                modalData.dateTime
               }
               disabled={
-                !canRequestPremium ||
-                !formData?.uuid ||
-                formData?.video3DWalkthrough
+                !canRequestPremium || !formData?.uuid || blocks3DWalkthrough
               }
               handleChange={handleChange}
-              required={true}
               errors={errors.video3DWalkthrough}
               errorMessage={errors.video3DWalkthrough}
               dateTime={modalData.dateTime !== ''}
@@ -352,7 +409,6 @@ const BoatListingForm = ({
                     }
               }
               customPlaceholder='3D Walkthrough Embedded Link'
-              subPlaceholder=' (Optional)'
               icon='/icons/3dicon.png'
             />
             <request3d onClick={handleOpenModal} />
@@ -367,6 +423,7 @@ const BoatListingForm = ({
               productId={formData?.uuid}
               productTitle={formData?.title}
               userUUID={data2?.uuid}
+              listingPhone={formData?.phoneNumber || phoneNumber || ''}
             />
           </div>
           <div className='w-full col-span-2'>
@@ -413,9 +470,7 @@ const BoatListingForm = ({
                 disabled={isEvaluatorApprovedLocked}
                 name='brands'
                 customPlaceholder='Brands'
-                subPlaceholder=' (Optional)'
                 maxLength={50}
-                required={true}
               />
             </div>
           </div>
@@ -427,9 +482,7 @@ const BoatListingForm = ({
                 handleChange={handleChange}
                 name='locateBoat'
                 customPlaceholder='Locate Your Boat'
-                subPlaceholder=' (Optional)'
                 maxLength={50}
-                required={true}
               />
             </div>
           </div>
@@ -480,9 +533,7 @@ const BoatListingForm = ({
                 disabled={isEvaluatorApprovedLocked}
                 name='sportsOutdoorPrice'
                 customPlaceholder='Sports & Outdoor Price'
-                subPlaceholder=' (Optional)'
                 maxLength={50}
-                required={true}
               />
             </div>
           </div>

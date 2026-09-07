@@ -1,15 +1,21 @@
-import { getCookie } from 'cookies-next'
-import { getTokenFromCookie } from '../../utils/helper'
+import { useState } from 'react'
 import { useProfile } from '../../context/UserContext'
+import { initiateServiceSubscription } from '@/libs/initiateServiceSubscription'
+import { initiateClozerPayment, getClozerErrorMessage } from '@/libs/initiateClozerPayment'
+import PaymentChoiceModal from '@/components/payments/PaymentChoiceModal'
+import { applyFullPayDiscount } from '@/libs/paymentDiscount'
+import { toast } from 'react-toastify'
 
 const PayModal = ({
   modalData,
   technicalModalData,
   setIsOpenModal,
   userUUID,
+  onPaymentAbandoned,
 }) => {
   const { user } = useProfile()
-  // Determine which services are selected
+  const [loading, setLoading] = useState(false)
+
   const has3D = !!modalData?.price
   const hasTechnical = !!technicalModalData?.price
   let service = null
@@ -20,56 +26,129 @@ const PayModal = ({
   const totalPrice =
     Number(modalData.price || 0) + Number(technicalModalData.price || 0)
 
-  const handlePay = async () => {
+  const buildSubscriptionPayload = () => {
     const currentuserUUID = user?.uuid
-    if (!service) return
-    localStorage.setItem(
-      'servicePaymentReturnUrl',
-      `${window.location.pathname}${window.location.search}`,
-    )
-    const currentUrl = `${window.location.origin}/service-payment-success`
-    const cancelUrl = window.location.href
-    try {
-      const token = getTokenFromCookie()
-      const uid = userUUID || currentuserUUID
+    const uid = userUUID || currentuserUUID
+    const source = modalData?.productId ? modalData : technicalModalData
 
-      if (!uid) {
-        alert('User not found. Please login.')
-        return
-      }
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/services/subscribe`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
-          body: JSON.stringify({
-            userUUID: uid || currentuserUUID,
-            service,
-            price: totalPrice,
-            success_url: currentUrl,
-            cancel_url: cancelUrl,
-          }),
-        }
+    return {
+      uid,
+      payload: {
+        userUUID: uid,
+        service,
+        price: totalPrice,
+        success_url: `${window.location.origin}/service-payment-success`,
+        cancel_url: window.location.href,
+        assetType:
+          source?.assetType ||
+          modalData?.assetType ||
+          technicalModalData?.assetType,
+        productId:
+          source?.productId ||
+          modalData?.productId ||
+          technicalModalData?.productId,
+        productTitle:
+          source?.productTitle ||
+          modalData?.productTitle ||
+          technicalModalData?.productTitle,
+        phone:
+          source?.phone ||
+          modalData?.phone ||
+          technicalModalData?.phone ||
+          '',
+        dateTime:
+          source?.dateTime ||
+          modalData?.dateTime ||
+          technicalModalData?.dateTime ||
+          '',
+        category:
+          source?.category ||
+          modalData?.category ||
+          technicalModalData?.category,
+        subCategory:
+          source?.subCategory ||
+          modalData?.subCategory ||
+          technicalModalData?.subCategory,
+        value:
+          source?.value ?? modalData?.value ?? technicalModalData?.value,
+      },
+    }
+  }
+
+  const handleStripePay = async () => {
+    const { uid, payload } = buildSubscriptionPayload()
+    if (!service || !uid) {
+      toast.error('User not found. Please login.')
+      return
+    }
+
+    try {
+      setLoading(true)
+      localStorage.setItem(
+        'servicePaymentReturnUrl',
+        `${window.location.pathname}${window.location.search}`,
       )
-      const data = await response.json()
-      if (response.status === 201 && data.url) {
+
+      const data = await initiateServiceSubscription({
+        ...payload,
+        price: applyFullPayDiscount(totalPrice).discounted,
+      })
+      if (data?.url) {
+        if (data.sessionId) {
+          localStorage.setItem('checkoutSessionId', data.sessionId)
+        }
         window.location.href = data.url
         setIsOpenModal(false)
       } else {
-        alert(data?.message || 'Payment initiation failed.')
+        toast.error(data?.message || 'Payment initiation failed.')
       }
     } catch (error) {
-      console.error('Error initiating checkout:', error)
-      alert('Error initiating payment. Please try again.')
+      toast.error(
+        error?.response?.data?.message ||
+        error?.message ||
+        'Error initiating payment. Please try again.',
+      )
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleClozerPay = async () => {
+    const { uid, payload } = buildSubscriptionPayload()
+    if (!service || !uid) {
+      toast.error('User not found. Please login.')
+      return
+    }
+
+    try {
+      setLoading(true)
+      localStorage.setItem(
+        'servicePaymentReturnUrl',
+        `${window.location.pathname}${window.location.search}`,
+      )
+
+      const data = await initiateClozerPayment({
+        ...payload,
+        success_url: `${window.location.origin}/clozer-return`,
+      })
+
+      if (data?.redirectUrl) {
+        localStorage.setItem('clozerTransactionId', data.transaction_id)
+        window.location.href = data.redirectUrl
+        setIsOpenModal(false)
+      } else {
+        toast.error(data?.message || 'Installment payment could not be started.')
+      }
+    } catch (error) {
+      toast.error(getClozerErrorMessage(error))
+    } finally {
+      setLoading(false)
     }
   }
 
   return (
     <div className='fixed inset-0 z-50 flex w-full h-full items-center justify-center bg-black bg-opacity-50'>
-      <div className='bg-white p-6 rounded-[12px] shadow-lg w-96'>
+      <div className='bg-white p-6 rounded-[12px] shadow-lg w-full max-w-md relative'>
         <h2 className='text-lg text-[#8D7C3B] font-semibold mb-4'>
           Confirmation Modal
         </h2>
@@ -95,22 +174,17 @@ const PayModal = ({
           </>
         )}
 
-        <div className='flex justify-end mt-6'>
-          <button
-            onClick={() => setIsOpenModal(false)}
-            className='mr-4 px-4 py-2 bg-gray-200 text-gray-800 rounded'
-          >
-            Cancel
-          </button>
-          <button
-            type='button'
-            onClick={handlePay}
-            className='px-4 py-2 bg-[#8D7C3B] text-white rounded'
-            disabled={!service}
-          >
-            Pay Now
-          </button>
-        </div>
+        <PaymentChoiceModal
+          show
+          onClose={() => {
+            onPaymentAbandoned?.()
+            setIsOpenModal(false)
+          }}
+          amount={totalPrice}
+          loading={loading}
+          onPayFull={handleStripePay}
+          onPayInstallments={handleClozerPay}
+        />
       </div>
     </div>
   )

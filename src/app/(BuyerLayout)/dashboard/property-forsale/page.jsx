@@ -5,16 +5,19 @@ import axios from 'axios'
 import { routes } from '@/libs/api'
 import { useState, useEffect } from 'react'
 import {
-  DUMMY_DUBAI_NEIGHBOURHOODS,
   DUMMY_FALLBACK_COUNTRIES,
   DUMMY_UAE_CITY_PREDICTIONS,
   filterDummyCitiesByQuery,
+  getDummyNeighbourhoodsForCity,
+  hasDummyNeighbourhoodsForCity,
   isDummyUaeLocationsEnabled,
-  isDubaiCitySelection,
   LISTING_COUNTRY_UAE_LABEL,
   isUnitedArabEmiratesListingCountry,
   toUnitedArabEmiratesListingCountryName,
+  filterCountriesToUaeOnly,
+  formatCityLabel,
 } from '@/libs/dummyLocationData'
+import { autoCapitalizeField } from '@/libs/autoCapitalizeText'
 import {
   normalizeCountriesResponse,
   normalizeCitiesResponse,
@@ -38,6 +41,17 @@ import {
 import { toast, ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 import customAxios from '../../../../utils/apis/apis'
+import ListingMapSection from '@/components/ListingsForm/ListingMapSection'
+import {
+  LISTING_IMAGE_MAX_BYTES,
+  LISTING_IMAGE_MAX_MB,
+  LISTING_IMAGE_MAX_COUNT,
+  LISTING_VIDEO_MAX_BYTES,
+  LISTING_VIDEO_MAX_MB,
+  LISTING_VIDEO_MAX_COUNT,
+  LISTING_IMAGE_FORMATS_LABEL,
+  LISTING_VIDEO_FORMATS_LABEL,
+} from '@/constants/listingUploadLimits'
 
 const initialFormData = {
   assetType: 'Property for lease',
@@ -70,12 +84,13 @@ const initialFormData = {
   occupancyStatus: '',
   listings: [],
   facilities: [],
+  mapUrl: '',
   createdAt: new Date(),
   updatedAt: new Date(),
 }
 
 function Page() {
-  const [video, setVideo] = useState(null)
+  const [videos, setVideos] = useState([])
   const [errors, setErrors] = useState({})
 
   const [images, setImages] = useState([])
@@ -126,7 +141,6 @@ function Page() {
       })
     }
 
-    const MAX = 2 * 1024 * 1024
     const processFiles = async () => {
       setIsCompressing(true)
       try {
@@ -134,13 +148,13 @@ function Page() {
           let working = file
           // Oversized images are compressed via the API before proceeding;
           // otherwise keep the original reject behaviour until the API is set.
-          if (file.size > MAX) {
+          if (file.size > LISTING_IMAGE_MAX_BYTES) {
             if (!isCompressionConfigured()) {
-              toast.error(`The file ${file.name} exceeds the 2MB size limit`)
+              toast.error(`The file ${file.name} exceeds the ${LISTING_IMAGE_MAX_MB}MB size limit`)
               continue
             }
             try {
-              working = await ensureWithinSize(file, MAX)
+              working = await ensureWithinSize(file, LISTING_IMAGE_MAX_BYTES)
             } catch (err) {
               toast.error(
                 `Could not compress ${file.name}: ${err?.message || 'try again'}`,
@@ -154,8 +168,10 @@ function Page() {
           }
         }
 
-        if (images.length + validFiles.length > 7) {
-          toast.error('You can only upload a maximum of 7 images')
+        if (images.length + validFiles.length > LISTING_IMAGE_MAX_COUNT) {
+          toast.error(
+            `You can only upload a maximum of ${LISTING_IMAGE_MAX_COUNT} images`,
+          )
           return
         }
 
@@ -183,31 +199,31 @@ function Page() {
   }
 
   const handleVideoChange = (e) => {
-    const file = e.target.files[0]
-    if (file.size > 50 * 1024 * 1024) {
-      toast.error('Maximum file size for videos is 50MB')
+    const files = Array.from(e.target.files || [])
+    const validFiles = []
+
+    for (const file of files) {
+      if (file.size > LISTING_VIDEO_MAX_BYTES) {
+        toast.error(`Maximum file size for videos is ${LISTING_VIDEO_MAX_MB}MB`)
+        continue
+      }
+      validFiles.push(file)
+    }
+
+    if (!validFiles.length) return
+
+    if (videos.length + validFiles.length > LISTING_VIDEO_MAX_COUNT) {
+      toast.error(
+        `You can only upload a maximum of ${LISTING_VIDEO_MAX_COUNT} videos`,
+      )
       return
     }
 
-    // Check aspect ratio
-    const video = document.createElement('video')
-    video.preload = 'metadata'
-
-    video.onloadedmetadata = () => {
-      window.URL.revokeObjectURL(video.src)
-      const aspectRatio = video.videoWidth / video.videoHeight
-      if (Math.abs(aspectRatio - 1) > 0.1) {
-        toast.error('Video aspect ratio should be close to 1:1')
-        return
-      }
-      setVideo(file)
-    }
-
-    video.src = URL.createObjectURL(file)
+    setVideos((prev) => [...prev, ...validFiles])
   }
 
-  const handleVideoRemove = () => {
-    setVideo(null)
+  const handleVideoRemove = (index) => {
+    setVideos((prev) => prev.filter((_, i) => i !== index))
   }
   const [thumbnail, setThumbnail] = useState(null)
   const aspectRatioTarget = 1.45
@@ -279,7 +295,7 @@ function Page() {
         technicalReportID = technicalReportResponse?.data?.report?.uuid
       }
       const imageID = await handleImageUpload(images)
-      const videoID = await handleVideoUpload(video)
+      const videoID = await handleVideoUpload(videos)
       const fileID = await handleFileUpload(file)
       const thumbnailID = await handleThumbnailUpload(thumbnail)
 
@@ -339,10 +355,16 @@ function Page() {
         const data = await response.json()
         const list = normalizeCountriesResponse(data)
         if (!cancelled) {
-          setCountryOptions(list.length > 0 ? list : [...DUMMY_FALLBACK_COUNTRIES])
+          setCountryOptions(
+            filterCountriesToUaeOnly(
+              list.length > 0 ? list : [...DUMMY_FALLBACK_COUNTRIES],
+            ),
+          )
         }
       } catch {
-        if (!cancelled) setCountryOptions([...DUMMY_FALLBACK_COUNTRIES])
+        if (!cancelled) {
+          setCountryOptions(filterCountriesToUaeOnly([...DUMMY_FALLBACK_COUNTRIES]))
+        }
       }
     }
     load()
@@ -415,8 +437,8 @@ function Page() {
         if (!cancelled) setNeighbourhoodOptions([])
         return
       }
-      if (isDummyUaeLocationsEnabled && isDubaiCitySelection(city)) {
-        if (!cancelled) setNeighbourhoodOptions([...DUMMY_DUBAI_NEIGHBOURHOODS])
+      if (hasDummyNeighbourhoodsForCity(city)) {
+        if (!cancelled) setNeighbourhoodOptions(getDummyNeighbourhoodsForCity(city))
         return
       }
       try {
@@ -425,19 +447,10 @@ function Page() {
         )
         if (!response.ok) throw new Error('neighbourhoods')
         const data = await response.json()
-        let places = Array.isArray(data?.places) ? data.places : []
-        if (isDubaiCitySelection(city) && places.length === 0) {
-          places = [...DUMMY_DUBAI_NEIGHBOURHOODS]
-        }
+        const places = Array.isArray(data?.places) ? data.places : []
         if (!cancelled) setNeighbourhoodOptions(places)
       } catch {
-        if (!cancelled) {
-          if (isDubaiCitySelection(city)) {
-            setNeighbourhoodOptions([...DUMMY_DUBAI_NEIGHBOURHOODS])
-          } else {
-            setNeighbourhoodOptions([])
-          }
-        }
+        if (!cancelled) setNeighbourhoodOptions([])
       }
     }
     load()
@@ -469,10 +482,11 @@ function Page() {
   }
 
   const handleLocationCityPick = (cityRow) => {
-    const cityName =
+    const cityName = formatCityLabel(
       typeof cityRow === 'object' && cityRow?.description
         ? cityRow.description
-        : String(cityRow)
+        : String(cityRow),
+    )
     setFormData((prev) => ({
       ...prev,
       city: cityName,
@@ -595,7 +609,7 @@ function Page() {
     const next =
       name === 'country'
         ? toUnitedArabEmiratesListingCountryName(value) || value
-        : value
+        : autoCapitalizeField(name, value)
     setFormData({ ...formData, [name]: next })
     setErrors({ ...errors, [name]: '' })
   }
@@ -745,7 +759,7 @@ function Page() {
             className='text-dark-grey text-center xl:text-[40px] lg:text-4xl md:text-3xl sm:text-2xl
       xxs:text-xl font-medium leading-normal pt-[60px]'
           >
-            Final Steps to / Listing Your Asset
+            Final Steps to Listing Your Asset
           </h2>
           {/* assest type  */}
           <div className='px-5'>
@@ -880,7 +894,7 @@ function Page() {
                         City
                       </p>
                       <p className=' lg:text-xs md:text-[10px] xxs:text-[12px] font-normal pt-[5px] text-dark-grey truncate max-w-[140px]'>
-                        {formData.city || 'Select city'}
+                        {formatCityLabel(formData.city) || 'Select city'}
                       </p>
                     </div>
                     <Image
@@ -901,10 +915,11 @@ function Page() {
                         </p>
                       ) : (
                         cityOptions.map((row, idx) => {
-                          const label =
+                          const label = formatCityLabel(
                             typeof row === 'object' && row?.description
                               ? row.description
-                              : String(row)
+                              : String(row),
+                          )
                           return (
                             <button
                               key={`${label}-${idx}`}
@@ -1228,7 +1243,7 @@ function Page() {
                       Accepted formats:
                     </h2>
                     <p className='text-dark-grey text-[10px] font-normal leading-[177%]'>
-                      JPG, PNG, GIF. Maximum file size: 2MB
+                      {LISTING_IMAGE_FORMATS_LABEL}
                     </p>
 
                     <div className='flex flex-wrap mt-2 w-[80%]'>
@@ -1243,7 +1258,7 @@ function Page() {
                           />
                           <button
                             onClick={handleThumbImageRemove}
-                            className='absolute top-0 right-0 w-6 flex justify-center items-center h-6 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity'
+                            className='absolute top-0 right-0 w-6 flex justify-center items-center h-6 p-1 bg-light-gold text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity'
                             title='Remove image'
                           >
                             &times;
@@ -1285,7 +1300,7 @@ function Page() {
                       Accepted formats:
                     </h2>
                     <p className='text-dark-grey text-[10px] font-normal leading-[177%]'>
-                      JPG, PNG, GIF. Maximum file size: 2MB
+                      {LISTING_IMAGE_FORMATS_LABEL}
                     </p>
 
                     <div className='flex flex-wrap mt-4 w-[60%]'>
@@ -1301,7 +1316,7 @@ function Page() {
 
                           <button
                             onClick={() => handleImageRemove(index)}
-                            className='absolute top-0 right-0 w-6 flex justify-center items-center h-6 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity'
+                            className='absolute top-0 right-0 w-6 flex justify-center items-center h-6 p-1 bg-light-gold text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity'
                             title='Remove image'
                           >
                             &times;
@@ -1349,41 +1364,51 @@ function Page() {
                       Accepted formats:
                     </h2>
                     <p className='text-dark-grey text-[10px] font-normal leading-[177%]'>
-                      MP4, MOV. Maximum file size: 50MB
+                      {LISTING_VIDEO_FORMATS_LABEL}
                     </p>
 
-                    {video && (
-                      <div className='relative mt-2 h-28 w-28'>
+                    {videos.map((file, index) => (
+                      <div className='relative mt-2 h-28 w-28' key={`${file.name}-${index}`}>
                         <video
                           width='100%'
                           controls
-                          src={URL.createObjectURL(video)}
+                          src={URL.createObjectURL(file)}
                           className='w-full h-auto'
                         />
                         <button
-                          onClick={handleVideoRemove}
-                          className='absolute top-0 right-0 p-1 bg-red-500 text-white rounded-full'
+                          type='button'
+                          onClick={() => handleVideoRemove(index)}
+                          className='absolute top-0 right-0 p-1 bg-light-gold text-white rounded-full'
                           title='Remove video'
                         >
                           &times;
                         </button>
                       </div>
-                    )}
+                    ))}
 
                     <input
                       type='file'
                       id='video-upload'
                       className='hidden'
                       accept='video/*'
+                      multiple
+                      disabled={videos.length >= LISTING_VIDEO_MAX_COUNT}
                       onChange={handleVideoChange}
                     />
 
                     <div className='absolute right-[20px] xl:top-0 xxs:top-[55px]'>
                       <label
-                        htmlFor='video-upload'
-                        className='flex flex-col items-center justify-center w-[176px] 
+                        htmlFor={
+                          videos.length < LISTING_VIDEO_MAX_COUNT
+                            ? 'video-upload'
+                            : undefined
+                        }
+                        className={`flex flex-col items-center justify-center w-[176px] 
             xl:h-[144px] xxs:h-[110px] 
-            shadow-neonsm cursor-pointer my-[19px]'
+            shadow-neonsm my-[19px] ${videos.length < LISTING_VIDEO_MAX_COUNT
+                            ? 'cursor-pointer'
+                            : 'cursor-not-allowed opacity-60'
+                          }`}
                       >
                         <Image
                           width={40}
@@ -1425,8 +1450,8 @@ function Page() {
                         <input
                           type='text'
                           className={`w-full shadow-neons h-[50px] pl-5 placeholder:text-dark-grey outline-with-opacity placeholder:text-[15px] placeholder:font-normal ${errors.price && !formData.price
-                              ? 'input-field-error'
-                              : ''
+                            ? 'input-field-error'
+                            : ''
                             }`}
                           placeholder='Price'
                           // pattern="^4[0-9]{12}(?:[0-9]{3})?$"
@@ -1466,7 +1491,6 @@ function Page() {
                         name='video3DWalkthrough'
                         value={formData.video3DWalkthrough}
                         onChange={handleChange}
-                        required
                       />
 
                       {formData.video3DWalkthrough === '' && (
@@ -1476,10 +1500,7 @@ function Page() {
                       `}
                         >
                           <span className='text-gray-400'>
-                            3D Walkthrough Embedded Link{' '}
-                          </span>
-                          <span className='optional text-xs text-yellow-600'>
-                            (Optional)
+                            3D Walkthrough Embedded Link
                           </span>
                         </div>
                       )}
@@ -1508,9 +1529,9 @@ function Page() {
                         <input
                           type='text'
                           className={`w-full shadow-neons h-[50px] pl-5 placeholder:text-dark-grey outline-with-opacity placeholder:text-[15px] placeholder:font-normal ${errors.evaluationCompanies &&
-                              !formData.evaluationCompanies
-                              ? '    '
-                              : ''
+                            !formData.evaluationCompanies
+                            ? '    '
+                            : ''
                             }`}
                           placeholder='Evaluation Companies'
                           name='evaluationCompanies'
@@ -1634,9 +1655,9 @@ function Page() {
                       <input
                         type='text'
                         className={`w-full shadow-neons h-[50px] pl-5 placeholder:text-dark-grey outline-with-opacity placeholder:text-[15px] placeholder:font-normal ${errors.leaseNumberofCheques &&
-                            !formData.leaseNumberofCheques
-                            ? '    '
-                            : ''
+                          !formData.leaseNumberofCheques
+                          ? '    '
+                          : ''
                           }`}
                         placeholder='Lease Number of Cheques'
                         required
@@ -1815,8 +1836,8 @@ function Page() {
                         type='text'
                         maxLength={50}
                         className={`w-full shadow-neons h-[50px] pl-5 placeholder:text-dark-grey outline-with-opacity placeholder:text-[15px] placeholder:font-normal ${errors.occupancyStatus && !formData.occupancyStatus
-                            ? '    '
-                            : ''
+                          ? '    '
+                          : ''
                           }`}
                         required
                         placeholder='Occupancy Status'
@@ -1878,15 +1899,11 @@ function Page() {
                         name='developer'
                         value={formData.developer}
                         onChange={handleChange}
-                        required
                       />
 
                       {formData.developer === '' && (
                         <div className='custom-placeholder text-sm text-gray-400'>
                           Developer
-                          <span className='optional text-xs text-yellow-600'>
-                            (cc) (Optional)
-                          </span>
                         </div>
                       )}
                     </div>
@@ -1911,9 +1928,6 @@ function Page() {
                       {formData.isFurnished === '' && (
                         <div className='custom-placeholder text-sm text-gray-400'>
                           Is it furnished?
-                          <span className='optional text-xs text-yellow-600'>
-                            (Optional)
-                          </span>
                         </div>
                       )}
 
@@ -1963,15 +1977,11 @@ function Page() {
                         name='buyerTransferFee'
                         value={formData.buyerTransferFee}
                         onChange={handleChange}
-                        required
                       />
 
                       {formData.buyerTransferFee === '' && (
                         <div className='custom-placeholder text-sm text-gray-400'>
                           Buyer Transfer Fee
-                          <span className='optional text-xs text-yellow-600'>
-                            (cc) (Optional)
-                          </span>
                         </div>
                       )}
                     </div>
@@ -1988,15 +1998,11 @@ function Page() {
                         name='sellerTransferFee'
                         value={formData.sellerTransferFee}
                         onChange={handleChange}
-                        required
                       />
 
                       {formData.sellerTransferFee === '' && (
                         <div className='custom-placeholder text-sm text-gray-400'>
                           Seller Transfer Fee
-                          <span className='optional text-xs text-yellow-600'>
-                            (cc) (Optional)
-                          </span>
                         </div>
                       )}
                     </div>
@@ -2065,15 +2071,11 @@ function Page() {
                   />
                 </div>
                 {/* map  */}
-                <div className='mt-[30px]'>
-                  <iframe
-                    className='max-w-[1064px] w-full mx-auto h-[351px] rounded-[5px] shadow-neons'
-                    src='https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d231280.4131872353!2d55.06267954491565!3d25.0762424478002!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3e5f43496ad9c645%3A0xbde66e5084295162!2sDubai%20-%20United%20Arab%20Emirates!5e0!3m2!1sen!2s!4v1716351024030!5m2!1sen!2s'
-                    allowFullScreen
-                    loading='lazy'
-                    referrerPolicy='no-referrer-when-downgrade'
-                  />
-                </div>
+                <ListingMapSection
+                  mapUrl={formData.mapUrl}
+                  handleChange={handleChange}
+                  iframeClassName='max-w-[1064px] w-full mx-auto h-[351px] rounded-[5px] shadow-neons'
+                />
                 <div className='grid place-items-center mt-[30px] pb-[65px]'>
                   <button
                     className='text-whitee text-xl font-medium w-[205px] h-[50px] rounded-[3px] bg-light-gold shadow-neons disabled:opacity-60 disabled:cursor-not-allowed'

@@ -1,26 +1,36 @@
 import React, { useEffect, useState } from 'react'
-import { Upload2Icon } from '@/components/Icons'
 import { useSearchParams, usePathname } from 'next/navigation'
-import axios from 'axios'
 import ViewModal from '@/components/Modals/ViewModal'
 import { handleFileUpload } from '@/libs/uploadAsset'
 import { formatNumberWithCommas } from '@/utils/global-functions/global'
+import { formatListingCardPrice, formatListingPriceDisplay } from '@/libs/listingPriceDisplay'
+import { isOffPlanListing } from '@/libs/filterMyListingTab'
+import { formatPropertySizeDisplay } from '@/libs/propertySizeUnits'
 import { toast } from 'react-toastify'
 import Loader from '../../EvaluatorProfile/requestCompoenets/Loader'
-import DocumentSection from '../../EvaluatorProfile/requestCompoenets/DocumentSection'
 import Modal from '../../../documents/modal'
 import customAxios from '../../../../utils/apis/apis'
 import {
   getListingImageSrc,
   getListingVideoSrc,
+  getListingDocumentSrc,
 } from '@/libs/listingCardMedia'
+import Link from 'next/link'
+import { getListingEditPath } from '@/libs/listingEditPaths'
+import {
+  formatRequestDocumentDate,
+  getRequestDocumentName,
+  isRequestDocumentFulfilled,
+  normalizeRequestDocuments,
+} from '@/utils/requestDocumentUtils'
+import { fulfillRequestedDocument } from '@/utils/requestedDocumentUpload'
 
 const EvaluationDetails = () => {
-  const [selectedProperty, setSelectedProperty] = useState(null) // State to store selected property details
-  const [uploadDocument, setUploadDocument] = useState([])
+  const [selectedProperty, setSelectedProperty] = useState(null)
+  const [uploadingIndex, setUploadingIndex] = useState(null)
+  const [error, setError] = useState(null)
   const [selectedMedia, setSelectedMedia] = useState(null)
   const [loading, setLoading] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [pdfUrl, setPdfUrl] = useState('')
   const searchParams = useSearchParams()
@@ -88,10 +98,17 @@ const EvaluationDetails = () => {
     }
   }
 
+  const isOffPlan = isOffPlanListing(selectedProperty)
+
   const commonFields = [
     { label: 'Title', value: selectedProperty?.title },
     { label: 'Phone Number', value: selectedProperty?.phoneNumber },
-    { label: 'Price', value: formatNumberWithCommas(selectedProperty?.price) },
+    {
+      label: isOffPlan ? 'Price Range' : 'Price',
+      value: isOffPlan
+        ? formatListingCardPrice(selectedProperty)
+        : formatListingPriceDisplay(selectedProperty),
+    },
     {
       label: '3D embedded link',
       value: selectedProperty?.video3DWalkthrough?.link,
@@ -107,11 +124,12 @@ const EvaluationDetails = () => {
     Property: [
       ...commonFields,
       {
-        label: 'Size in square feet',
-        value: formatNumberWithCommas(selectedProperty?.sizeSQFT),
+        label: 'Property size',
+        value: formatPropertySizeDisplay(selectedProperty),
       },
       { label: 'Bedrooms', value: selectedProperty?.bedrooms },
       { label: 'Bathrooms', value: selectedProperty?.bathrooms },
+      { label: 'Project Name', value: selectedProperty?.projectName },
       { label: 'Developer', value: selectedProperty?.developer },
       {
         label: 'Is it furnished',
@@ -149,49 +167,57 @@ const EvaluationDetails = () => {
     ],
   }
 
-  const handleSubmit = async (file) => {
-    setIsLoading(true)
+  const handleSubmit = async (file, requestIndex, requestName) => {
+    if (!file) {
+      toast.error('Please select a file to upload.')
+      return
+    }
+
+    setUploadingIndex(requestIndex)
     try {
-      let apiUrl
-      if (selectedProperty?.type === 'Property') {
-        apiUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/property/${id}`
-      } else if (selectedProperty?.type === 'Car') {
-        apiUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/car/${id}`
-      } else if (selectedProperty?.type === 'Boats') {
-        apiUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/boat/${id}`
-      } else if (selectedProperty?.type === 'Jewellery') {
-        apiUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/jewelry/${id}`
+      const fileUpload = await handleFileUpload(file)
+      if (!fileUpload?._id) {
+        toast.error('Failed to upload document.')
+        return
       }
 
-      const fileUpload = await handleFileUpload(file)
-
-      const response = await customAxios.put(apiUrl, {
-        uploadDocument: fileUpload._id,
+      const response = await fulfillRequestedDocument({
+        assetType: selectedProperty?.type,
+        listingId: id,
+        requestIndex,
+        requestName,
+        documentId: fileUpload._id,
       })
 
       if (response?.status === 200) {
         toast.success('File uploaded successfully.')
-        setIsLoading(false)
+        await handleFetchdata()
       } else {
-        alert('Failed to upload document')
-        console.error('Failed to upload document:', response.data)
+        toast.error('Failed to upload document')
       }
-    } catch (error) {
+    } catch (uploadError) {
       console.error(
         'An error occurred while uploading the document:',
-        error?.message
+        uploadError?.message,
       )
+      toast.error('Failed to upload document')
     } finally {
-      setIsLoading(false)
+      setUploadingIndex(null)
     }
   }
 
-  const handleViewDocument = () => {
-    window.open(uploadDocument, '_blank')
+  const handleViewRequestedDocument = (document) => {
+    const url = getListingDocumentSrc(document)
+    if (!url) {
+      toast.error('Document preview is not available.')
+      return
+    }
+    window.open(url, '_blank')
   }
 
-  const handleFilechange = async (e) => {
+  const handleFilechange = async (e, requestIndex, requestName) => {
     const selectedFile = e.target.files[0]
+    e.target.value = ''
 
     if (!selectedFile) return
 
@@ -201,18 +227,18 @@ const EvaluationDetails = () => {
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     ]
 
-    if (allowedTypes.includes(selectedFile.type)) {
-      if (selectedFile.size > 2 * 1024 * 1024) {
-        setError('File size exceeds 2MB.')
-        return
-      }
-
-      setUploadDocument(selectedFile) // Ensure key matches the backend's `req.file`
+    if (!allowedTypes.includes(selectedFile.type)) {
+      setError('Invalid file type. Please upload a PDF or Word document.')
+      return
     }
-  }
 
-  const handleFileSubmit = async () => {
-    await handleSubmit(uploadDocument) // Upload the files
+    if (selectedFile.size > 2 * 1024 * 1024) {
+      setError('File size exceeds 2MB.')
+      return
+    }
+
+    setError(null)
+    await handleSubmit(selectedFile, requestIndex, requestName)
   }
 
   const renderField = (label, value, fieldType = 'text') => (
@@ -262,7 +288,21 @@ const EvaluationDetails = () => {
           <span className='lg:text-4xl sm:text-2xl text-xl font-bold text-prussianBlue/80 mb-4 block'>
             Pending Evaluations
           </span>
-          <span>{}</span>
+          {selectedProperty?.uuid && assetType && (
+            <div className='mb-4'>
+              <Link
+                href={getListingEditPath(assetType, selectedProperty.uuid)}
+                className='inline-block rounded-md primary-gradient px-6 py-2 text-sm font-medium text-white'
+              >
+                Edit Listing
+              </Link>
+              <p className='mt-2 text-sm text-gray-600'>
+                You can update your listing while waiting for the evaluator.
+                The evaluation certificate is added by the evaluator after the
+                visit — you do not need to upload it yourself.
+              </p>
+            </div>
+          )}
           <div className='gap-2 md:px-8 px-4 py-4 w-full'>
             <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
               {fieldsMap[selectedProperty?.type]?.map((field, index) =>
@@ -276,7 +316,7 @@ const EvaluationDetails = () => {
               </label>
               <div className='mt-1 flex flex-col w-full px-3 py-3 rounded-md bg-white text-[#969696] text-sm border border-[#969696]'>
                 {selectedProperty?.video3DWalkthrough?.link ||
-                selectedProperty?.pictures?.images ? (
+                  selectedProperty?.pictures?.images ? (
                   <div className='w-full h-full flex gap-2 justify-center'>
                     {/* 3D Walkthrough container */}
                     {selectedProperty?.video3DWalkthrough?.link ? (
@@ -304,17 +344,17 @@ const EvaluationDetails = () => {
                       {[
                         ...(selectedProperty?.pictures
                           ? selectedProperty?.pictures?.images?.map(
-                              (image) => ({
-                                type: 'image',
-                                src: getListingImageSrc(image),
-                              })
-                            )
+                            (image) => ({
+                              type: 'image',
+                              src: getListingImageSrc(image),
+                            })
+                          )
                           : []),
                         ...(selectedProperty?.video
                           ? selectedProperty?.video?.videos?.map((video) => ({
-                              type: 'video',
-                              src: getListingVideoSrc(video),
-                            }))
+                            type: 'video',
+                            src: getListingVideoSrc(video),
+                          }))
                           : []),
                       ]?.map((media, index) => (
                         <div
@@ -363,35 +403,35 @@ const EvaluationDetails = () => {
               </h1>
               {selectedProperty?.technicalReport?.reportFile?.Certificate
                 ?.url && (
-                <div className='flex justify-between py-2'>
-                  <p className='font-semibold'>Technical Report:</p>
-                  <p className=''>
-                    {
-                      selectedProperty?.technicalReport?.reportFile?.Certificate
-                        ?.name
-                    }
-                  </p>
-                  <div className='flex gap-2 items-center'>
-                    <button
-                      className='w-8 h-8'
-                      title='view'
-                      onClick={() =>
-                        handleOpenDoc(
-                          selectedProperty?.technicalReport?.reportFile
-                            ?.Certificate
-                        )
+                  <div className='flex justify-between py-2'>
+                    <p className='font-semibold'>Technical Report:</p>
+                    <p className=''>
+                      {
+                        selectedProperty?.technicalReport?.reportFile?.Certificate
+                          ?.name
                       }
-                    >
-                      <img src='/icons/view.png' alt='View' />
-                    </button>
+                    </p>
+                    <div className='flex gap-2 items-center'>
+                      <button
+                        className='w-8 h-8'
+                        title='view'
+                        onClick={() =>
+                          handleOpenDoc(
+                            selectedProperty?.technicalReport?.reportFile
+                              ?.Certificate
+                          )
+                        }
+                      >
+                        <img src='/icons/view.png' alt='View' />
+                      </button>
+                    </div>
+                    <Modal
+                      isOpen={isModalOpen}
+                      onClose={closeModal}
+                      fileUrl={pdfUrl}
+                    />
                   </div>
-                  <Modal
-                    isOpen={isModalOpen}
-                    onClose={closeModal}
-                    fileUrl={pdfUrl}
-                  />
-                </div>
-              )}
+                )}
               {selectedProperty?.evaluationCertificate?.Certificate?.url && (
                 <div className='flex justify-between py-2'>
                   <p className='font-semibold'>Evaluation Certificate:</p>
@@ -425,88 +465,90 @@ const EvaluationDetails = () => {
                 <label className='primary-gradient !w-full !p-2 text-sm font-medium text-[#969696]'>
                   Requested Documents
                 </label>
+                <p className='text-sm text-gray-600'>
+                  Upload each requested document here or from{' '}
+                  <Link
+                    href='/seller-profile/documents-storage'
+                    className='text-blue-600 underline'
+                  >
+                    Document Management
+                  </Link>
+                  .
+                </p>
                 <div className='flex-1'>
-                  {selectedProperty?.requestDocument &&
-                  selectedProperty.requestDocument.length > 0 ? (
-                    selectedProperty.requestDocument.map((doc, index) => (
-                      <div key={index} className='mb-2'>
-                        <p className='text-base capitalize'>{doc}</p>
+                  {normalizeRequestDocuments(
+                    selectedProperty?.requestDocument,
+                  ).length > 0 ? (
+                    normalizeRequestDocuments(
+                      selectedProperty?.requestDocument,
+                    ).map((doc, index) => (
+                      <div
+                        key={`${doc.name}-${index}`}
+                        className='mb-3 flex flex-col gap-2 border-b border-gray-100 pb-3 sm:flex-row sm:items-center sm:justify-between'
+                      >
+                        <div>
+                          <p className='text-base capitalize'>
+                            {getRequestDocumentName(doc)}
+                          </p>
+                          {doc.date ? (
+                            <p className='text-xs text-gray-500'>
+                              {formatRequestDocumentDate(doc.date)}
+                            </p>
+                          ) : null}
+                          {isRequestDocumentFulfilled(doc) &&
+                            (doc.uploadedAt || doc.document?.createdAt) ? (
+                            <p className='text-xs text-gray-500'>
+                              Uploaded:{' '}
+                              {formatRequestDocumentDate(
+                                doc.uploadedAt || doc.document?.createdAt,
+                              )}
+                            </p>
+                          ) : null}
+                        </div>
+                        <div className='flex items-center gap-3'>
+                          {isRequestDocumentFulfilled(doc) ? (
+                            <button
+                              type='button'
+                              className='w-8 h-8'
+                              title='view'
+                              onClick={() =>
+                                handleViewRequestedDocument(doc.document)
+                              }
+                            >
+                              <img src='/icons/view.png' alt='View' />
+                            </button>
+                          ) : (
+                            <label className='custom-shadow cursor-pointer rounded px-4 py-2 text-sm font-medium'>
+                              <input
+                                type='file'
+                                accept='.pdf,.doc,.docx'
+                                className='hidden'
+                                disabled={uploadingIndex === index}
+                                onChange={(e) =>
+                                  handleFilechange(e, index, doc.name)
+                                }
+                              />
+                              {uploadingIndex === index
+                                ? 'Uploading...'
+                                : 'Upload'}
+                            </label>
+                          )}
+                        </div>
                       </div>
                     ))
                   ) : (
                     <p>No requested document!</p>
                   )}
                 </div>
-
-                <label className='flex cursor-pointer flex-col py-5 sm:py-11 justify-center items-center'>
-                  <input
-                    type='file'
-                    accept='.pdf,.doc,.docx'
-                    className='hidden'
-                    id='file-upload'
-                    onChange={handleFilechange}
-                  />
-
-                  <span className='mb-4'>
-                    <Upload2Icon className='' />
-                  </span>
-
-                  <span className='custom-shadow sm:text-base text-sm rounded py-3 my-3 px-7 font-medium mb-3'>
-                    Upload Documents
-                  </span>
-                  <span className='text-black/30 sm:text-base text-sm'>
-                    Maximum file size: 2MB
-                  </span>
-                  <p className='text-black'>{uploadDocument?.name}</p>
-                </label>
-                <div>
-                  {uploadDocument.length > 0 && (
-                    <div className='flex flex-col gap-2'>
-                      {uploadDocument.map((file, index) => (
-                        <div
-                          key={index}
-                          className='flex justify-between w-full'
-                        >
-                          <p>{file.name}</p>
-                          <div className='flex gap-3'>
-                            <button onClick={handleViewDocument}>
-                              <img src='./icons/view.png' />
-                            </button>
-                            <button
-                              onClick={() => {
-                                const newUploadDocument = uploadDocument.filter(
-                                  (_, i) => i !== index
-                                )
-                                setUploadDocument(newUploadDocument) // Update the state after deletion
-                              }}
-                            >
-                              <img
-                                src='./icons/delete.png'
-                                className='w-full'
-                              />
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                {error ? <p className='text-sm text-red-600'>{error}</p> : null}
               </div>
-            </div>
-            <div className='flex justify-center space-x-4'>
-              <button
-                onClick={() => handleFileSubmit()}
-                className='primary-gradient text-white px-4 py-2 rounded-md'
-              >
-                Upload
-              </button>
             </div>
           </div>
         </>
       ) : (
         <p>Loading...</p>
       )}
-      <Loader isOpen={isLoading} />
+      <Loader isOpen={uploadingIndex !== null} />
     </div>
   )
 }

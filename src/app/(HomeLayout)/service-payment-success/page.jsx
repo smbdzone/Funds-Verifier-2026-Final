@@ -42,8 +42,10 @@ function ServicePaymentSuccessContent() {
         toast.success(data.message || 'Payment successful!')
 
         const returnUrl =
-          localStorage.getItem('servicePaymentReturnUrl') ||
-          '/dashboard/property-listing'
+          data?.payload?.paymentType === 'off_plan_approval_fee'
+            ? '/seller-profile/invoices'
+            : localStorage.getItem('servicePaymentReturnUrl') ||
+            '/dashboard/property-listing'
 
         localStorage.removeItem('servicePaymentReturnUrl')
 

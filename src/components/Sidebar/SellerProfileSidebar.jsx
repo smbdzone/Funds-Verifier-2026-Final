@@ -10,7 +10,7 @@ import {
   PrimarySale,
 } from '@/components/Icons'
 import { FaStreetView } from 'react-icons/fa6'
-import Image from 'next/image'
+import ProfileImage from '@/components/Avator/ProfileImage'
 import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -72,6 +72,10 @@ const SellerProfileSidebar = () => {
           name: 'All Viewing Requests',
           link: '/seller-profile/all-slot',
         },
+        {
+          name: 'Success Fee Invoice',
+          link: '/seller-profile/success-fee-invoice',
+        },
       ],
     },
     {
@@ -86,13 +90,23 @@ const SellerProfileSidebar = () => {
     },
     {
       icon: <PrimaryDocument />,
-      name: 'Documents Storage',
+      name: 'Document Management',
       link: '/seller-profile/documents-storage',
+    },
+    {
+      icon: <PrimaryDocument />,
+      name: 'Invoices',
+      link: '/seller-profile/invoices',
     },
     {
       icon: <PrimarySale />,
       name: 'Sale Tracker',
       link: '/seller-profile/sale-tracker',
+    },
+    {
+      icon: <PrimaryDocument />,
+      name: 'Installment Payments',
+      link: '/seller-profile/installment-payments',
     },
     // { icon: <PrimaryLogout />, name: "Sign Out", link: "/" },
   ]
@@ -103,8 +117,8 @@ const SellerProfileSidebar = () => {
         <div className='px-4 xl:px-0'>
           <div className='custom-shadow flex justify-center items-center flex-col py-6 lg:rounded'>
             <figure>
-              <Image
-                src={user?.profileImage || '/assets/images/dummy-profile.png'}
+              <ProfileImage
+                src={user?.profileImage}
                 alt='Profile'
                 height={184}
                 width={184}
@@ -112,10 +126,9 @@ const SellerProfileSidebar = () => {
               />
             </figure>
             <h1
-              className='text-prussianBlue capitalize font-semibold md:text-xl text-lg lg:text-3xl truncate max-w-[300px]'
-              title={user?.name} // shows full name on hover
+              className='text-prussianBlue capitalize font-semibold md:text-xl text-lg lg:text-3xl break-words text-center max-w-full px-2'
             >
-              {user?.name || 'Loading...'}
+              {user?.displayName || user?.name || 'Loading...'}
             </h1>
 
             <h2 className='lg:text-2xl md:text-lg text-base text-prussianBlue mb-3'>
@@ -130,11 +143,10 @@ const SellerProfileSidebar = () => {
                 tab.dropdown ? (
                   <div key={tab.name + i} className='relative'>
                     <div
-                      className={`${
-                        tab.link === path
-                          ? 'bg-whiteSmoke font-medium focus:outline-none'
-                          : 'border-transparent'
-                      } whitespace-nowrap flex gap-3 hover:bg-whiteSmoke hover:text-prussianBlue items-center py-2 px-8 cursor-pointer sm:text-base text-sm lg:text-xl`}
+                      className={`${tab.link === path
+                        ? 'bg-whiteSmoke font-medium focus:outline-none'
+                        : 'border-transparent'
+                        } whitespace-nowrap flex gap-3 hover:bg-whiteSmoke hover:text-prussianBlue items-center py-2 px-8 cursor-pointer sm:text-base text-sm lg:text-xl`}
                       onClick={() => handleDropdownToggle(i - 1)} // Adjust index for dropdown tracking
                     >
                       {tab.icon}
@@ -173,11 +185,10 @@ const SellerProfileSidebar = () => {
                       <button
                         type='button'
                         key={tab.name}
-                        className={`${
-                          tab.link === path
-                            ? 'bg-whiteSmoke text-prussianBlue w-full font-medium focus:outline-none'
-                            : 'border-transparent'
-                        } whitespace-nowrap w-full flex gap-3 hover:bg-whiteSmoke hover:text-prussianBlue items-center py-2 px-8 cursor-pointer sm:text-xl`}
+                        className={`${tab.link === path
+                          ? 'bg-whiteSmoke text-prussianBlue w-full font-medium focus:outline-none'
+                          : 'border-transparent'
+                          } whitespace-nowrap w-full flex gap-3 hover:bg-whiteSmoke hover:text-prussianBlue items-center py-2 px-8 cursor-pointer sm:text-xl`}
                       >
                         {tab.icon}
                         {tab.name}
@@ -194,9 +205,8 @@ const SellerProfileSidebar = () => {
                         if (isSwitchingRole) return
                         await switchUserRole('DealHunter')
                       }}
-                      className={`pl-10 text-lg py-2 flex items-center gap-2 cursor-pointer ${
-                        isSwitchingRole ? 'opacity-50 cursor-not-allowed' : ''
-                      }`}
+                      className={`pl-10 text-lg py-2 flex items-center gap-2 cursor-pointer ${isSwitchingRole ? 'opacity-50 cursor-not-allowed' : ''
+                        }`}
                     >
                       <PrimaryProfile />
                       {isSwitchingRole
@@ -211,9 +221,8 @@ const SellerProfileSidebar = () => {
                           if (isSwitchingRole) return
                           await switchUserRole('AssetHolder')
                         }}
-                        className={`pl-10 text-lg py-2 flex items-center gap-2 cursor-pointer ${
-                          isSwitchingRole ? 'opacity-50 cursor-not-allowed' : ''
-                        }`}
+                        className={`pl-10 text-lg py-2 flex items-center gap-2 cursor-pointer ${isSwitchingRole ? 'opacity-50 cursor-not-allowed' : ''
+                          }`}
                       >
                         <PrimaryProfile />
                         {isSwitchingRole

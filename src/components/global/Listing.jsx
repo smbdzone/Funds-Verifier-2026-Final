@@ -6,7 +6,10 @@ import {
   Commercial,
   Residential,
 } from '@/constants/listing-data'
-import { toUnitedArabEmiratesListingCountryName } from '@/libs/dummyLocationData'
+import {
+  formatCityLabel,
+  toUnitedArabEmiratesListingCountryName,
+} from '@/libs/dummyLocationData'
 import { isListingEvaluatorApprovedLocked } from '@/libs/listingEditLock'
 import DropdownComponent from '../../components/DropdownComponent/DropdownComponent'
 
@@ -62,42 +65,48 @@ const Listing = ({
   setLand,
   errors,
 }) => {
-  const [type, setType] = useState(false)
-
   const [residential, setResidential] = useState(false)
   const [commercial, setCommercial] = useState(false)
-  const [multiple, setMultiple] = useState(false)
 
   const togglePropertTypeDropdown = () => {
-    setType(!type)
+    setResidential(false)
+    setCommercial(false)
+    handleToggleDropdown('propertyType')
   }
   const [filteredCities, setFilteredCities] = useState([])
   const [filterneighbours, setFilteredNeighbours] = useState([])
 
   useEffect(() => {
-    setFilteredCities(cities?.map((item) => item.description))
+    setFilteredCities(
+      (cities ?? [])
+        .map((item) =>
+          formatCityLabel(
+            typeof item === 'string' ? item : item?.description,
+          ),
+        )
+        .filter(Boolean),
+    )
   }, [searchQueryCity, cities])
 
   useEffect(() => {
-    // Filter cities based on the search query
-    const filtered = neighbourhoods?.filter((item) =>
-      item.name.toLowerCase().includes(searchQueryNeighbourhood.toLowerCase())
-    )
+    const query = (searchQueryNeighbourhood || '').toLowerCase()
+    const filtered = (neighbourhoods ?? []).filter((item) => {
+      const name = item?.name
+      if (!name) return false
+      return name.toLowerCase().includes(query)
+    })
 
-    // Filter neighbourhoods based on the search query
-    setFilteredNeighbours(filtered?.map((item) => item.name))
+    setFilteredNeighbours(filtered.map((item) => item.name))
   }, [searchQueryNeighbourhood, neighbourhoods])
 
   const toggleResidentialDropdown = () => {
-    setResidential(!residential)
+    setResidential((open) => !open)
+    setCommercial(false)
   }
   const toggleCommercialDropdown = () => {
-    setCommercial(!commercial)
+    setCommercial((open) => !open)
+    setResidential(false)
   }
-  const toggleMultipleDropdown = () => {
-    setMultiple(!multiple)
-  }
-
   const propertyType = [
     {
       text: 'Residential',
@@ -113,21 +122,10 @@ const Listing = ({
       onclick: toggleCommercialDropdown,
       mapData: Commercial,
     },
-
-    {
-      text: 'Multiple',
-      state: commercial,
-      setState: setResidential,
-      onclick: toggleMultipleDropdown,
-    },
   ]
 
-  const togglePriceDropdown = () => {
-    setPrice(!price)
-  }
-  const toggleBedsDropdown = () => {
-    setBeds(!beds)
-  }
+  const togglePriceDropdown = () => { }
+  const toggleBedsDropdown = () => { }
   const handleMake = (make) => {
     handleMakeClick(make.brand)
     setModels(make.models)
@@ -135,7 +133,8 @@ const Listing = ({
 
   const handleProperty = (ele) => {
     handlePropertyTypeSelect(ele)
-    setType(false)
+    setResidential(false)
+    setCommercial(false)
   }
 
   const isEvaluatorApprovedLocked = isListingEvaluatorApprovedLocked(formData)
@@ -146,21 +145,21 @@ const Listing = ({
       isListings: property || car || boat || jewelry,
       handleToggleDropdown: () => handleToggleDropdown('assetType'),
       formData: formData?.assetType,
-      handleMouseLeave: () => handleMouseLeave('assetType'),
       handleSelectOption: handleSelectOption,
       dropdowns: dropdowns.assetType,
       dropdownOptions: asset,
       error: errors.assetType && formData.assetType === 'Select Asset Type',
       errorMessage: errors.assetType,
       disabled: isEvaluatorApprovedLocked,
+      required: true,
     },
     {
       label: 'All Countries',
       isListings: property || car || boat || jewelry,
       handleToggleDropdown: toggleDropdownn,
-      formData: toUnitedArabEmiratesListingCountryName(
-        formData?.country || selectedCountry,
-      ),
+      formData: formData?.country
+        ? toUnitedArabEmiratesListingCountryName(formData.country)
+        : selectedCountry || 'Select Country',
       handleSelectOption: handleCountrySelect,
       dropdowns: isOpen,
       dropdownOptions: filteredCountries,
@@ -170,12 +169,13 @@ const Listing = ({
       error: errors.country && !formData.country,
       errorMessage: errors.country,
       disabled: isEvaluatorApprovedLocked,
+      required: true,
     },
     {
       label: 'City',
       isListings: property || car || boat || jewelry,
       handleToggleDropdown: toggleCityDropdown,
-      formData: formData?.city || selectedCity,
+      formData: formatCityLabel(formData?.city || selectedCity) || formData?.city || selectedCity,
       handleSelectOption: handleCitySelect,
       dropdowns: isCityDropdownOpen,
       dropdownOptions: filteredCities,
@@ -185,6 +185,7 @@ const Listing = ({
       error: errors.city && !formData.city,
       errorMessage: errors.city,
       disabled: isEvaluatorApprovedLocked,
+      required: true,
     },
     {
       label: 'Neighbourhood',
@@ -200,6 +201,7 @@ const Listing = ({
       error: errors.city && !formData.neighbourhood,
       errorMessage: errors.neighbourhood,
       disabled: isEvaluatorApprovedLocked,
+      required: true,
     },
     {
       label: 'Make',
@@ -255,14 +257,14 @@ const Listing = ({
       isListings: property,
       handleToggleDropdown: togglePropertTypeDropdown,
       formData: formData?.propertyType || selectType,
-      handleMouseLeave: () => setType(false),
       handleSelectOption: handleProperty,
-      dropdowns: type,
+      dropdowns: dropdowns.propertyType,
       dropdownOptions: propertyType,
       setLand: setLand,
       error: errors.propertyType && !formData.propertyType,
       errorMessage: errors.propertyType,
       disabled: isEvaluatorApprovedLocked,
+      required: true,
     },
   ]
 

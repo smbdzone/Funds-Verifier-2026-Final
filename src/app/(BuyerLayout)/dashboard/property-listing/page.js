@@ -1,11 +1,12 @@
 'use client'
-import { Suspense, useState, useEffect, useContext } from 'react'
+import { Suspense, useState, useEffect, useContext, useMemo } from 'react'
 import axios from 'axios'
 import 'react-phone-number-input/style.css'
 import { isValidPhoneNumber } from 'libphonenumber-js'
 import adImage from '@/assets/images/advertisement.png'
 import Listing from '@/components/global/Listing'
 import Facilities from '../../../../components/property-listing/Facilities'
+import ReadyMarketLayoutDocuments from '@/components/property-listing/ReadyMarketLayoutDocuments'
 import GlobalLoader from '@/utils/GlobalLoader'
 import PaymentModal from '@/components/payments/PaymentModal'
 import {
@@ -25,18 +26,50 @@ import {
   occupancyStatusOptions,
   isFurnishedOptions,
   facilities,
+  OFF_PLAN_MEDIA_KEYS,
+  READY_MARKET_LAYOUT_MEDIA_KEYS,
+  createDefaultOffPlanPaymentPlan,
+  addOffPlanPaymentStep,
+  removeOffPlanPaymentStep,
+  reindexOffPlanPaymentPlan,
+  sanitizeOffPlanPaymentPlan,
+  normalizePaymentPlanType,
 } from '@/constants/listing-data'
+import { LISTING_IMAGE_MAX_BYTES, LISTING_IMAGE_MAX_MB } from '@/constants/listingUploadLimits'
+import { ensureWithinSize } from '@/libs/imageCompression'
+import { applyListingWatermark } from '@/libs/applyListingWatermark'
+import { autoCapitalizeField } from '@/libs/autoCapitalizeText'
+import { flagListingPendingApprovalNotice } from '@/libs/listingPendingApprovalNotice'
 import { ListingContext } from '@/components/ListingContext/ListingsProvider'
 import { propertyType } from '../../../../constants/listing-data'
 import PayModal from '../../../../components/Modals/PayModal'
 import { useProfile } from '../../../../context/UserContext'
 import StripeElement from '../../../../components/Stripe/StripeElement'
+import { useRefreshListingAfterServicePayment } from '@/hooks/useRefreshListingAfterServicePayment'
+import { useRestoreListingAfterClozerPayment } from '@/hooks/useRestoreListingAfterClozerPayment'
+import {
+  useRestorePendingListingDraft,
+  useRefetchListingOnReturn,
+} from '@/hooks/useRestorePendingListingDraft'
+import {
+  clearListingWorkspaceStorage,
+  hasPendingListingDraft,
+  isPendingDraftForListingRoute,
+} from '@/libs/pendingListingDraft'
 import customAxios from '../../../../utils/apis/apis'
 import {
   applyPremiumServiceRefs,
   listingMediaRef,
+  listingCertificateRef,
   premiumServiceRequestId,
+  stripEmptyObjectIdRefs,
 } from '@/libs/listingMediaRef'
+import {
+  hasConfirmedEvaluationPayment,
+  bookEvaluationTimeslotFromFormData,
+  stripEvaluationBookingMeta,
+} from '@/libs/evaluationBooking'
+import { isListingEvaluatorApprovedLocked, buildApprovedAssetHolderUpdatePayload } from '@/libs/listingEditLock'
 
 const dropdownData = {
   leaseNumberofCheques: false,
@@ -44,13 +77,38 @@ const dropdownData = {
   bathrooms: false,
   isFurnished: false,
   occupancyStatus: false,
-  bedrooms: false,
   assetType: false,
+  sizeType: false,
+  deliveryQuarter: false,
+  deliveryYear: false,
+  paymentPlanType: false,
+  layout: false,
+  numberOfFloors: false,
+}
+
+const emptyOffPlanMedia = () => {
+  const keys = [
+    ...new Set([...OFF_PLAN_MEDIA_KEYS, ...READY_MARKET_LAYOUT_MEDIA_KEYS]),
+  ]
+  return keys.reduce((acc, key) => {
+    acc[key] = null
+    return acc
+  }, {})
+}
+
+const formatPriceDisplay = (rawValue) => {
+  if (!rawValue) return ''
+  return new Intl.NumberFormat('en-US').format(rawValue)
 }
 
 const Page = () => {
   const [isOpenModal, setIsOpenModal] = useState(false)
   const [showPayment, setShowPayment] = useState(false)
+  const [totalPriceFrom, setTotalPriceFrom] = useState('')
+  const [totalPriceTo, setTotalPriceTo] = useState('')
+  const [offPlanMedia, setOffPlanMedia] = useState(emptyOffPlanMedia)
+  const [agencyAgreementFile, setAgencyAgreementFile] = useState(null)
+  const [titleDeedFile, setTitleDeedFile] = useState(null)
   const { user } = useProfile()
 
   const {
@@ -92,9 +150,12 @@ const Page = () => {
     errors,
     phoneNumber,
     thumbnail,
+    qrScan,
     handleOpenModal,
     handleThumbImageRemove,
     handleThumbImageChange,
+    handleQrScanChange,
+    handleQrScanRemove,
     handleCountryChange,
     selectedCountryPhone,
     maxLength,
@@ -133,7 +194,7 @@ const Page = () => {
     setIsCityDropdownOpen,
     setErrors,
     // setThumbnail,
-    video,
+    videos,
     file,
     handleScroll,
     setTotalSize,
@@ -144,13 +205,20 @@ const Page = () => {
     fetchData,
     handleVideoRemove,
     setModalData,
-    // setImages,
-    // setVideo,
+    resetPremiumPaymentDrafts,
+    setImages,
+    setThumbnail,
+    setVideos,
+    setQrScan,
+    setSelectedCountry,
+    setSelectedCity,
+    setSelectedNeighbourhood,
+    setCountryCode,
     resetForm,
   } = useContext(ListingContext)
 
   const initialFormData = {
-    assetType: 'Property For Sale',
+    assetType: 'Select Asset Type',
     country: '',
     city: '',
     phoneNumber: '',
@@ -171,33 +239,305 @@ const Page = () => {
     evaluationDateTime: '',
     price: formData?.price || '',
     sizeSQFT: '',
+    sizeSQM: '',
+    sizeSQFTFrom: '',
+    sizeSQFTTo: '',
+    sizeSQMFrom: '',
+    sizeSQMTo: '',
+    sizeUnit: 'SQFT',
     description: '',
     additionalDescription: '',
     bedrooms: '',
     evaluationCompanies: '',
     developer: '',
+    projectName: '',
     bathrooms: '',
     isFurnished: '',
     sellerTransferFee: '',
     buyerTransferFee: '',
     occupancyStatus: '',
+    priceFrom: '',
+    priceTo: '',
+    advertisementId: '',
+    dldNumber: '',
+    mapUrl: '',
+    deliveryQuarter: '',
+    deliveryYear: '',
+    paymentPlanType: '',
+    sizeType: '',
+    layout: '',
+    numberOfFloors: '',
+    availableApartment: '',
+    paymentPlan: createDefaultOffPlanPaymentPlan(),
     listings: [],
     facilities: [],
+    customFacilities: [],
+    qrScan: null,
+    agencyAgreement: null,
     createdAt: new Date(),
     updatedAt: new Date(),
   }
+  const assetTypeParam = searchParams.get('assetType')
+
+  const listingDraftRestoreApi = useMemo(
+    () => ({
+      setFormData,
+      setImages,
+      setThumbnail,
+      setVideos,
+      setQrScan,
+      setSelectedCountry,
+      setSelectedCity,
+      setSelectedNeighbourhood,
+      setSelectType,
+      setCountryCode,
+      setPhoneNumber,
+      setTotalPrice,
+    }),
+    [
+      setFormData,
+      setImages,
+      setThumbnail,
+      setVideos,
+      setQrScan,
+      setSelectedCountry,
+      setSelectedCity,
+      setSelectedNeighbourhood,
+      setSelectType,
+      setCountryCode,
+      setPhoneNumber,
+      setTotalPrice,
+    ],
+  )
+
   useEffect(() => {
     if (id) {
       fetchData('property')
-    } else {
-      setLoading(false)
+      return
     }
-  }, [searchParams])
-  const router = useRouter()
-  useEffect(() => {
+
+    // Keep draft only when it belongs to property listing (not car/boat/jewelry).
+    if (hasPendingListingDraft() && isPendingDraftForListingRoute('property')) {
+      setLoading(false)
+      return
+    }
+
+    if (hasPendingListingDraft()) {
+      clearListingWorkspaceStorage()
+    }
+
     resetForm()
-    handleFormData(initialFormData, dropdownData)
-  }, [searchParams])
+    handleFormData(
+      {
+        ...initialFormData,
+        ...(assetTypeParam ? { assetType: assetTypeParam } : {}),
+      },
+      dropdownData,
+    )
+    setLoading(false)
+  }, [id, assetTypeParam])
+
+  useRefreshListingAfterServicePayment(id, 'property', fetchData)
+  useRestoreListingAfterClozerPayment(listingDraftRestoreApi)
+  useRestorePendingListingDraft(id, listingDraftRestoreApi, 'property')
+  useRefetchListingOnReturn(id, 'property', fetchData)
+
+  const isOffPlan = formData?.assetType === 'Property Off Plan For Sale'
+
+  // After Clozer evaluation payment: restore draft then create listing automatically.
+  useEffect(() => {
+    if (id || isOffPlan) return
+    try {
+      if (sessionStorage.getItem('fv.autoFinalizeEvaluationPayment') !== '1') {
+        return
+      }
+      const sessionRaw = localStorage.getItem('checkoutSession')
+      const session = sessionRaw ? JSON.parse(sessionRaw) : null
+      if (
+        !hasConfirmedEvaluationPayment(session) &&
+        !hasConfirmedEvaluationPayment(formData)
+      ) {
+        return
+      }
+      if (!formData?.title || !formData?.evaluationDateTime) return
+      if (!images?.length || !thumbnail) return
+
+      sessionStorage.removeItem('fv.autoFinalizeEvaluationPayment')
+      setLoading(true)
+      setShowPayment(false)
+      setConfirmationModal(false)
+      finalizeSubmission()
+    } catch {
+      /* ignore */
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- run when restored form is ready
+  }, [
+    id,
+    isOffPlan,
+    formData?.title,
+    formData?.evaluationDateTime,
+    formData?.EvaluationPaymentStatus,
+    images?.length,
+    thumbnail,
+  ])
+
+  useEffect(() => {
+    if (
+      isOffPlan &&
+      (!Array.isArray(formData.paymentPlan) || formData.paymentPlan.length === 0)
+    ) {
+      setFormData((prev) => ({
+        ...prev,
+        paymentPlan: createDefaultOffPlanPaymentPlan(),
+      }))
+    }
+  }, [isOffPlan, formData.paymentPlan?.length, setFormData])
+
+  useEffect(() => {
+    if (formData?.priceFrom != null && formData.priceFrom !== '') {
+      setTotalPriceFrom(formatPriceDisplay(String(formData.priceFrom)))
+    }
+    if (formData?.priceTo != null && formData.priceTo !== '') {
+      setTotalPriceTo(formatPriceDisplay(String(formData.priceTo)))
+    }
+  }, [formData?.priceFrom, formData?.priceTo])
+
+  useEffect(() => {
+    if (!id) return
+    setOffPlanMedia({
+      unitLayout:
+        formData?.unitLayout?.images?.[0] ?? formData?.unitLayout ?? null,
+      floorPlan:
+        formData?.floorPlan?.images?.[0] ?? formData?.floorPlan ?? null,
+    })
+    if (formData?.agencyAgreement && !(agencyAgreementFile instanceof File)) {
+      setAgencyAgreementFile(null)
+    }
+    if (formData?.titleDeed && !(titleDeedFile instanceof File)) {
+      setTitleDeedFile(null)
+    }
+  }, [
+    id,
+    isOffPlan,
+    formData?.unitLayout,
+    formData?.floorPlan,
+    formData?.agencyAgreement,
+    formData?.titleDeed,
+    agencyAgreementFile,
+    titleDeedFile,
+  ])
+
+  const handleAgencyAgreementChange = (event) => {
+    const selectedFile = event.target.files?.[0]
+    event.target.value = null
+    if (!selectedFile) return
+    if (selectedFile.type !== 'application/pdf') {
+      toast.error('Please upload a PDF file for the agency agreement.')
+      return
+    }
+    setAgencyAgreementFile(selectedFile)
+  }
+
+  const handleAgencyAgreementRemove = () => {
+    setAgencyAgreementFile(null)
+    setFormData((prev) => ({ ...prev, agencyAgreement: null }))
+  }
+
+  const handleTitleDeedChange = (event) => {
+    const selectedFile = event.target.files?.[0]
+    event.target.value = null
+    if (!selectedFile) return
+    if (selectedFile.type !== 'application/pdf') {
+      toast.error('Please upload a PDF file for the title deed.')
+      return
+    }
+    setTitleDeedFile(selectedFile)
+  }
+
+  const handleTitleDeedRemove = () => {
+    setTitleDeedFile(null)
+    setFormData((prev) => ({ ...prev, titleDeed: null }))
+  }
+
+  const handleOffPlanImageChange = (key) => async (event) => {
+    let selectedFile = event.target.files?.[0]
+    event.target.value = null
+    if (!selectedFile) return
+
+    try {
+      if (selectedFile.size > LISTING_IMAGE_MAX_BYTES) {
+        selectedFile = await ensureWithinSize(
+          selectedFile,
+          LISTING_IMAGE_MAX_BYTES,
+        )
+      }
+      // Layout/floor plans get the listing watermark; never burn it onto QR.
+      if (key !== 'qrScan') {
+        selectedFile = await applyListingWatermark(selectedFile, {
+          position: 'center',
+          maxBytes: LISTING_IMAGE_MAX_BYTES,
+        })
+        if (selectedFile.size > LISTING_IMAGE_MAX_BYTES) {
+          selectedFile = await ensureWithinSize(
+            selectedFile,
+            LISTING_IMAGE_MAX_BYTES,
+          )
+        }
+      }
+      setOffPlanMedia((prev) => ({ ...prev, [key]: selectedFile }))
+    } catch (err) {
+      toast.error(
+        err?.message ||
+        `Could not prepare ${selectedFile?.name || 'image'} (max ${LISTING_IMAGE_MAX_MB}MB)`,
+      )
+    }
+  }
+
+  const handleOffPlanImageRemove = (key) => {
+    setOffPlanMedia((prev) => ({ ...prev, [key]: null }))
+    setFormData((prev) => ({ ...prev, [key]: null }))
+  }
+
+  const handlePaymentPlanStepChange = (index, field, value) => {
+    setFormData((prev) => {
+      const plan = reindexOffPlanPaymentPlan(
+        prev.paymentPlan?.length
+          ? [...prev.paymentPlan]
+          : createDefaultOffPlanPaymentPlan(),
+      )
+      plan[index] = { ...plan[index], [field]: value }
+      return { ...prev, paymentPlan: reindexOffPlanPaymentPlan(plan) }
+    })
+  }
+
+  const handlePaymentPlanStepRemove = (index) => {
+    setFormData((prev) => ({
+      ...prev,
+      paymentPlan: removeOffPlanPaymentStep(prev.paymentPlan || [], index),
+    }))
+  }
+
+  const handlePaymentPlanStepAdd = () => {
+    setFormData((prev) => ({
+      ...prev,
+      paymentPlan: addOffPlanPaymentStep(prev.paymentPlan || []),
+    }))
+  }
+
+  const handleListingSelectOption = (dropdownName, option) => {
+    if (dropdownName === 'sizeType') {
+      setFormData((prev) => ({
+        ...prev,
+        sizeType: option,
+        sizeUnit: option,
+      }))
+      setDropdowns({ ...dropdowns, sizeType: false })
+      return
+    }
+    handleSelectOption(dropdownName, option)
+  }
+
+  const router = useRouter()
 
   const handlePropertyTypeSelect = (type) => {
     setSelectType(type)
@@ -205,6 +545,7 @@ const Page = () => {
       ...prevFormData,
       propertyType: type,
     }))
+    setDropdowns((prev) => ({ ...prev, propertyType: false }))
     setIsCityDropdownOpen(false)
   }
 
@@ -218,21 +559,45 @@ const Page = () => {
 
   const submitConfirmation = async (e) => {
     const validationErrors = validateForm(formData)
+
+    if (id) {
+      setLoading(true)
+      finalizeSubmission()
+      return
+    }
+
+    if (isOffPlan) {
+      if (Object.keys(validationErrors).length > 0) {
+        setErrors(validationErrors)
+        setLoading(false)
+        handleScroll()
+        return
+      }
+      if (!images?.length) {
+        toast.error('At least one image is required.')
+        return
+      }
+      if (!thumbnail) {
+        toast.error('Thumbnail image is required.')
+        return
+      }
+      setLoading(true)
+      setConfirmationModal(false)
+      finalizeSubmission()
+      return
+    }
+
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors)
+      setLoading(false)
+      handleScroll()
+      return
+    }
     if (!formData?.evaluationDateTime) {
       toast.error('Evaluation Date and time is required!')
       return
     }
-    if (id) {
-      finalizeSubmission()
-    } else {
-      if (Object.keys(validationErrors).length === 0) {
-        setConfirmationModal(true)
-      } else {
-        setErrors(validationErrors)
-        setLoading(false)
-        handleScroll()
-      }
-    }
+    setConfirmationModal(true)
   }
 
   const handleSubmit = async (e) => {
@@ -244,7 +609,7 @@ const Page = () => {
         setLoading(false)
         throw new Error('Image is required')
       }
-      if (!formData?.evaluationDateTime) {
+      if (!isOffPlan && !formData?.evaluationDateTime) {
         toast.error('Evalaution required.')
         setLoading(false)
         throw new Error('Evalaution required')
@@ -256,10 +621,29 @@ const Page = () => {
         throw new Error('Thumbnail is required')
       }
 
-      if (!video) {
-        toast.error('Video is required.')
-        setLoading(false)
-        throw new Error('Video is required')
+      if (isOffPlan) {
+        setLoading(true)
+        setConfirmationModal(false)
+        finalizeSubmission()
+        return
+      }
+
+      // Already paid for evaluation (Stripe or Clozer) — create listing, don't ask to pay again.
+      try {
+        const sessionRaw = localStorage.getItem('checkoutSession')
+        const session = sessionRaw ? JSON.parse(sessionRaw) : null
+        if (
+          hasConfirmedEvaluationPayment(formData) ||
+          hasConfirmedEvaluationPayment(session)
+        ) {
+          setLoading(true)
+          setConfirmationModal(false)
+          setShowPayment(false)
+          finalizeSubmission()
+          return
+        }
+      } catch {
+        /* ignore corrupt session */
       }
 
       return setShowPayment(true)
@@ -297,7 +681,7 @@ const Page = () => {
       }
     } catch (error) {
       console.error('Error during form submission:', error?.message)
-      toast.error('An error occurred. Please try again.')
+      toast.error(error?.message || 'An error occurred. Please try again.')
       setLoading(false)
     }
   }
@@ -343,15 +727,15 @@ const Page = () => {
         }
       }
 
-      // ✅ Require payment only when first submitting (no `id`)
-      if (!id) {
+      // ✅ Require payment only when first submitting (no `id`) and not off-plan
+      if (!id && !isOffPlan) {
         const checkoutSessionRaw = localStorage.getItem('checkoutSession')
         const checkoutSession = checkoutSessionRaw
           ? JSON.parse(checkoutSessionRaw)
           : null
 
-        if (!checkoutSession || Object.keys(checkoutSession).length === 0) {
-          return toast.error('Payment of 2 dirham is required!')
+        if (!hasConfirmedEvaluationPayment(checkoutSession)) {
+          return toast.error('Evaluation payment is required before submitting.')
         }
       }
 
@@ -362,26 +746,74 @@ const Page = () => {
       let thumbnailID = formData?.thumbnailImg
       let videoID = formData?.video
       let fileID = formData?.evaluationCertificate
+      let qrScanID = formData?.qrScan
+      let agencyAgreementID = formData?.agencyAgreement
+      let titleDeedID = formData?.titleDeed
 
       // Upload new files only if creating a new property (no id)
       if (!id) {
-        const [uploadedImages, uploadedVideo, uploadedFile, uploadedThumbnail] =
-          await Promise.all([
-            images.length > 0 ? handleImageUpload(images) : imageID,
-            video ? handleVideoUpload(video) : videoID,
-            file ? handleFileUpload(file) : fileID,
-            thumbnail ? handleThumbnailUpload(thumbnail) : thumbnailID,
-          ])
+        const [
+          uploadedImages,
+          uploadedVideo,
+          uploadedFile,
+          uploadedThumbnail,
+          uploadedQrScan,
+        ] = await Promise.all([
+          images.length > 0 ? handleImageUpload(images) : imageID,
+          videos.some((v) => v instanceof File)
+            ? handleVideoUpload(videos.filter((v) => v instanceof File))
+            : videoID,
+          file ? handleFileUpload(file) : fileID,
+          thumbnail instanceof File
+            ? handleThumbnailUpload(thumbnail)
+            : thumbnailID,
+          qrScan ? handleImageUpload([qrScan]) : qrScanID,
+        ])
 
         imageID = uploadedImages
         videoID = uploadedVideo
         fileID = uploadedFile
         thumbnailID = uploadedThumbnail
+        qrScanID = uploadedQrScan
+
+        if (agencyAgreementFile instanceof File) {
+          agencyAgreementID = await handleFileUpload(agencyAgreementFile)
+        }
+        if (!isOffPlan && titleDeedFile instanceof File) {
+          titleDeedID = await handleFileUpload(titleDeedFile)
+        }
       } else {
-        // ✅ For updates: only re-upload video or file if changed
-        if (video) videoID = await handleVideoUpload(video)
+        // For updates: only re-upload media that changed
+        const newVideoFiles = videos.filter((v) => v instanceof File)
+        if (newVideoFiles.length) videoID = await handleVideoUpload(newVideoFiles)
         if (file) fileID = await handleFileUpload(file)
-        // thumbnail and images will remain unchanged
+        if (thumbnail instanceof File) {
+          thumbnailID = await handleThumbnailUpload(thumbnail)
+        }
+        if (qrScan instanceof File) {
+          qrScanID = await handleImageUpload([qrScan])
+        }
+        if (agencyAgreementFile instanceof File) {
+          agencyAgreementID = await handleFileUpload(agencyAgreementFile)
+        }
+        if (!isOffPlan && titleDeedFile instanceof File) {
+          titleDeedID = await handleFileUpload(titleDeedFile)
+        }
+      }
+
+      const layoutMediaRefs = {}
+      const layoutMediaKeys = isOffPlan
+        ? OFF_PLAN_MEDIA_KEYS
+        : READY_MARKET_LAYOUT_MEDIA_KEYS
+      for (const key of layoutMediaKeys) {
+        const media = offPlanMedia[key]
+        if (media instanceof File) {
+          const uploaded = await handleImageUpload([media])
+          layoutMediaRefs[key] =
+            listingMediaRef(uploaded) ?? listingMediaRef(formData?.[key])
+        } else {
+          layoutMediaRefs[key] = listingMediaRef(formData?.[key])
+        }
       }
 
       const checkoutSessionRaw = localStorage.getItem('checkoutSession')
@@ -391,6 +823,38 @@ const Page = () => {
 
       const updatedFormData = {
         ...formData,
+        sizeSQFT: formData.sizeSQFTFrom
+          ? Number(formData.sizeSQFTFrom)
+          : formData.sizeSQFT
+            ? Number(formData.sizeSQFT)
+            : 0,
+        sizeSQM: formData.sizeSQMFrom
+          ? Number(formData.sizeSQMFrom)
+          : formData.sizeSQM
+            ? Number(formData.sizeSQM)
+            : 0,
+        sizeSQFTFrom: formData.sizeSQFTFrom
+          ? Number(formData.sizeSQFTFrom)
+          : formData.sizeSQFT
+            ? Number(formData.sizeSQFT)
+            : undefined,
+        sizeSQFTTo: formData.sizeSQFTTo
+          ? Number(formData.sizeSQFTTo)
+          : undefined,
+        sizeSQMFrom: formData.sizeSQMFrom
+          ? Number(formData.sizeSQMFrom)
+          : formData.sizeSQM
+            ? Number(formData.sizeSQM)
+            : undefined,
+        sizeSQMTo: formData.sizeSQMTo
+          ? Number(formData.sizeSQMTo)
+          : undefined,
+        sizeUnit: formData.sizeType || formData.sizeUnit || 'SQFT',
+        priceFrom: formData.priceFrom ? Number(formData.priceFrom) : undefined,
+        priceTo: formData.priceTo ? Number(formData.priceTo) : undefined,
+        price: isOffPlan
+          ? Number(formData.priceFrom || 0)
+          : Number(formData.price || 0),
         userUUID: user?.uuid,
         pictures:
           listingMediaRef(imageID) ?? listingMediaRef(formData?.pictures),
@@ -402,10 +866,31 @@ const Page = () => {
         thumbnailImg:
           listingMediaRef(thumbnailID) ??
           listingMediaRef(formData?.thumbnailImg),
+        qrScan:
+          listingMediaRef(qrScanID) ?? listingMediaRef(formData?.qrScan),
+        agencyAgreement: isOffPlan
+          ? listingCertificateRef(agencyAgreementID) ??
+          listingCertificateRef(formData?.agencyAgreement)
+          : undefined,
+        titleDeed: !isOffPlan
+          ? listingCertificateRef(titleDeedID) ??
+          listingCertificateRef(formData?.titleDeed)
+          : undefined,
         propertyForSale:
-          formData.assetType === 'Property For Sale' ? 'Yes' : '',
+          formData.assetType === 'Property For Sale' ||
+            formData.assetType === 'Property Off Plan For Sale'
+            ? 'Yes'
+            : '',
         propertyForLease:
           formData.assetType === 'Property For Lease' ? 'Yes' : '',
+        ...(layoutMediaRefs),
+        paymentPlan: sanitizeOffPlanPaymentPlan(
+          Array.isArray(formData.paymentPlan) ? formData.paymentPlan : [],
+        ),
+        paymentPlanType: normalizePaymentPlanType(formData.paymentPlanType),
+        facilities: Array.isArray(formData.facilities)
+          ? formData.facilities.filter(Boolean)
+          : [],
       }
 
       applyPremiumServiceRefs(updatedFormData, formData, {
@@ -417,18 +902,36 @@ const Page = () => {
       const validationErrors = validateForm(updatedFormData)
 
       if (Object.keys(validationErrors).length === 0) {
+        if (!id && !isOffPlan) {
+          await bookEvaluationTimeslotFromFormData(formData)
+        }
+
+        const listingPayload = stripEmptyObjectIdRefs(
+          stripEvaluationBookingMeta(updatedFormData),
+        )
+
+        // After evaluator approval, only send fields the asset holder may
+        // still change — keeps evaluator-finalized details intact.
+        const approvedLocked = isListingEvaluatorApprovedLocked(formData)
+        const payloadToSave =
+          id && approvedLocked
+            ? stripEmptyObjectIdRefs(
+              buildApprovedAssetHolderUpdatePayload(listingPayload),
+            )
+            : listingPayload
+
         if (id) {
           requests.push(
             customAxios.put(
               `${process.env.NEXT_PUBLIC_BASE_URL}/property/${id}`,
-              updatedFormData
+              payloadToSave
             )
           )
         } else {
           requests.push(
             customAxios.post(
               `${process.env.NEXT_PUBLIC_BASE_URL}/property`,
-              updatedFormData
+              listingPayload
             )
           )
         }
@@ -439,16 +942,29 @@ const Page = () => {
         toast.success(
           id
             ? 'Updated successfully'
-            : 'Submitted successfully. Evaluator will evaluate it.'
+            : isOffPlan
+              ? 'Submitted successfully. Your off-plan listing is pending Super Admin approval.'
+              : 'Submitted successfully. Evaluator will evaluate it.',
         )
+
+        if (!id) {
+          flagListingPendingApprovalNotice({
+            assetKind: isOffPlan ? 'offplan' : 'property',
+          })
+        }
 
         // Reset everything
         setDropdowns(dropdownData)
+        setOffPlanMedia(emptyOffPlanMedia())
+        setTitleDeedFile(null)
+        setAgencyAgreementFile(null)
         if (!id) {
           resetForm()
           setFormData(initialFormData)
           localStorage.removeItem('FormPayment')
           localStorage.removeItem('checkoutSessionId')
+          localStorage.removeItem('checkoutSession')
+          localStorage.removeItem('pendingListingDraft')
         }
         resetForm()
         router.push('/seller-profile/my-listing')
@@ -459,7 +975,9 @@ const Page = () => {
       }
     } catch (error) {
       console.error('Error during submission:', error)
-      toast.error('An error occurred. Please try again.')
+      toast.error(
+        error?.message || 'An error occurred during submission. Please try again.',
+      )
       setLoading(false)
     }
   }
@@ -467,34 +985,73 @@ const Page = () => {
   const handleChange = (e) => {
     const { name, value } = e.target
 
-    if (name === 'price') {
-      // Remove non-digit characters from the price input
-      const rawValue = value.replace(/[^\d]/g, '') // Remove commas, dots, etc.
+    if (name === 'price' || name === 'priceFrom' || name === 'priceTo') {
+      const rawValue = value.replace(/[^\d]/g, '').slice(0, 9)
 
-      // Check if input is a valid number and update the state
       if (/^\d*$/.test(rawValue)) {
-        // Store the raw numeric value in formData
         setFormData((prevFormData) => ({
           ...prevFormData,
-          [name]: rawValue, // Update the raw value in formData
+          [name]: rawValue,
         }))
 
-        // Optionally, format the number for display with commas
-        const formattedValue = new Intl.NumberFormat('en-US').format(rawValue)
-        setTotalPrice(formattedValue)
+        const formattedValue = formatPriceDisplay(rawValue)
+        if (name === 'price') {
+          setTotalPrice(formattedValue)
+        } else if (name === 'priceFrom') {
+          setTotalPriceFrom(formattedValue)
+        } else if (name === 'priceTo') {
+          setTotalPriceTo(formattedValue)
+        }
       }
-    } else if (name === 'sizeSQFT') {
-      const numericValue = value.replace(/\D/g, '')
-      const formattedValue = new Intl.NumberFormat('en-US').format(numericValue)
-      setTotalSize(formattedValue)
-      setFormData({ ...formData, [name]: numericValue })
+    } else if (name === 'sizeSQFT' || name === 'sizeSQM') {
+      // Handled by PropertySizeField via handleSizeChange
     } else {
-      setFormData({ ...formData, [name]: value })
+      setFormData({
+        ...formData,
+        [name]: autoCapitalizeField(name, value),
+      })
     }
+  }
+
+  const handleSizeChange = ({
+    sizeSQFT,
+    sizeSQM,
+    sizeSQFTFrom,
+    sizeSQFTTo,
+    sizeSQMFrom,
+    sizeSQMTo,
+    sizeUnit,
+    sizeType,
+  }) => {
+    setFormData((prev) => {
+      const nextUnit = sizeUnit || prev.sizeUnit || 'SQFT'
+      const next = {
+        ...prev,
+        ...(sizeSQFT !== undefined ? { sizeSQFT } : {}),
+        ...(sizeSQM !== undefined ? { sizeSQM } : {}),
+        ...(sizeSQFTFrom !== undefined ? { sizeSQFTFrom } : {}),
+        ...(sizeSQFTTo !== undefined ? { sizeSQFTTo } : {}),
+        ...(sizeSQMFrom !== undefined ? { sizeSQMFrom } : {}),
+        ...(sizeSQMTo !== undefined ? { sizeSQMTo } : {}),
+        sizeUnit: nextUnit,
+        ...(sizeType !== undefined
+          ? { sizeType }
+          : sizeUnit
+            ? { sizeType: sizeUnit }
+            : {}),
+      }
+
+      // Keep single-size fields in sync with range "from" for filters/search.
+      if (sizeSQFTFrom !== undefined) next.sizeSQFT = sizeSQFTFrom
+      if (sizeSQMFrom !== undefined) next.sizeSQM = sizeSQMFrom
+
+      return next
+    })
   }
 
   const validateForm = (data) => {
     const errors = {}
+    const offPlan = data.assetType === 'Property Off Plan For Sale'
     // Convert all values to string safely using String() and provide fallback if undefined
     const phoneNumber = String(data.phoneNumber || '')
     // Check for phoneNumber validation
@@ -524,6 +1081,9 @@ const Page = () => {
     if (!thumbnail) {
       errors.thumbnail = 'Thumbnail is required'
     }
+    if (!qrScan) {
+      errors.qrScan = 'QR Scan is required'
+    }
 
     if (!String(data.country || '').trim()) {
       errors.country = 'Country is required'
@@ -537,29 +1097,96 @@ const Page = () => {
       errors.neighbourhood = 'Neighbourhood is required'
     }
 
-    if (!String(data.sizeSQFT || '').trim()) {
-      errors.sizeSQFT = 'Size is required'
-    }
+    const sizeUnit = data.sizeUnit || data.sizeType || 'SQFT'
+    if (offPlan) {
+      const sizeFrom =
+        sizeUnit === 'SQM'
+          ? data.sizeSQMFrom || data.sizeSQM
+          : data.sizeSQFTFrom || data.sizeSQFT
+      const sizeTo = sizeUnit === 'SQM' ? data.sizeSQMTo : data.sizeSQFTTo
 
-    // if (!String(data.evaluationDateTime || "").trim()) {
-    //   errors.evaluationDateTime = "Evaluation is required";
-    // }
+      if (!String(sizeFrom || '').trim()) {
+        errors.sizeSQFT = 'Size from is required'
+      } else if (!String(sizeTo || '').trim()) {
+        errors.sizeSQFT = 'Size to is required'
+      } else if (Number(sizeTo) < Number(sizeFrom)) {
+        errors.sizeSQFT = 'Size to must be greater than or equal to size from'
+      }
+    } else {
+      const sizeValue =
+        sizeUnit === 'SQM' ? data.sizeSQM : data.sizeSQFT
+      if (!String(sizeValue || '').trim()) {
+        errors.sizeSQFT = 'Size is required'
+      }
+    }
 
     if (!String(data.title || '').trim()) {
       errors.title = 'Title is required'
-    } else if (data.title.length > 30) {
+    } else if (offPlan && data.title.length > 50) {
+      errors.title = 'Title must be less than 50 characters'
+    } else if (!offPlan && data.title.length > 30) {
       errors.title = 'Title must be less than 30 characters'
     }
 
-    if (!String(data.price || '').trim() && !totalprice) {
+    if (!String(data.projectName || '').trim()) {
+      errors.projectName = 'Project Name is required'
+    }
+
+    if (offPlan) {
+      if (!String(data.priceFrom || '').trim()) {
+        errors.price = 'Price from is required'
+      } else if (parseInt(data.priceFrom) === 0) {
+        errors.price = 'Price from is invalid'
+      } else if (!String(data.priceTo || '').trim()) {
+        errors.price = 'Price to is required'
+      } else if (parseInt(data.priceTo) === 0) {
+        errors.price = 'Price to is invalid'
+      } else if (Number(data.priceTo) < Number(data.priceFrom)) {
+        errors.price = 'Price to must be greater than or equal to price from'
+      }
+
+      if (!String(data.deliveryQuarter || '').trim() || !String(data.deliveryYear || '').trim()) {
+        errors.deliveryTime = 'Delivery time is required'
+      }
+
+      if (!String(data.developer || '').trim()) {
+        errors.developer = 'Developer is required'
+      }
+
+      const plan = Array.isArray(data.paymentPlan) ? data.paymentPlan : []
+      const filledPlan = plan.filter(
+        (step) =>
+          String(step?.sharePercent ?? '').trim() !== '' ||
+          String(step?.milestone ?? '').trim() !== '',
+      )
+      const downPayment = filledPlan[0]?.sharePercent
+      if (!String(downPayment || '').trim()) {
+        errors.paymentPlan = 'Down payment share is required'
+      } else {
+        const totalShare = filledPlan.reduce(
+          (sum, step) => sum + Number(step?.sharePercent || 0),
+          0,
+        )
+        if (totalShare > 100) {
+          errors.paymentPlan = 'Payment plan shares cannot exceed 100%'
+        }
+      }
+    } else if (!String(data.price || '').trim() && !totalprice) {
       errors.price = 'Price is required'
     } else if (parseInt(totalprice) === 0) {
       errors.price = 'Price is invalid'
     }
 
-    if (data.additionalDescription.length > 1000) {
+    if (!offPlan) {
+      if (!String(data.additionalDescription || '').trim()) {
+        errors.additionalDescription = 'Additional description is required'
+      } else if (data.additionalDescription.length > 1000) {
+        errors.additionalDescription =
+          'Additional Description must be less than 1000 characters'
+      }
+    } else if (data.additionalDescription?.length > 1000) {
       errors.additionalDescription =
-        'Additional Description must be less than 1000 characters'
+        'Additional Properties must be less than 1000 characters'
     }
 
     if (!String(data.bathrooms || '').trim()) {
@@ -570,7 +1197,7 @@ const Page = () => {
       errors.bedrooms = 'Bedrooms are required'
     }
 
-    if (!String(data.occupancyStatus || '').trim()) {
+    if (!offPlan && !String(data.occupancyStatus || '').trim()) {
       errors.occupancyStatus = 'Occupancy Status is required'
     }
 
@@ -629,8 +1256,9 @@ const Page = () => {
         }
         break
       case 'sizeSQFT':
-        if (!value.trim()) {
-          error = 'Size SQFT is required'
+      case 'sizeSQM':
+        if (!String(value || '').trim()) {
+          error = 'Property size is required'
         }
         break
       // case "evaluationDateTime":
@@ -678,12 +1306,13 @@ const Page = () => {
               technicalModalData={technicalModalData}
               setIsOpenModal={setIsOpenModal}
               isValidState={isValidState}
-              userUUID={user?.uuid} // Pass userUUID from context
+              userUUID={user?.uuid}
+              onPaymentAbandoned={resetPremiumPaymentDrafts}
             />
           )}
           <ToastContainer />
           <h2 className='text-dark-grey text-center xl:text-[40px] lg:text-4xl md:text-3xl sm:text-2xl xxs:text-xl font-medium leading-normal pt-[60px]'>
-            Final Steps to / Listing Your Asset
+            Final Steps to Listing Your Asset
           </h2>
           {/* assest type  */}
           <Listing
@@ -716,7 +1345,7 @@ const Page = () => {
             handleModelClick={handleModelClick}
             handleNeighbour={handleNeighbour}
             handleCountrySelect={handleCountrySelect}
-            handleSelectOption={handleSelectOption}
+            handleSelectOption={handleListingSelectOption}
             selectedCity={selectedCity}
             selectedCountry={selectedCountry}
             selectType={selectType}
@@ -738,9 +1367,12 @@ const Page = () => {
                 dropdown3D={propertyType}
                 phoneNumber={phoneNumber}
                 thumbnail={thumbnail}
+                qrScan={qrScan}
                 handleOpenModal={handleOpenModal}
                 handleThumbImageRemove={handleThumbImageRemove}
                 handleThumbImageChange={handleThumbImageChange}
+                handleQrScanChange={handleQrScanChange}
+                handleQrScanRemove={handleQrScanRemove}
                 handleCountryChange={handleCountryChange}
                 selectedCountryPhone={selectedCountryPhone}
                 maxLength={maxLength}
@@ -754,8 +1386,10 @@ const Page = () => {
                 handleToggleDropdown={handleToggleDropdown}
                 id={id}
                 totalprice={totalprice}
+                totalPriceFrom={totalPriceFrom}
+                totalPriceTo={totalPriceTo}
                 handleVideoRemove={handleVideoRemove}
-                handleSelectOption={handleSelectOption}
+                handleSelectOption={handleListingSelectOption}
                 handleOpenModal1={handleOpenModal1}
                 isModal1Open={isModal1Open}
                 setFormData={setFormData}
@@ -774,20 +1408,45 @@ const Page = () => {
                 bedroomsOptions={bedroomsOptions}
                 bathroomsOptions={bathroomsOptions}
                 handleVideoChange={handleVideoChange}
-                video={video}
+                videos={videos}
                 handlePhoneNumberChange={handlePhoneNumberChange}
+                handleSizeChange={handleSizeChange}
                 leaseNumberofChequesOptions={leaseNumberofChequesOptions}
                 isFurnishedOptions={isFurnishedOptions}
+                offPlanMedia={offPlanMedia}
+                onOffPlanImageChange={handleOffPlanImageChange}
+                onOffPlanImageRemove={handleOffPlanImageRemove}
+                onPaymentPlanStepChange={handlePaymentPlanStepChange}
+                onPaymentPlanStepRemove={handlePaymentPlanStepRemove}
+                onPaymentPlanStepAdd={handlePaymentPlanStepAdd}
+                agencyAgreementFile={agencyAgreementFile}
+                onAgencyAgreementChange={handleAgencyAgreementChange}
+                onAgencyAgreementRemove={handleAgencyAgreementRemove}
+                listings={listings}
+                handleRadioChange={handleRadioChange}
               />
+              {!isOffPlan ? (
+                <ReadyMarketLayoutDocuments
+                  media={offPlanMedia}
+                  titleDeedFile={titleDeedFile}
+                  existingTitleDeed={formData?.titleDeed}
+                  onTitleDeedChange={handleTitleDeedChange}
+                  onTitleDeedRemove={handleTitleDeedRemove}
+                  onImageChange={handleOffPlanImageChange}
+                  onImageRemove={handleOffPlanImageRemove}
+                  errors={errors}
+                  disabled={isListingEvaluatorApprovedLocked(formData)}
+                />
+              ) : null}
               {/* input two  */}
               <Facilities
                 formData={formData}
-                listings={listings}
-                handleRadioChange={handleRadioChange}
                 handleCheckboxChange={handleCheckboxChange}
+                handleChange={handleChange}
                 handleSubmit={handleSubmit}
                 loading={loading}
                 facilities={facilities}
+                setFormData={setFormData}
                 adImage={adImage}
                 id={id}
                 submitConfirmation={submitConfirmation}

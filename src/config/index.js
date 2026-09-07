@@ -1,3 +1,5 @@
+import { getPublicApiHeaders } from '@/libs/publicApiClient'
+
 // Simple in-memory cache
 const cache = {}
 
@@ -24,14 +26,18 @@ export async function api(url, options = {}, cacheTime = 20000) {
   }
 
   try {
+    const authHeaders = options.headers?.Authorization
+      ? options.headers
+      : await getPublicApiHeaders(options.headers || {})
+
     const response = await fetch(fullUrl, {
       ...options,
       headers: {
         'Content-Type': 'application/json',
-        ...(options.headers || {}),
+        ...authHeaders,
       },
-      // Optional: only if using App Router
-      next: { revalidate: 10 },
+      // Align with HomeLayout ISR (60s) unless caller overrides.
+      next: { revalidate: 60, ...(options.next || {}) },
     })
 
     if (!response.ok) {

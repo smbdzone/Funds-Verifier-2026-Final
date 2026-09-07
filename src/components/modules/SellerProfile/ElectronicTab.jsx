@@ -64,7 +64,7 @@ export const ElectronicTab = () => {
                 <button
                   className={`whitespace-nowrap py-4 cursor-pointersm:text-base text-sm lg:text-lg`}
                 >
-                  My Profile
+                  Electronic Consent
                 </button>
               </nav>
             </div>
@@ -81,11 +81,11 @@ export const ElectronicTab = () => {
               serving you!
             </p>
             {user?.electronicConsent?.consentTerms &&
-            user?.electronicConsent?.consentTaxTerms &&
-            user?.userState === 'active' ? (
+              user?.electronicConsent?.consentTaxTerms &&
+              user?.userState === 'active' ? (
               <p className='text-center md:text-base text-sm'>
                 Hi
-                <span className='font-semibold ml-1'>{user?.name}</span>, you’ve
+                <span className='font-semibold ml-1 break-words'>{user?.displayName || user?.name}</span>, you’ve
                 already accepted our terms and conditions. Thank you!
               </p>
             ) : (

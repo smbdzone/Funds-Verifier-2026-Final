@@ -43,7 +43,7 @@ export default function Sidebar() {
       icon: <PrimaryProfile />,
       name: "Sub-Evaluator",
       link: "/evaluator-profile/manage-evaluators",
-       dropdown: [
+      dropdown: [
         {
           name: "Manage Sub-Evaluators",
           link: "/evaluator-profile/manage-evaluators",
@@ -52,17 +52,12 @@ export default function Sidebar() {
           name: "Track Progress",
           link: "/evaluator-profile/track-progress",
         },
-       ] 
+      ]
     },
     {
       icon: <PrimaryDocument />,
       name: "All Invoice",
       link: "/evaluator-profile/all-invoices",
-    },
-    {
-      icon: <PrimaryDocument />,
-      name: "Transaction Tracker",
-      link: "/evaluator-profile/transaction-tracker",
     },
     {
       icon: <PrimaryAssetDocument />,
@@ -93,20 +88,10 @@ export default function Sidebar() {
     },
     {
       icon: <PrimaryDocument />,
-      name: "Electronic Consent",
-      link: "/evaluator-profile/electronic-consent",
-    },
-    {
-      icon: <PrimaryDocument />,
-      name: "Documents Storage",
-      link: "/evaluator-profile/document-storage",
-    },
-    {
-      icon: <PrimaryDocument />,
       name: "Price List",
       link: "/evaluator-profile/price-list",
     },
-   
+
   ];
 
   return (
@@ -114,8 +99,8 @@ export default function Sidebar() {
       <div className="flex flex-col gap-7">
         <div className="px-4 xl:px-0">
           <div className="custom-shadow flex justify-center items-center flex-col py-6 lg:rounded">
-            <h1 className="text-prussianBlue capitalize font-semibold md:text-xl text-lg lg:text-3xl">
-              {user?.name || "Loading..."}
+            <h1 className="text-prussianBlue capitalize font-semibold md:text-xl text-lg lg:text-3xl break-words text-center max-w-full px-2">
+              {user?.displayName || user?.name || "Loading..."}
             </h1>
             <h2 className="lg:text-2xl md:text-lg text-base text-prussianBlue mb-3">
               {user?.role}
@@ -129,11 +114,10 @@ export default function Sidebar() {
                 tab.dropdown ? (
                   <div key={tab.name} className="relative">
                     <div
-                      className={`${
-                        tab.link === path
+                      className={`${tab.link === path
                           ? "bg-whiteSmoke font-medium focus:outline-none"
                           : "border-transparent"
-                      } whitespace-nowrap flex gap-3 hover:bg-whiteSmoke hover:text-prussianBlue items-center py-2 px-8 cursor-pointer sm:text-base text-sm lg:text-xl`}
+                        } whitespace-nowrap flex gap-3 hover:bg-whiteSmoke hover:text-prussianBlue items-center py-2 px-8 cursor-pointer sm:text-base text-sm lg:text-xl`}
                       onClick={() => handleDropdownToggle(i - 1)} // Adjust index for dropdown tracking
                     >
                       {tab.icon}
@@ -172,11 +156,10 @@ export default function Sidebar() {
                       <button
                         type="button"
                         key={tab.name}
-                        className={`${
-                          tab.link === path
+                        className={`${tab.link === path
                             ? "bg-whiteSmoke text-prussianBlue w-full font-medium focus:outline-none"
                             : "border-transparent"
-                        } whitespace-nowrap w-full flex gap-3 hover:bg-whiteSmoke hover:text-prussianBlue items-center py-2 px-8 cursor-pointer sm:text-xl`}
+                          } whitespace-nowrap w-full flex gap-3 hover:bg-whiteSmoke hover:text-prussianBlue items-center py-2 px-8 cursor-pointer sm:text-xl`}
                       >
                         {tab.icon}
                         {tab.name}
@@ -200,7 +183,7 @@ export default function Sidebar() {
           </div>
         </div>
       </div>
-    
+
     </div>
   );
 }

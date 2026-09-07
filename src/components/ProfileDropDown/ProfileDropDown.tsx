@@ -49,9 +49,9 @@ const ProfileDropDown = ({ user, logout, isloading = false, color }: any) => {
                   <h2
                     className={` ${
                       color ? color : 'text-prussianBlue'
-                    } text-xs font-semibold`}
+                    } text-xs font-semibold break-words text-left max-w-[220px]`}
                   >
-                    {user?.name}
+                    {user?.displayName || user?.name}
                   </h2>
                   <span
                     className={`${

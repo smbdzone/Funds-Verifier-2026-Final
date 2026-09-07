@@ -3,7 +3,7 @@ import { createContext, ReactNode } from "react";
 interface ListingsContextType {
   loading: boolean;
   cityLoading: boolean;
-  video: File | null;
+    video: File[];
   errors: Record<string, string>;
   isOpen: boolean;
   countries: Array<{ name: string; code: string }> | undefined;

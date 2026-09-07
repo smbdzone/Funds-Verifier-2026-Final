@@ -1,21 +1,39 @@
 'use client'
-import React, { useState, useEffect } from 'react'
-import Image from 'next/image'
-import vectorArrow from '@/assets/images/vector5.svg'
-import axios from 'axios'
+import React, { useState, useEffect, useRef, useMemo } from 'react'
 import SearchButton from '@/components/Buttons/SearchButton'
+import HeroFilterSelect, { formatCityLabel } from '@/components/Inputs/HeroFilterSelect'
 import { useRouter } from 'next/navigation'
 import {
   boatPricesForFilter,
   defaultPricesForFilter,
   propertyPricesForFilter,
 } from '@/constants/otherConstants'
-import { ClipLoader } from 'react-spinners'
 import customAxios from '@/utils/apis/apis'
+import { LISTING_COUNTRY_UAE_LABEL } from '@/libs/dummyLocationData'
+import {
+  buildCountryToCitiesMap,
+  getListingCitiesForCountry,
+  UAE_ONLY_COUNTRY_OPTIONS,
+} from '@/libs/listingLocationUtils'
 
-const SearchInputs = ({ setIsOpen }) => {
+const CATEGORY_LOCATION_ENDPOINTS = {
+  Boat: '/boat/locations',
+  'Property For Sale': '/property/locations',
+  'Property Off Plan For Sale': '/property/locations',
+  Car: '/car/locations',
+  Jewelry: '/jewelry/locations',
+}
+
+const CATEGORY_OPTIONS = [
+  { value: 'Property For Sale', label: 'Ready Property For Sale' },
+  { value: 'Property Off Plan For Sale', label: 'Off Plan' },
+  { value: 'Jewelry', label: 'Jewellery' },
+  { value: 'Car', label: 'Cars' },
+  { value: 'Boat', label: 'Boats' },
+]
+
+const SearchInputs = ({ setIsOpen, variant = 'hero' }) => {
   const [countries, setCountries] = useState([])
-  const [totalCities, setTotalCities] = useState([])
   const [cities, setCities] = useState([])
   const [selectedCountry, setSelectedCountry] = useState('')
   const [selectedCity, setSelectedCity] = useState('')
@@ -29,303 +47,282 @@ const SearchInputs = ({ setIsOpen }) => {
   const [countryLoading, setCountryLoading] = useState(false)
   const [cityLoading, setCityLoading] = useState(false)
   const [countryCityMap, setCountryCityMap] = useState({})
+  const locationCacheRef = useRef({})
+  const prevCountryRef = useRef('')
   const handleSearch = () => {
     setIsLoading(true)
-    const query = new URLSearchParams({
-      minPrice,
-      maxPrice,
-      country: selectedCountry,
-      city: selectedCity,
-      roi: ROI,
-    })
+    const query = new URLSearchParams()
+    if (minPrice) query.set('minPrice', minPrice)
+    if (maxPrice) query.set('maxPrice', maxPrice)
+    if (selectedCountry) query.set('country', selectedCountry)
+    if (selectedCity) query.set('city', selectedCity)
+    if (ROI) query.set('roi', ROI)
 
     let pathCategory = category.toLowerCase()
     if (category === 'Property For Sale') {
       pathCategory = 'property'
+      query.append('assetType', `${category}`)
+    } else if (category === 'Property Off Plan For Sale') {
+      pathCategory = 'offplan'
       query.append('assetType', `${category}`)
     }
 
     if (router) {
       const fullPath = `/${pathCategory}?${query.toString()}`
       router.push(fullPath)
-      setIsOpen(false)
+      setIsOpen?.(false)
     } else {
       console.error('Router is undefined')
     }
+    setIsLoading(false)
   }
 
-  // Fetch the countries on component mount
+  // Fetch cities via lightweight /locations facets (not full listing catalogs).
   useEffect(() => {
-    const fetchCountries = async () => {
+    if (!category) return
+
+    if (category === 'Property For Sale' || category === 'Property Off Plan For Sale') {
+      setPriceOptions(propertyPricesForFilter)
+    } else if (category === 'Boat') {
+      setPriceOptions(boatPricesForFilter)
+    } else if (['Property For Lease', 'Car', 'Jewelry'].includes(category)) {
+      setPriceOptions(defaultPricesForFilter)
+    } else {
+      setPriceOptions([])
+    }
+
+    const cached = locationCacheRef.current[category]
+    if (cached) {
+      setCountries(UAE_ONLY_COUNTRY_OPTIONS)
+      setCountryCityMap(cached.map)
+      setSelectedCountry(LISTING_COUNTRY_UAE_LABEL)
+      return
+    }
+
+    setCountries(UAE_ONLY_COUNTRY_OPTIONS)
+    setSelectedCountry(LISTING_COUNTRY_UAE_LABEL)
+
+    const endpoint = CATEGORY_LOCATION_ENDPOINTS[category]
+    if (!endpoint) return
+
+    let cancelled = false
+
+    const fetchLocations = async () => {
       setCountryLoading(true)
       try {
-        let response
-        if (category === 'Boat') {
-          response = await customAxios.get(
-            `${process.env.NEXT_PUBLIC_BASE_URL}/boat`
-          )
-        } else if (category === 'Property For Sale') {
-          response = await customAxios.get(
-            `${process.env.NEXT_PUBLIC_BASE_URL}/property`
-          )
-        } else if (category === 'Car') {
-          response = await customAxios.get(
-            `${process.env.NEXT_PUBLIC_BASE_URL}/car`
-          )
-        } else if (category === 'Jewelry') {
-          response = await customAxios.get(
-            `${process.env.NEXT_PUBLIC_BASE_URL}/jewelry`
-          )
+        const params = { statusFilter: 1 }
+        if (
+          category === 'Property For Sale' ||
+          category === 'Property Off Plan For Sale'
+        ) {
+          params.assetType = category
         }
 
-        const products = response?.data?.products || []
-
-        // Build a mapping of { country: [cities] }
-        const countryCityMap = {}
-
-        products.forEach((item) => {
-          const country = item.country
-          const city = item.city
-
-          if (
-            country &&
-            country !== 'Select Country' &&
-            country !== 'required_country'
-          ) {
-            if (!countryCityMap[country]) {
-              countryCityMap[country] = new Set()
-            }
-
-            if (city) {
-              countryCityMap[country].add(city)
-            }
-          }
-        })
-
-        // Get unique country list
-        const uniqueCountries = Object.keys(countryCityMap)
-
-        // Convert each city set to an array
-        const formattedMap = Object.fromEntries(
-          Object.entries(countryCityMap).map(([country, cities]) => [
-            country,
-            Array.from(cities),
-          ])
+        const response = await customAxios.get(
+          `${process.env.NEXT_PUBLIC_BASE_URL}${endpoint}`,
+          { params },
         )
+        const locations = response?.data?.locations || []
 
-        setCountries(uniqueCountries)
-        setCountryCityMap(formattedMap) // store it in state
+        if (cancelled) return
+
+        const formattedMap = buildCountryToCitiesMap(locations)
+
+        locationCacheRef.current[category] = {
+          countries: UAE_ONLY_COUNTRY_OPTIONS,
+          map: formattedMap,
+        }
+
+        setCountries(UAE_ONLY_COUNTRY_OPTIONS)
+        setCountryCityMap(formattedMap)
+        setSelectedCountry(LISTING_COUNTRY_UAE_LABEL)
       } catch (error) {
-        console.error('Error fetching countries data:', error)
+        console.error('Error fetching listing locations:', error)
+        if (!cancelled) {
+          setCountries(UAE_ONLY_COUNTRY_OPTIONS)
+          setCountryCityMap({})
+          setSelectedCountry(LISTING_COUNTRY_UAE_LABEL)
+        }
       } finally {
-        setCountryLoading(false)
+        if (!cancelled) setCountryLoading(false)
       }
     }
 
-    if (category) {
-      fetchCountries()
-      if (category === 'Property For Sale') {
-        setPriceOptions(propertyPricesForFilter)
-      } else if (category === 'Boat') {
-        setPriceOptions(boatPricesForFilter)
-      } else if (['Property For Lease', 'Car', 'Jewelry'].includes(category)) {
-        setPriceOptions(defaultPricesForFilter)
-      } else {
-        setPriceOptions([])
-      }
-    }
-  }, [category, selectedCountry])
+    fetchLocations()
 
-  const handleCountryChange = (event) => {
-    const selectedCountry = event.target.value
-    setSelectedCountry(selectedCountry)
-    setCities(countryCityMap[selectedCountry] || [])
+    return () => {
+      cancelled = true
+    }
+  }, [category])
+
+  // Cities come only from backend listings for the selected country.
+  useEffect(() => {
+    if (!selectedCountry) {
+      setCities([])
+      setCityLoading(false)
+      prevCountryRef.current = ''
+      return
+    }
+
+    if (prevCountryRef.current !== selectedCountry) {
+      setSelectedCity('')
+      prevCountryRef.current = selectedCountry
+    }
+
+    setCityLoading(true)
+    setCities(getListingCitiesForCountry(countryCityMap, selectedCountry))
+    setCityLoading(false)
+  }, [selectedCountry, countryCityMap])
+
+  const handleRoiChange = (e) => {
+    const next = e.target.value
+    if (next === '' || /^\d*\.?\d*$/.test(next)) {
+      setROI(next)
+    }
   }
 
-  const handleCategoryChange = (event) => {
-    setSelectedCountry('')
+  const handleCategoryChange = (nextCategory) => {
+    setSelectedCountry(LISTING_COUNTRY_UAE_LABEL)
     setSelectedCity('')
+    prevCountryRef.current = LISTING_COUNTRY_UAE_LABEL
     setROI('')
     setMinPrice('')
     setMaxPrice('')
-    setCategory(event.target.value)
+    setCategory(nextCategory)
   }
 
-  // Handle minimum price change
-  const handleMinPriceChange = (event) => {
-    setMinPrice(event.target.value)
-  }
+  const cityOptions = useMemo(
+    () =>
+      cities.map((city) => ({
+        value: city,
+        label: formatCityLabel(city),
+      })),
+    [cities],
+  )
 
-  // Handle maximum price change
-  const handleMaxPriceChange = (event) => {
-    setMaxPrice(event.target.value)
-  }
+  const countryOptions = useMemo(
+    () =>
+      countries.map((country) => ({
+        value: country,
+        label: country,
+      })),
+    [countries],
+  )
 
-  // Handle ROI change
-  const handleROIChange = (event) => {
-    setROI(event.target.value)
-  }
+  const minPriceOptions = useMemo(
+    () =>
+      priceOptions.map((option) => ({
+        value: option.value,
+        label: option.label,
+      })),
+    [priceOptions],
+  )
+
+  const maxPriceOptions = useMemo(
+    () =>
+      priceOptions.slice(1, 10).map((option) => ({
+        value: option.value,
+        label: option.label,
+      })),
+    [priceOptions],
+  )
+
+  const barClassName =
+    variant === 'modal'
+      ? 'hero-search-bar hero-search-bar--modal xl:mt-0 mt-0'
+      : 'hero-search-bar xl:mt-10 mt-6'
 
   return (
-    <div className='xl:mt-14 flex xl:gap-x-5 lg:gap-x-3 gap-y-3 items-center lg:flex-row flex-col w-full h-16 text-xl text-darkslategray-200'>
-      {/* Dropdown for Categories */}
-      <h1 className='lg:hidden block md:text-lg text-base font-semibold'>
+    <div className={barClassName}>
+      <h1
+        className={`mb-1 block w-full text-base font-semibold md:text-lg lg:hidden ${variant === 'modal' ? 'text-prussianBlue' : 'text-white'}`}
+      >
         Filter
       </h1>
 
-      <div className='select-wrapper relative'>
-        <select
-          className='select-custom outline-none border-none xl:text-base text-sm'
-          value={category}
-          onChange={handleCategoryChange}
-        >
-          <option className='xl:text-base text-xs ' value='' disabled hidden>
-            Categories
-          </option>
-          <option value='Property For Sale'>Properties For Sale</option>
-          {/* <option value='Property For Lease'>Properties For Lease</option> */}
-          <option value='Jewelry'>Jewellery</option>
-          <option value='Car'>Cars</option>
-          <option value='Boat'>Boats</option>
-        </select>
-        <div className='select-arrow'>
-          <Image src={vectorArrow} alt='Arrow' width={15} height={15} />
-        </div>
-      </div>
+      <HeroFilterSelect
+        value={category}
+        onChange={handleCategoryChange}
+        options={CATEGORY_OPTIONS}
+        placeholder='Categories'
+        emptyLabel='No categories available'
+        getOptionLabel={(opt) => opt.label}
+        getOptionValue={(opt) => opt.value}
+        title={category || 'Categories'}
+      />
 
-      {/* Dropdown for Country */}
+      <HeroFilterSelect
+        className='select-wrapper-country'
+        value={selectedCountry}
+        onChange={setSelectedCountry}
+        options={countryOptions}
+        placeholder='Country'
+        disabled={!category}
+        loading={countryLoading}
+        emptyLabel='No countries available'
+        getOptionLabel={(opt) => opt.label}
+        getOptionValue={(opt) => opt.value}
+        title={selectedCountry || 'Country'}
+      />
 
-      <div className='select-wrapper relative'>
-        <select
-          className='select-custom outline-none border-none xl:text-base text-sm'
-          value={selectedCountry}
-          onChange={handleCountryChange}
-          disabled={!category}
-        >
-          <option value='' disabled hidden>
-            Country
-          </option>
-          {countryLoading ? (
-            <option className='flex items-center justify-center'>
-              <ClipLoader color='#36d7b7' size={20} />
-            </option>
-          ) : (
-            <>
-              {countries.map((country, index) => (
-                <option key={index} value={country}>
-                  {country}
-                </option>
-              ))}
-            </>
-          )}
-        </select>
+      <HeroFilterSelect
+        className='select-wrapper-city'
+        value={selectedCity}
+        onChange={setSelectedCity}
+        options={cityOptions}
+        placeholder='City'
+        disabled={!selectedCountry}
+        loading={cityLoading}
+        emptyLabel='No cities available'
+        getOptionLabel={(opt) => opt.label}
+        getOptionValue={(opt) => opt.value}
+        title={selectedCity || 'City'}
+      />
 
-        <div className='select-arrow'>
-          <Image src={vectorArrow} alt='Arrow' width={15} height={15} />
-        </div>
-      </div>
+      <HeroFilterSelect
+        value={minPrice}
+        onChange={setMinPrice}
+        options={minPriceOptions}
+        placeholder='Min Price'
+        disabled={!category}
+        emptyLabel='No price options'
+        getOptionLabel={(opt) => opt.label}
+        getOptionValue={(opt) => opt.value}
+        title={minPrice ? `Min ${minPriceOptions.find((o) => o.value === minPrice)?.label}` : 'Min Price'}
+      />
 
-      {/* Dropdown for City */}
-      <div className='select-wrapper relative'>
-        <select
-          className='select-custom outline-none border-none xl:text-base text-sm'
-          value={selectedCity}
-          onChange={(e) => setSelectedCity(e.target.value)}
-          disabled={!selectedCountry || cityLoading}
-        >
-          <option value='' disabled hidden>
-            City
-          </option>
-          {cityLoading ? (
-            <option className='flex items-center justify-center'>
-              <ClipLoader color='#36d7b7' size={20} />
-            </option>
-          ) : (
-            <>
-              {cities.length > 0 ? (
-                cities?.map((city, index) => (
-                  <option key={index} value={city || city.formatted_address}>
-                    {city || city.formatted_address}
-                  </option>
-                ))
-              ) : (
-                <option value='' disabled>
-                  No cities available
-                </option>
-              )}
-            </>
-          )}
-        </select>
+      <HeroFilterSelect
+        value={maxPrice}
+        onChange={setMaxPrice}
+        options={maxPriceOptions}
+        placeholder='Max Price'
+        disabled={!category}
+        emptyLabel='No price options'
+        getOptionLabel={(opt) => opt.label}
+        getOptionValue={(opt) => opt.value}
+        title={maxPrice ? `Max ${maxPriceOptions.find((o) => o.value === maxPrice)?.label}` : 'Max Price'}
+      />
 
-        <div className='select-arrow'>
-          <Image src={vectorArrow} alt='Arrow' width={15} height={15} />
-        </div>
-      </div>
-
-      {/* Dropdown for Min Price */}
-      <div className='select-wrapper relative'>
-        <select
-          className='select-custom outline-none border-none xl:text-base text-sm'
-          value={minPrice}
-          onChange={handleMinPriceChange}
-        >
-          <option value='' disabled hidden>
-            Min Price
-          </option>
-          {priceOptions.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-        <div className='select-arrow'>
-          <Image src={vectorArrow} alt='Arrow' width={15} height={15} />
-        </div>
-      </div>
-
-      {/* Dropdown for Max Price */}
-      <div className='select-wrapper relative'>
-        <select
-          className='select-custom outline-none border-none xl:text-base text-sm'
-          value={maxPrice}
-          onChange={handleMaxPriceChange}
-        >
-          <option value='' disabled hidden>
-            Max Price
-          </option>
-          {priceOptions.slice(1, 10).map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-        <div className='select-arrow'>
-          <Image src={vectorArrow} alt='Arrow' width={15} height={15} />
-        </div>
-      </div>
-
-      {/* Conditionally Render ROI */}
       {category === 'Property For Sale' && (
-        <div className='select-wrapper outline-none border-none relative'>
-          <select
-            className='select-custom outline-none border-none xl:text-base text-sm'
-            value={ROI}
-            onChange={handleROIChange}
-          >
-            <option value='' disabled hidden>
-              ROI
-            </option>
-            <option value='5'>5%</option>
-            <option value='10'>10%</option>
-            <option value='20'>20%</option>
-          </select>
-          <div className='select-arrow'>
-            <Image src={vectorArrow} alt='Arrow' width={15} height={15} />
+        <div className='select-wrapper select-wrapper-roi relative'>
+          <div className='hero-roi-input-wrap'>
+            <input
+              type='text'
+              inputMode='decimal'
+              className='select-custom hero-filter-input hero-roi-input'
+              placeholder='ROI'
+              value={ROI}
+              onChange={handleRoiChange}
+              title={ROI ? `ROI ${ROI}%` : 'ROI'}
+              aria-label='ROI percentage'
+            />
+            <span className='hero-roi-suffix' aria-hidden='true'>
+              %
+            </span>
           </div>
         </div>
       )}
-      {/* Search   button */}
-      <div onClick={handleSearch}>
+      <div className='hero-search-bar__action shrink-0' onClick={handleSearch}>
         <SearchButton isLoading={isLoading} />
       </div>
     </div>

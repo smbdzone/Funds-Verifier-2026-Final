@@ -4,24 +4,71 @@ import { Suspense } from 'react'
 import ButtomSlider from '@/components/Product_page/Buttom_slider'
 import ProductView from '@/components/views/ProductView'
 import GlobalLoader from '@/utils/GlobalLoader'
-import customAxios from '../../../../utils/apis/apis'
+import { getPublicApiHeaders } from '@/libs/publicApiClient'
+import { buildListingPageMetadata } from '@/libs/listingMetadata'
+import { cache } from 'react'
 
-const GetProductData = async ({ slug }) => {
+export const dynamic = 'force-dynamic'
+
+const GetProductData = cache(async ({ slug }) => {
   try {
-    const propertyResponse = await customAxios.get(
-      `${process.env.NEXT_PUBLIC_BASE_URL}/property/${slug}`
-    )
-    // Fetch related property data
-    const propertyDataResponse = await customAxios.get(
-      `${process.env.NEXT_PUBLIC_BASE_URL}/property`
-    )
+    const headers = await getPublicApiHeaders()
+    const [propertyResponse, relatedResponse] = await Promise.all([
+      axios.get(`${process.env.NEXT_PUBLIC_BASE_URL}/property/${slug}`, {
+        headers,
+      }),
+      axios.get(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/property/related-property`,
+        {
+          headers,
+          params: {
+            statusFilter: 1,
+            limit: 12,
+            excludeSlug: slug,
+            excludeOffPlan: true,
+          },
+        },
+      ),
+    ])
 
     const propertyInfo = propertyResponse?.data
-    const propertyData = propertyDataResponse?.data || []
-    return { propertyInfo, propertyData }
+    const relatedProducts = relatedResponse?.data?.products || []
+
+    // Extra safety: drop current listing if exclude missed for any reason.
+    const products = relatedProducts.filter((item) => {
+      if (propertyInfo?.uuid && item?.uuid === propertyInfo.uuid) return false
+      if (
+        propertyInfo?.slug &&
+        item?.slug &&
+        item.slug === propertyInfo.slug
+      ) {
+        return false
+      }
+      return true
+    })
+
+    return {
+      propertyInfo,
+      propertyData: { products },
+    }
   } catch (error) {
+    console.error('Failed to load property:', slug, error?.message)
     return null
   }
+})
+
+export async function generateMetadata({ params }) {
+  const { slug } = await params
+  const data = await GetProductData({ slug })
+
+  if (!data?.propertyInfo) {
+    return { title: 'Property not found | Funds Verifier' }
+  }
+
+  return buildListingPageMetadata(data.propertyInfo, {
+    routeSegment: 'property',
+    listingId: slug,
+  })
 }
 
 export default async function Page({ params }) {
@@ -51,17 +98,19 @@ export default async function Page({ params }) {
                 <Link href='/'>Home</Link> /{' '}
                 <Link href='/property'>Properties</Link> /
               </span>
-              {propertyInfo?.title}
+              Listing details
             </p>
           </div>
         </div>
         <ProductView data={propertyInfo} />
-        <div className='theme-container '>
-          <h1 className='md:text-2xl text-lg mb-3 sm:mb-6 font-semibold text-left text-blue'>
-            Related Properties
-          </h1>
-          <ButtomSlider data={propertyData || []} />
-        </div>
+        {propertyData?.products?.length > 0 ? (
+          <div className='theme-container mt-8 border-t border-reefGold pt-10 sm:mt-12 sm:pt-12'>
+            <h1 className='md:text-2xl text-lg mb-3 sm:mb-6 font-semibold text-left text-blue'>
+              Related Properties
+            </h1>
+            <ButtomSlider data={propertyData} />
+          </div>
+        ) : null}
       </Suspense>
     </div>
   )

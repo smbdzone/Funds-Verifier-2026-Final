@@ -1,6 +1,6 @@
 /* eslint-disable react-hooks/rules-of-hooks */
 'use client'
-import { PlusIcon, UploadIcon } from '@/components/Icons'
+import { UploadIcon } from '@/components/Icons'
 import axios from 'axios'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
@@ -8,22 +8,37 @@ import { toast, ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 import Modal from '../../documents/modal'
 import DocumentSection from '../EvaluatorProfile/requestCompoenets/DocumentSection'
-import InputField from '../EvaluatorProfile/requestCompoenets/InputField'
 import EvaluatorEditableFields from '../EvaluatorProfile/requestCompoenets/EvaluatorEditableFields'
-import EvaluatorPriceInput from '../EvaluatorProfile/requestCompoenets/EvaluatorPriceInput'
+import EvaluatorPropertyEditableDetails from '../EvaluatorProfile/requestCompoenets/EvaluatorPropertyEditableDetails'
 import {
   buildEvaluatorUpdatePayload,
+  buildPropertyDetailsUpdatePayload,
+  buildEvaluatorFinalizeDetailsPayload,
   formatNumericInput,
+  getListingPriceForEvaluator,
   initFormattedPrice,
+  initPropertyDetailsDraft,
+  normalizeListingForEvaluator,
 } from '../EvaluatorProfile/requestCompoenets/evaluatorPriceHandlers'
 import { handleFileUpload } from '@/libs/uploadAsset'
 import Loader from '../EvaluatorProfile/requestCompoenets/Loader'
-import { formatNumberWithCommas } from '../../../utils/global-functions/global'
+import { formatListingCardPrice } from '@/libs/listingPriceDisplay'
 import customAxios from '../../../utils/apis/apis'
+import EvaluatorListingMedia from '../EvaluatorProfile/requestCompoenets/EvaluatorListingMedia'
+import EvaluatorDateField from '../EvaluatorProfile/requestCompoenets/EvaluatorDateField'
+import EvaluatorPriceInput from '../EvaluatorProfile/requestCompoenets/EvaluatorPriceInput'
+import RequestDocumentsActions from '../EvaluatorProfile/requestCompoenets/RequestDocumentsActions'
+import { EvaluatorAssetHolderFields } from '../EvaluatorProfile/requestCompoenets/EvaluatorListingContactFields'
 import {
-  getListingImageSrc,
-  getListingVideoSrc,
-} from '@/libs/listingCardMedia'
+  buildEvaluatorUploadedDocuments,
+  formatDateForInput,
+  getRequestDocumentName,
+  normalizeRequestDocuments,
+  openListingDocumentInNewTab,
+  requestDocumentsMissingDate,
+  serializeRequestDocuments,
+} from '@/utils/requestDocumentUtils'
+import { isOffPlanListing } from '@/libs/filterMyListingTab'
 
 export const RequestTab = () => {
   const path = usePathname()
@@ -34,14 +49,17 @@ export const RequestTab = () => {
   const [fileName, setFileName] = useState('')
   const [fileUrl, setFileUrl] = useState('') // For displaying file URL
   const [isLoading, setIsLoading] = useState(false)
-  const [noMediaFound, setNoMediaFound] = useState(false)
   const [data, setData] = useState()
-  const [selectedMedia, setSelectedMedia] = useState(null)
   const [listingPrice, setListingPrice] = useState('')
   const [formattedListingPrice, setFormattedListingPrice] = useState('')
-  const [sizeSQFT, setSizeSQFT] = useState('')
-  const [formattedSizeSQFT, setFormattedSizeSQFT] = useState('')
+  const [evaluationPrice, setEvaluationPrice] = useState('')
+  const [formattedPrice, setFormattedPrice] = useState('')
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [pdfUrl, setPdfUrl] = useState('')
+  const [pdfFileName, setPdfFileName] = useState('')
+  const [detailsDraft, setDetailsDraft] = useState(() => initPropertyDetailsDraft({}))
   const [isSavingDetails, setIsSavingDetails] = useState(false)
+  const [isSavingPropertyDetails, setIsSavingPropertyDetails] = useState(false)
 
   const handleFilechange = async (e) => {
     const selectedFile = e.target.files[0]
@@ -66,71 +84,91 @@ export const RequestTab = () => {
 
   const fetchPropertyData = async () => {
     try {
-      const response = await customAxios.get(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/property/${propertyId}`
-      )
-      setProperty(response.data)
-      const hasGallery =
-        (response.data.pictures?.images?.length ?? 0) > 0 ||
-        (response.data.video?.videos?.length ?? 0) > 0
-      const hasThumb = Boolean(
-        response.data.thumbnailImg?.images?.[0]?.url ||
-        response.data.thumbnailImg?.images?.[0]?.signedUrl
-      )
-      const has3d = Boolean(response.data.video3DWalkthrough?.link)
-      setNoMediaFound(!hasGallery && !hasThumb && !has3d)
-      fetchPrice(response?.data.propertyType, response?.data?.bedrooms)
+      const response = await customAxios.get(`/property/${propertyId}`)
+      const listing = normalizeListingForEvaluator(response.data)
+      setProperty(listing)
+      fetchPrice(listing.propertyType, listing?.bedrooms)
       // Initialize ROI state if available
-      setRoi(response?.data.roi != null ? String(response.data.roi) : '')
+      setRoi(listing?.roi != null ? String(listing.roi) : '')
       initFormattedPrice(
-        response.data.evaluationPrices,
+        listing.evaluationPrices,
         setEvaluationPrice,
         setFormattedPrice,
       )
       initFormattedPrice(
-        response.data.price,
+        getListingPriceForEvaluator(listing),
         setListingPrice,
         setFormattedListingPrice,
       )
-      initFormattedPrice(
-        response.data.sizeSQFT,
-        setSizeSQFT,
-        setFormattedSizeSQFT,
+      setDetailsDraft(initPropertyDetailsDraft(listing))
+      setFeedback(listing.feedback || '')
+      setCertificateDate(
+        formatDateForInput(listing.evaluationCertificateDate),
       )
-      setFeedback(response.data.feedback || '')
-      if (response.data.evaluationCertificate) {
-        setFileUrl(response.data.evaluationCertificate) // Update URL from API
+      if (listing.evaluationCertificate) {
+        setFileUrl(listing.evaluationCertificate) // Update URL from API
       }
-      if (response.data.requestDocument) {
-        setRequestDocument(response.data.requestDocument) // Update URL from API
+      if (listing.requestDocument) {
+        setRequestDocument(
+          normalizeRequestDocuments(listing.requestDocument),
+        )
       }
     } catch (error) {
       console.error('Error fetching property data:', error)
     }
   }
 
+  /** Poll only request-document status — do not reset price/ROI/media. */
+  const refreshRequestDocuments = async () => {
+    if (!propertyId) return
+    try {
+      const response = await customAxios.get(`/property/${propertyId}`)
+      setRequestDocument(
+        normalizeRequestDocuments(response.data?.requestDocument),
+      )
+    } catch (error) {
+      console.error('Error refreshing request documents:', error)
+    }
+  }
+
   const router = useRouter()
   const [requestDocument, setRequestDocument] = useState([])
-  const [newDocument, setNewDocument] = useState('') // State for the new document
+  const [newDocument, setNewDocument] = useState('')
+  const [newDocumentDate, setNewDocumentDate] = useState('')
+  const [certificateDate, setCertificateDate] = useState('')
   const [showTextArea, setShowTextArea] = useState(false)
   const [editIndex, setEditIndex] = useState(null)
   const [editText, setEditText] = useState('')
   const handleAddDocument = () => {
-    if (newDocument.trim() !== '') {
-      setRequestDocument([...requestDocument, newDocument]) // Add the new document to the list
-      setNewDocument('') // Clear the input field
-      setShowTextArea(false) // Hide the textarea after adding
+    if (newDocument.trim() === '') {
+      toast.error('Please enter a document name.')
+      return
     }
+    if (!newDocumentDate) {
+      toast.error('Please select a date for the document request.')
+      return
+    }
+
+    setRequestDocument([
+      ...requestDocument,
+      { name: newDocument.trim(), document: null, date: newDocumentDate },
+    ])
+    setNewDocument('')
+    setNewDocumentDate('')
+    setShowTextArea(false)
   }
 
   const handleEdit = (index) => {
     setEditIndex(index)
-    setEditText(requestDocument[index])
+    setEditText(getRequestDocumentName(requestDocument[index]))
   }
 
   const handleSaveEdit = (index) => {
     const updatedDocuments = [...requestDocument]
-    updatedDocuments[index] = editText
+    updatedDocuments[index] = {
+      ...updatedDocuments[index],
+      name: editText.trim(),
+    }
     setRequestDocument(updatedDocuments)
     setEditIndex(null)
     setEditText('')
@@ -142,11 +180,16 @@ export const RequestTab = () => {
   }
 
   const handleRequest = async () => {
+    if (requestDocumentsMissingDate(requestDocument)) {
+      toast.error('Each requested document must have a date.')
+      return
+    }
+
     try {
       const response = await customAxios.put(
         `${process.env.NEXT_PUBLIC_BASE_URL}/property/${propertyId}`,
         {
-          requestDocument: requestDocument,
+          requestDocument: serializeRequestDocuments(requestDocument),
         }
       )
 
@@ -162,12 +205,24 @@ export const RequestTab = () => {
   }
 
   useEffect(() => {
-    if (propertyId) {
-      fetchPropertyData()
-    }
+    if (!propertyId) return
+    fetchPropertyData()
   }, [propertyId])
 
+  // If property loaded but draft stayed empty, re-seed from property.
+  useEffect(() => {
+    if (!property?.uuid && !property?._id) return
+    if (detailsDraft?.title) return
+    if (!property.title) return
+    setDetailsDraft(initPropertyDetailsDraft(property))
+  }, [property, detailsDraft?.title])
+
   const handleApprove = async (fileName) => {
+    if (property?.status !== 1 && !certificateDate) {
+      toast.error('Please select a certificate date.')
+      return
+    }
+
     setIsLoading(true)
     try {
       let fileUpload = ''
@@ -178,17 +233,31 @@ export const RequestTab = () => {
         fileUpload = await handleFileUpload(fileName)
       }
 
+      const isOffPlan = String(property?.assetType || '')
+        .toLowerCase()
+        .includes('off plan')
+      const finalizedDetails = buildEvaluatorFinalizeDetailsPayload(
+        detailsDraft,
+        { isOffPlan },
+      )
+
       if (fileUpload?._id || invoiceUpload?._id) {
         await customAxios.put(
           `${process.env.NEXT_PUBLIC_BASE_URL}/property/${propertyId}`,
           {
+            ...finalizedDetails,
             roi: roi,
             evaluationPrices: evaluationPrice,
             feedback: feedback,
-            ...(listingPrice !== '' ? { price: Number(listingPrice) } : {}),
-            ...(sizeSQFT !== '' ? { sizeSQFT: Number(sizeSQFT) } : {}),
             evaluationCertificate:
               fileUpload?._id || property?.evaluationCertificate || null,
+            ...(property?.status !== 1 && certificateDate
+              ? {
+                evaluationCertificateDate: new Date(
+                  certificateDate,
+                ).toISOString(),
+              }
+              : {}),
             invoice: invoiceUpload?._id || property?.invoice || null,
             status: 1,
           }
@@ -196,6 +265,7 @@ export const RequestTab = () => {
 
         setProperty((prevProperty) => ({
           ...prevProperty,
+          ...finalizedDetails,
           roi: roi,
           evaluationPrices: evaluationPrice,
           feedback: feedback,
@@ -214,11 +284,10 @@ export const RequestTab = () => {
         await customAxios.put(
           `${process.env.NEXT_PUBLIC_BASE_URL}/property/${propertyId}`,
           {
+            ...finalizedDetails,
             roi: roi,
             evaluationPrices: evaluationPrice,
             feedback: feedback,
-            ...(listingPrice !== '' ? { price: Number(listingPrice) } : {}),
-            ...(sizeSQFT !== '' ? { sizeSQFT: Number(sizeSQFT) } : {}),
             status: 1,
           }
         )
@@ -232,38 +301,20 @@ export const RequestTab = () => {
     }
   }
 
-  if (!property) {
-    return <div>Loading...</div> // Show a loading state while fetching data
+  if (!property?.uuid && !property?._id) {
+    return <div>Loading...</div>
   }
-  const [isModalOpen, setIsModalOpen] = useState(false)
-  const [pdfUrl, setPdfUrl] = useState('')
 
-  const handleOpenDoc = (url) => {
-    setPdfUrl(url)
-    setIsModalOpen(true)
+  const handleOpenDoc = (url, fileName = 'document.pdf') => {
+    openListingDocumentInNewTab(url, fileName)
   }
 
   const closeModal = () => {
     setIsModalOpen(false)
+    setPdfUrl('')
+    setPdfFileName('')
   }
 
-  const handleOpenMedia = (media) => {
-    setSelectedMedia(media)
-  }
-
-  const handleCloseModal = () => {
-    setSelectedMedia(null)
-  }
-
-  // Close modal when clicking outside
-  const handleClickOutside = (e) => {
-    if (e.target.id === 'modalOverlay') {
-      handleCloseModal()
-    }
-  }
-
-  const [evaluationPrice, setEvaluationPrice] = useState()
-  const [formattedPrice, setFormattedPrice] = useState('')
   const handleEvaluationPrice = (e) => {
     formatNumericInput(e, setEvaluationPrice, setFormattedPrice)
   }
@@ -272,18 +323,45 @@ export const RequestTab = () => {
     formatNumericInput(e, setListingPrice, setFormattedListingPrice)
   }
 
-  const handleSqftChange = (e) => {
-    formatNumericInput(e, setSizeSQFT, setFormattedSizeSQFT)
+  const handleSavePropertyDetails = async () => {
+    const isOffPlan = String(property?.assetType || '')
+      .toLowerCase()
+      .includes('off plan')
+    const updateData = buildPropertyDetailsUpdatePayload(detailsDraft, {
+      isOffPlan,
+    })
+
+    if (Object.keys(updateData).length === 0) {
+      toast.error('Enter at least one value to update')
+      return
+    }
+
+    setIsSavingPropertyDetails(true)
+    try {
+      await customAxios.put(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/property/${propertyId}`,
+        updateData,
+      )
+      toast.success('Listing details updated successfully')
+      fetchPropertyData()
+    } catch (error) {
+      console.error('Error updating property details:', error)
+      toast.error(
+        error?.response?.data?.message || 'Failed to update listing details',
+      )
+    } finally {
+      setIsSavingPropertyDetails(false)
+    }
   }
 
   const handleSaveEvaluationDetails = async () => {
-    const isPending = property?.status !== 1
     const updateData = buildEvaluatorUpdatePayload({
-      listingPrice,
-      evaluationPrice: isPending ? '' : evaluationPrice,
-      roi: isPending ? '' : roi,
-      sizeSQFT: isPending ? sizeSQFT : '',
-      includeRoi: !isPending,
+      listingPrice: '',
+      evaluationPrice,
+      roi,
+      sizeSQFT: '',
+      includeRoi: true,
+      includeListingPrice: false,
     })
 
     if (Object.keys(updateData).length === 0) {
@@ -332,70 +410,16 @@ export const RequestTab = () => {
       </span>
 
       <div className='gap-2 sm:px-8 px-4 py-4 w-full'>
-        <div className='mb-4 grid sm:grid-cols-2 gap-4'>
-          <InputField label='Title' value={property.title} />
-          <InputField label='Phone Number' value={property.phoneNumber} />
-        </div>
-        {property?.status === 1 ? (
-          <div className='mb-4 grid sm:grid-cols-2 gap-4'>
-            <InputField
-              label='Size in square feet'
-              value={formatNumberWithCommas(property.sizeSQFT)}
-            />
-          </div>
-        ) : null}
+        <EvaluatorAssetHolderFields listing={property} />
 
-        {property?.status !== 1 ? (
-          <EvaluatorEditableFields
-            variant='pending'
-            listingPriceLabel='Price'
-            formattedListingPrice={formattedListingPrice}
-            onListingPriceChange={handleListingPrice}
-            formattedEvaluationPrice={formattedPrice}
-            onEvaluationPriceChange={handleEvaluationPrice}
-            showEvaluationPrice={false}
-            showRoi={false}
-            showSqft
-            formattedSqft={formattedSizeSQFT}
-            onSqftChange={handleSqftChange}
-            onSave={handleSaveEvaluationDetails}
-            isSaving={isSavingDetails}
-          />
-        ) : null}
+        <EvaluatorPropertyEditableDetails
+          property={property}
+          draft={detailsDraft}
+          onDraftChange={setDetailsDraft}
+          onSave={handleSavePropertyDetails}
+          isSaving={isSavingPropertyDetails}
+        />
 
-        {property.assetType == 'Property for lease' && (
-          <div className='mb-4 grid sm:grid-cols-2 gap-4'>
-            <InputField
-              label='Lease Number of cheques'
-              value={property.lease}
-            />
-            <InputField label='Bedrooms' value={property.bedrooms} />
-          </div>
-        )}
-
-        <div className='mb-4 grid sm:grid-cols-2 gap-4'>
-          <InputField label='Bathrooms' value={property.bathrooms} />
-          <InputField label='Developer' value={property.developer} />
-        </div>
-
-        <div className='mb-4 grid sm:grid-cols-2 gap-4'>
-          <InputField
-            label='Is it furnished'
-            value={property.isFurnished ? 'Yes' : 'No'}
-          />
-          <InputField
-            label='Occupancy Status'
-            value={property.occupancyStatus}
-          />
-        </div>
-
-        <div className='mb-4 grid sm:grid-cols-2 gap-4'>
-          <InputField label='Listing' value={property.listing} />
-          <InputField
-            label='3D embedded link'
-            value={property?.video3DWalkthrough?.link}
-          />
-        </div>
         {property?.status === 1 ? (
           <EvaluatorEditableFields
             formattedListingPrice={formattedListingPrice}
@@ -404,152 +428,22 @@ export const RequestTab = () => {
             onEvaluationPriceChange={handleEvaluationPrice}
             roi={roi}
             onRoiChange={setRoi}
+            showListingPrice={false}
             showRoi
             onSave={handleSaveEvaluationDetails}
             isSaving={isSavingDetails}
           />
         ) : null}
 
-        <div className='mb-4'>
-          <label className='block text-sm sm:text-base font-medium text-[#969696]'>
-            Description
-          </label>
-          <textarea
-            rows={3}
-            value={property.description || ''}
-            className='focus:outline-none mt-1 block w-full pl-5 py-3 rounded-md bg-white text-[#969696] text-sm sm:text-base border border-[#969696]'
-            readOnly
-          />
-        </div>
-
-        <div className='mb-4'>
-          <label className='block text-sm sm:text-base font-medium text-[#969696]'>
-            Media
-          </label>
-          <div className='mt-1 flex flex-col w-full px-3 py-3 rounded-md bg-white text-[#969696] text-sm sm:text-base border border-[#969696]'>
-            {noMediaFound ? (
-              <img
-                src='/listing/camera.svg'
-                alt='No listing media'
-                className='w-full max-h-48 object-contain opacity-60'
-              />
-            ) : (
-              <div className='w-full h-full flex gap-2 justify-center'>
-                {/* 3D Walkthrough container */}
-                {property?.video3DWalkthrough?.link ? (
-                  <div className='relative w-64 min-h-full flex-shrink-0 rounded-sm overflow-hidden'>
-                    <iframe
-                      src={property?.video3DWalkthrough?.link}
-                      className='w-full h-full object-cover'
-                      frameBorder='0'
-                      title='3D Walkthrough'
-                      style={{ pointerEvents: 'none' }}
-                    />
-                    <div
-                      className='absolute inset-0 bg-transparent'
-                      onClick={() =>
-                        handleOpenMedia(property?.video3DWalkthrough?.link)
-                      }
-                    />
-                  </div>
-                ) : null}
-
-                {/* Remaining media container */}
-                <div className='w-full flex flex-wrap gap-2'>
-                  {[
-                    ...(property?.pictures?.images?.length
-                      ? property.pictures.images.map((image) => ({
-                        type: 'image',
-                        src: getListingImageSrc(image),
-                      }))
-                      : property?.thumbnailImg?.images?.[0]
-                        ? [
-                          {
-                            type: 'image',
-                            src: getListingImageSrc(
-                              property.thumbnailImg.images[0]
-                            ),
-                          },
-                        ]
-                        : []),
-                    ...(property?.video?.videos
-                      ? property.video.videos.map((video) => ({
-                        type: 'video',
-                        src: getListingVideoSrc(video),
-                      }))
-                      : []),
-                  ].map((media, index) => (
-                    <div
-                      key={index}
-                      className='w-28 cursor-pointer h-28 rounded-sm overflow-hidden'
-                      onClick={() => handleOpenMedia(media.src)}
-                    >
-                      {media.type === 'video' ? (
-                        <video
-                          src={media.src}
-                          className='w-full h-full cursor-pointer object-cover rounded-sm'
-                          controls
-                        />
-                      ) : (
-                        <img
-                          src={media.src}
-                          className='w-full cursor-pointer h-full object-cover rounded-sm'
-                          alt='Property'
-                        />
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-          {selectedMedia && (
-            <div
-              id='modalOverlay'
-              className='fixed z-50 inset-0 bg-black bg-opacity-50 flex items-center justify-center'
-              onClick={handleClickOutside}
-            >
-              <div className='w-[50%] lg:w-[50%] lg:h-[50%] bg-white p-2 rounded-md relative'>
-                <button
-                  className='absolute cursor-pointer top-2 right-2 text-4xl'
-                  onClick={handleCloseModal}
-                >
-                  &times;
-                </button>
-                {/\.(mp4|webm|ogg)(\?|$)/i.test(selectedMedia) ? (
-                  <video
-                    src={selectedMedia}
-                    controls
-                    className='w-full h-full object-contain'
-                  />
-                ) : /\.(jpe?g|png|gif|webp|jfif|svg)(\?|$)/i.test(
-                  selectedMedia
-                ) ? (
-                  <img
-                    src={selectedMedia}
-                    alt='Selected'
-                    className='w-full h-full object-contain'
-                  />
-                ) : (
-                  <iframe
-                    src={selectedMedia}
-                    className='w-full cursor-pointer h-full object-contain'
-                    frameBorder='0'
-                    allowFullScreen
-                    title='3D Walkthrough'
-                  />
-                )}
-              </div>
-            </div>
-          )}
-        </div>
+        <EvaluatorListingMedia property={property} />
         {property?.status === 1 ? null : (
           <>
             <DocumentSection
               title='Request documents'
               documents={requestDocument}
               handleOpenDoc={handleOpenDoc}
-              fetchData={fetchPropertyData}
+              listingContext={{ listingType: 'Property', listingId: propertyId }}
+              fetchData={refreshRequestDocuments}
               setEditText={setEditText}
               handleEdit={handleEdit}
               handleSaveEdit={handleSaveEdit}
@@ -558,57 +452,41 @@ export const RequestTab = () => {
               editText={editText}
               setEditIndex={setEditIndex}
             />
-            <div className='flex sm:flex-row flex-col justify-between w-full sm:items-center items-start sm:gap-0 gap-3 mb-5'>
-              <div className='sm:flex sm:items-center gap-3'>
-                <div className='flex sm:flex-row flex-col sm:space-y-0 space-y-2 gap-3'>
-                  <button
-                    onClick={() => setShowTextArea(!showTextArea)}
-                    className='border border-blue-500 px-2 py-2 text-sm sm:text-base rounded-md flex gap-2 items-center'
-                  >
-                    <div className='flex items-center justify-center rounded-full bg-prussianBlue'>
-                      <PlusIcon />
-                    </div>
-                    <span className='text-prussianBlue truncate sm:text-base text-xs '>
-                      Add More Documents
-                    </span>
-                  </button>
-                  {showTextArea && (
-                    <div className='flex w-full items-center gap-3'>
-                      <textarea
-                        rows={1}
-                        className='block w-full pl-5 py-2 rounded-md bg-white text-[#969696] text-sm sm:text-base border border-[#969696]'
-                        value={newDocument}
-                        onChange={(e) => setNewDocument(e.target.value)}
-                      />
-                      <button
-                        onClick={handleAddDocument}
-                        className='border border-blue-500 primary-gradient text-white px-4 py-2 text-sm sm:text-base rounded-md'
-                      >
-                        Add
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-              <div className='flex sm:justify-center justify-end'>
-                <button
-                  className='primary-gradient text-white py-2 px-6 text-sm sm:text-base rounded-md '
-                  onClick={() => handleRequest()}
-                >
-                  Request
-                </button>
-              </div>
-            </div>
+            <RequestDocumentsActions
+              showTextArea={showTextArea}
+              setShowTextArea={setShowTextArea}
+              newDocument={newDocument}
+              setNewDocument={setNewDocument}
+              newDocumentDate={newDocumentDate}
+              setNewDocumentDate={setNewDocumentDate}
+              onAdd={handleAddDocument}
+              onRequest={() => handleRequest()}
+            />
           </>
         )}
 
         <DocumentSection
           title='Uploaded documents'
-          documents={property.uploadDocument}
+          documents={buildEvaluatorUploadedDocuments(
+            requestDocument,
+            property.uploadDocument,
+            {
+              // Ready property only — off-plan Agency Agreement is on Super Admin
+              titleDeed: isOffPlanListing(property)
+                ? null
+                : property.titleDeed,
+            },
+          )}
           handleOpenDoc={handleOpenDoc}
+          listingContext={{ listingType: 'Property', listingId: propertyId }}
           fetchData={fetchPropertyData}
         />
-        <Modal isOpen={isModalOpen} onClose={closeModal} fileUrl={pdfUrl} />
+        <Modal
+          isOpen={isModalOpen}
+          onClose={closeModal}
+          fileUrl={pdfUrl}
+          fileName={pdfFileName}
+        />
         {property.status === 1 ? null : (
           <>
             <div className='my-6 flex sm:flex-row flex-col items-start justify-between gap-4'>
@@ -643,10 +521,18 @@ export const RequestTab = () => {
                     </label>
                   </div>
                 </div>
-                <p className='text-xs m-2'>
+                <p className='m-2 text-xs'>
                   *Only pdfs are acceptable. Pdf should be less than 1mb.
                 </p>
               </div>
+
+              <EvaluatorDateField
+                id='certificateDate'
+                label='Certificate Date'
+                value={certificateDate}
+                onChange={(e) => setCertificateDate(e.target.value)}
+                className='w-full sm:w-auto'
+              />
 
               <div>
                 <label className='block text-sm sm:text-base font-medium'>
@@ -706,7 +592,7 @@ export const RequestTab = () => {
                 <p className='text-base text-black/80'>
                   Price:
                   <span className='text-black/50'>
-                    AED {formatNumberWithCommas(data?.price)}
+                    AED {formatListingCardPrice(data)}
                   </span>
                 </p>
               </div>

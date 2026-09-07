@@ -9,6 +9,7 @@ import { fetchCities, fetchCountries } from '../../libs/fetchCountriesAndCities'
 import { useProfile } from '../../context/UserContext'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { formatCityLabel } from '@/libs/dummyLocationData'
 
 const EditAdvertisementPopup = ({ onClose, EditableData }) => {
   const startAt = EditableData?.ads?.targetedAudience?.startAt?.[0] || ''
@@ -397,17 +398,20 @@ const EditAdvertisementPopup = ({ onClose, EditableData }) => {
                   {loc.cityOptions?.length > 0 && (
                     <div className='absolute z-10 w-full border border-[#A2913E] bg-white rounded-[8px] mt-1 max-h-60 overflow-y-auto'>
                       <>
-                        {loc.cityOptions.map((city) => (
+                        {loc.cityOptions.map((city) => {
+                          const label = formatCityLabel(city.description)
+                          return (
                           <div
-                            key={city.description}
+                            key={label}
                             onClick={() =>
-                              handleCitySelect(index, city.description)
+                              handleCitySelect(index, label)
                             }
                             className='cursor-pointer p-2 hover:bg-gray-200'
                           >
-                            {city.description}
+                            {label}
                           </div>
-                        ))}
+                          )
+                        })}
                       </>
                     </div>
                   )}

@@ -47,10 +47,8 @@ function BoatListing({ query }) {
   }
 
   useEffect(() => {
-    if (token) {
-      fetchBoatListings(currentPage)
-    }
-  }, [currentPage, debouncedQuery, token])
+    fetchBoatListings(currentPage)
+  }, [currentPage, debouncedQuery])
 
   const handleDeleteClick = (listing) => {
     setListingToDelete(listing)

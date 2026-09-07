@@ -47,10 +47,8 @@ function CarListing({ query }) {
   }
 
   useEffect(() => {
-    if (token) {
-      fetchCarListings(currentPage)
-    }
-  }, [currentPage, debouncedQuery, token])
+    fetchCarListings(currentPage)
+  }, [currentPage, debouncedQuery])
 
   const handleDeleteClick = (listing) => {
     setListingToDelete(listing)

@@ -5,7 +5,7 @@ import React from "react";
 const Overview = ({ user }) => {
   const overview = user
     ? [
-        { key: "Full Name", value: user?.name },
+        { key: "Full Name", value: user?.displayName || user?.name },
         { key: "Phone", value: user?.phone },
         { key: "Email", value: user?.email },
         { key: "Role", value: user?.role },

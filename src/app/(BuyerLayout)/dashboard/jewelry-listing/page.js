@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useContext } from 'react'
+import { useState, useEffect, useContext, useMemo } from 'react'
 import axios from 'axios'
 import { Suspense } from 'react'
 import {
@@ -8,11 +8,23 @@ import {
   handleFileUpload,
   handleThumbnailUpload,
 } from '@/libs/uploadAsset'
+import { autoCapitalizeField } from '@/libs/autoCapitalizeText'
+import { flagListingPendingApprovalNotice } from '@/libs/listingPendingApprovalNotice'
 import {
   applyPremiumServiceRefs,
   listingMediaRef,
   premiumServiceRequestId,
+  stripEmptyObjectIdRefs,
 } from '@/libs/listingMediaRef'
+import {
+  isListingEvaluatorApprovedLocked,
+  buildApprovedAssetHolderUpdatePayload,
+} from '@/libs/listingEditLock'
+import {
+  hasConfirmedEvaluationPayment,
+  bookEvaluationTimeslotFromFormData,
+  stripEvaluationBookingMeta,
+} from '@/libs/evaluationBooking'
 import 'react-phone-number-input/style.css'
 import PaymentModal from '@/components/payments/PaymentModal'
 import flags from 'react-phone-number-input/flags'
@@ -27,6 +39,19 @@ import PayModal from '../../../../components/Modals/PayModal'
 import { useProfile } from '../../../../context/UserContext'
 import StripeElement from '../../../../components/Stripe/StripeElement'
 import customAxios from '../../../../utils/apis/apis'
+import { generateListingSlug } from '@/libs/listingSlug'
+import { useRefreshListingAfterServicePayment } from '@/hooks/useRefreshListingAfterServicePayment'
+import { useRestoreListingAfterClozerPayment } from '@/hooks/useRestoreListingAfterClozerPayment'
+import {
+  useRestorePendingListingDraft,
+  useRefetchListingOnReturn,
+} from '@/hooks/useRestorePendingListingDraft'
+import { useAutoFinalizeAfterEvaluationPayment } from '@/hooks/useAutoFinalizeAfterEvaluationPayment'
+import {
+  clearListingWorkspaceStorage,
+  hasPendingListingDraft,
+  isPendingDraftForListingRoute,
+} from '@/libs/pendingListingDraft'
 
 function Page() {
   const [neighbourhood, setNeighbourhood] = useState('Select Neighbourhood')
@@ -73,6 +98,7 @@ function Page() {
     make: '',
     grams: '',
     title: '',
+    slug: '',
     phoneNumber: '',
     condition: '',
     price: '',
@@ -81,9 +107,9 @@ function Page() {
     description: '',
     age: '',
     usage: '',
-    pictures: '',
-    video: '',
-    thumbnailImg: '',
+    pictures: null,
+    video: null,
+    thumbnailImg: null,
     evaluationCertificate: null,
     evaluationCompanies: '',
     jewelryStyles: '',
@@ -94,8 +120,11 @@ function Page() {
     totalrating: '',
     warrenty: '',
     lengthh: '',
-    technicalReport: '',
+    technicalReport: null,
     evaluationDateTime: '',
+    video3DWalkthrough: null,
+    qrScan: null,
+    mapUrl: '',
   }
   const dropdownData = {
     country: false,
@@ -144,9 +173,12 @@ function Page() {
     errors,
     phoneNumber,
     thumbnail,
+    qrScan,
     handleOpenModal,
     handleThumbImageRemove,
     handleThumbImageChange,
+    handleQrScanChange,
+    handleQrScanRemove,
     handleCountryChange,
     selectedCountryPhone,
     maxLength,
@@ -166,6 +198,7 @@ function Page() {
     handleRequestTechnicalModalData,
     handleClose1Modal,
     modalData,
+    resetPremiumPaymentDrafts,
     handleVideoChange,
     handlePhoneNumberChange,
     id,
@@ -180,7 +213,7 @@ function Page() {
     setSelectType,
     setIsCityDropdownOpen,
     setErrors,
-    video,
+    videos,
     file,
     handleScroll,
     setTotalSize,
@@ -193,20 +226,83 @@ function Page() {
     setSelectedCategory,
     setPhoneNumber,
     setIsValid,
+    setImages,
+    setThumbnail,
+    setVideos,
+    setQrScan,
+    setSelectedCountry,
+    setSelectedCity,
+    setSelectedNeighbourhood,
+    setCountryCode,
   } = useContext(ListingContext)
 
-  useEffect(() => {
-    resetForm()
-    handleFormData(initialFormData, dropdownData)
-  }, [])
+  const listingDraftRestoreApi = useMemo(
+    () => ({
+      setFormData,
+      setImages,
+      setThumbnail,
+      setVideos,
+      setQrScan,
+      setSelectedCountry,
+      setSelectedCity,
+      setSelectedNeighbourhood,
+      setCountryCode,
+      setPhoneNumber,
+      setTotalPrice,
+      setSelectedCategory,
+      setSelectedModel,
+    }),
+    [
+      setFormData,
+      setImages,
+      setThumbnail,
+      setVideos,
+      setQrScan,
+      setSelectedCountry,
+      setSelectedCity,
+      setSelectedNeighbourhood,
+      setCountryCode,
+      setPhoneNumber,
+      setTotalPrice,
+      setSelectedCategory,
+      setSelectedModel,
+    ],
+  )
 
   useEffect(() => {
     if (id) {
       fetchData('jewelry')
-    } else {
-      setLoading(false)
+      return
     }
+
+    // Keep draft only when it belongs to jewelry listing (not property/car/boat).
+    if (hasPendingListingDraft() && isPendingDraftForListingRoute('jewelry')) {
+      setLoading(false)
+      return
+    }
+
+    if (hasPendingListingDraft()) {
+      clearListingWorkspaceStorage()
+    }
+
+    resetForm()
+    handleFormData(initialFormData, dropdownData)
+    setLoading(false)
   }, [searchParams])
+
+  useEffect(() => {
+    if (!formData?.title) return
+
+    const nextSlug = generateListingSlug(formData.title)
+    if (formData.slug === nextSlug) return
+
+    setFormData((prev) => ({ ...prev, slug: nextSlug }))
+  }, [formData?.title, formData?.slug, setFormData])
+
+  useRefreshListingAfterServicePayment(id, 'jewelry', fetchData)
+  useRestoreListingAfterClozerPayment(listingDraftRestoreApi)
+  useRestorePendingListingDraft(id, listingDraftRestoreApi, 'jewelry')
+  useRefetchListingOnReturn(id, 'jewelry', fetchData)
 
   const handleTechnicalModal = () => {
     setIsTechnicalModalOpen(!isTechnicalModalOpen)
@@ -240,7 +336,7 @@ function Page() {
     } else {
       setIsValid(true)
     }
-    return phoneNumber
+    return isValidPhoneNumber(value)
   }
 
   const validateForm = (data) => {
@@ -250,16 +346,17 @@ function Page() {
     }
     if (images.length === 0) errors.pictures = 'Pictures are Required'
     if (!thumbnail) errors.thumbnail = 'Thumbnail is Required'
-    if (!data.assetType.trim() || data.assetType === 'Select Asset Type')
+    if (!qrScan) errors.qrScan = 'QR Scan is required'
+    if (!safeTrim(data.assetType) || data.assetType === 'Select Asset Type')
       errors.assetType = 'Asset Type is required'
-    if (!data.country.trim()) errors.country = 'Country is required'
-    if (!data.city.trim()) errors.city = 'City is required'
-    if (!data.neighbourhood.trim())
+    if (!safeTrim(data.country)) errors.country = 'Country is required'
+    if (!safeTrim(data.city)) errors.city = 'City is required'
+    if (!safeTrim(data.neighbourhood))
       errors.neighbourhood = 'Neighbourhood is required'
-    if (!data.category.trim()) errors.category = 'Category is required'
-    if (!data.model.trim()) errors.model = 'SubCategory is required'
-    if (!data.grams.trim()) errors.grams = 'Grams is required'
-    if (!data.title.trim()) {
+    if (!safeTrim(data.category)) errors.category = 'Category is required'
+    if (!safeTrim(data.model)) errors.model = 'SubCategory is required'
+    if (!safeTrim(data.grams)) errors.grams = 'Grams is required'
+    if (!safeTrim(data.title)) {
       errors.title = 'Title is required'
     } else if (data.title.length > 30) {
       errors.title = 'Title must be less than 30 characters'
@@ -277,7 +374,7 @@ function Page() {
     } else if (data.description.length > 300) {
       errors.description = 'Description cannot exceed 300 characters.'
     }
-    if (!data.condition.trim()) errors.condition = 'Condition is required'
+    if (!safeTrim(data.condition)) errors.condition = 'Condition is required'
     if (!String(data.price || '').trim() && !totalprice) {
       errors.price = 'Price is required'
     } else if (parseInt(totalprice) === 0) {
@@ -357,22 +454,11 @@ function Page() {
         }
         break
 
-      case 'locateJewelry':
-        if (!value.trim()) {
-          error = 'locateJewelry is required'
-        }
-        break
       case 'warrenty':
         if (!value.trim()) {
           error = 'warrenty is required'
         }
         break
-      case 'jewelryMetal':
-        if (!value.trim()) {
-          error = 'jewelryMetal is required'
-        }
-        break
-
       default:
         break
     }
@@ -383,23 +469,21 @@ function Page() {
   const submitConfirmation = async (e) => {
     const validationErrors = validateForm(formData, thumbnail, images)
 
-    // Skip evaluation date validation for edit flow (when id exists)
-    if (!id && !formData?.evaluationDateTime) {
+    if (id) {
+      finalizeSubmission()
+      return
+    }
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors)
+      setLoading(false)
+      handleScroll()
+      return
+    }
+    if (!formData?.evaluationDateTime) {
       toast.error('Evaluation Date and time is required!')
       return
     }
-
-    if (id) {
-      finalizeSubmission()
-    } else {
-      if (Object.keys(validationErrors).length === 0) {
-        setConfirmationModal(true)
-      } else {
-        setErrors(validationErrors)
-        setLoading(false)
-        handleScroll()
-      }
-    }
+    setConfirmationModal(true)
   }
 
   const handleSubmit = async (e) => {
@@ -434,10 +518,21 @@ function Page() {
         throw new Error('Thumbnail is required')
       }
 
-      if (!video) {
-        toast.error('Video is required.')
-        setLoading(false)
-        throw new Error('Video is required')
+      try {
+        const sessionRaw = localStorage.getItem('checkoutSession')
+        const session = sessionRaw ? JSON.parse(sessionRaw) : null
+        if (
+          hasConfirmedEvaluationPayment(formData) ||
+          hasConfirmedEvaluationPayment(session)
+        ) {
+          setLoading(true)
+          setConfirmationModal(false)
+          setShowPayment(false)
+          finalizeSubmission()
+          return
+        }
+      } catch {
+        /* ignore */
       }
 
       return setShowPayment(true)
@@ -484,7 +579,7 @@ function Page() {
       }
     } catch (error) {
       console.error('Error during form submission:', error)
-      toast.error('An error occurred. Please try again.')
+      toast.error(error?.message || 'An error occurred. Please try again.')
       setLoading(false)
     }
   }
@@ -531,10 +626,10 @@ function Page() {
 
       if (!id) {
         const checkoutSession = JSON.parse(
-          localStorage.getItem('checkoutSession') || {}
+          localStorage.getItem('checkoutSession') || 'null'
         )
-        if (!checkoutSession) {
-          return toast.error('Payment of 2 dirham is required!')
+        if (!hasConfirmedEvaluationPayment(checkoutSession)) {
+          return toast.error('Evaluation payment is required before submitting.')
         }
       }
 
@@ -544,21 +639,35 @@ function Page() {
       let imageID = formData?.pictures
       let thumbnailID = formData?.thumbnailImg
       let videoID = formData?.video
+      let qrScanID = formData?.qrScan
       // let fileID = formData?.evaluationCertificate
       // Upload new files only if creating a new property (no id)
       if (!id) {
-        const [uploadedImages, uploadedVideo, uploadedThumbnail] =
+        const [uploadedImages, uploadedVideo, uploadedThumbnail, uploadedQrScan] =
           await Promise.all([
             images.length > 0 ? handleImageUpload(images) : imageID,
-            video ? handleVideoUpload(video) : videoID,
+            videos.some((v) => v instanceof File)
+              ? handleVideoUpload(videos.filter((v) => v instanceof File))
+              : videoID,
             // file ? handleFileUpload(file) : fileID,
-            thumbnail ? handleThumbnailUpload(thumbnail) : thumbnailID,
+            thumbnail instanceof File
+              ? handleThumbnailUpload(thumbnail)
+              : thumbnailID,
+            qrScan ? handleImageUpload([qrScan]) : qrScanID,
           ])
 
         imageID = uploadedImages
         videoID = uploadedVideo
         // fileID = uploadedFile
         thumbnailID = uploadedThumbnail
+        qrScanID = uploadedQrScan
+      } else {
+        if (thumbnail instanceof File) {
+          thumbnailID = await handleThumbnailUpload(thumbnail)
+        }
+        if (qrScan instanceof File) {
+          qrScanID = await handleImageUpload([qrScan])
+        }
       }
 
       const updatedFormData = {
@@ -571,6 +680,7 @@ function Page() {
         thumbnailImg:
           listingMediaRef(thumbnailID) ??
           listingMediaRef(formData?.thumbnailImg),
+        qrScan: listingMediaRef(qrScanID) ?? listingMediaRef(formData?.qrScan),
         feedback: 'feedback',
       }
 
@@ -583,18 +693,32 @@ function Page() {
       if (Object.keys(validationErrors).length === 0) {
         setFormData(updatedFormData)
 
+        const listingPayload = stripEmptyObjectIdRefs(
+          stripEvaluationBookingMeta(updatedFormData),
+        )
+        const payloadToSave =
+          id && isListingEvaluatorApprovedLocked(formData)
+            ? stripEmptyObjectIdRefs(
+              buildApprovedAssetHolderUpdatePayload(listingPayload),
+            )
+            : listingPayload
+
+        if (!id) {
+          await bookEvaluationTimeslotFromFormData(formData)
+        }
+
         if (id) {
           requests.push(
             customAxios.put(
               `${process.env.NEXT_PUBLIC_BASE_URL}/jewelry/${id}`,
-              updatedFormData
+              payloadToSave
             )
           )
         } else {
           requests.push(
             customAxios.post(
               `${process.env.NEXT_PUBLIC_BASE_URL}/jewelry`,
-              updatedFormData
+              listingPayload
             )
           )
         }
@@ -608,6 +732,9 @@ function Page() {
               ? 'Updated successfully.'
               : 'Submitted successfully. Evaluator will evaluate it.'
           )
+          if (!id) {
+            flagListingPendingApprovalNotice({ assetKind: 'jewelry' })
+          }
           router.push('/seller-profile/my-listing')
 
           if (!id) {
@@ -615,6 +742,8 @@ function Page() {
             setFormData(initialFormData)
             localStorage.removeItem('FormPayment')
             localStorage.removeItem('checkoutSessionId')
+            localStorage.removeItem('checkoutSession')
+            localStorage.removeItem('pendingListingDraft')
           }
         }
         setLoading(false)
@@ -626,10 +755,23 @@ function Page() {
       }
     } catch (error) {
       console.error('Error during submission:', error)
-      toast.error('An error occurred during submission. Please try again.')
+      toast.error(
+        error?.message || 'An error occurred during submission. Please try again.',
+      )
       setLoading(false)
     }
   }
+
+  useAutoFinalizeAfterEvaluationPayment({
+    listingId: id,
+    formData,
+    images,
+    thumbnail,
+    finalizeSubmission,
+    setLoading,
+    setShowPayment,
+    setConfirmationModal,
+  })
 
   const toggleDropdown = () => {
     setDropdownVisible(!dropdownVisible)
@@ -647,7 +789,7 @@ function Page() {
     }))
   }
 
-  const filteredCountries = countries.filter((country) =>
+  const filteredCountries = (countries ?? []).filter((country) =>
     country.country.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
@@ -668,7 +810,7 @@ function Page() {
       setTotalSize(numericValue)
       setFormData({ ...formData, [name]: numericValue })
     } else {
-      setFormData({ ...formData, [name]: value })
+      setFormData({ ...formData, [name]: autoCapitalizeField(name, value) })
       setErrors({ ...errors, [name]: '' })
     }
   }
@@ -683,6 +825,7 @@ function Page() {
               technicalModalData={technicalModalData}
               setIsOpenModal={setIsOpenModal}
               isValidState={isValidState}
+              onPaymentAbandoned={resetPremiumPaymentDrafts}
             />
           )}
           <ToastContainer />
@@ -743,14 +886,17 @@ function Page() {
                 flags={flags}
                 phoneNumber={phoneNumber}
                 thumbnail={thumbnail}
+                qrScan={qrScan}
                 handlePhoneNumberChange={handlePhoneNumberChange}
                 handleCountryChange={handleCountryChange}
                 selectedCountryPhone={selectedCountryPhone}
                 maxLength={maxLength}
                 handleThumbImageChange={handleThumbImageChange}
                 handleThumbImageRemove={handleThumbImageRemove}
+                handleQrScanChange={handleQrScanChange}
+                handleQrScanRemove={handleQrScanRemove}
                 images={images}
-                video={video}
+                videos={videos}
                 handleImageRemove={handleImageRemove}
                 handleImageChange={handleImageChange}
                 handleVideoRemove={handleVideoRemove}
@@ -837,6 +983,9 @@ function Page() {
                   handleSubmit={handleSubmit}
                   setConfirmationModal={setConfirmationModal}
                   id={id}
+                  formData={formData}
+                  handleChange={handleChange}
+                  mapUrl={formData.mapUrl}
                 />
               </div>
               {!id && (

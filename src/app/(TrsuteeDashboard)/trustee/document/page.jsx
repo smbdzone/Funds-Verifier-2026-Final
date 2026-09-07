@@ -1,11 +1,11 @@
 "use client";
 import React from "react";
-import { DocumentTab } from "../../../../components/modules/EvaluatorProfile/DocumentTab";
+import { TrusteeDocumentManagement } from "@/components/modules/TrusteeProfile/TrusteeDocumentManagement";
 
 const page = () => {
   return (
-    <div>
-      <DocumentTab />
+    <div className="min-w-0 max-w-full overflow-hidden">
+      <TrusteeDocumentManagement />
     </div>
   );
 };

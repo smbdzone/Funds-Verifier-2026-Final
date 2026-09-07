@@ -39,22 +39,22 @@ function formatNumberWithCommas(input) {
 }
 
 const generateTimeOptions = () => {
-  const times = [];
-  const periods = ["AM", "PM"];
-
-  periods.forEach((period) => {
-    for (let hour = 1; hour <= 12; hour++) {
+  const times = []
+  const appendPeriod = (period, hours) => {
+    hours.forEach((hour) => {
       for (let minute = 0; minute < 60; minute += 15) {
-        // increments of 15 minutes
-        const formattedHour = hour < 10 ? "0" + hour : hour;
-        const formattedMinute = minute < 10 ? "0" + minute : minute;
-        times.push(`${formattedHour}:${formattedMinute} ${period}`);
+        const formattedHour = hour < 10 ? `0${hour}` : String(hour)
+        const formattedMinute = minute < 10 ? `0${minute}` : String(minute)
+        times.push(`${formattedHour}:${formattedMinute} ${period}`)
       }
-    }
-  });
+    })
+  }
 
-  return times;
-};
+  appendPeriod('AM', [12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11])
+  appendPeriod('PM', [12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11])
+
+  return times
+}
 
 const getTomorrowDate = () => {
   const today = new Date();
@@ -224,7 +224,24 @@ const sanitizeHTML = (html) => {
   });
 };
 
-// Example usage
+const formatColorLabel = (color) => {
+  if (!color) return ''
+  return String(color).replace(/([a-z])([A-Z])/g, '$1 $2').trim()
+}
+
+const formatColorList = (colors) => {
+  if (!colors) return ''
+  const list = Array.isArray(colors) ? colors : [colors]
+  return list
+    .filter((c) => c != null && String(c).trim() !== '')
+    .map(formatColorLabel)
+    .join(', ')
+}
+
+const getProfileImageSrc = (profileImage) => {
+  const trimmed = typeof profileImage === 'string' ? profileImage.trim() : ''
+  return trimmed || '/assets/images/dummy-profile.png'
+}
 
 export {
   convertUsdToAed,
@@ -239,4 +256,6 @@ export {
   disableFutureDates,
   formatDate,
   sanitizeHTML,
+  formatColorList,
+  getProfileImageSrc,
 };

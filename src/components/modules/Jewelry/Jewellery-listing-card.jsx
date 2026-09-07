@@ -14,13 +14,19 @@ import {
 } from '@/utils/global-functions/global'
 import FooterAdd from '../../advertisementComponent/FooterAdd'
 import { getTokenFromCookie } from '../../../utils/helper'
+import { ListingCardSkeleton } from '@/components/global/ListingCardSkeleton'
+import {
+  hasListingSearchFilters,
+  ListingEmptyState,
+} from '@/components/global/ListingEmptyState'
+import customAxios from '@/utils/apis/apis'
 
 export const JewelleryListingCard = () => {
   const searchParams = useSearchParams()
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [data, setData] = useState({})
-  const [loading, setLoading] = useState(false) // Loading state
+  const [loading, setLoading] = useState(true)
   const [modalCardId, setModalCardId] = useState(null)
   const token = getTokenFromCookie()
 
@@ -72,16 +78,7 @@ export const JewelleryListingCard = () => {
         }
 
         const queryString = buildQueryString(params)
-        const res = token
-          ? await fetch(
-              `${process.env.NEXT_PUBLIC_BASE_URL}/jewelry?${queryString}`,
-              { headers: { Authorization: `Bearer ${token}` } }
-            )
-          : await fetch(
-              `${process.env.NEXT_PUBLIC_BASE_URL}/jewelry?${queryString}`
-            )
-
-        const result = await res.json()
+        const { data: result } = await customAxios.get(`/jewelry?${queryString}`)
 
         setData(result?.products || [])
         setTotalPages(result?.totalPages)
@@ -94,11 +91,7 @@ export const JewelleryListingCard = () => {
         setLoading(false)
       }
     }
-    if (token) {
-      fetchData(currentPage, token)
-    } else {
-      fetchData(currentPage)
-    }
+    fetchData(currentPage)
   }, [searchParams, currentPage])
 
   const [isModalOpen, setIsModalOpen] = useState(false) // Technical Report Modal
@@ -135,49 +128,62 @@ export const JewelleryListingCard = () => {
     return title.length > limit ? `${title.slice(0, limit)}...` : title
   }
 
+  const listings = Array.isArray(data) ? data : []
+  const hasFilters = hasListingSearchFilters(searchParams)
+
   return (
     <div className='flex flex-col w-full lg:me-20 gap-6'>
-      {modifiedData.map((item, index) => {
-        if (item.isAd) {
-          return (
-            <figure key={`ad-${index}`} className='w-full'>
-              {token && <FooterAdd />}
-            </figure>
-          )
-        }
-        return (
-          <ProductCard
-            key={index}
-            type='jewelry'
-            item={item}
-            attributes={[
-              item.materials[0],
-              'Age ' + item.age,
-              formatNumberWithCommas(item.grams) + ' Grams',
-            ]}
-            handlePrevSlide={handlePrevSlide}
-            handleNextSlide={handleNextSlide}
-            openTechnicalReport={openTechnicalReport}
-            openEvaluationCertificate={openEvaluationCertificate}
-            convertToRelativeURL={convertToRelativeURL}
-            getShortTitle={getShortTitle}
-            swiperRefs={swiperRefs}
-            isModalOpen={isModalOpen}
-            modalCardId={modalCardId}
-            openModal={openModal}
-            closeModal={closeModal}
-            pdfUrl={pdfUrl}
-            isModal2Open={isModal2Open}
-            closeModal2={closeModal2}
-            pdf2Url={pdf2Url}
-          />
-        )
-      })}
-      <PaginationComponent
-        currentPage={currentPage}
-        totalPages={totalPages}
-        onPageChange={handlePageChange}
-      />
+      {loading ? (
+        <ListingCardSkeleton count={3} />
+      ) : listings.length === 0 ? (
+        <ListingEmptyState hasFilters={hasFilters} />
+      ) : (
+        <>
+          {modifiedData.map((item, index) => {
+            if (item.isAd) {
+              return (
+                <figure key={`ad-${index}`} className='w-full'>
+                  {token && <FooterAdd />}
+                </figure>
+              )
+            }
+            return (
+              <ProductCard
+                key={index}
+                type='jewelry'
+                item={item}
+                attributes={[
+                  item.materials[0],
+                  'Age ' + item.age,
+                  formatNumberWithCommas(item.grams) + ' Grams',
+                ]}
+                handlePrevSlide={handlePrevSlide}
+                handleNextSlide={handleNextSlide}
+                openTechnicalReport={openTechnicalReport}
+                openEvaluationCertificate={openEvaluationCertificate}
+                convertToRelativeURL={convertToRelativeURL}
+                getShortTitle={getShortTitle}
+                swiperRefs={swiperRefs}
+                isModalOpen={isModalOpen}
+                modalCardId={modalCardId}
+                openModal={openModal}
+                closeModal={closeModal}
+                pdfUrl={pdfUrl}
+                isModal2Open={isModal2Open}
+                closeModal2={closeModal2}
+                pdf2Url={pdf2Url}
+              />
+            )
+          })}
+          {totalPages > 1 && (
+            <PaginationComponent
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={handlePageChange}
+            />
+          )}
+        </>
+      )}
     </div>
   )
 }

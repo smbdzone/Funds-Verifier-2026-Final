@@ -1,244 +1,7 @@
-// import { NextResponse } from 'next/server'
-
-// const PUBLIC_ROUTES = ['/login', '/user-login']
-
-// const normalizeRole = (role) => {
-//   if (!role) return role
-//   const cleaned = String(role)
-//     .replace(/[\s-_]/g, '')
-//     .toLowerCase()
-//   if (cleaned === 'assetholder') return 'AssetHolder'
-//   if (cleaned === 'dealhunter') return 'DealHunter'
-//   if (cleaned === 'subevaluator') return 'SubEvaluator'
-//   if (cleaned === '3dwalkthrough') return '3dWalkthrough'
-//   if (cleaned === 'technicalreport') return 'TechnicalReport'
-//   if (cleaned === 'evaluator') return 'Evaluator'
-//   if (cleaned === 'trustee') return 'Trustee'
-//   if (cleaned === 'admin') return 'Admin'
-//   return role
-// }
-
-// const roleRoutes = {
-//   AssetHolder: [
-//     '/seller-profile',
-//     '/dashboard',
-//     '/dashboard/property-listing',
-//     '/dashboard/car-listing',
-//     '/dashboard/jewelry-listing',
-//     '/dashboard/boat-listing',
-//     '/dashboard/add-asset',
-//     '/advertise-with-us',
-//     '/advertise-with-us/analytics',
-//   ],
-//   DealHunter: [
-//     '/profile',
-//     '/profile/deal-preference',
-//     '/profile/purchase-tracker',
-//     '/advertise-with-us',
-//     '/advertise-with-us/analytics',
-//   ],
-//   Trustee: [
-//     '/trustee',
-//     '/trustee/asset-overview',
-//     '/trustee/assigned',
-//     '/trustee/document',
-//     '/trustee/metrices',
-//     '/trustee/transaction',
-//     '/trustee/viewing',
-//   ],
-//   Evaluator: [
-//     '/evaluator-profile',
-//     '/evaluator-profile/boat-evaluation',
-//     '/evaluator-profile/car-evaluation',
-//     '/evaluator-profile/property-evaluation',
-//     '/evaluator-profile/jewellery-evaluation',
-//     '/evaluator-profile/closed-cases',
-//     '/evaluator-profile/create-slot',
-//     '/evaluator-profile/document-storage',
-//     '/evaluator-profile/edit-profile',
-//     '/evaluator-profile/electronic-consent',
-//     '/evaluator-profile/price-list',
-//     '/evaluator-profile/sale-tab',
-//     '/evaluator-profile/transaction-tracker',
-//     '/advertise-with-us',
-//     '/advertise-with-us/analytics',
-//   ],
-//   SubEvaluator: [
-//     '/sub-evaluator-profile',
-//     '/sub-evaluator-profile/boat-evaluation',
-//     '/sub-evaluator-profile/car-evaluation',
-//     '/sub-evaluator-profile/property-evaluation',
-//     '/sub-evaluator-profile/jewellery-evaluation',
-//     '/sub-evaluator-profile/document-storage',
-//     '/sub-evaluator-profile/edit-profile',
-//     '/sub-evaluator-profile/electronic-consent',
-//     '/sub-evaluator-profile/price-list',
-//     '/sub-evaluator-profile/transaction-tracker',
-//   ],
-//   '3dWalkthrough': [
-//     '/3d-walkthrough',
-//     '/3d-walkthrough/create-slot',
-//     '/3d-walkthrough/price',
-//   ],
-//   TechnicalReport: [
-//     '/survey-dashboard',
-//     '/survey-dashboard/requested-reports',
-//     '/survey-dashboard/security',
-//     '/survey-dashboard/create-slot',
-//   ],
-// }
-
-// export async function middleware(request) {
-//   const { nextUrl, cookies } = request
-//   const pathname = nextUrl.pathname
-
-//   if (PUBLIC_ROUTES.includes(pathname)) return NextResponse.next()
-
-//   let role = normalizeRole(cookies.get('role')?.value)
-//   let accessToken = cookies.get('accessToken')?.value
-//   let refreshToken = cookies.get('refreshToken')?.value
-//   const hasRefreshToken = !!refreshToken
-//   const isProd = process.env.NODE_ENV === 'production'
-
-//   // NextResponse cookies need the same lifetime rules as backend cookies.
-//   // Using seconds because Next cookie helpers expect seconds.
-//   const refreshMaxAgeSeconds = 3 * 24 * 60 * 60
-//   const cookieCommonOptions = {
-//     path: '/',
-//     httpOnly: true,
-//     secure: isProd,
-//     sameSite: isProd ? 'none' : 'lax',
-//     maxAge: refreshMaxAgeSeconds,
-//   }
-
-//   if (!accessToken && !hasRefreshToken) {
-//     return NextResponse.redirect(new URL('/login', request.url))
-//   }
-
-//   // Helper to fetch /me
-//   const fetchMe = async (token) => {
-//     const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/user/me`, {
-//       headers: { Authorization: `Bearer ${token}` },
-//       credentials: 'include',
-//     })
-//     console.log(res, 'login me response')
-//     return res
-//   }
-
-//   let meRes
-//   const response = NextResponse.next()
-
-//   try {
-//     // If no accessToken but has refreshToken, refresh first
-//     if (!accessToken && hasRefreshToken) {
-//       const refreshRes = await fetch(
-//         `${process.env.NEXT_PUBLIC_BASE_URL}/user/refresh`,
-//         {
-//           method: 'GET',
-//           // headers: {
-//           //   Cookie: `refreshToken=${refreshToken}`,
-//           // },
-//           headers: {
-//             Cookie: request.headers.get('cookie') || '',
-//           },
-//           credentials: 'include',
-//         },
-//       )
-
-//       if (refreshRes.ok) {
-//         const refreshData = await refreshRes.json()
-//         accessToken = refreshData.accessToken
-//         // Backend rotates refreshToken; persist the rotated value in the browser.
-//         if (refreshData.refreshToken) {
-//           refreshToken = refreshData.refreshToken
-//           // response.cookies.set('refreshToken', refreshData.refreshToken, cookieCommonOptions)
-//         }
-//         // response.cookies.set('accessToken', accessToken, cookieCommonOptions)
-//       } else {
-//         return NextResponse.redirect(new URL('/login', request.url))
-//       }
-//     }
-
-//     if (accessToken) {
-//       meRes = await fetchMe(accessToken)
-//     }
-//     // console.log(meRes,"login me response");
-
-//     // If /me fails with 401, try refresh
-//     if (meRes?.status === 401 && hasRefreshToken) {
-//       const refreshRes = await fetch(
-//         `${process.env.NEXT_PUBLIC_BASE_URL}/user/refresh`,
-//         {
-//           method: 'GET',
-//           // headers: {
-//           //   Cookie: `refreshToken=${refreshToken}`,
-//           // },
-//           headers: {
-//             Cookie: request.headers.get('cookie') || '',
-//           },
-//           credentials: 'include',
-//         },
-//       )
-
-//       if (refreshRes.ok) {
-//         const refreshData = await refreshRes.json()
-//         accessToken = refreshData.accessToken
-//         if (refreshData.refreshToken) {
-//           refreshToken = refreshData.refreshToken
-//           // response.cookies.set('refreshToken', refreshData.refreshToken, cookieCommonOptions)
-//         }
-//         // response.cookies.set('accessToken', accessToken, cookieCommonOptions)
-
-//         // Retry /me with new token
-//         meRes = await fetchMe(accessToken)
-//       } else {
-//         return NextResponse.redirect(new URL('/login', request.url))
-//       }
-//     }
-
-//     if (meRes?.ok) {
-//       const user = await meRes.json()
-//       role = normalizeRole(user.role)
-//       if (user.role === 'Evaluator' && user.parentEvaluator)
-//         role = 'SubEvaluator'
-
-//       // Ensure role cookie is set (backend should set it, but middleware can sync it)
-//       if (role) {
-//         response.cookies.set('role', role, { path: '/' })
-//       }
-//     } else {
-//       return NextResponse.redirect(new URL('/login', request.url))
-//     }
-//   } catch (err) {
-//     console.error('Middleware /me error:', err)
-//     return NextResponse.redirect(new URL('/login', request.url))
-//   }
-
-//   const allowedRoutes = roleRoutes[role] || []
-//   const hasAccess = allowedRoutes.some((route) => pathname.startsWith(route))
-//   if (!hasAccess)
-//     return NextResponse.redirect(new URL('/unauthorized', request.url))
-
-//   return response
-// }
-
-// export const config = {
-//   matcher: [
-//     '/seller-profile/:path*',
-//     '/dashboard/:path*',
-//     '/evaluator-profile/:path*',
-//     '/sub-evaluator-profile/:path*',
-//     '/profile/:path*',
-//     '/trustee/:path*',
-//     '/3d-walkthrough/:path*',
-//     '/survey-dashboard/:path*',
-//     '/advertise-with-us',
-//     '/advertise-with-us/:path*',
-//   ],
-// }
 import { NextResponse } from 'next/server'
 
-const PUBLIC_ROUTES = ['/login', '/user-login']
+const LOGIN_ROUTES = ['/login', '/user-login']
+const CONSUMER_ROLES = new Set(['AssetHolder', 'DealHunter'])
 
 const normalizeRole = (role) => {
   if (!role) return role
@@ -254,6 +17,8 @@ const normalizeRole = (role) => {
   if (cleaned === 'evaluator') return 'Evaluator'
   if (cleaned === 'trustee') return 'Trustee'
   if (cleaned === 'admin') return 'Admin'
+  if (cleaned === 'advertiser') return 'Advertiser'
+  if (cleaned === 'developer') return 'Developer'
 
   return role
 }
@@ -263,6 +28,7 @@ const roleRoutes = {
     '/seller-profile',
     '/dashboard',
     '/dashboard/property-listing',
+    '/dashboard/property-forsale',
     '/dashboard/car-listing',
     '/dashboard/jewelry-listing',
     '/dashboard/boat-listing',
@@ -274,6 +40,14 @@ const roleRoutes = {
     '/profile',
     '/profile/deal-preference',
     '/profile/purchase-tracker',
+    '/seller-profile/all-slot',
+    '/seller-profile/my-listing',
+    '/dashboard/property-listing',
+    '/dashboard/property-forsale',
+    '/dashboard/car-listing',
+    '/dashboard/jewelry-listing',
+    '/dashboard/boat-listing',
+    '/dashboard/add-asset',
     '/advertise-with-us',
     '/advertise-with-us/analytics',
   ],
@@ -284,7 +58,6 @@ const roleRoutes = {
     '/trustee/document',
     '/trustee/metrices',
     '/trustee/transaction',
-    '/trustee/viewing',
   ],
   Evaluator: [
     '/evaluator-profile',
@@ -295,12 +68,9 @@ const roleRoutes = {
     '/evaluator-profile/jewelry-evaluation',
     '/evaluator-profile/closed-cases',
     '/evaluator-profile/create-slot',
-    '/evaluator-profile/document-storage',
     '/evaluator-profile/edit-profile',
-    '/evaluator-profile/electronic-consent',
     '/evaluator-profile/price-list',
     '/evaluator-profile/sale-tab',
-    '/evaluator-profile/transaction-tracker',
     '/advertise-with-us',
     '/advertise-with-us/analytics',
   ],
@@ -311,48 +81,51 @@ const roleRoutes = {
     '/sub-evaluator-profile/property-evaluation',
     '/sub-evaluator-profile/jewellery-evaluation',
     '/sub-evaluator-profile/jewelry-evaluation',
-    '/sub-evaluator-profile/document-storage',
     '/sub-evaluator-profile/edit-profile',
-    '/sub-evaluator-profile/electronic-consent',
-    '/sub-evaluator-profile/price-list',
-    '/sub-evaluator-profile/transaction-tracker',
   ],
   '3dWalkthrough': [
     '/3d-walkthrough',
     '/3d-walkthrough/create-slot',
     '/3d-walkthrough/price',
+    '/smb-details',
   ],
   TechnicalReport: [
     '/survey-dashboard',
     '/survey-dashboard/requested-reports',
+    '/survey-dashboard/technical-report',
     '/survey-dashboard/security',
     '/survey-dashboard/create-slot',
   ],
 }
 
-export async function proxy(request) {
-  const { nextUrl, cookies } = request
-  const pathname = nextUrl.pathname
-
-  // ✅ Allow public routes
-  if (PUBLIC_ROUTES.includes(pathname)) {
-    return NextResponse.next()
+function getRoleHomeRoute(role) {
+  switch (role) {
+    case 'AssetHolder':
+      return '/seller-profile'
+    case 'DealHunter':
+      return '/profile'
+    case 'Evaluator':
+      return '/evaluator-profile'
+    case 'SubEvaluator':
+      return '/sub-evaluator-profile'
+    case 'Trustee':
+      return '/trustee'
+    case '3dWalkthrough':
+      return '/3d-walkthrough'
+    case 'TechnicalReport':
+      return '/survey-dashboard'
+    case 'Advertiser':
+      return '/advertiser-dashboard'
+    case 'Developer':
+      return process.env.NEXT_PUBLIC_DEVELOPER_APP_URL || 'http://localhost:3012'
+    default:
+      return '/'
   }
+}
 
-  const readCookie = (name) => {
-    const raw = cookies.get(name)?.value
-    return raw && String(raw).trim() ? String(raw).trim() : null
-  }
-
-  let role = normalizeRole(readCookie('role'))
-  let accessToken = readCookie('accessToken')
-  let refreshToken = readCookie('refreshToken')
-
-  const hasRefreshToken = !!refreshToken
+function getCookieOptions() {
   const isProd = process.env.NODE_ENV === 'production'
-
-  // Match backend cookieOptions (userCtrl.js) when syncing refreshed tokens
-  const cookieOptions = {
+  return {
     httpOnly: true,
     path: '/',
     secure: isProd,
@@ -361,103 +134,248 @@ export async function proxy(request) {
       domain: process.env.COOKIE_DOMAIN || '.fundsverifier.com',
     }),
   }
+}
 
-  // ❌ No tokens at all → redirect
-  if (!accessToken && !hasRefreshToken) {
-    return NextResponse.redirect(new URL('/login', request.url))
+function clearAuthCookiesOnResponse(response) {
+  const isProd = process.env.NODE_ENV === 'production'
+  const domain = process.env.COOKIE_DOMAIN || '.fundsverifier.com'
+  const names = ['refreshToken', 'accessToken', 'role', 'fv_session']
+  const scopes = [
+    getCookieOptions(),
+    {
+      path: '/',
+      secure: isProd,
+      sameSite: isProd ? 'none' : 'lax',
+      httpOnly: true,
+    },
+    {
+      path: '/',
+      secure: isProd,
+      sameSite: isProd ? 'none' : 'lax',
+      httpOnly: false,
+    },
+  ]
+
+  if (isProd) {
+    scopes.push(
+      {
+        path: '/',
+        secure: true,
+        sameSite: 'none',
+        domain,
+        httpOnly: true,
+      },
+      {
+        path: '/',
+        secure: true,
+        sameSite: 'none',
+        domain,
+        httpOnly: false,
+      },
+    )
   }
 
-  const response = NextResponse.next()
+  for (const name of names) {
+    for (const opts of scopes) {
+      response.cookies.set(name, '', { ...opts, maxAge: 0 })
+    }
+  }
+}
+
+function copySetCookieHeaders(fromRes, toRes) {
+  const raw = fromRes.headers.get('set-cookie')
+  if (!raw) return
+
+  if (typeof fromRes.headers.getSetCookie === 'function') {
+    for (const cookie of fromRes.headers.getSetCookie()) {
+      toRes.headers.append('set-cookie', cookie)
+    }
+    return
+  }
+
+  toRes.headers.append('set-cookie', raw)
+}
+
+async function callBackendLogout(request) {
+  const base = process.env.NEXT_PUBLIC_BASE_URL
+  if (!base) return null
+
+  try {
+    return await fetch(`${base}/user/logout`, {
+      method: 'GET',
+      headers: {
+        Cookie: request.headers.get('cookie') || '',
+      },
+      credentials: 'include',
+    })
+  } catch {
+    return null
+  }
+}
+
+async function buildRedirectWithSessionCleared(request, redirectPath) {
+  const logoutRes = await callBackendLogout(request)
+  const response = NextResponse.redirect(new URL(redirectPath, request.url))
+
+  if (logoutRes?.ok) {
+    copySetCookieHeaders(logoutRes, response)
+  } else {
+    clearAuthCookiesOnResponse(response)
+  }
+
+  return response
+}
+
+async function resolveSession(request) {
+  const base = process.env.NEXT_PUBLIC_BASE_URL
+  if (!base) {
+    console.error('Proxy: NEXT_PUBLIC_BASE_URL is not set')
+    return { ok: false, hasCookies: false }
+  }
+
+  const { cookies } = request
+  const readCookie = (name) => {
+    const raw = cookies.get(name)?.value
+    return raw && String(raw).trim() ? String(raw).trim() : null
+  }
+
+  let accessToken = readCookie('accessToken')
+  const refreshToken = readCookie('refreshToken')
+  const hasRefreshToken = !!refreshToken
+  const cookieHeader = request.headers.get('cookie') || ''
+
+  if (!accessToken && !hasRefreshToken) {
+    return { ok: false, hasCookies: false }
+  }
+
+  const cookieOptions = getCookieOptions()
+  const pendingCookies = []
+
+  const fetchRefresh = async () => {
+    const refreshRes = await fetch(`${base}/user/refresh`, {
+      method: 'GET',
+      headers: { Cookie: cookieHeader },
+      credentials: 'include',
+    })
+    if (!refreshRes.ok) return null
+    const refreshData = await refreshRes.json()
+    return refreshData.accessToken || null
+  }
 
   const fetchMe = async (token) => {
-    return await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/user/me`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+    return fetch(`${base}/user/me`, {
+      headers: { Authorization: `Bearer ${token}` },
       credentials: 'include',
     })
   }
 
   try {
-    // ✅ STEP 1: If no accessToken → refresh
     if (!accessToken && hasRefreshToken) {
-      const refreshRes = await fetch(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/user/refresh`,
-        {
-          method: 'GET',
-          headers: {
-            Cookie: request.headers.get('cookie') || '',
-          },
-          credentials: 'include',
-        },
-      )
-
-      if (!refreshRes.ok) {
-        return NextResponse.redirect(new URL('/login', request.url))
-      }
-
-      const refreshData = await refreshRes.json()
-
-      accessToken = refreshData.accessToken
-
-      if (accessToken) {
-        response.cookies.set('accessToken', accessToken, cookieOptions)
-      }
+      accessToken = await fetchRefresh()
+      if (!accessToken) return { ok: false, hasCookies: true }
+      pendingCookies.push({ name: 'accessToken', value: accessToken })
     }
 
-    // ✅ STEP 2: Call /me
-    let meRes = accessToken ? await fetchMe(accessToken) : null
+    if (!accessToken) return { ok: false, hasCookies: true }
 
-    // ✅ STEP 3: If expired → refresh again
-    if (meRes?.status === 401 && hasRefreshToken) {
-      const refreshRes = await fetch(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/user/refresh`,
-        {
-          method: 'GET',
-          headers: {
-            Cookie: request.headers.get('cookie') || '',
-          },
-          credentials: 'include',
-        },
-      )
+    let meRes = await fetchMe(accessToken)
 
-      if (!refreshRes.ok) {
-        return NextResponse.redirect(new URL('/login', request.url))
-      }
-
-      const refreshData = await refreshRes.json()
-      accessToken = refreshData.accessToken
-
-      if (accessToken) {
-        response.cookies.set('accessToken', accessToken, cookieOptions)
-      }
-
+    if (meRes.status === 401 && hasRefreshToken) {
+      accessToken = await fetchRefresh()
+      if (!accessToken) return { ok: false, hasCookies: true }
+      pendingCookies.push({ name: 'accessToken', value: accessToken })
       meRes = await fetchMe(accessToken)
     }
 
-    // ❌ If still invalid
-    if (!meRes?.ok) {
-      return NextResponse.redirect(new URL('/login', request.url))
-    }
+    if (!meRes.ok) return { ok: false, hasCookies: true }
 
-    // ✅ STEP 4: Get user + role
     const user = await meRes.json()
-    role = normalizeRole(user.role)
-
+    let role = normalizeRole(user.role)
     if (user.role === 'Evaluator' && user.parentEvaluator) {
       role = 'SubEvaluator'
     }
 
-    // ✅ Sync role cookie
-    // if (role) {
-    //   // response.cookies.set('role', role, cookieOptions)
-    // }
+    return {
+      ok: true,
+      role,
+      accessToken,
+      pendingCookies,
+      cookieOptions,
+    }
   } catch (err) {
-    console.error('Proxy error:', err)
-    return NextResponse.redirect(new URL('/login', request.url))
+    console.error('Proxy session error:', err)
+    return { ok: false, hasCookies: true }
+  }
+}
+
+function applyPendingCookies(response, pendingCookies, cookieOptions) {
+  for (const { name, value } of pendingCookies) {
+    response.cookies.set(name, value, cookieOptions)
+  }
+}
+
+function redirectAuthenticated(request, session, targetPath) {
+  const response = NextResponse.redirect(new URL(targetPath, request.url))
+  applyPendingCookies(response, session.pendingCookies, session.cookieOptions)
+  return response
+}
+
+async function handleLoginRoutes(request, pathname) {
+  const session = await resolveSession(request)
+
+  if (!session.ok) {
+    if (session.hasCookies) {
+      return buildRedirectWithSessionCleared(request, pathname)
+    }
+    return NextResponse.next()
   }
 
-  // ✅ STEP 5: Route authorization
+  const { role } = session
+
+  if (pathname === '/user-login' && CONSUMER_ROLES.has(role)) {
+    return redirectAuthenticated(request, session, getRoleHomeRoute(role))
+  }
+
+  if (pathname === '/login' || pathname === '/user-login') {
+    return redirectAuthenticated(request, session, getRoleHomeRoute(role))
+  }
+
+  return NextResponse.next()
+}
+
+/** Next.js 16+ edge auth — replaces deprecated `middleware` export. */
+export async function proxy(request) {
+  const { nextUrl } = request
+  const pathname = nextUrl.pathname
+
+  if (LOGIN_ROUTES.includes(pathname)) {
+    return handleLoginRoutes(request, pathname)
+  }
+
+  const session = await resolveSession(request)
+
+  if (!session.ok) {
+    if (session.hasCookies) {
+      return buildRedirectWithSessionCleared(request, '/login')
+    }
+
+    // Local dev: API sets cookies on :4000; Next runs on :5002 — edge cannot see them.
+    // Let the page load; client RequireAuth + axios session still gate access.
+    const isLocalHost =
+      nextUrl.hostname === 'localhost' || nextUrl.hostname === '127.0.0.1'
+    const hasFrontendAuthCookie =
+      request.cookies.get('accessToken') || request.cookies.get('refreshToken')
+    if (isLocalHost && !hasFrontendAuthCookie) {
+      return NextResponse.next()
+    }
+
+    const returnPath = `${pathname}${nextUrl.search || ''}`
+    const loginUrl = new URL('/login', request.url)
+    loginUrl.searchParams.set('redirect', returnPath)
+    return NextResponse.redirect(loginUrl)
+  }
+
+  const { role } = session
   const allowedRoutes = roleRoutes[role] || []
   const hasAccess = allowedRoutes.some((route) => pathname.startsWith(route))
 
@@ -465,18 +383,32 @@ export async function proxy(request) {
     return NextResponse.redirect(new URL('/unauthorized', request.url))
   }
 
+  const response = NextResponse.next()
+  applyPendingCookies(response, session.pendingCookies, session.cookieOptions)
   return response
 }
 
 export const config = {
   matcher: [
+    '/login',
+    '/user-login',
+    // Exact roots + nested paths (`:path*` alone does not always match the bare URL)
+    '/seller-profile',
     '/seller-profile/:path*',
+    '/dashboard',
     '/dashboard/:path*',
+    '/evaluator-profile',
     '/evaluator-profile/:path*',
+    '/sub-evaluator-profile',
     '/sub-evaluator-profile/:path*',
+    '/profile',
     '/profile/:path*',
+    '/trustee',
     '/trustee/:path*',
+    '/3d-walkthrough',
     '/3d-walkthrough/:path*',
+    '/smb-details',
+    '/survey-dashboard',
     '/survey-dashboard/:path*',
   ],
 }

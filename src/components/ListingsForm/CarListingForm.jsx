@@ -15,6 +15,8 @@ import Modal2 from '@/components/3dModal/Modal'
 import EvaluationModal from '@/components/Evaluation/evaluationmodal.jsx'
 import {
   LISTING_IMAGE_FORMATS_LABEL,
+  LISTING_QR_SCAN_FORMATS_LABEL,
+  LISTING_THUMBNAIL_FORMATS_LABEL,
   LISTING_VIDEO_FORMATS_LABEL,
 } from '@/constants/listingUploadLimits'
 import {
@@ -31,11 +33,18 @@ import {
   carTypes,
 } from '@/constants/car-listings'
 import customAxios from '../../utils/apis/apis'
+import { toast } from 'react-toastify'
 import { XIcon } from 'lucide-react'
 import {
   canRequestPremiumServices,
   isListingEvaluatorApprovedLocked,
+  isListingPriceLocked,
 } from '@/libs/listingEditLock'
+import ListingApprovedEditNotice from '@/components/ListingsForm/ListingApprovedEditNotice'
+import {
+  blocksPremiumServiceRequest,
+  premiumServiceFieldLabel,
+} from '@/libs/listingPremiumStatus'
 
 const CarListingForm = ({
   formData,
@@ -51,8 +60,11 @@ const CarListingForm = ({
   maxLength,
   handleThumbImageChange,
   handleThumbImageRemove,
+  qrScan,
+  handleQrScanChange,
+  handleQrScanRemove,
   images,
-  video,
+  videos,
   handleImageRemove,
   handleImageChange,
   handleVideoRemove,
@@ -89,13 +101,16 @@ const CarListingForm = ({
 
   const getIdByRole = async () => {
     try {
-      const response = await customAxios.get(`/user/role-id/TechnicalReport`) // Fetch user details
+      const response = await customAxios.get(
+        `/user/service-providers/TechnicalReport`
+      )
 
-      if (response?.data) {
-        setData(response?.data[0])
+      const providers = Array.isArray(response?.data) ? response.data : []
+      if (providers.length > 0) {
+        setData(providers[0])
       }
     } catch (error) {
-      console.error('Error loading user:', error)
+      console.warn('Technical report provider unavailable:', error?.message)
     }
   }
   useEffect(() => {
@@ -105,20 +120,26 @@ const CarListingForm = ({
 
   const getIdByRole3d = async () => {
     try {
-      const response = await customAxios.get(`/user/role-id/3dWalkthrough`) // Fetch user details
+      const response = await customAxios.get(
+        `/user/service-providers/3dWalkthrough`
+      )
 
-      if (response?.data) {
-        setData2(response?.data[0])
+      const providers = Array.isArray(response?.data) ? response.data : []
+      if (providers.length > 0) {
+        setData2(providers[0])
       }
     } catch (error) {
-      console.error('Error loading user:', error)
+      console.warn('3D walkthrough provider unavailable:', error?.message)
     }
   }
 
   const [modalOpen, setModalOpen] = useState(false)
   const [RequestService, setRequestService] = useState('')
   const isEvaluatorApprovedLocked = isListingEvaluatorApprovedLocked(formData)
+  const isPriceLocked = isListingPriceLocked(formData)
   const canRequestPremium = canRequestPremiumServices(formData)
+  const blocksTechnicalReport = blocksPremiumServiceRequest(formData?.technicalReport)
+  const blocks3DWalkthrough = blocksPremiumServiceRequest(formData?.video3DWalkthrough)
 
   const openPremiumGate = () => {
     setModalOpen(true)
@@ -168,6 +189,7 @@ const CarListingForm = ({
   return (
     <div>
       <ConfirmationModal />
+      <ListingApprovedEditNotice formData={formData} />
       <form className='pt-[50px]'>
         <div className='grid gap-6 md:grid-cols-2 xxs:grid-cols-1'>
           <div className='relative flex flex-col justify-start'>
@@ -200,7 +222,9 @@ const CarListingForm = ({
           </div>
           <ListingImageUploadLayout
             errors={errors.thumbnail && !thumbnail}
-            formats={LISTING_IMAGE_FORMATS_LABEL}
+            formats={LISTING_THUMBNAIL_FORMATS_LABEL}
+            label='Thumbnail'
+            required
           >
             <ListingsImageComponent
               errors={errors.thumbnail && !thumbnail}
@@ -209,11 +233,14 @@ const CarListingForm = ({
               handleThumbImageChange={handleThumbImageChange}
               handleImageRemove={handleThumbImageRemove}
               disabled={isEvaluatorApprovedLocked}
+              inputId='car-thumbnail'
             />
           </ListingImageUploadLayout>
           <ListingImageUploadLayout
             errors={errors.pictures && images.length === 0}
             formats={LISTING_IMAGE_FORMATS_LABEL}
+            label='Additional pictures'
+            required
           >
             <ListingMultipleImageComponent
               images={images}
@@ -222,17 +249,49 @@ const CarListingForm = ({
               errors={errors.pictures && images.length === 0}
               errorMessage={errors.pictures}
               disabled={isEvaluatorApprovedLocked}
+              inputId='car-additional-pictures'
             />
           </ListingImageUploadLayout>
-          <ListingImageUploadLayout formats={LISTING_VIDEO_FORMATS_LABEL}>
+          <ListingImageUploadLayout
+            formats={LISTING_VIDEO_FORMATS_LABEL}
+            label='Video (optional)'
+          >
             <ListingsVideoComponent
-              video={video}
+              videos={videos}
               handleVideoRemove={handleVideoRemove}
               fileInputRef={fileInputRef}
               handleVideoChange={handleVideoChange}
               disabled={isEvaluatorApprovedLocked}
             />
           </ListingImageUploadLayout>
+          <ListingImageUploadLayout
+            formats={LISTING_QR_SCAN_FORMATS_LABEL}
+            label='Upload QR Scan'
+            required
+            errors={errors.qrScan && !qrScan}
+          >
+            <ListingsImageComponent
+              image={qrScan}
+              handleThumbImageChange={handleQrScanChange}
+              handleImageRemove={handleQrScanRemove}
+              disabled={isEvaluatorApprovedLocked}
+              inputId='qr-scan-car'
+              uploadLabel='Upload QR Scan'
+              errors={errors.qrScan && !qrScan}
+              errorMessage={errors.qrScan}
+            />
+          </ListingImageUploadLayout>
+          <div className='relative w-full dropdown-container'>
+            <div className='relative-placeholder w-full'>
+              <ListingCustomPlacholderInput
+                value={formData.dldNumber || ''}
+                handleChange={handleChange}
+                name='dldNumber'
+                customPlaceholder='DLD Number'
+                disabled={isEvaluatorApprovedLocked}
+              />
+            </div>
+          </div>
           <div className='relative w-full dropdown-container space-y-6'>
             <ListingTextareaComponent
               errors={
@@ -263,6 +322,7 @@ const CarListingForm = ({
                 errorsMessage={errors.price}
                 name='price'
                 type='text'
+                disabled={isPriceLocked}
               />
             </div>
           </div>
@@ -299,19 +359,15 @@ const CarListingForm = ({
             <div className='relative-placeholder mt-[20px] w-full'>
               <ListingModalInputComponent
                 disabled={
-                  !canRequestPremium ||
-                  !formData?.uuid ||
-                  formData?.technicalReport?.uuid
+                  !canRequestPremium || !formData?.uuid || blocksTechnicalReport
                 }
                 maxLength={50}
                 name='technicalReport'
                 value={
-                  formData.technicalReport
-                    ? 'Completed'
-                    : technicalModalData.dateTime
+                  premiumServiceFieldLabel(formData.technicalReport) ||
+                  technicalModalData.dateTime
                 }
                 handleChange={handleChange}
-                required={true}
                 errors={errors.technicalReport && !formData.technicalReport}
                 errorMessage={errors.technicalReport}
                 handleOpenModal={
@@ -326,7 +382,6 @@ const CarListingForm = ({
                 }
                 dateTime={technicalModalData.dateTime !== ''}
                 customPlaceholder='Request Technical Report'
-                subPlaceholder=' (Optional)'
                 icon='/icons/card2.png'
               />
 
@@ -340,6 +395,7 @@ const CarListingForm = ({
                 productTitle={formData?.title}
                 productId={formData?.uuid}
                 userUUID={data?.uuid}
+                listingPhone={formData?.phoneNumber || phoneNumber || ''}
               />
             </div>
           </div>
@@ -364,16 +420,14 @@ const CarListingForm = ({
               <ListingModalInputComponent
                 maxLength={50}
                 disabled={
-                  !canRequestPremium ||
-                  !formData?.uuid ||
-                  formData?.video3DWalkthrough
+                  !canRequestPremium || !formData?.uuid || blocks3DWalkthrough
                 }
                 name='video3DWalkthrough'
                 value={
-                  formData.video3DWalkthrough ? 'Completed' : modalData.dateTime
+                  premiumServiceFieldLabel(formData.video3DWalkthrough) ||
+                  modalData.dateTime
                 }
                 handleChange={handleChange}
-                required={true}
                 errors={errors.video3DWalkthrough}
                 errorMessage={errors.video3DWalkthrough}
                 dateTime={modalData.dateTime !== ''}
@@ -388,7 +442,6 @@ const CarListingForm = ({
                       }
                 }
                 customPlaceholder='3D Walkthrough Embedded Link'
-                subPlaceholder=' (Optional)'
                 icon='/icons/3dicon.png'
               />
               <request3d onClick={handleOpenModal} />
@@ -403,6 +456,7 @@ const CarListingForm = ({
                 dropdown={groupedData}
                 title='Cars'
                 userUUID={data2?.uuid}
+                listingPhone={formData?.phoneNumber || phoneNumber || ''}
               />
             </div>
             <div className='relative-placeholder dropdown-container flex flex-col w-full'>
@@ -426,6 +480,9 @@ const CarListingForm = ({
                 onClose={handleClose1Modal}
                 formData={formData}
                 setFormData={setFormData}
+                assetType='Car For Sale'
+                dropdown={groupedData}
+                title='Car Type'
               />
             </div>
           </div>
@@ -526,7 +583,6 @@ const CarListingForm = ({
                 disabled={isEvaluatorApprovedLocked}
                 name='capacityWeight'
                 customPlaceholder='Capacity/Weight'
-                subPlaceholder=' (Optional)'
               />
             </div>
           </div>
@@ -538,7 +594,6 @@ const CarListingForm = ({
                 disabled={isEvaluatorApprovedLocked}
                 name='mechanicalCondition'
                 customPlaceholder='Mechanical condition'
-                subPlaceholder=' (cc) (Optional)'
               />
             </div>
           </div>
@@ -609,7 +664,6 @@ const CarListingForm = ({
               }
               readOnly={true}
               customPlaceholder='Horsepower '
-              subPlaceholder='(cc) (Optional)'
             />
           </div>
           <div className='relative w-full dropdown-container'>
@@ -681,7 +735,6 @@ const CarListingForm = ({
               }
               readOnly={true}
               customPlaceholder='Engine Capacity '
-              subPlaceholder=' (cc) (Optional)'
             />
           </div>
         </div>

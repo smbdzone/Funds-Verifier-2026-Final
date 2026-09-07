@@ -1,5 +1,5 @@
 'use client'
-import Image from 'next/image'
+import ProfileImage from '@/components/Avator/ProfileImage'
 import Link from 'next/link'
 import {
   DealIcon,
@@ -49,6 +49,11 @@ const ProfileSidebar = ({ children }) => {
       name: 'Purchase Tracker',
       link: '/profile/purchase-tracker',
     },
+    {
+      icon: <PurchaseIcon />,
+      name: 'Installment Payments',
+      link: '/profile/installment-payments',
+    },
   ]
 
   const path = usePathname()
@@ -59,8 +64,8 @@ const ProfileSidebar = ({ children }) => {
         <div className='px-4 xl:px-0'>
           <div className='custom-shadow flex justify-center items-center flex-col py-6 rounded'>
             <figure>
-              <Image
-                src={user?.profileImage || '/assets/images/dummy-profile.png'}
+              <ProfileImage
+                src={user?.profileImage}
                 alt='Profile'
                 height={184}
                 width={184}
@@ -68,10 +73,9 @@ const ProfileSidebar = ({ children }) => {
               />
             </figure>
             <h1
-              className='text-prussianBlue capitalize font-semibold md:text-xl text-lg lg:text-3xl truncate max-w-[300px]'
-              title={user?.name} // shows full name on hover
+              className='text-prussianBlue capitalize font-semibold md:text-xl text-lg lg:text-3xl break-words text-center max-w-full px-2'
             >
-              {user?.name || 'Loading...'}
+              {user?.displayName || user?.name || 'Loading...'}
             </h1>
             <h2 className='text-prussianBlue mb-3 lg:text-2xl md:text-lg text-base'>
               {user?.role}
@@ -85,11 +89,10 @@ const ProfileSidebar = ({ children }) => {
                 <Link
                   href={tab.link}
                   key={tab.name}
-                  className={`${
-                    tab.link === path
+                  className={`${tab.link === path
                       ? '  bg-whiteSmoke text-reefGold font-medium focus:outline-none '
                       : 'border-transparent'
-                  } whitespace-nowrap flex gap-3 items-center py-2 px-8 cursor-pointer sm:text-base text-sm lg:text-xl`}
+                    } whitespace-nowrap flex gap-3 items-center py-2 px-8 cursor-pointer sm:text-base text-sm lg:text-xl`}
                 >
                   {tab.icon}
                   {tab.name}
@@ -103,9 +106,8 @@ const ProfileSidebar = ({ children }) => {
                         if (isSwitchingRole) return
                         await switchUserRole('DealHunter')
                       }}
-                      className={`pl-10 text-lg py-2 flex items-center gap-2 cursor-pointer ${
-                        isSwitchingRole ? 'opacity-50 cursor-not-allowed' : ''
-                      }`}
+                      className={`pl-10 text-lg py-2 flex items-center gap-2 cursor-pointer ${isSwitchingRole ? 'opacity-50 cursor-not-allowed' : ''
+                        }`}
                     >
                       <ProfileIcon />
                       {isSwitchingRole
@@ -120,9 +122,8 @@ const ProfileSidebar = ({ children }) => {
                           if (isSwitchingRole) return
                           await switchUserRole('AssetHolder')
                         }}
-                        className={`pl-10 text-lg py-2 flex items-center gap-2 cursor-pointer ${
-                          isSwitchingRole ? 'opacity-50 cursor-not-allowed' : ''
-                        }`}
+                        className={`pl-10 text-lg py-2 flex items-center gap-2 cursor-pointer ${isSwitchingRole ? 'opacity-50 cursor-not-allowed' : ''
+                          }`}
                       >
                         <ProfileIcon />
                         {isSwitchingRole

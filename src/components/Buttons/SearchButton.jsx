@@ -6,8 +6,8 @@ import vectorSearch from "@/assets/vector6.svg";
 const SearchButton = ({ isLoading }) => {
   return (
     <button
-      className="cursor-pointer xl:text-lg lg:text-base md:text-sm base text-xs flex flex-row justify-center items-center gap-2 p-3 rounded font-medium text-white bg-gradient-to-r from-[#a2913e] via-[#d7c590] to-[#a2913e] xl:w-[209px] h-10 w-32 lg:h-16 lg:w-40 opacity-80 hover:opacity-100"
-      type="button"
+      className='cursor-pointer text-sm font-semibold tracking-wide flex flex-row justify-center items-center gap-2 px-6 h-[46px] min-w-[132px] rounded-lg text-white bg-gradient-to-r from-[#a2913e] via-[#d7c590] to-[#a2913e] shadow-[0_8px_24px_rgba(0,0,0,0.14)] border border-white/20 opacity-90 hover:opacity-100 transition-opacity'
+      type='button'
     >
       {isLoading ? (
         "Searching..."

@@ -9,7 +9,10 @@ on:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # false, not true: a queued run should wait its turn, not SIGTERM a
+  # deploy that's already mid-flight on the EC2 box (suspected cause of
+  # a run dying instantly with no script-visible reason on 2026-09-07).
+  cancel-in-progress: false
 
 jobs:
   build-and-verify:
@@ -51,38 +54,34 @@ jobs:
   deploy:
     name: Deploy to EC2
     needs: build-and-verify
-    # Manual-only for now — switch to the push-triggered condition below
-    # once a manual run has been verified clean, to auto-deploy on push:
-    #   if: github.event_name == 'push' && github.ref == 'refs/heads/fv-abbas'
-    if: github.event_name == 'workflow_dispatch'
+    # Auto-deploys on push to main (verified clean via a manual run on
+    # 2026-09-07). Also runnable by hand via workflow_dispatch.
+    # NOTE: main was 88 commits behind fv-abbas when this was set — do
+    # not push to main until fv-abbas is merged in, or this will roll
+    # the live server back to that stale state.
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
     steps:
-      - name: Deploy to EC2
-        uses: appleboy/ssh-action@v1.2.0
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Plain OpenSSH via webfactory/ssh-agent, not appleboy/ssh-action.
+      # Switched 2026-09-07: appleboy/ssh-action@v1.2.0 (drone-ssh)
+      # reliably killed the session a few seconds to ~20s in — regardless
+      # of what command was running at the time — matching multiple
+      # independent reports of a v1.2.0-specific regression (e.g.
+      # appleboy/ssh-action#348). Plain ssh had zero issues in manual
+      # testing, including multi-minute sessions.
+      - name: Load deploy key into ssh-agent
+        uses: webfactory/ssh-agent@v0.9.0
         with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          script: |
-            set -e
+          ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
 
-            echo "Starting Frontend Deployment"
+      - name: Trust EC2 host key
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H "${{ secrets.EC2_HOST }}" >> ~/.ssh/known_hosts
 
-            cd /home/ubuntu/Funds-Verifier-2026-Final
-
-            echo "Getting latest code"
-            git fetch origin fv-abbas
-            git reset --hard origin/fv-abbas
-
-            echo "Installing dependencies"
-            npm install
-
-            echo "Building Next.js application"
-            npm run build
-
-            echo "Restarting Frontend PM2"
-            pm2 restart fundsverifier-frontend
-
-            pm2 save
-
-            echo "Frontend Deployment Completed Successfully"
+      - name: Deploy to EC2
+        run: |
+          ssh -o BatchMode=yes "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}" 'bash -s' < .github/workflows/scripts/deploy-frontend.sh

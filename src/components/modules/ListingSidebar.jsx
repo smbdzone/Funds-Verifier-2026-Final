@@ -5,7 +5,12 @@ import { formatPriceUS } from '@/utils'
 import { Disclosure } from '@headlessui/react'
 import Box from '@mui/material/Box'
 import Slider from '@mui/material/Slider'
-import axios from 'axios'
+import customAxios from '@/utils/apis/apis'
+import {
+  buildCountryCityNeighbourhoodMap,
+  UAE_ONLY_COUNTRY_OPTIONS,
+} from '@/libs/listingLocationUtils'
+import { LISTING_COUNTRY_UAE_LABEL } from '@/libs/dummyLocationData'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import {
@@ -32,9 +37,11 @@ const FilterSection = ({ title, options, updateSorting }) => {
   const handleSelect = (value, e) => {
     e.preventDefault()
     switch (title) {
+      case 'Ready Property For Sale':
       case 'Property For Sale':
         updateSorting('property for sale', e, value)
         break
+      case 'Ready Property For Lease':
       case 'Property For Lease':
         updateSorting('property for lease', e, value)
         break
@@ -342,7 +349,7 @@ export const ListingSidebar = ({ initialData, isSidebarVisible }) => {
   // const check = pathname.substring(1);
   const check = pathname?.split('/')?.[1] || ''
   const filterConfigs = [
-    { title: 'Property For Sale', options: propertyForSale },
+    { title: 'Ready Property For Sale', options: propertyForSale },
     { title: 'Car For Sale', options: carForSale },
     {
       title: 'Jewellery For Sale',
@@ -367,23 +374,6 @@ export const ListingSidebar = ({ initialData, isSidebarVisible }) => {
 
     // window.history.pushState(null, "", `?${params.toString()}`);
   }
-
-  const [sortOrder, setSortOrder] = useState(
-    searchParams ? searchParams.get('propertyType') : '',
-  )
-
-  useEffect(() => {
-    if (!sortOrder) return
-
-    const params = new URLSearchParams(searchParams)
-
-    // ✅ prevent unnecessary router.push
-    if (params.get('propertyType') === sortOrder) return
-
-    params.set('propertyType', sortOrder)
-
-    router.push(`${pathname}?${params.toString()}`, { scroll: false })
-  }, [sortOrder])
 
   //   useEffect(() => {
   //     setApiData(initialData)
@@ -478,86 +468,50 @@ export const ListingSidebar = ({ initialData, isSidebarVisible }) => {
   //------------------------------------
   // const propertytype1 = searchParams.get("propertyType");
 
+  const assetTypeParam = searchParams.get('assetType')
+
   useEffect(() => {
     const fetchCountries = async () => {
       try {
-        let response
-        if (category === 'Boat') {
-          response = await axios.get(`${process.env.NEXT_PUBLIC_BASE_URL}/boat`)
+        let endpoint = null
+        const params = { statusFilter: 1 }
+
+        if (check === 'boat' || category === 'Boat') {
+          endpoint = '/boat/locations'
         } else if (
+          check === 'property' ||
+          check === 'offplan' ||
           category === 'Property For Sale' ||
           category === 'Property For Lease'
         ) {
-          response = await axios.get(
-            `${process.env.NEXT_PUBLIC_BASE_URL}/property`,
-          )
-        } else if (category === 'Car') {
-          response = await axios.get(`${process.env.NEXT_PUBLIC_BASE_URL}/car`)
-        } else if (category === 'Jewelry') {
-          response = await axios.get(
-            `${process.env.NEXT_PUBLIC_BASE_URL}/jewelry`,
-          )
+          endpoint = '/property/locations'
+          const assetType =
+            assetTypeParam ||
+            (check === 'offplan' ? 'Property Off Plan For Sale' : null)
+          if (assetType) params.assetType = assetType
+        } else if (check === 'car' || category === 'Car') {
+          endpoint = '/car/locations'
+        } else if (check === 'jewelry' || category === 'Jewelry') {
+          endpoint = '/jewelry/locations'
         }
 
-        const products = response?.data?.products || []
+        if (!endpoint) return
 
-        // Build a mapping of { country: { city: [neighbourhoods] } }
-        const countryCityMap = {}
+        const response = await customAxios.get(endpoint, { params })
+        const locations = response?.data?.locations || []
+        const formattedMap = buildCountryCityNeighbourhoodMap(locations)
 
-        products.forEach((item) => {
-          const { country, city, neighbourhood } = item
-
-          if (
-            country &&
-            country !== 'Select Country' &&
-            country !== 'required_country'
-          ) {
-            // ✅ Ensure country exists
-            if (!countryCityMap[country]) {
-              countryCityMap[country] = {}
-            }
-
-            // ✅ If city exists, add it under the country
-            if (city) {
-              if (!countryCityMap[country][city]) {
-                countryCityMap[country][city] = new Set()
-              }
-
-              // ✅ Add neighbourhood if present
-              if (neighbourhood) {
-                countryCityMap[country][city].add(neighbourhood)
-              }
-            }
-          }
-        })
-
-        // ✅ Get unique countries
-        const uniqueCountries = Object.keys(countryCityMap)
-
-        // ✅ Convert neighbourhood Set to Array
-        const formattedMap = Object.fromEntries(
-          Object.entries(countryCityMap).map(([country, cities]) => [
-            country,
-            Object.fromEntries(
-              Object.entries(cities).map(([city, neighbourhoods]) => [
-                city,
-                Array.from(neighbourhoods),
-              ]),
-            ),
-          ]),
-        )
-
-        // console.log(uniqueCountries, formattedMap)
-
-        setCountries(uniqueCountries)
-        setCountryCityMap(formattedMap) // ✅ store it in state
+        setCountries(UAE_ONLY_COUNTRY_OPTIONS)
+        setCountryCityMap(formattedMap)
+        setSelectedCountry(LISTING_COUNTRY_UAE_LABEL)
+        setCities(Object.keys(formattedMap[LISTING_COUNTRY_UAE_LABEL] || {}))
       } catch (error) {
         console.error('Error fetching countries data:', error)
       }
     }
 
     fetchCountries()
-  }, [filterData])
+  }, [check, category, assetTypeParam])
 
   const fetchCities = async (countryName) => {
     try {
@@ -588,7 +542,12 @@ export const ListingSidebar = ({ initialData, isSidebarVisible }) => {
           '+',
         )}`,
       )
-      setNeighbourhood(response.data.neighbourhoods)
+      const places = Array.isArray(response?.data?.places)
+        ? response.data.places
+        : Array.isArray(response?.data?.neighbourhoods)
+          ? response.data.neighbourhoods
+          : []
+      setNeighbourhood(places)
     } catch (error) {
       console.error('Error fetching cities data:', error)
     }
@@ -667,32 +626,49 @@ export const ListingSidebar = ({ initialData, isSidebarVisible }) => {
   ])
 
   const handleClick = (value, e, item, make) => {
-    // e.preventDefault();
     setCategory(value)
     localStorage.removeItem('filterData')
     switch (value) {
       case 'property for sale':
         router.push(
           `/property${
-            item ? `?propertyType=${item}&assetType=Property For Sale` : ''
+            item ? `?propertyType=${encodeURIComponent(item)}&assetType=${encodeURIComponent('Property For Sale')}` : ''
           }`,
         )
         break
       case 'property for lease':
         router.push(
           `/property${
-            item ? `?propertyType=${item}&assetType=Property For Lease` : ''
+            item ? `?propertyType=${encodeURIComponent(item)}&assetType=${encodeURIComponent('Property For Lease')}` : ''
           }`,
         )
         break
       case 'car':
-        router.push(`/${value}${item ? `?make=${make}&model=${item}` : ''}`)
+        router.push(
+          `/${value}${
+            item
+              ? `?make=${encodeURIComponent(make || '')}&model=${encodeURIComponent(item)}`
+              : ''
+          }`,
+        )
         break
       case 'boat':
-        router.push(`/${value}${item ? `?category=${make}&model=${item}` : ''}`)
+        router.push(
+          `/${value}${
+            item
+              ? `?category=${encodeURIComponent(make || '')}&model=${encodeURIComponent(item)}`
+              : ''
+          }`,
+        )
         break
       case 'jewelry':
-        router.push(`/${value}${item ? `?category=${make}&model=${item}` : ''}`)
+        router.push(
+          `/${value}${
+            item
+              ? `?category=${encodeURIComponent(make || '')}&model=${encodeURIComponent(item)}`
+              : ''
+          }`,
+        )
         break
       default:
         router.push(`/${value}`)
@@ -720,17 +696,16 @@ export const ListingSidebar = ({ initialData, isSidebarVisible }) => {
   }
 
   const updateSortingForCountry = (sortOrder) => {
-    // fetchCities(sortOrder)
-    setSelectedCountry(sortOrder)
-    setCities(Object.keys(countryCityMap[sortOrder]))
+    const country = sortOrder || LISTING_COUNTRY_UAE_LABEL
+    setSelectedCountry(country)
+    setCities(Object.keys(countryCityMap[country] || {}))
     updateSearchParams('city', null)
-    updateSearchParams('country', sortOrder)
+    updateSearchParams('country', country)
   }
 
   const updateSortingForCity = (sortOrder) => {
-    // fetchNeighbourhoods(sortOrder)
-    // console.log(countryCityMap[selectedCountry][sortOrder])
-    setNeighbourhood(countryCityMap[selectedCountry][sortOrder])
+    const country = selectedCountry || LISTING_COUNTRY_UAE_LABEL
+    setNeighbourhood(countryCityMap[country]?.[sortOrder] || [])
 
     updateSearchParams('city', sortOrder)
   }
@@ -746,7 +721,26 @@ export const ListingSidebar = ({ initialData, isSidebarVisible }) => {
   const updateSortingForGrams = (sortOrder) => {
     updateSearchParams('grams', sortOrder)
   }
-  console.log('new URL =>', `${pathname}?${searchParams.toString()}`)
+
+  const [projectNameSearch, setProjectNameSearch] = useState(
+    searchParams.get('projectName') || '',
+  )
+
+  useEffect(() => {
+    setProjectNameSearch(searchParams.get('projectName') || '')
+  }, [searchParams])
+
+  useEffect(() => {
+    const current = searchParams.get('projectName') || ''
+    if (projectNameSearch === current) return
+
+    const timeout = setTimeout(() => {
+      updateSearchParams('projectName', projectNameSearch.trim() || null)
+    }, 500)
+
+    return () => clearTimeout(timeout)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectNameSearch])
 
   return (
     <div className='rounded-[12px] w-[300px] sm:w-[385px] flex flex-wrap lg:flex-nowrap gap-5 px-0 shadow-xl'>
@@ -819,6 +813,16 @@ export const ListingSidebar = ({ initialData, isSidebarVisible }) => {
 
         {pathname === '/property' && (
           <>
+            <div className='border-b py-3 px-5'>
+              <div className='mb-1'>Search by Project Name</div>
+              <input
+                type='text'
+                value={projectNameSearch}
+                onChange={(e) => setProjectNameSearch(e.target.value)}
+                placeholder='e.g. Tannery Gardens'
+                className='w-full rounded bg-[#f5f5f5] p-2 px-3 text-sm outline-none md:text-base'
+              />
+            </div>
             <Extras
               title='Bedrooms'
               extras={bedroomsOptions}

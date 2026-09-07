@@ -9,6 +9,7 @@ import { toast } from 'react-toastify'
 import DropdownInput from '@/components/Inputs/DropdownInput'
 import DateOFBirthModal from '../../../Modals/DateOFBirthModal'
 import customAxios from '../../../../utils/apis/apis'
+import EmiratesIdSection from './EmiratesIdSection'
 
 function EditProfile({ countries }) {
   const [preview, setPreview] = useState(null)
@@ -53,11 +54,11 @@ function EditProfile({ countries }) {
       .email('Invalid email format')
       .required('Email is required'),
     phone: Yup.string().required('Phone number is required'),
-    gender: Yup.string().required('Gender is required'),
+    gender: Yup.string().oneOf(
+      ['Male', 'Female', 'Other', ''],
+      'Invalid gender selection',
+    ),
     dateOfBirth: Yup.date().required('Date of Birth is required'),
-    gender: Yup.string()
-      .required('Gender is required')
-      .oneOf(['Male', 'Female', 'Other'], 'Invalid gender selection'),
   })
 
   return (
@@ -154,6 +155,24 @@ function EditProfile({ countries }) {
                       name='role'
                       component='div'
                       className='text-red-500 text-sm mt-1'
+                    />
+                  </div>
+                </div>
+
+                <div className='flex'>
+                  <label className='w-[30%]'>ID Number</label>
+                  <div className='w-full flex-col flex'>
+                    <input
+                      type='text'
+                      value={
+                        typeof user?.uuid === 'string' && user.uuid
+                          ? user.uuid.slice(0, 8).toUpperCase()
+                          : ''
+                      }
+                      readOnly
+                      disabled
+                      placeholder='ID Number'
+                      className='shadow-neons rounded resize-none w-full h-[48px] px-5 placeholder:text-dark-grey outline-with-opacity placeholder:text-[15px] placeholder:font-normal card-number-input cursor-not-allowed opacity-80'
                     />
                   </div>
                 </div>
@@ -269,7 +288,7 @@ function EditProfile({ countries }) {
                   >
                     <p>
                       {user?.dateOfBirth || selectedDate
-                        ? !isNaN(new Date(user?.dateOfBirth || selectedDate)) 
+                        ? !isNaN(new Date(user?.dateOfBirth || selectedDate))
                           ? new Date(user?.dateOfBirth || selectedDate).toLocaleDateString('en-US')
                           : 'Invalid Date'
                         : 'Select Date of Birth'}
@@ -333,6 +352,17 @@ function EditProfile({ countries }) {
             </Form>
           )}
         </Formik>
+
+        <div className='mt-10 border-t pt-8'>
+          <h3 className='text-lg font-medium text-prussianBlue mb-4'>
+            Emirates ID (required for Clozer installments)
+          </h3>
+          <EmiratesIdSection
+            user={user}
+            fetchData={fetchProfile}
+            variant='light'
+          />
+        </div>
       </>
     </div>
   )

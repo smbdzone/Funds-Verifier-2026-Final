@@ -1,18 +1,20 @@
 import React, { Suspense } from "react";
 import CheckoutLayout from "@/components/CheckoutLayoutComponent/CheckoutLayout";
 import axios from "axios";
-import { api } from "@/config";
+import { getPublicApiHeaders } from "@/libs/publicApiClient";
 
 const page = async ({ params }) => {
   const { slug } = params;
+  const headers = await getPublicApiHeaders()
   const propertyResponse = await axios.get(
-    `${process.env.NEXT_PUBLIC_BASE_URL}/car/${slug}`
+    `${process.env.NEXT_PUBLIC_BASE_URL}/car/${slug}`,
+    { headers },
   );
   const propertyInfo = propertyResponse.data;
 
-  // Fetch related property data
   const propertyDataResponse = await axios.get(
-    `${process.env.NEXT_PUBLIC_BASE_URL}/car`
+    `${process.env.NEXT_PUBLIC_BASE_URL}/car`,
+    { headers },
   );
   const propertyData = propertyDataResponse.data;
 

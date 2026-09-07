@@ -1,13 +1,16 @@
 'use client'
 import React from 'react'
+import ListingFieldLabel from '@/components/ListingsForm/ListingFieldLabel'
+import {
+  autoCapitalizeTitle,
+  withAutoCapitalizeChange,
+} from '@/libs/autoCapitalizeText'
 
-const formatNumber = (value) => {
-  const cleaned = value?.toString().replace(/,/g, '')
-  const number = parseInt(cleaned, 10)
-
-  if (isNaN(number)) return ''
-  return number.toLocaleString('en-US')
-}
+const labelFromPlaceholder = (placeholder) =>
+  String(placeholder || '')
+    .replace(/\(max\.[^)]+\)/gi, '')
+    .replace(/\s+/g, ' ')
+    .trim()
 
 const ListingFormInput = ({
   errors,
@@ -15,6 +18,7 @@ const ListingFormInput = ({
   handleChange,
   handleBlur,
   required,
+  fieldLabel,
   placeholder,
   errorsMessage,
   name,
@@ -23,9 +27,27 @@ const ListingFormInput = ({
   disabled,
 }) => {
   const isPrice = placeholder === 'Price'
+  const isTitle = String(name || '').toLowerCase() === 'title'
+  const label = fieldLabel || (required ? labelFromPlaceholder(placeholder) : '')
+
+  const onTextChange = (e) => {
+    if (isTitle) {
+      const nextValue = autoCapitalizeTitle(e.target.value)
+      handleChange({
+        ...e,
+        target: {
+          name,
+          value: nextValue,
+        },
+      })
+      return
+    }
+    withAutoCapitalizeChange(e, handleChange)
+  }
 
   return (
-    <>
+    <div className='relative w-full'>
+      {label ? <ListingFieldLabel label={label} required={required} /> : null}
       {isPrice ? (
         <div
           className={`w-full flex items-center shadow-neons h-[50px] ${errors ? 'input-field-error' : ''
@@ -50,7 +72,6 @@ const ListingFormInput = ({
               handleChange({
                 ...e,
                 target: {
-                  ...e.target,
                   name,
                   value: raw,
                 },
@@ -69,19 +90,28 @@ const ListingFormInput = ({
           placeholder={placeholder}
           name={name}
           value={value}
-          onChange={handleChange}
+          onChange={onTextChange}
           onBlur={handleBlur}
           disabled={disabled}
         />
       )}
 
       {errors && (
-        <span className='text-red-500 lg:text-sm text-xs font-medium left-0 absolute top-[99%]'>
+        <span className='absolute left-0 top-[99%] text-xs font-medium text-red-500 lg:text-sm'>
           **{errorsMessage}
         </span>
       )}
-    </>
+    </div>
   )
 }
 
+const formatNumber = (value) => {
+  const cleaned = value?.toString().replace(/,/g, '')
+  const number = parseInt(cleaned, 10)
+
+  if (isNaN(number)) return ''
+  return number.toLocaleString('en-US')
+}
+
 export default ListingFormInput
+

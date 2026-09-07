@@ -12,7 +12,7 @@ import { usePathname } from 'next/navigation'
 const Header = () => {
   const [isOpen, setIsOpen] = useState(false)
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const { user, logout } = useProfile()
+  const { user, logout, loading } = useProfile()
   const [isPending, startTransition] = useTransition()
   const path = usePathname()
 
@@ -32,6 +32,15 @@ const Header = () => {
     setIsOpen(false)
   }
 
+  const navLinkClass = (href) => {
+    const active =
+      href === '/'
+        ? path === '/'
+        : path === href || path?.startsWith(`${href}/`)
+    return `xl:text-lg cursor-pointer text-prussianBlue${active ? ' border-b border-prussianBlue font-medium' : ''
+      }`
+  }
+
   return (
     <header className='bg-white !p-2 sm:!p-3 theme-container flex justify-between items-center sm:gap-4'>
       <Link href='/'>
@@ -46,35 +55,29 @@ const Header = () => {
         </figure>
       </Link>
       <nav>
-        <ul className='hidden xl:flex gap-6 items-start'>
+        <ul className='hidden xl:flex gap-6 items-end pb-0.5'>
           <Link href='/'>
-            <li className='xl:text-lg border-b border-prussianBlue text-prussianBlue cursor-pointer font-medium'>
-              Home
-            </li>
+            <li className={navLinkClass('/')}>Home</li>
           </Link>
           <Link href='/aboutus'>
-            <li className='xl:text-lg cursor-pointer text-prussianBlue'>
-              About
+            <li className={navLinkClass('/aboutus')}>About</li>
+          </Link>
+          <Link href='/offplan'>
+            <li className={navLinkClass('/offplan')}>Off Plan</li>
+          </Link>
+          <Link href='/auctions'>
+            <li className={`${navLinkClass('/auctions')} flex flex-col items-center`}>
+              <span className='mb-0.5 block text-[8px] font-medium uppercase leading-none tracking-[0.12em] text-reefGold'>
+                Coming soon
+              </span>
+              <span className='block leading-none'>Auctions</span>
             </li>
           </Link>
-          <li className='xl:text-lg text-prussianBlue cursor-pointer'>
-            How it works
-          </li>
-          <li className='xl:text-lg text-prussianBlue cursor-pointer'>
-            Auctions
-            <span className='block text-reefGold text-sm font-medium'>
-              [Coming Soon]
-            </span>
-          </li>
           <Link href='/blog'>
-            <li className='xl:text-lg cursor-pointer text-prussianBlue'>
-              News & trends
-            </li>
+            <li className={navLinkClass('/blog')}>News & trends</li>
           </Link>
           <Link href='/contact'>
-            <li className='xl:text-lg cursor-pointer text-prussianBlue'>
-              Contact
-            </li>
+            <li className={navLinkClass('/contact')}>Contact</li>
           </Link>
         </ul>
       </nav>
@@ -83,7 +86,7 @@ const Header = () => {
         {path === '/login' ? null : (
           <div className='xl:block hidden'>
             <ProfileDropDown
-              isloading={isPending}
+              isloading={isPending || loading}
               user={user}
               logout={logout}
             />
@@ -128,7 +131,7 @@ const Header = () => {
                       <ul className='gap-3 flex flex-col justify-center items-center mt-10'>
                         <li className='px-10'>
                           <ProfileDropDown
-                            isloading={isPending}
+                            isloading={isPending || loading}
                             user={user}
                             logout={logout}
                             color='text-white'
@@ -150,24 +153,29 @@ const Header = () => {
                           onClick={() => setIsOpen(false)}
                           className='text-lg cursor-pointer text-white'
                         >
-                          How it works
-                        </li>
-                        <li
-                          onClick={() => setIsOpen(false)}
-                          className='text-lg cursor-pointer text-white'
-                        >
                           Categories
                         </li>
 
-                        <li
-                          onClick={() => setIsOpen(false)}
-                          className='text-lg cursor-pointer text-white'
-                        >
-                          Auctions
-                          <span className='block text-reefGold text-sm font-medium'>
-                            [Coming Soon]
-                          </span>
-                        </li>
+                        <Link href='/offplan'>
+                          <li
+                            onClick={() => setIsOpen(false)}
+                            className='cursor-pointer text-center text-lg text-white'
+                          >
+                            Off Plan
+                          </li>
+                        </Link>
+
+                        <Link href='/auctions'>
+                          <li
+                            onClick={() => setIsOpen(false)}
+                            className='flex cursor-pointer flex-col items-center text-center text-white'
+                          >
+                            <span className='mb-0.5 block text-[8px] font-medium uppercase leading-none tracking-[0.12em] text-reefGold'>
+                              Coming soon
+                            </span>
+                            <span className='text-lg leading-none'>Auctions</span>
+                          </li>
+                        </Link>
                         <Link href='/blog'>
                           <li
                             onClick={() => setIsOpen(false)}

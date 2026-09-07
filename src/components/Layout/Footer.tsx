@@ -16,6 +16,9 @@ import { Phone, Mail } from 'lucide-react'
 import { Facebook, Instagram, Linkedin, Twitter } from 'lucide-react'
 import { FaTiktok, FaFacebookF, FaLinkedinIn } from 'react-icons/fa'
 
+const FOOTER_DESCRIPTION =
+  'Funds Verifier helps buyers and sellers complete secure asset transactions with evaluator-approved listings and trusted fund verification.'
+
 const Footer = () => {
   return (
     <>
@@ -32,10 +35,10 @@ const Footer = () => {
                 <figure className='mb-3'>
                   <Image
                     src='/assets/images/Group.png'
-                    height={78}
-                    width={305}
+                    height={77}
+                    width={82}
                     alt='Footer Logo'
-                    className='sm:h-[50px] sm:w-[70px] h-[40px] w-[50px]'
+                    className='sm:h-[52px] sm:w-[54px] h-[40px] w-[42px] object-contain'
                   />
                 </figure>
                 <h1 className='text-sm sm:text-lg font-semibold'>
@@ -43,8 +46,7 @@ const Footer = () => {
                 </h1>
               </div>
               <p className='text-white text-[10px] sm:text-[20px] mb-2 sm:mb-5'>
-                Lorem presents the sample font and orientation of writing on web
-                pages other software applications where content.
+                {FOOTER_DESCRIPTION}
               </p>
 
               <div className='flex gap-2'>
@@ -95,15 +97,12 @@ const Footer = () => {
                 <ul>
                   <li className='text-[12px] sm:text-base mb-2'>
                     <Link href='/aboutus'>About Us</Link>
-                    About Us
                   </li>
                   <li className='text-[12px] sm:text-base mb-2'>
                     <Link href='/profile'>Deal Hunter</Link>
-                    Deal Hunter
                   </li>
                   <li className='text-[12px] sm:text-base mb-2'>
                     <Link href='/seller-profile'>Asset Holder</Link>
-                    Asset Holder
                   </li>
                   <li className='text-[12px] sm:text-base mb-2'>
                     <Link href='/blog'>News & Trends</Link>
@@ -117,6 +116,9 @@ const Footer = () => {
                 <ul>
                   <li className='text-[12px] sm:text-base mb-2'>
                     <Link href='/property'>Properties For Sale</Link>
+                  </li>
+                  <li className='text-[12px] sm:text-base mb-2'>
+                    <Link href='/offplan'>Off Plan Properties</Link>
                   </li>
                   <li className='text-[12px] sm:text-base mb-2'>
                     <Link href='/car'>Cars For Sale</Link>
@@ -141,28 +143,26 @@ const Footer = () => {
               </h3>
               <ul>
                 <li className='text-[12px] sm:text-base mb-2'>
-                  <Link href='tel:+971559199661' className='flex gap-4'>
-                    <PhoneIcon className='text-reefGold' /> +971 55 91 99 661
+                  <Link href='tel:+971561290003' className='flex gap-4'>
+                    <PhoneIcon className='text-reefGold' /> +971 56 129 0003
                   </Link>
                 </li>
                 <li className='text-[12px] sm:text-base mb-2'>
                   <Link
-                    href='mailto:smbdigitalzone@gmail.com'
+                    href='mailto:outlook@fundsverifier.com'
                     className='flex gap-4'
                   >
                     <EmailIcon className='text-reefGold' height={10} />{' '}
-                    smbdigitalzone@gmail.com
+                    outlook@fundsverifier.com
                   </Link>
                 </li>
                 <li className='text-[12px] sm:text-base mb-2'>
                   <Link
-                    href='https://goo.gl/maps/BurjKhalifa'
+                    href='https://maps.google.com/?q=Dubai,United+Arab+Emirates'
                     className='flex gap-4'
                   >
                     <LocationIcon className='text-reefGold' />
-                    Burj Khalifa district, Dubai,{' '}
-                    <br className='md:hidden block' />
-                    United Arab Emirates
+                    Dubai, United Arab Emirates
                   </Link>
                 </li>
               </ul>
@@ -186,17 +186,16 @@ const Footer = () => {
                 <figure>
                   <Image
                     src='/assets/images/Group.png'
-                    height={78}
-                    width={305}
+                    height={77}
+                    width={82}
                     alt='Footer Logo'
-                    className='h-[50px] w-[70px]'
+                    className='h-[52px] w-[54px] object-contain'
                   />
                 </figure>
                 <h1 className='text-lg font-semibold'>Funds Verifier</h1>
               </div>
               <p className='text-white text-base mb-5'>
-                Lorem presents the sample font and orientation of writing on web
-                pages other software applications where content.
+                {FOOTER_DESCRIPTION}
               </p>
               <div className='flex gap-3'>
                 <Link
@@ -266,6 +265,9 @@ const Footer = () => {
                       <Link href='/property'>Properties For Sale</Link>
                     </li>
                     <li>
+                      <Link href='/offplan'>Off Plan Properties</Link>
+                    </li>
+                    <li>
                       <Link href='/car'>Cars For Sale</Link>
                     </li>
                     <li>
@@ -285,27 +287,27 @@ const Footer = () => {
                   <h3 className='text-2xl font-medium mb-3'>Get In Touch</h3>
                   <ul className='space-y-3'>
                     <li>
-                      <Link href='tel:+971559199661' className='flex gap-4'>
-                        <Phone className='h-5 w-5 text-[#b7a65f]' /> +971 55 91
-                        99 661
+                      <Link href='tel:+971561290003' className='flex gap-4'>
+                        <Phone className='h-5 w-5 text-[#b7a65f]' /> +971 56 129
+                        0003
                       </Link>
                     </li>
                     <li>
                       <Link
-                        href='mailto:smbdigitalzone@gmail.com'
+                        href='mailto:outlook@fundsverifier.com'
                         className='flex gap-4'
                       >
                         <Mail className='h-5 w-5 text-[#b7a65f]' />{' '}
-                        smbdigitalzone@gmail.com
+                        outlook@fundsverifier.com
                       </Link>
                     </li>
                     <li>
                       <Link
-                        href='https://goo.gl/maps/BurjKhalifa'
+                        href='https://maps.google.com/?q=Dubai,United+Arab+Emirates'
                         className='flex gap-4'
                       >
-                        <LocationIcon className='text-[#b7a65f]' /> Burj Khalifa
-                        district, Dubai, UAE
+                        <LocationIcon className='text-[#b7a65f]' /> Dubai, United
+                        Arab Emirates
                       </Link>
                     </li>
                   </ul>

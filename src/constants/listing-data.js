@@ -4,18 +4,47 @@ export const globalFormInput = {
   city: "",
   phoneNumber: "",
   neighbourhood: "",
+  propertyType: "",
   title: "",
   slug: "",
   pictures: null,
   video: null,
   thumbnailImg: null,
+  qrScan: null,
+  agencyAgreement: null,
   evaluationCertificate: null,
   video3DWalkthrough: "",
   technicalReport: "",
   evaluationDateTime: "",
   price: "",
+  priceFrom: "",
+  priceTo: "",
   description: "",
   additionalDescription: "",
+  bedrooms: "",
+  bathrooms: "",
+  developer: "",
+  advertisementId: "",
+  dldNumber: "",
+  mapUrl: "",
+  sizeSQFT: "",
+  sizeSQM: "",
+  sizeSQFTFrom: "",
+  sizeSQFTTo: "",
+  sizeSQMFrom: "",
+  sizeSQMTo: "",
+  sizeType: "SQFT",
+  qrScan: null,
+  deliveryQuarter: "",
+  deliveryYear: "",
+  paymentPlanType: "",
+  layout: "",
+  numberOfFloors: "",
+  availableApartment: "",
+  paymentPlan: [],
+  facilities: [],
+  customFacilities: [],
+  listings: [],
 };
 
 export const globalFormInputFields = [
@@ -39,7 +68,7 @@ export const globalFormInputFields = [
     mediaType: "thumbnail",
     label: "Thumbnail",
     acceptedFormats: "JPG, PNG, GIF",
-    maxSize: "5MB",
+    maxSize: "2MB",
     files: [],
     formDataKey: "thumbnailImg",
     multiple: false,
@@ -49,23 +78,45 @@ export const globalFormInputFields = [
     type: "file",
     mediaType: "pictures",
     label: "Pictures",
-    acceptedFormats: "JPG, PNG, GIF",
-    maxSize: "5MB",
+    acceptedFormats: "JPG, PNG, GIF. Up to 10 images, 2MB each (select up to 10 at once)",
+    maxSize: "2MB each (max 10)",
     files: [],
     formDataKey: "pictures",
     multiple: true,
     errorKey: "pictures",
+    required: true,
   },
   {
     type: "file",
     mediaType: "video",
     label: "Video",
-    acceptedFormats: "MP4, MOV",
-    maxSize: "10MB",
+    acceptedFormats: "MP4, MOV. Optional — up to 2 videos, 5MB each",
+    maxSize: "5MB each (max 2)",
     files: [],
     formDataKey: "video",
-    multiple: false,
+    multiple: true,
     errorKey: "video",
+    required: false,
+  },
+  {
+    type: "file",
+    mediaType: "qrScan",
+    name: "qrScan",
+    label: "QR Scan",
+    acceptedFormats: "JPG, PNG, GIF. 1 image, 2MB",
+    maxSize: "2MB",
+    files: [],
+    formDataKey: "qrScan",
+    multiple: false,
+    errorKey: "qrScan",
+    required: true,
+  },
+  {
+    type: "text",
+    label: "Project Number",
+    placeholder: "Project Number",
+    name: "dldNumber",
+    required: false,
   },
   {
     type: "textarea",
@@ -110,6 +161,92 @@ export const globalFormInputFields = [
     required: false,
   },
 
+];
+
+/** Shared base fields for off-plan listings on add-asset (no single price / evaluation booking). */
+export const offPlanGlobalFormInputFields = [
+  {
+    type: "text",
+    label: "Title your property",
+    placeholder: "Title your property (max. 50 characters)",
+    name: "title",
+    maxLength: 50,
+    required: true,
+  },
+  {
+    type: "phoneNumber",
+    label: "Phone Number",
+    name: "phoneNumber",
+    placeholder: "Enter your phone number",
+    required: true,
+  },
+  {
+    type: "file",
+    mediaType: "thumbnail",
+    name: "thumbnailImg",
+    label: "Thumbnail",
+    acceptedFormats: "JPG, PNG, GIF",
+    maxSize: "2MB",
+    files: [],
+    formDataKey: "thumbnailImg",
+    multiple: false,
+    errorKey: "thumbnail",
+    required: true,
+  },
+  {
+    type: "file",
+    mediaType: "pictures",
+    name: "pictures",
+    label: "Pictures",
+    acceptedFormats: "JPG, PNG, GIF. Up to 10 images, 2MB each (select up to 10 at once)",
+    maxSize: "2MB each (max 10)",
+    files: [],
+    formDataKey: "pictures",
+    multiple: true,
+    errorKey: "pictures",
+    required: true,
+  },
+  {
+    type: "file",
+    mediaType: "video",
+    name: "video",
+    label: "Video",
+    acceptedFormats: "MP4, MOV. Optional — up to 2 videos, 5MB each",
+    maxSize: "5MB each (max 2)",
+    files: [],
+    formDataKey: "video",
+    multiple: true,
+    errorKey: "video",
+    required: false,
+  },
+  {
+    type: "file",
+    mediaType: "qrScan",
+    name: "qrScan",
+    label: "QR Scan",
+    acceptedFormats: "JPG, PNG, GIF. 1 image, 2MB",
+    maxSize: "2MB",
+    files: [],
+    formDataKey: "qrScan",
+    multiple: false,
+    errorKey: "qrScan",
+    required: true,
+  },
+  {
+    type: "text",
+    label: "Project Number",
+    placeholder: "Project Number",
+    name: "dldNumber",
+    required: false,
+  },
+  {
+    type: "textarea",
+    label: "Tell us about your property",
+    name: "description",
+    placeholder: "Tell us about your property (max. 300 characters)",
+    maxLength: 300,
+    required: true,
+  },
 ];
 
 export const propertyFormFields = [
@@ -295,10 +432,6 @@ export const propertyType = [
     state: "commercial",
     mapData: Commercial,
   },
-  {
-    text: "Multiple",
-    state: "commercial",
-  },
 ];
 export const companiesOptions = ["Land Sterling Property Consultants LLC"];
 
@@ -348,6 +481,24 @@ export const facilities = [
   "Chiller A/C",
   "Cleaning Services",
 ];
+
+/** Facilities the user added beyond the preset checklist. */
+export function getExtraFacilities(
+  selected = [],
+  custom = [],
+  presetList = facilities,
+) {
+  const presetSet = new Set(presetList)
+  const extras = []
+  const seen = new Set()
+  for (const name of [...(custom || []), ...(selected || [])]) {
+    const n = String(name || "").trim()
+    if (!n || presetSet.has(n) || seen.has(n.toLowerCase())) continue
+    seen.add(n.toLowerCase())
+    extras.push(n)
+  }
+  return extras
+}
 
 export const propertyCheckBoxFields = [
   {
@@ -1114,7 +1265,7 @@ export const data = [
     Dubai: {
       Apartment: 2500,
       Villa: 3000,
-      Townhouse: 0,
+      Townhouse: 2800,
       Multiple: 0,
       Penthouse: 0,
       "Residential Building": 10000,
@@ -1144,7 +1295,7 @@ export const data = [
     "Abu Dhabi": {
       Apartment: 2500,
       Villa: 3000,
-      Townhouse: 0,
+      Townhouse: 2800,
       Multiple: 0,
       Penthouse: 0,
       "Residential Building": 10000,
@@ -1174,7 +1325,7 @@ export const data = [
     "Sharjah & North Emirates": {
       Apartment: 2500,
       Villa: 3000,
-      Townhouse: 0,
+      Townhouse: 2800,
       Multiple: 0,
       Penthouse: 0,
       "Residential Building": 10000,
@@ -1236,14 +1387,256 @@ export const bedroomsOptions = [
   "12+",
 ];
 
+export const deliveryQuarterOptions = ["Q1", "Q2", "Q3", "Q4"];
+
+/** Off-plan payment plan ratio (e.g. 20/80). Typed digits auto-insert "/". */
+export const PAYMENT_PLAN_TYPE_OTHER = "Others";
+export const paymentPlanTypeOptions = ["20/80", PAYMENT_PLAN_TYPE_OTHER];
+export const paymentPlanTypePresets = ["20/80"];
+
+/**
+ * Format raw payment-plan input as XX/YY.
+ * After 2 digits, inserts "/" then allows up to 2 more digits (e.g. 20 → 20/ → 20/80).
+ */
+export function formatPaymentPlanRatioInput(raw) {
+  const digits = String(raw ?? "")
+    .replace(/\D/g, "")
+    .slice(0, 4);
+  if (!digits) return "";
+  if (digits.length <= 2) return digits;
+  return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+}
+
+export function isPaymentPlanTypeOtherMode(value) {
+  const v = String(value || "").trim();
+  if (!v) return false;
+  if (v === PAYMENT_PLAN_TYPE_OTHER) return true;
+  return !paymentPlanTypePresets.includes(v);
+}
+
+export function getPaymentPlanTypeDropdownValue(value) {
+  return isPaymentPlanTypeOtherMode(value)
+    ? PAYMENT_PLAN_TYPE_OTHER
+    : String(value || "").trim();
+}
+
+/** Value shown in the custom text field when "Others" is selected. */
+export function getPaymentPlanTypeCustomValue(value) {
+  const v = String(value || "").trim();
+  if (!v || v === PAYMENT_PLAN_TYPE_OTHER || paymentPlanTypePresets.includes(v)) {
+    return "";
+  }
+  return v;
+}
+
+/** Persist empty when user left "Others" without typing a custom plan. */
+export function normalizePaymentPlanType(value) {
+  const v = String(value || "").trim();
+  if (!v || v === PAYMENT_PLAN_TYPE_OTHER) return "";
+  return v;
+}
+
+const currentYear = new Date().getFullYear();
+export const deliveryYearOptions = Array.from({ length: 20 }, (_, i) =>
+  String(currentYear + i),
+);
+
+export const sizeTypeOptions = ["SQFT", "SQM"];
+
+export const layoutOptions = [
+  "Studio",
+  "1 BHK",
+  "2 BHK",
+  "2 BHK Duplex",
+  "3 BHK",
+  "3 BHK Duplex",
+  "Penthouse",
+  "Villa",
+  "Townhouse",
+];
+
+export const numberOfFloorsOptions = [
+  "1",
+  "2",
+  "3",
+  "4",
+  "5",
+  "6",
+  "7",
+  "8",
+  "9",
+  "10",
+  "11",
+  "12+",
+];
+
+export const availableApartmentOptions = [
+  "Studio",
+  "1 BHK",
+  "2 BHK",
+  "2 BHK Duplex",
+  "3 BHK Duplex",
+  "Penthouse",
+];
+
+export const OFF_PLAN_LAYOUT_IMAGE_FORMATS_LABEL =
+  "JPG, PNG, GIF. Maximum file size: 5MB";
+
+export const apartmentLayoutUploads = [
+  { key: "studioLayout", label: "Studio Unit Layout" },
+  { key: "oneBhkLayout", label: "1 BHK Unit Layout" },
+  { key: "twoBhkLayout", label: "2 BHK Unit Layout" },
+  { key: "twoBhkDuplexLayout", label: "2 BHK Duplex Unit Layout" },
+  { key: "threeBhkDuplexLayout", label: "3 BHK Duplex Unit Layout" },
+  { key: "penthouseLayout", label: "Penthouse Unit Layout" },
+];
+
+export const OFF_PLAN_MEDIA_KEYS = [
+  "unitLayout",
+  "floorPlan",
+];
+
+/** Ready-market property listing: layout images (title deed is PDF separately). */
+export const READY_MARKET_LAYOUT_MEDIA_KEYS = [
+  "unitLayout",
+  "floorPlan",
+];
+
+export const createEmptyOffPlanMedia = () =>
+  OFF_PLAN_MEDIA_KEYS.reduce((acc, key) => {
+    acc[key] = null;
+    return acc;
+  }, {});
+
+export const createEmptyReadyMarketLayoutMedia = () =>
+  READY_MARKET_LAYOUT_MEDIA_KEYS.reduce((acc, key) => {
+    acc[key] = null;
+    return acc;
+  }, {});
+
+export const OFF_PLAN_PAYMENT_STEP_META = [
+  { stepLabel: "1: First Step", paymentLabel: "Down Payment" },
+  { stepLabel: "2: Second Step", paymentLabel: "Payment Share" },
+  { stepLabel: "3: Third Step", paymentLabel: "Payment Share" },
+  { stepLabel: "4: Fourth Step", paymentLabel: "Payment Share" },
+  { stepLabel: "5: Fifth Step", paymentLabel: "Final Payment" },
+];
+
+export const MAX_OFF_PLAN_PAYMENT_STEPS = 30;
+export const MIN_OFF_PLAN_PAYMENT_STEPS = 1;
+/** Start with one step; sellers add more as needed so listings match what they entered. */
+export const DEFAULT_OFF_PLAN_PAYMENT_STEPS = 1;
+
+const OFF_PLAN_STEP_ORDINALS = [
+  "First",
+  "Second",
+  "Third",
+  "Fourth",
+  "Fifth",
+  "Sixth",
+  "Seventh",
+  "Eighth",
+  "Ninth",
+  "Tenth",
+  "Eleventh",
+  "Twelfth",
+  "Thirteenth",
+  "Fourteenth",
+  "Fifteenth",
+  "Sixteenth",
+  "Seventeenth",
+  "Eighteenth",
+  "Nineteenth",
+  "Twentieth",
+  "Twenty-first",
+  "Twenty-second",
+  "Twenty-third",
+  "Twenty-fourth",
+  "Twenty-fifth",
+  "Twenty-sixth",
+  "Twenty-seventh",
+  "Twenty-eighth",
+  "Twenty-ninth",
+  "Thirtieth",
+];
+
+export const getOffPlanPaymentLabel = (index, total) => {
+  if (index === 0) return "Down Payment";
+  if (total > 1 && index === total - 1) return "Final Payment";
+  return "Payment Share";
+};
+
+export const reindexOffPlanPaymentPlan = (steps = []) =>
+  steps.map((step, index) => ({
+    ...step,
+    step: index + 1,
+    stepLabel: `${index + 1}: ${OFF_PLAN_STEP_ORDINALS[index] || `${index + 1}th`} Step`,
+    paymentLabel: getOffPlanPaymentLabel(index, steps.length),
+  }));
+
+/** Keep only steps the seller actually filled (share % and/or payment title). */
+export const isOffPlanPaymentStepFilled = (step) => {
+  const share = String(step?.sharePercent ?? "").trim();
+  const milestone = String(step?.milestone ?? "").trim();
+  return share !== "" || milestone !== "";
+};
+
+/** Drop empty steps and reindex — used on save and public display. */
+export const sanitizeOffPlanPaymentPlan = (steps = []) =>
+  reindexOffPlanPaymentPlan(
+    (Array.isArray(steps) ? steps : []).filter(isOffPlanPaymentStepFilled),
+  );
+
+export const createDefaultOffPlanPaymentPlan = (
+  count = DEFAULT_OFF_PLAN_PAYMENT_STEPS,
+) =>
+  reindexOffPlanPaymentPlan(
+    Array.from(
+      {
+        length: Math.min(
+          Math.max(count, MIN_OFF_PLAN_PAYMENT_STEPS),
+          MAX_OFF_PLAN_PAYMENT_STEPS,
+        ),
+      },
+      () => ({
+        sharePercent: "",
+        milestone: "",
+      }),
+    ),
+  );
+
+export const addOffPlanPaymentStep = (plan = []) => {
+  if (plan.length >= MAX_OFF_PLAN_PAYMENT_STEPS) return plan;
+  return reindexOffPlanPaymentPlan([
+    ...plan,
+    { sharePercent: "", milestone: "" },
+  ]);
+};
+
+export const removeOffPlanPaymentStep = (plan = [], index) => {
+  if (plan.length <= MIN_OFF_PLAN_PAYMENT_STEPS) return plan;
+  return reindexOffPlanPaymentPlan(plan.filter((_, stepIndex) => stepIndex !== index));
+};
+
 export const asset = [
-  { value: "Property For Sale", link: "property" },
+  {
+    value: "Property For Sale",
+    label: "Ready Property For Sale",
+    link: "property",
+  },
   // { value: "Property For Lease", link: "property" },
   { value: "Property Off Plan For Sale", link: "property" },
   { value: "Car For Sale", link: "car" },
   { value: "Jewellery For Sale", link: "jewelry" },
   { value: "Boats For Sale", link: "boat" },
 ];
+
+/** Display label for asset type (stored value may differ). */
+export const getAssetTypeLabel = (assetType) => {
+  if (!assetType) return assetType;
+  const match = asset.find((item) => item.value === assetType);
+  return match?.label || assetType;
+};
 
 export const carForSale = [
   {

@@ -1,22 +1,75 @@
 import React, { Suspense } from 'react'
 import Link from 'next/link'
+import { redirect } from 'next/navigation'
 import ButtomSlider from '@/components/Product_page/Buttom_slider'
 import JewelleryView from '@/components/modules/Jewelry/JewelleryView'
 import { api } from '@/config'
 import GlobalLoader from '@/utils/GlobalLoader'
+import { buildListingPageMetadata } from '@/libs/listingMetadata'
+import { cache } from 'react'
 
-const GetProductData = async ({ id }) => {
+export const dynamic = 'force-dynamic'
+
+const GetProductData = cache(async ({ id }) => {
   try {
-    const propertyInfo = await api('/jewelry/' + id)
-    const propertyData = await api(`/jewelry`)
-    return { propertyInfo, propertyData }
+    const relatedQuery = new URLSearchParams({
+      statusFilter: '1',
+      limit: '12',
+      excludeSlug: id,
+      excludeUuid: id,
+      excludeId: id,
+    })
+
+    const [propertyInfo, relatedData] = await Promise.all([
+      api(`/jewelry/${id}`),
+      api(`/jewelry/related-jewelry?${relatedQuery.toString()}`, {}, 0),
+    ])
+
+    const relatedProducts = relatedData?.products || []
+    const products = relatedProducts.filter((item) => {
+      if (propertyInfo?.uuid && item?.uuid === propertyInfo.uuid) return false
+      if (
+        propertyInfo?.slug &&
+        item?.slug &&
+        item.slug === propertyInfo.slug
+      ) {
+        return false
+      }
+      if (
+        propertyInfo?._id &&
+        item?._id &&
+        String(item._id) === String(propertyInfo._id)
+      ) {
+        return false
+      }
+      return true
+    })
+
+    return {
+      propertyInfo,
+      propertyData: { products },
+    }
   } catch (error) {
     return null
   }
+})
+
+export async function generateMetadata({ params }) {
+  const { id } = await params
+  const data = await GetProductData({ id })
+
+  if (!data?.propertyInfo) {
+    return { title: 'Jewelry not found | Funds Verifier' }
+  }
+
+  return buildListingPageMetadata(data.propertyInfo, {
+    routeSegment: 'jewelry',
+    listingId: id,
+  })
 }
 
 export default async function page({ params }) {
-  const {id} =await params
+  const { id } = await params
   const data = await GetProductData({ id })
   if (!data || !data.propertyInfo) {
     return (
@@ -27,6 +80,10 @@ export default async function page({ params }) {
   }
 
   const { propertyInfo, propertyData } = data
+
+  if (propertyInfo?.slug && id === propertyInfo.uuid) {
+    redirect(`/jewelry/${propertyInfo.slug}`)
+  }
 
   return (
     <div className='w-full pb-8'>
@@ -41,18 +98,19 @@ export default async function page({ params }) {
                 <Link href='/'>Home</Link> /
                 <Link href='/jewelry'>Jewellery</Link> /
               </span>{' '}
-              {propertyInfo?.title}
+              Listing details
             </p>
           </div>
         </div>
         <JewelleryView data={propertyInfo || {}} />
-        <div className='theme-container'>
-          <h1 className='md:text-2xl text-lg mb-6 font-semibold text-left text-blue '>
-            Related Jewellery
-          </h1>
-          <ButtomSlider data={propertyData || []} />
-        </div>
-        <div></div>
+        {propertyData?.products?.length > 0 ? (
+          <div className='theme-container mt-8 border-t border-reefGold pt-10 sm:mt-12 sm:pt-12'>
+            <h1 className='md:text-2xl text-lg mb-6 font-semibold text-left text-blue '>
+              Related Jewellery
+            </h1>
+            <ButtomSlider data={propertyData} />
+          </div>
+        ) : null}
       </Suspense>
     </div>
   )

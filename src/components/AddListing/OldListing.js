@@ -3,7 +3,11 @@ import Image from 'next/image'
 import Link from 'next/link'
 
 let asset = [
-  { value: 'Property For Sale', link: 'property' },
+  {
+    value: 'Property For Sale',
+    label: 'Ready Property For Sale',
+    link: 'property',
+  },
   { value: 'Property For Lease', link: 'property' },
   { value: 'Property Off Plan For Sale', link: 'property' },
   { value: 'Car For Sale', link: 'car' },
@@ -65,7 +69,6 @@ const Listing = ({
   const [price, setPrice] = useState(false)
   const [residential, setResidential] = useState(false)
   const [commercial, setCommercial] = useState(false)
-  const [multiple, setMultiple] = useState(false)
 
   const togglePropertTypeDropdown = () => {
     setType(!type)
@@ -98,9 +101,6 @@ const Listing = ({
   }
   const toggleCommercialDropdown = () => {
     setCommercial(!commercial)
-  }
-  const toggleMultipleDropdown = () => {
-    setMultiple(!multiple)
   }
   const Residential = [
     {
@@ -225,13 +225,6 @@ const Listing = ({
       onclick: toggleCommercialDropdown,
       mapData: Commercial,
     },
-
-    {
-      text: 'Multiple',
-      state: commercial,
-      setState: setResidential,
-      onclick: toggleMultipleDropdown,
-    },
   ]
 
   const togglePriceDropdown = () => {
@@ -268,7 +261,8 @@ const Listing = ({
 
                 <p className='lg:text-xs md:text-[10px] xxs:text-[12px] font-normal pt-[5px] text-dark-grey'>
                   {formData?.assetType
-                    ? formData?.assetType
+                    ? asset.find((a) => a.value === formData.assetType)?.label ||
+                      formData.assetType
                     : formData.assetType}
                 </p>
                 <div className='md:block xxs:hidden w-[1px] h-[70px] bg-dark-grey absolute xl:right-[-30px] md:right-[-10px] xxs:right-[-10px] top-[-14px]' />
@@ -290,7 +284,7 @@ const Listing = ({
                             handleSelectOption('assetType', option.value)
                           }
                         >
-                          {option.value}
+                          {option.label || option.value}
                         </div>
                       </Link>
                     </>

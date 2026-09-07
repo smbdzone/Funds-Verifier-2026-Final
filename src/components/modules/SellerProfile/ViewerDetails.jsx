@@ -1,27 +1,42 @@
+'use client'
+
 import { useEffect, useState } from 'react'
-import axios from 'axios'
-import { formatNumberWithCommas } from '@/utils/global-functions/global'
 import GlobalLoader from '@/utils/GlobalLoader'
 import { TriangleAlertIcon, UploadCloudIcon } from 'lucide-react'
-import { handleFileUpload } from '@/libs/uploadAsset'
+import { handleFileUpload, resolveCertificateUploadUrl } from '@/libs/uploadAsset'
 import { toast } from 'react-toastify'
 import { useProfile } from '../../../context/UserContext'
-import Link from 'next/link'
 import Modal from '../../product-modal/modal'
+import CancelTransferModal from '@/components/Modals/CancelTransferModal'
+import TransferPaymentLinkModal from '@/components/Modals/TransferPaymentLinkModal'
 import customAxios from '../../../utils/apis/apis'
 import { getListingImageSrc } from '@/libs/listingCardMedia'
+import { parseSlotTimeOnDate } from '@/libs/slotTimeFilters'
+import {
+  formatTransactionPhase,
+  transactionPhaseBadgeClass,
+} from '@/libs/transactionPhase'
 
 const ViewerDetails = ({ bookingId, handleClose }) => {
   const [viewerData, setViewerData] = useState(null)
   const [selectedAdmin, setSelectedAdmin] = useState('myself')
-  const [selectedAction, setSelectedAction] = useState('')
-  const [showWarning, setShowWarning] = useState(false)
+  const [assignSubmitting, setAssignSubmitting] = useState(false)
   const [timeLeft, setTimeLeft] = useState('')
-  const [disableAdminSelect, setDisableAdminSelect] = useState(false)
+  const [assignmentLocked, setAssignmentLocked] = useState(false)
   const [isTimeCritical, setIsTimeCritical] = useState(false)
   const [TransferFile, setTransferFile] = useState(null)
   const [TransferProofFile, setTransferProofFile] = useState(null)
+  const [transferDocUploading, setTransferDocUploading] = useState(false)
+  const [transferProofUploading, setTransferProofUploading] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
+  const [transferDocOpen, setTransferDocOpen] = useState(false)
+  const [isCancelTransferModalOpen, setIsCancelTransferModalOpen] = useState(false)
+  const [paymentLinkModal, setPaymentLinkModal] = useState({
+    open: false,
+    url: '',
+    recipientEmail: '',
+    emailFailed: false,
+  })
   const [TransferProof, setTransferProof] = useState({
     PaymentProof: '',
   })
@@ -30,32 +45,80 @@ const ViewerDetails = ({ bookingId, handleClose }) => {
     fees: 0,
     assetTransferDocument: '',
   })
+  const [loading, setLoading] = useState(false)
+  const [transferActionLoading, setTransferActionLoading] = useState(null)
+  const [error, setError] = useState('')
   const { user } = useProfile()
 
   const handleFileChange = async (e) => {
     const file = e.target.files?.[0]
+    if (!file) return
 
-    if (file) {
-      setTransferFile(file)
+    if (file.type !== 'application/pdf') {
+      toast.error('Please upload a PDF file.')
+      e.target.value = ''
+      return
+    }
+
+    setTransferFile(file)
+    setTransferDocUploading(true)
+    try {
       const data = await handleFileUpload(file)
+      const docUrl = resolveCertificateUploadUrl(data)
+      if (!docUrl) {
+        toast.error('Upload finished but no document URL was returned.')
+        setTransferFile(null)
+        e.target.value = ''
+        return
+      }
       setTransferDocs((prev) => ({
         ...prev,
-        assetTransferDocument: data?.Certificate?.url,
+        assetTransferDocument: docUrl,
       }))
+      toast.success('Transfer document uploaded.')
+    } catch (err) {
+      console.error('Transfer document upload failed:', err)
+      setTransferFile(null)
+      e.target.value = ''
+      toast.error(err?.message || 'Failed to upload transfer document.')
+    } finally {
+      setTransferDocUploading(false)
     }
   }
 
   const handleFileChange2 = async (e) => {
     const file = e.target.files?.[0]
-    if (file) {
-      setTransferProofFile(file)
+    if (!file) return
+
+    if (file.type !== 'application/pdf') {
+      toast.error('Please upload a PDF file.')
+      e.target.value = ''
+      return
+    }
+
+    setTransferProofFile(file)
+    setTransferProofUploading(true)
+    try {
       const data = await handleFileUpload(file)
-
-
+      const docUrl = resolveCertificateUploadUrl(data)
+      if (!docUrl) {
+        toast.error('Upload finished but no document URL was returned.')
+        setTransferProofFile(null)
+        e.target.value = ''
+        return
+      }
       setTransferProof((prev) => ({
         ...prev,
-        PaymentProof: data?.certificate?.url,
+        PaymentProof: docUrl,
       }))
+      toast.success('Payment proof uploaded.')
+    } catch (err) {
+      console.error('Payment proof upload failed:', err)
+      setTransferProofFile(null)
+      e.target.value = ''
+      toast.error(err?.message || 'Failed to upload payment proof.')
+    } finally {
+      setTransferProofUploading(false)
     }
   }
 
@@ -64,6 +127,36 @@ const ViewerDetails = ({ bookingId, handleClose }) => {
       ...prev,
       fees: e.target.value,
     }))
+  }
+
+  const openPaymentLinkModal = ({ paymentUrl, recipientEmail, emailFailed }) => {
+    if (!paymentUrl) return
+    setPaymentLinkModal({
+      open: true,
+      url: paymentUrl,
+      recipientEmail: recipientEmail || '',
+      emailFailed: Boolean(emailFailed),
+    })
+  }
+
+  const handlePaymentLinkResponse = (response) => {
+    const emailSent = response?.data?.emailSent !== false
+    const paymentUrl = response?.data?.PaymentUrl
+    const recipientEmail = response?.data?.recipientEmail
+
+    if (emailSent) {
+      return { successToast: true, paymentUrl }
+    }
+
+    if (paymentUrl) {
+      openPaymentLinkModal({
+        paymentUrl,
+        recipientEmail,
+        emailFailed: true,
+      })
+    }
+
+    return { successToast: false, paymentUrl }
   }
 
   const handleSubmit = async () => {
@@ -77,7 +170,8 @@ const ViewerDetails = ({ bookingId, handleClose }) => {
     }
     const dataToSend = {
       success_url: window.location.origin,
-      ...TransferDocs,
+      assetTransferDocument: TransferDocs.assetTransferDocument,
+      fees: Number(TransferDocs.fees),
     }
     try {
       const response = await customAxios.post(
@@ -85,58 +179,200 @@ const ViewerDetails = ({ bookingId, handleClose }) => {
         dataToSend,
         { params: { id: bookingId } }
       )
-      toast.success(error?.message || 'Mail is sended to pay the fees.')
+
+      const { successToast } = handlePaymentLinkResponse(response)
+
+      if (successToast) {
+        toast.success(
+          'Payment link sent to the seller by email. They must pay and upload the fee invoice before you confirm transfer.',
+        )
+      } else {
+        toast.warning(
+          response?.data?.mailError ||
+          response?.data?.message ||
+          'Transfer saved. Share the payment link with the seller manually.',
+        )
+      }
+
+      await fetchBookingDetails({ silent: true })
     } catch (error) {
       console.error('Error sending mail:', error)
-      toast.error(error?.message || 'Not Submitted.')
+      toast.error(
+        error?.response?.data?.message || error?.message || 'Not submitted.',
+      )
     }
   }
 
-  const [loading, setLoading] = useState(false) // ✅ loading state
-  const [error, setError] = useState('') // ✅ error state
+  const handleCancelTransfer = async () => {
+    if (!bookingId) return
+    if (viewerData?.productData?.transferDocuments?.PaymentProof) return
+
+    setTransferActionLoading('cancel')
+    try {
+      await customAxios.post(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/arrange-view/cancel-transfer`,
+        {},
+        { params: { id: bookingId } },
+      )
+      setTransferDocs({ fees: 0, assetTransferDocument: '' })
+      setTransferFile(null)
+      setTransferProof({ PaymentProof: '' })
+      setIsCancelTransferModalOpen(false)
+      toast.success('Transfer submission cancelled.')
+      await fetchBookingDetails({ silent: true })
+    } catch (err) {
+      toast.error(
+        err?.response?.data?.message ||
+        err?.message ||
+        'Could not cancel transfer submission.',
+      )
+    } finally {
+      setTransferActionLoading(null)
+    }
+  }
+
+  const handleResendPayment = async () => {
+    if (!bookingId) return
+    if (viewerData?.productData?.transferDocuments?.PaymentProof) return
+
+    setTransferActionLoading('resend')
+    try {
+      const response = await customAxios.post(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/arrange-view/transfer-payment/resend`,
+        { success_url: window.location.origin },
+        { params: { id: bookingId } },
+      )
+
+      const { successToast } = handlePaymentLinkResponse(response)
+
+      if (successToast) {
+        toast.success('Payment link resent to the seller by email.')
+      } else {
+        toast.warning(
+          response?.data?.mailError ||
+          response?.data?.message ||
+          'Could not send payment email. Use the payment link popup to share manually.',
+        )
+      }
+
+      await fetchBookingDetails({ silent: true })
+    } catch (err) {
+      toast.error(
+        err?.response?.data?.message ||
+        err?.message ||
+        'Could not resend payment link.',
+      )
+    } finally {
+      setTransferActionLoading(null)
+    }
+  }
 
   const adminOptions = [
     { id: 1, name: 'Myself', value: 'myself' },
     { id: 2, name: 'FV Admin', value: 'fv_admin' },
   ]
 
-  const fetchBookingDetails = async () => {
-    setLoading(true)
-    setError('')
+  const fetchBookingDetails = async ({ silent = false } = {}) => {
+    if (!bookingId) return
+    const showBlockingLoader = !silent && !viewerData
+    if (showBlockingLoader) {
+      setLoading(true)
+      setError('')
+    }
     try {
       const response = await customAxios.get(
-        `/arrange-view/bookings/${bookingId}`
+        `/arrange-view/bookings/${bookingId}`,
       )
-      setViewerData(response?.data)
+      const data = response?.data
+      if (!data) {
+        throw new Error('Booking details were empty.')
+      }
+      setViewerData(data)
+      const savedAssignee = data?.viewAssignedTo
+      if (savedAssignee === 'myself' || savedAssignee === 'fv_admin') {
+        setSelectedAdmin(savedAssignee)
+      }
+
+      const savedTransfer = data?.productData?.transferDocuments || {}
+      setTransferDocs({
+        fees: Number(savedTransfer.successFee) || 0,
+        assetTransferDocument: savedTransfer.assetTransferDocument || '',
+      })
+      setTransferProof({
+        PaymentProof: savedTransfer.PaymentProof || '',
+      })
+      if (savedTransfer.assetTransferDocument) {
+        setTransferFile(null)
+      }
     } catch (err) {
       console.error('Error fetching booking details', err)
       const msg =
         err?.response?.data?.message ||
         err?.message ||
         'Failed to load booking details. Please try again later.'
-      setError(msg)
-      setViewerData(null)
+      if (!silent || !viewerData) {
+        setError(msg)
+      }
+      if (showBlockingLoader) {
+        setViewerData(null)
+      }
     } finally {
-      setLoading(false)
+      if (showBlockingLoader) {
+        setLoading(false)
+      }
     }
   }
 
   const handleTransferProof = async () => {
+    if (!TransferProof.PaymentProof) {
+      toast.error('Please upload payment proof first.')
+      return
+    }
     try {
-      const dataToSend = {
-        ...TransferProof,
-      }
-      // console.log(dataToSend);
-
       const response = await customAxios.post(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/arrange-view/transfer-proof/${viewerData?.productData?.uuid}`,
+        `${process.env.NEXT_PUBLIC_BASE_URL}/arrange-view/transfer-proof`,
         { ...TransferProof },
-        { params: { id: bookingId } }
+        { params: { id: bookingId } },
       )
-      toast.success('Asset transfer proofs sended.')
+      toast.success(
+        response?.data?.message || 'Success fee invoice submitted successfully.',
+      )
+      await fetchBookingDetails({ silent: true })
     } catch (err) {
       console.error('Error sending transfer proofs:', err)
-      toast.error(err?.message)
+      toast.error(
+        err?.response?.data?.message || err?.message || 'Could not submit payment proof.',
+      )
+    }
+  }
+
+  const handleAssignSubmit = async () => {
+    if (assignmentLocked) {
+      toast.error('Assignment cannot be changed after the viewing time has passed.')
+      return
+    }
+    if (!bookingId) {
+      toast.error('Missing booking reference.')
+      return
+    }
+
+    setAssignSubmitting(true)
+    try {
+      await customAxios.put(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/arrange-view/trustee/update/${bookingId}`,
+        { viewAssignedTo: selectedAdmin },
+      )
+      toast.success('Viewing assignment saved.')
+      await fetchBookingDetails({ silent: true })
+    } catch (err) {
+      console.error('Error saving viewing assignment:', err)
+      toast.error(
+        err?.response?.data?.message ||
+        err?.message ||
+        'Could not save assignment.',
+      )
+    } finally {
+      setAssignSubmitting(false)
     }
   }
 
@@ -147,10 +383,11 @@ const ViewerDetails = ({ bookingId, handleClose }) => {
         {},
         { params: { id: bookingId } }
       )
-      toast.success('Asset marked as transfered.')
+      toast.success('Asset marked as transferred.')
+      await fetchBookingDetails({ silent: true })
     } catch (err) {
       console.error('Error marking asset as transferred:', err)
-      toast.error(err?.message)
+      toast.error(err?.response?.data?.message || err?.message)
     }
   }
 
@@ -161,57 +398,70 @@ const ViewerDetails = ({ bookingId, handleClose }) => {
   }, [bookingId])
 
   useEffect(() => {
-    if (viewerData) {
-      const bookingTime = new Date(viewerData?.date || Date.now())
-      const updateTimer = () => {
-        const currentTime = new Date()
-        const timeDifference = bookingTime - currentTime
+    if (user?.role !== 'Trustee' || !viewerData) return
 
-        if (timeDifference <= 0) {
-          setTimeLeft('The time has passed.')
-          setDisableAdminSelect(true)
-        } else {
-          const hours = Math.floor(timeDifference / (1000 * 60 * 60))
-          const minutes = Math.floor(
-            (timeDifference % (1000 * 60 * 60)) / (1000 * 60)
-          )
-          const seconds = Math.floor((timeDifference % (1000 * 60)) / 1000)
-          const days = Math.floor(timeDifference / (1000 * 60 * 60 * 24))
+    const transferDocuments = viewerData?.productData?.transferDocuments || {}
+    const submitted = Boolean(transferDocuments.assetTransferDocument)
+    const proofReceived = Boolean(transferDocuments.PaymentProof)
+    if (!submitted || proofReceived) return
 
-          setTimeLeft(`${days}d ${hours % 24}h ${minutes}m ${seconds}s left`)
+    const interval = setInterval(() => {
+      fetchBookingDetails({ silent: true })
+    }, 15000)
 
-          if (hours < 4) setDisableAdminSelect(true)
-          if (hours < 8) setIsTimeCritical(true)
-        }
+    return () => clearInterval(interval)
+  }, [user?.role, viewerData, bookingId])
+
+  useEffect(() => {
+    if (!viewerData) return
+
+    const bookingTime =
+      parseSlotTimeOnDate(viewerData?.date, viewerData?.time) ||
+      new Date(viewerData?.date || Date.now())
+
+    const updateTimer = () => {
+      const currentTime = new Date()
+      const timeDifference = bookingTime.getTime() - currentTime.getTime()
+
+      if (timeDifference <= 0) {
+        setTimeLeft('The time has passed.')
+        setAssignmentLocked(true)
+        setIsTimeCritical(false)
+      } else {
+        const hours = Math.floor(timeDifference / (1000 * 60 * 60))
+        const minutes = Math.floor(
+          (timeDifference % (1000 * 60 * 60)) / (1000 * 60),
+        )
+        const seconds = Math.floor((timeDifference % (1000 * 60)) / 1000)
+        const days = Math.floor(timeDifference / (1000 * 60 * 60 * 24))
+
+        setTimeLeft(`${days}d ${hours % 24}h ${minutes}m ${seconds}s left`)
+        setAssignmentLocked(false)
+        setIsTimeCritical(hours < 8)
       }
-
-      const interval = setInterval(updateTimer, 1000)
-      return () => clearInterval(interval)
     }
+
+    updateTimer()
+    const interval = setInterval(updateTimer, 1000)
+    return () => clearInterval(interval)
   }, [viewerData])
 
   const handleAdminSelection = (value) => {
-    if (!selectedAction) {
-      setShowWarning(true)
-    } else if (disableAdminSelect) {
-      setShowWarning(true)
-    } else {
-      setSelectedAdmin(value)
-      setShowWarning(false)
-    }
+    if (assignmentLocked) return
+    setSelectedAdmin(value)
   }
 
-  if (loading) {
+  if (loading && !viewerData) {
     return (
-      <div className='relative z-20 flex min-h-[220px] flex-1 flex-col items-center justify-center px-6 py-12'>
+      <div className='flex min-h-[280px] w-full items-center justify-center px-6 py-12'>
         <GlobalLoader />
       </div>
     )
   }
 
-  if (error) {
+  if (error && !viewerData) {
     return (
-      <div className='relative z-20 flex flex-1 flex-col bg-white px-6 py-8'>
+      <div className='relative w-full bg-white px-6 py-8'>
         <button
           type='button'
           className='absolute right-4 top-4 rounded-lg border border-[#002d4f] px-3 py-1 text-sm font-medium text-[#002d4f] transition hover:bg-slate-50'
@@ -227,100 +477,72 @@ const ViewerDetails = ({ bookingId, handleClose }) => {
     )
   }
 
-  if (!viewerData) return null
+  if (!viewerData) {
+    return (
+      <div className='relative w-full bg-white px-6 py-8'>
+        <button
+          type='button'
+          className='absolute right-4 top-4 rounded-lg border border-[#002d4f] px-3 py-1 text-sm font-medium text-[#002d4f] transition hover:bg-slate-50'
+          onClick={handleClose}
+        >
+          Close
+        </button>
+        <p className='text-slate-600'>No booking details available.</p>
+      </div>
+    )
+  }
+
+  const formatFieldValue = (value) => {
+    if (value == null || value === '') return ''
+    if (typeof value === 'object') return ''
+    return String(value)
+  }
 
   const pictures = viewerData?.productData?.pictures
-  const galleryImages =
+  const rawGalleryImages =
     pictures?.images?.length > 0
       ? pictures.images
-      : viewerData?.productData?.thumbnailImg?.images || []
+      : viewerData?.productData?.thumbnailImg?.images
+  const galleryImages = Array.isArray(rawGalleryImages) ? rawGalleryImages : []
   const broker = viewerData?.brokerId || {}
   const name = broker.name ?? ''
   const email = broker.email ?? ''
   const phone = broker.phone ?? broker.phoneNumber ?? ''
-
-  const commonFields = [
-    { label: 'Title', value: viewerData?.productData?.title },
-    { label: 'Phone Number', value: viewerData?.productData?.phoneNumber },
-    {
-      label: 'Price',
-      value: formatNumberWithCommas(viewerData?.productData?.price),
-    },
-  ]
-
-  const assetSpecificFields = () => {
-    switch (viewerData?.productData?.assetType) {
-      case 'Property For Sale':
-        return [
-          {
-            label: 'Size in sq feet',
-            value: formatNumberWithCommas(viewerData?.productData?.sizeSQFT),
-          },
-          { label: 'Bedrooms', value: viewerData?.productData?.bedrooms },
-          { label: 'Bathrooms', value: viewerData?.productData?.bathrooms },
-          { label: 'Developer', value: viewerData?.productData?.developer },
-          {
-            label: 'Is it Furnished',
-            value: viewerData?.productData?.isFurnished ? 'Yes' : 'No',
-          },
-          {
-            label: 'Occupancy Status',
-            value: viewerData?.productData?.occupancyStatus,
-          },
-        ]
-      case 'Car For Sale':
-        return [
-          { label: 'Make', value: viewerData?.productData?.make },
-          { label: 'Model', value: viewerData?.productData?.model },
-          { label: 'Year', value: viewerData?.productData?.year },
-          {
-            label: 'Kilometers',
-            value: formatNumberWithCommas(viewerData?.productData?.kilometers),
-          },
-          { label: 'Seats', value: viewerData?.productData?.seats },
-          { label: 'Doors', value: viewerData?.productData?.doors },
-          {
-            label: 'Body Condition',
-            value: viewerData?.productData?.bodyCondition,
-          },
-          { label: 'Warranty', value: viewerData?.productData?.warranty },
-          { label: 'Fuel Type', value: viewerData?.productData?.fuelType },
-          {
-            label: 'No Of Cylinders',
-            value: viewerData?.productData?.noofCylinders,
-          },
-        ]
-      case 'Boats For Sale':
-        return [
-          { label: 'Length', value: viewerData?.productData?.length },
-          { label: 'Condition', value: viewerData?.productData?.condition },
-          { label: 'Age', value: viewerData?.productData?.age },
-          { label: 'Usage', value: viewerData?.productData?.usage },
-          { label: 'Seats', value: viewerData?.productData?.seats },
-        ]
-      case 'Jewellery For Sale':
-        return [
-          {
-            label: 'Metal Material',
-            value: viewerData?.productData?.jewelryMetal,
-          },
-          {
-            label: 'Grams',
-            value: formatNumberWithCommas(viewerData?.productData?.grams),
-          },
-          { label: 'Condition', value: viewerData?.productData?.condition },
-          { label: 'Age', value: viewerData?.productData?.age },
-        ]
-      default:
-        return []
-    }
-  }
-
-  const fields = [...commonFields, ...assetSpecificFields()]
+  const transferDocuments = viewerData?.productData?.transferDocuments || {}
+  const transferPhase =
+    viewerData?.productData?.transactionPhase ||
+    (viewerData?.productData?.dealClosed
+      ? 'transferred'
+      : transferDocuments.PaymentProof
+        ? 'payment_proof_received'
+        : transferDocuments.assetTransferDocument
+          ? 'awaiting_payment'
+          : null)
+  const hasTransferDocSubmitted = Boolean(
+    transferDocuments.assetTransferDocument,
+  )
+  const submittedSuccessFee = (() => {
+    const apiFee = Number(transferDocuments.successFee)
+    const stateFee = Number(TransferDocs.fees)
+    if (Number.isFinite(apiFee) && apiFee > 0) return apiFee
+    if (Number.isFinite(stateFee) && stateFee > 0) return stateFee
+    return 0
+  })()
+  const submittedTransferDocUrl = transferDocuments.assetTransferDocument || ''
+  const storedPaymentUrl = transferDocuments.paymentUrl || ''
+  const hasPaymentProof = Boolean(transferDocuments.PaymentProof)
+  const missingRecordedFee =
+    hasTransferDocSubmitted && submittedSuccessFee <= 0 && !hasPaymentProof
+  const assetHolder = viewerData?.assetHolder || {}
+  const isAssetHolderViewer =
+    user?.role === 'AssetHolder' &&
+    (assetHolder?._id === user?._id ||
+      assetHolder?.uuid === user?.uuid ||
+      String(assetHolder?._id) === String(user?._id))
 
   return (
-    <div className='flex min-h-0 flex-1 flex-col overflow-y-auto bg-white'>
-      <div className='sticky top-0 z-10 flex items-start justify-between gap-3 border-b border-slate-200 bg-white/95 px-4 py-3 backdrop-blur-sm sm:px-5'>
+    <div className='w-full bg-white'>
+      <div className='sticky top-0 z-10 flex items-start justify-between gap-3 border-b border-slate-200 bg-white px-4 py-3 sm:px-5'>
         <h2
           id='viewer-details-title'
           className='pr-8 text-base font-bold leading-snug text-[#002d4f] sm:text-lg'
@@ -336,25 +558,27 @@ const ViewerDetails = ({ bookingId, handleClose }) => {
         </button>
       </div>
 
-      <div className='flex-1 space-y-8 px-4 py-5 sm:px-5 sm:py-6'>
+      <div className='space-y-8 px-4 py-5 sm:px-5 sm:py-6'>
         <div>
           <h3 className='mb-3 text-sm font-bold uppercase tracking-wide text-[#a2913e]'>
             Asset details
           </h3>
           <div className='grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4'>
-            {viewerData?.productData?.fields?.map((field, index) => (
-              <div key={index} className='flex flex-col'>
-                <label className='mb-2 text-sm font-medium text-gray-700'>
-                  {field.label}
-                </label>
-                <input
-                  type='text'
-                  value={field.value || ''}
-                  className='rounded-md border-2 border-[#8d7c3b] px-2 py-2 focus:outline-none'
-                  readOnly
-                />
-              </div>
-            ))}
+            {Array.isArray(viewerData?.productData?.fields)
+              ? viewerData.productData.fields.map((field, index) => (
+                <div key={`${field?.label || 'field'}-${index}`} className='flex flex-col'>
+                  <label className='mb-2 text-sm font-medium text-gray-700'>
+                    {field?.label || ''}
+                  </label>
+                  <input
+                    type='text'
+                    value={formatFieldValue(field?.value)}
+                    className='rounded-md border-2 border-[#8d7c3b] px-2 py-2 focus:outline-none'
+                    readOnly
+                  />
+                </div>
+              ))
+              : null}
           </div>
         </div>
 
@@ -448,56 +672,169 @@ const ViewerDetails = ({ bookingId, handleClose }) => {
         {user?.role === 'Trustee' ? (
           <>
             <div>
-              <h3 className='mb-3 text-sm font-bold uppercase tracking-wide text-[#a2913e]'>
-                Ready to transfer asset?
-              </h3>
+              <div className='mb-3 flex flex-wrap items-center gap-3'>
+                <h3 className='text-sm font-bold uppercase tracking-wide text-[#a2913e]'>
+                  Step 1: Send transfer documents &amp; success fee
+                </h3>
+                {transferPhase ? (
+                  <span
+                    className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset ${transactionPhaseBadgeClass(transferPhase)}`}
+                  >
+                    {formatTransactionPhase(transferPhase)}
+                  </span>
+                ) : null}
+              </div>
+              <p className='mb-3 text-sm text-slate-600'>
+                Upload the transfer document and enter the success fee. The seller
+                (asset holder) will receive a payment link by email.
+              </p>
 
-              <div className='flex flex-col flex-wrap gap-3 sm:flex-row sm:items-center'>
+              {hasTransferDocSubmitted ? (
+                <div className='mb-3 rounded-md border border-light-gold/50 bg-light-gold/10 px-3 py-3 text-sm text-prussianBlue'>
+                  <p className='font-medium'>Submitted to broker</p>
+                  <p className='mt-1'>
+                    Success fee:{' '}
+                    <span className='font-semibold'>
+                      {submittedSuccessFee > 0
+                        ? `AED ${submittedSuccessFee.toLocaleString()}`
+                        : 'Not recorded'}
+                    </span>
+                  </p>
+                  {missingRecordedFee ? (
+                    <p className='mt-1 text-amber-800'>
+                      Fee was not saved on this submission. Use Cancel, then
+                      submit again with the correct amount.
+                    </p>
+                  ) : null}
+                  <p className='mt-1 text-prussianBlue/80'>
+                    Waiting for the seller to pay the success fee and upload the
+                    invoice.
+                  </p>
+                  {submittedTransferDocUrl ? (
+                    <button
+                      type='button'
+                      onClick={() => setTransferDocOpen(true)}
+                      className='mt-2 text-sm font-medium text-[#002d4f] underline'
+                    >
+                      View submitted transfer document
+                    </button>
+                  ) : null}
+                  {storedPaymentUrl && !hasPaymentProof ? (
+                    <button
+                      type='button'
+                      onClick={() =>
+                        openPaymentLinkModal({
+                          paymentUrl: storedPaymentUrl,
+                          recipientEmail: assetHolder?.email || '',
+                          emailFailed: false,
+                        })
+                      }
+                      className='mt-2 block text-sm font-medium text-[#002d4f] underline'
+                    >
+                      View / copy Stripe payment link
+                    </button>
+                  ) : null}
+                  {!hasPaymentProof ? (
+                    <div className='mt-3 flex flex-wrap gap-2'>
+                      <button
+                        type='button'
+                        onClick={handleResendPayment}
+                        disabled={
+                          transferActionLoading != null || missingRecordedFee
+                        }
+                        className='rounded-md border border-[#002d4f] px-3 py-1.5 text-sm font-medium text-[#002d4f] disabled:cursor-not-allowed disabled:opacity-50'
+                      >
+                        {transferActionLoading === 'resend'
+                          ? 'Resending…'
+                          : 'Resend payment link'}
+                      </button>
+                      <button
+                        type='button'
+                        onClick={() => setIsCancelTransferModalOpen(true)}
+                        disabled={transferActionLoading != null}
+                        className='rounded-md border border-red-300 px-3 py-1.5 text-sm font-medium text-red-700 disabled:cursor-not-allowed disabled:opacity-50'
+                      >
+                        {transferActionLoading === 'cancel'
+                          ? 'Cancelling…'
+                          : 'Cancel'}
+                      </button>
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+
+              <div className='flex flex-col flex-wrap gap-3 sm:flex-row sm:items-center' onClick={(e) => e.stopPropagation()}>
                 {/* Upload file */}
                 <label
                   htmlFor='AssetTransferDocs'
-                  className='primary-gradient text-white p-2 px-4 rounded cursor-pointer'
+                  className={`primary-gradient text-white p-2 px-4 rounded ${transferDocUploading || hasTransferDocSubmitted ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'}`}
+                  onClick={(e) => e.stopPropagation()}
                 >
                   <span className='flex items-center gap-2'>
                     <UploadCloudIcon />
                     <span>
-                      {TransferFile ? TransferFile?.name : 'Transfer document'}
+                      {transferDocUploading
+                        ? 'Uploading…'
+                        : TransferFile
+                          ? TransferFile.name
+                          : hasTransferDocSubmitted
+                            ? 'Transfer document submitted'
+                            : 'Transfer document'}
                     </span>
                   </span>
                 </label>
                 <input
-                  onChange={async (e) => {
-                    await handleFileChange(e)
-                  }}
+                  onChange={handleFileChange}
                   type='file'
                   className='sr-only'
-                  accept='.pdf'
+                  accept='.pdf,application/pdf'
                   id='AssetTransferDocs'
+                  disabled={transferDocUploading || hasTransferDocSubmitted}
                 />
+                {TransferDocs.assetTransferDocument && !hasTransferDocSubmitted ? (
+                  <span className='text-sm font-medium text-green-700'>
+                    Ready to submit
+                  </span>
+                ) : null}
 
                 {/* Fee input */}
                 <input
                   type='number'
-                  className='bg-white py-2 px-2 rounded-md border text-prussianBlue border-prussianBlue outline-none'
+                  min='0'
+                  className='bg-white py-2 px-2 rounded-md border text-prussianBlue border-prussianBlue outline-none disabled:bg-slate-100'
                   placeholder='asset success fee (AED)'
-                  value={TransferDocs.fees}
+                  value={
+                    hasTransferDocSubmitted
+                      ? submittedSuccessFee > 0
+                        ? submittedSuccessFee
+                        : ''
+                      : TransferDocs.fees === 0
+                        ? ''
+                        : TransferDocs.fees
+                  }
                   onChange={handleFeeChange}
+                  disabled={hasTransferDocSubmitted}
                 />
 
                 {/* Submit button */}
                 <button
                   type='button'
                   onClick={handleSubmit}
-                  className='primary-gradient text-white p-2 px-4 rounded'
+                  disabled={hasTransferDocSubmitted}
+                  className='primary-gradient text-white p-2 px-4 rounded disabled:cursor-not-allowed disabled:opacity-60'
                 >
-                  Submit
+                  {hasTransferDocSubmitted ? 'Submitted' : 'Submit'}
                 </button>
               </div>
             </div>
             <div>
-              <h3 className='mb-3 text-sm font-bold uppercase tracking-wide text-[#a2913e]'>
-                Asset is transferred
+              <h3 className='mb-1 text-sm font-bold uppercase tracking-wide text-[#a2913e]'>
+                Step 2: Confirm asset transfer
               </h3>
+              <p className='mb-3 text-sm text-slate-600'>
+                Only after the seller has paid the success fee and uploaded the
+                fee invoice, confirm that the asset transfer is complete.
+              </p>
               <div className='border-l-4 border-yellow-500 bg-yellow-400/10 p-4'>
                 <div className='flex'>
                   <div className='shrink-0'>
@@ -511,9 +848,9 @@ const ViewerDetails = ({ bookingId, handleClose }) => {
                       <span className='font-medium text-yellow-600'>
                         Warning:{' '}
                       </span>
-                      Do not transfer assets until proof of payment and the
-                      success fee has been received. If you proceed without
-                      confirmation, you will be responsible for paying the success
+                      Do not transfer the asset until proof of payment and the
+                      success fee have been received. If you proceed without
+                      confirmation, you may be responsible for paying the success
                       fee from your own earnings.
                     </p>
                   </div>
@@ -521,108 +858,200 @@ const ViewerDetails = ({ bookingId, handleClose }) => {
               </div>
               <div className='mt-4 flex flex-col flex-wrap gap-3 sm:flex-row sm:items-center'>
                 <button
-                  onClick={() => setIsOpen(true)}
-                  className='border border-[#002d4f] text-[#002d4f] p-2 px-4 rounded cursor-pointer'
+                  type='button'
+                  onClick={() => {
+                    if (!hasPaymentProof) {
+                      toast.info(
+                        'Fee invoice not available yet. The seller must pay and upload proof first.',
+                      )
+                      return
+                    }
+                    setIsOpen(true)
+                  }}
+                  className={`border p-2 px-4 rounded ${hasPaymentProof
+                    ? 'border-[#002d4f] text-[#002d4f] cursor-pointer'
+                    : 'border-slate-300 text-slate-400 cursor-not-allowed'
+                    }`}
                 >
-                  <span>Click to see proof of success fee payment</span>
+                  <span>
+                    {hasPaymentProof
+                      ? 'View seller fee invoice'
+                      : 'Fee invoice not received yet'}
+                  </span>
                 </button>
 
                 <button
                   type='button'
                   onClick={handleMarkAsTransfered}
-                  className='primary-gradient text-white p-2 px-4 rounded'
+                  disabled={!hasPaymentProof || viewerData?.productData?.dealClosed}
+                  className='primary-gradient text-white p-2 px-4 rounded disabled:cursor-not-allowed disabled:opacity-60'
                 >
-                  Mark as Transfered
+                  {viewerData?.productData?.dealClosed
+                    ? 'Transferred'
+                    : 'Mark as transferred'}
                 </button>
               </div>
             </div>
           </>
-        ) : (
+        ) : isAssetHolderViewer ? (
           <div>
-            <h3 className='mb-3 text-sm font-bold uppercase tracking-wide text-[#a2913e]'>
-              Asset transfer proof
+            <h3 className='mb-1 text-sm font-bold uppercase tracking-wide text-[#a2913e]'>
+              Success fee &amp; upload invoice
             </h3>
+            <p className='mb-3 text-sm text-slate-600'>
+              {hasTransferDocSubmitted
+                ? 'Step 1: Pay the success fee using the link in your email. Step 2: Upload your payment invoice (PDF) here for the trustee.'
+                : 'The trustee has not sent transfer documents yet. You will receive an email when the success fee is due.'}
+            </p>
 
-            <div className='flex flex-col flex-wrap gap-3 sm:flex-row sm:items-center'>
-              <label
-                htmlFor='AssetTransferProof'
-                className='primary-gradient text-white p-2 px-4 rounded cursor-pointer'
-              >
-                <span className='flex items-center gap-2'>
-                  <UploadCloudIcon />
-                  <span>
-                    {TransferFile ? TransferFile?.name : 'transfer documents'}
+            {transferDocuments.PaymentProof ? (
+              <p className='mb-3 rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800'>
+                Fee invoice submitted. The trustee will review and complete the
+                transfer.
+              </p>
+            ) : null}
+
+            {hasTransferDocSubmitted ? (
+              <div className='flex flex-col flex-wrap gap-3 sm:flex-row sm:items-center'>
+                <label
+                  htmlFor='AssetTransferProof'
+                  className={`primary-gradient text-white p-2 px-4 rounded ${transferProofUploading || transferDocuments.PaymentProof ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'}`}
+                >
+                  <span className='flex items-center gap-2'>
+                    <UploadCloudIcon />
+                    <span>
+                      {transferProofUploading
+                        ? 'Uploading…'
+                        : TransferProofFile
+                          ? TransferProofFile.name
+                          : transferDocuments.PaymentProof
+                            ? 'Invoice submitted'
+                            : 'Upload fee invoice (PDF)'}
+                    </span>
                   </span>
-                </span>
-              </label>
-              <input
-                onChange={async (e) => {
-                  await handleFileChange2(e)
-                }}
-                type='file'
-                className='sr-only'
-                accept='.pdf'
-                id='AssetTransferProof'
-              />
-              {/* Submit button */}
-              <button
-                type='button'
-                onClick={handleTransferProof}
-                className='primary-gradient text-white p-2 px-4 rounded'
-              >
-                Submit
-              </button>
-            </div>
+                </label>
+                <input
+                  onChange={handleFileChange2}
+                  type='file'
+                  className='sr-only'
+                  accept='.pdf,application/pdf'
+                  id='AssetTransferProof'
+                  disabled={
+                    transferProofUploading ||
+                    Boolean(transferDocuments.PaymentProof) ||
+                    !hasTransferDocSubmitted
+                  }
+                />
+                {TransferProof.PaymentProof && !transferDocuments.PaymentProof ? (
+                  <span className='text-sm font-medium text-green-700'>
+                    Ready to submit
+                  </span>
+                ) : null}
+                <button
+                  type='button'
+                  onClick={handleTransferProof}
+                  disabled={
+                    Boolean(transferDocuments.PaymentProof) ||
+                    !hasTransferDocSubmitted
+                  }
+                  className='primary-gradient text-white p-2 px-4 rounded disabled:cursor-not-allowed disabled:opacity-60'
+                >
+                  {transferDocuments.PaymentProof ? 'Submitted' : 'Submit invoice'}
+                </button>
+              </div>
+            ) : null}
+          </div>
+        ) : (
+          <div className='rounded-md border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600'>
+            The seller pays the success fee and uploads the invoice to the
+            trustee after transfer documents are sent.
           </div>
         )}
 
-        <div>
-          <h3 className='mb-3 text-sm font-bold uppercase tracking-wide text-[#a2913e]'>
-            Assign booking view
-          </h3>
-          <div className='flex flex-wrap items-start gap-4'>
-            {adminOptions.map((admin) => (
-              <div
-                className='flex text-prussianBlue items-center'
-                key={admin?.id}
-              >
-                <input
-                  id={admin.value}
-                  type='radio'
-                  value={admin.value}
-                  checked={selectedAdmin === admin.value}
-                  onChange={() => handleAdminSelection(admin.value)}
-                  className='mr-2'
-                />
-                <label
-                  htmlFor={admin.value}
-                  className='text-sm font-medium text-gray-700'
+        {user?.role === 'Trustee' ? (
+          <div>
+            <h3 className='mb-3 text-sm font-bold uppercase tracking-wide text-[#a2913e]'>
+              Assign booking view
+            </h3>
+            <p className='mb-3 text-sm text-slate-600'>
+              Choose who will handle this viewing: you (Myself) or FV Admin.
+            </p>
+            <div className='flex flex-wrap items-start gap-4'>
+              {adminOptions.map((admin) => (
+                <div
+                  className='flex text-prussianBlue items-center'
+                  key={admin?.id}
                 >
-                  {admin.name}
-                </label>
-              </div>
-            ))}
-          </div>
-          {showWarning && (
-            <div className='text-red-500 text-sm mt-2'>
-              {disableAdminSelect
-                ? 'Admin selection is disabled because the booking is less than 4 hours away.'
-                : 'Please select an action before choosing the admin.'}
+                  <input
+                    id={admin.value}
+                    type='radio'
+                    name='viewAssignedTo'
+                    value={admin.value}
+                    checked={selectedAdmin === admin.value}
+                    onChange={() => handleAdminSelection(admin.value)}
+                    disabled={assignmentLocked}
+                    className='mr-2'
+                  />
+                  <label
+                    htmlFor={admin.value}
+                    className='text-sm font-medium text-gray-700'
+                  >
+                    {admin.name}
+                  </label>
+                </div>
+              ))}
             </div>
-          )}
-        </div>
+            {assignmentLocked ? (
+              <p className='mt-2 text-sm text-amber-700'>
+                Assignment is locked because the viewing time has passed.
+              </p>
+            ) : isTimeCritical ? (
+              <p className='mt-2 text-sm text-amber-700'>
+                Viewing is soon — save your assignment before the slot starts.
+              </p>
+            ) : null}
+            <button
+              type='button'
+              onClick={handleAssignSubmit}
+              disabled={assignSubmitting || assignmentLocked}
+              className='primary-gradient mt-4 rounded-lg px-6 py-2.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60'
+            >
+              {assignSubmitting ? 'Saving…' : 'Save assignment'}
+            </button>
+          </div>
+        ) : null}
 
-        <button
-          type='button'
-          className='primary-gradient mb-2 w-full rounded-lg py-2.5 text-sm font-semibold text-white sm:w-auto sm:px-6'
-        >
-          Submit
-        </button>
         <Modal
           isOpen={isOpen}
           onClose={() => setIsOpen(false)}
           fileUrl={viewerData?.productData?.transferDocuments?.PaymentProof}
         />
+        <Modal
+          isOpen={transferDocOpen}
+          onClose={() => setTransferDocOpen(false)}
+          fileUrl={submittedTransferDocUrl}
+        />
+        {isCancelTransferModalOpen ? (
+          <CancelTransferModal
+            onClose={() => {
+              if (transferActionLoading !== 'cancel') {
+                setIsCancelTransferModalOpen(false)
+              }
+            }}
+            onConfirm={handleCancelTransfer}
+            loading={transferActionLoading === 'cancel'}
+          />
+        ) : null}
+        {paymentLinkModal.open ? (
+          <TransferPaymentLinkModal
+            paymentUrl={paymentLinkModal.url}
+            recipientEmail={paymentLinkModal.recipientEmail}
+            emailFailed={paymentLinkModal.emailFailed}
+            onClose={() =>
+              setPaymentLinkModal((prev) => ({ ...prev, open: false }))
+            }
+          />
+        ) : null}
       </div>
     </div>
   )

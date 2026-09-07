@@ -6,6 +6,13 @@ import Select from 'react-select'
 import { toast } from 'react-toastify'
 import customAxios from '../../../../utils/apis/apis'
 
+const formatDateForInput = (date) => {
+  if (!date) return ''
+  const parsed = new Date(date)
+  if (isNaN(parsed.getTime())) return ''
+  return parsed.toISOString().split('T')[0]
+}
+
 const PersonalInfoForm = ({ user, setUser, fetchData }) => {
   const [showModal, setShowModal] = useState(false)
   const [selectedImage, setSelectedImage] = useState('')
@@ -67,7 +74,7 @@ const PersonalInfoForm = ({ user, setUser, fetchData }) => {
           phone: user?.phone || '',
           email: user?.email || '',
           maritalStatus: user?.maritalStatus || 'le',
-          dateOfBirth: user?.dateOfBirth || '',
+          dateOfBirth: formatDateForInput(user?.dateOfBirth),
           profileImage: user?.profileImage || '',
         }}
         enableReinitialize
@@ -135,6 +142,26 @@ const PersonalInfoForm = ({ user, setUser, fetchData }) => {
               />
             </div>
 
+            {/* ID Number — first 8 of uuid, display only */}
+            <div>
+              <label className='block text-sm font-medium mb-1 text-white'>
+                ID Number
+              </label>
+              <input
+                type='text'
+                value={
+                  typeof user?.uuid === 'string' && user.uuid
+                    ? user.uuid.slice(0, 8).toUpperCase()
+                    : ''
+                }
+                readOnly
+                disabled
+                placeholder='ID Number'
+                aria-label='ID Number'
+                className='shadow-neons rounded w-full h-[48px] pl-5 placeholder:text-dark-grey outline-with-opacity sm:placeholder:text-[15px] placeholder:text-xs sm:text-base text-sm placeholder:font-normal card-number-input cursor-not-allowed opacity-80'
+              />
+            </div>
+
             {/* Marital Status (react-select) */}
             <div className='shadow-neons rounded card-number-input'>
               <Select
@@ -182,9 +209,8 @@ const PersonalInfoForm = ({ user, setUser, fetchData }) => {
               <button
                 type='submit'
                 disabled={isSubmitting}
-                className={`btn-gradient px-5 rounded py-2 mt-4 ${
-                  isSubmitting ? 'opacity-50 cursor-not-allowed' : ''
-                }`}
+                className={`btn-gradient px-5 rounded py-2 mt-4 ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
               >
                 Save
               </button>

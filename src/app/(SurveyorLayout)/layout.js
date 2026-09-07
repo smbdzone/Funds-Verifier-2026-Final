@@ -2,7 +2,6 @@
 import SurveyorHeader from "./SurveyorHeader";
 import SurveyorSidebar from "./SurveyorSidebar";
 import { montserrat } from "@/lib/fonts";
-import Script from "next/script";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import "swiper/css";
@@ -22,13 +21,19 @@ export default function RootLayout({ children }) {
       <body className="flex flex-col lg:flex-row min-h-screen">
         <Loadingbar />
         <UserProvider>
-          <ToastContainer />
+          <ToastContainer
+            position='top-right'
+            autoClose={5000}
+            hideProgressBar={false}
+            newestOnTop
+            closeOnClick
+            style={{ zIndex: 99999 }}
+          />
           <div className="flex flex-col lg:flex-row w-full h-full">
             {/* Sidebar */}
             <div
-              className={`fixed inset-0 z-30 bg-transparent transform lg:transform-none lg:static lg:z-auto w-[300px] h-full transition-transform ${
-                isSidebarOpen ? "translate-x-0" : "-translate-x-full"
-              }`}
+              className={`fixed inset-0 z-30 bg-transparent transform lg:transform-none lg:static lg:z-auto w-[300px] h-full transition-transform ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"
+                }`}
             >
               <SurveyorSidebar
                 selectedTab={selectedTab}
@@ -70,7 +75,6 @@ export default function RootLayout({ children }) {
             </div>
           </div>
         </UserProvider>
-        <Script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js" />
       </body>
     </html>
   );

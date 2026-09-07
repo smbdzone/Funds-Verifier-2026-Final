@@ -2,17 +2,11 @@
 import { SaleTab } from '@/components/modules/SellerProfile/SaleTab'
 import { useProfile } from '@/context/UserContext'
 
-import { getTokenFromCookie } from '../../../../utils/helper'
-
 export default function ConfidentialityProtocol() {
-  const { user } = useProfile()
+  const { user, loading } = useProfile()
 
-  const token =
-    typeof window !== 'undefined'
-      ? getTokenFromCookie('accessToken')
-      : null
+  if (loading) return <p>Loading tracker...</p>
+  if (!user) return <p>No sales data found.</p>
 
-  if (!user ) return <p>Loading tracker...</p>
-
-  return <SaleTab userUUID={user.uuid} authToken={token} />
+  return <SaleTab userUUID={user.uuid} />
 }

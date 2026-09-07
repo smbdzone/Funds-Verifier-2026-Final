@@ -6,7 +6,19 @@ const PLACEHOLDER = '/listing/camera.svg'
  * stored unsigned `url` if the response didn't include a signed one.
  */
 export function getListingImageSrc(image) {
-  if (!image || typeof image !== 'object') return PLACEHOLDER
+  if (!image) return PLACEHOLDER
+  if (typeof image === 'string') {
+    if (
+      image.startsWith('http') ||
+      image.startsWith('blob:') ||
+      image.startsWith('data:') ||
+      image.startsWith('/')
+    ) {
+      return image
+    }
+    return PLACEHOLDER
+  }
+  if (typeof image !== 'object') return PLACEHOLDER
   const signed = image.signedUrl
   if (typeof signed === 'string' && signed.startsWith('http')) return signed
   const url = image.url
@@ -20,7 +32,18 @@ export function getListingImageSrc(image) {
  * Same precedence for video assets: fresh `signedUrl` first, stored `url` fallback.
  */
 export function getListingVideoSrc(video) {
-  if (!video || typeof video !== 'object') return ''
+  if (!video) return ''
+  if (typeof video === 'string') {
+    if (
+      video.startsWith('http') ||
+      video.startsWith('blob:') ||
+      video.startsWith('data:')
+    ) {
+      return video
+    }
+    return ''
+  }
+  if (typeof video !== 'object') return ''
   const signed = video.signedUrl
   if (typeof signed === 'string' && signed.startsWith('http')) return signed
   const url = video.url
@@ -29,40 +52,44 @@ export function getListingVideoSrc(video) {
 }
 
 /**
- * Items for listing card carousel: valid gallery images first, then videos.
- * Skips picture entries with no usable URL (same idea as the property detail page).
- * If there is still no image slide, uses thumbnail; otherwise a placeholder icon.
+ * Items for listing card carousel: thumbnail cover first (when set), then gallery
+ * images, then videos. Falls back to placeholder only when nothing usable exists.
  */
 export function getListingCarouselItems(listing) {
   const items = []
+  const seen = new Set()
+
+  const pushImage = (img) => {
+    const src = getListingImageSrc(img)
+    if (!src || src === PLACEHOLDER || seen.has(src)) return
+    seen.add(src)
+    items.push({ type: 'image', src })
+  }
+
+  // Card cover: uploaded Thumbnail must lead previews on dashboard + public cards.
+  const thumbs = listing?.thumbnailImg?.images
+  if (Array.isArray(thumbs) && thumbs.length) {
+    for (const thumb of thumbs) pushImage(thumb)
+  } else if (listing?.thumbnailImg && !listing.thumbnailImg.images) {
+    pushImage(listing.thumbnailImg)
+  }
 
   const pics = listing?.pictures?.images
   if (Array.isArray(pics)) {
-    for (const img of pics) {
-      const src = getListingImageSrc(img)
-      if (src && src !== PLACEHOLDER) items.push({ type: 'image', src })
-    }
+    for (const img of pics) pushImage(img)
   }
 
   const vids = listing?.video?.videos
   if (Array.isArray(vids)) {
     for (const v of vids) {
       const src = getListingVideoSrc(v)
-      if (src)
+      if (src) {
         items.push({
           type: 'video',
           src,
           contentType: v?.contentType,
         })
-    }
-  }
-
-  const hasImageSlide = items.some((i) => i.type === 'image')
-  if (!hasImageSlide) {
-    const thumb = listing?.thumbnailImg?.images?.[0]
-    if (thumb) {
-      const src = getListingImageSrc(thumb)
-      if (src && src !== PLACEHOLDER) items.unshift({ type: 'image', src })
+      }
     }
   }
 
@@ -93,19 +120,32 @@ export function isListingCarouselPlaceholderSlide(slide) {
 
 /**
  * Items for product detail page (e.g. /property/[slug]):
- * pictures + listing videos + thumbnail + 3D walkthrough link, in display order.
+ * thumbnail cover first, then gallery pictures, videos, 3D walkthrough.
+ * Prefer images ahead of video so the main preview is never an empty black player.
  * Always resolves the freshest URL (signedUrl > url) so previews don't break
  * after the original CloudFront signature expires.
  */
 export function getListingDetailMediaItems(listing) {
   const items = []
+  const seen = new Set()
+
+  const pushImage = (img) => {
+    const src = getListingImageSrc(img)
+    if (!src || src === PLACEHOLDER || seen.has(src)) return
+    seen.add(src)
+    items.push({ type: 'image', src })
+  }
+
+  const thumbs = listing?.thumbnailImg?.images
+  if (Array.isArray(thumbs) && thumbs.length) {
+    for (const thumb of thumbs) pushImage(thumb)
+  } else if (listing?.thumbnailImg && !listing.thumbnailImg.images) {
+    pushImage(listing.thumbnailImg)
+  }
 
   const pics = listing?.pictures?.images
   if (Array.isArray(pics)) {
-    for (const img of pics) {
-      const src = getListingImageSrc(img)
-      if (src && src !== PLACEHOLDER) items.push({ type: 'image', src })
-    }
+    for (const img of pics) pushImage(img)
   }
 
   const vids = listing?.video?.videos
@@ -113,14 +153,6 @@ export function getListingDetailMediaItems(listing) {
     for (const v of vids) {
       const src = getListingVideoSrc(v)
       if (src) items.push({ type: 'video', src })
-    }
-  }
-
-  const thumbs = listing?.thumbnailImg?.images
-  if (Array.isArray(thumbs)) {
-    for (const t of thumbs) {
-      const src = getListingImageSrc(t)
-      if (src && src !== PLACEHOLDER) items.push({ type: 'image', src })
     }
   }
 
@@ -138,22 +170,65 @@ export function getListingDetailMediaItems(listing) {
 
 /** @deprecated use getListingCarouselItems — kept for any older imports */
 export function getListingGalleryImages(listing) {
+  const thumb = listing?.thumbnailImg?.images?.[0]
+  if (thumb) return [thumb]
   const pics = listing?.pictures?.images
   if (Array.isArray(pics) && pics.length > 0) return pics
-  const thumb = listing?.thumbnailImg?.images?.[0]
-  return thumb ? [thumb] : []
+  return []
+}
+
+/** First uploaded gallery/thumbnail image for listing cards — never a static asset. */
+export function getListingCardImageSrc(listing) {
+  const items = getListingCarouselItems(listing)
+  const slide = items.find(
+    (item) => item.type === 'image' && !isListingCarouselPlaceholderSlide(item),
+  )
+  return slide?.src || ''
 }
 
 /**
  * Best-effort single-image source for a listing card / slider cell.
- * Prefers the fresh signedUrl on the thumbnail, then the first picture,
- * then `fallback` (caller-provided default like '/villa.jpg').
+ * Returns the listing image when available, otherwise `fallback` or PLACEHOLDER.
  */
-export function getListingThumbSrc(listing, fallback = PLACEHOLDER) {
-  const candidate =
-    listing?.thumbnailImg?.images?.[0] || listing?.pictures?.images?.[0]
-  const src = getListingImageSrc(candidate)
-  return src && src !== PLACEHOLDER ? src : fallback
+export function getListingThumbSrc(listing, fallback) {
+  const src = getListingCardImageSrc(listing)
+  if (src) return src
+  if (fallback !== undefined && fallback !== null && fallback !== '') {
+    return fallback
+  }
+  return PLACEHOLDER
+}
+
+/**
+ * Uploaded QR scan preview for listing cards. The backend populates `qrScan`
+ * as an ImageAsset ({ images: [{ signedUrl, url }] }). Returns '' when the
+ * listing has no QR scan so cards can skip rendering it.
+ */
+export function getListingQrScanSrc(listing) {
+  const qr = listing?.qrScan
+  if (!qr) return ''
+
+  if (typeof qr === 'string') {
+    const src = getListingImageSrc(qr)
+    return src && src !== PLACEHOLDER ? src : ''
+  }
+
+  if (typeof qr !== 'object') return ''
+
+  const candidates = []
+  if (Array.isArray(qr.images) && qr.images.length) {
+    candidates.push(...qr.images)
+  } else {
+    // Some payloads nest a single image on the asset itself
+    candidates.push(qr)
+  }
+
+  for (const img of candidates) {
+    const src = getListingImageSrc(img)
+    if (src && src !== PLACEHOLDER) return src
+  }
+
+  return ''
 }
 
 function certificatePdfStreamUrl(uuid) {
@@ -228,10 +303,9 @@ export function getListingDocumentSrc(doc) {
     return reportUrl
   }
 
-  const hasCertificateFile =
-    doc?.Certificate &&
-    (doc.Certificate.name || doc.Certificate.encrypted === true)
-  if (certUuid && hasCertificateFile) {
+  // Prefer decrypt/stream endpoint whenever we have a certificate uuid —
+  // works even if Certificate metadata was stripped from a lean list payload.
+  if (certUuid) {
     const streamUrl = certificatePdfStreamUrl(certUuid)
     if (streamUrl) return streamUrl
   }

@@ -16,8 +16,13 @@ import SlotTabEditModal from '@/components/Modals/SlotTabEditModal'
 import SlotTabDeleteModal from '@/components/Modals/SlotTabDeleteModal'
 import { useProfile } from '../../../context/UserContext'
 import customAxios from '../../../utils/apis/apis'
+import { filterPastTimeLabelsForDate } from '@/libs/slotTimeFilters'
 
-export const CreateViewingSlotTab = () => {
+export const CreateViewingSlotTab = ({
+  panelTitle = 'Create Viewing Slots',
+  slotTypeLabel = 'viewing',
+  slotCategory = 'viewing',
+}) => {
   const [message, setMessage] = useState({
     Full_name: '',
     Phone_Number: '',
@@ -37,23 +42,34 @@ export const CreateViewingSlotTab = () => {
   const [editTimes, setEditTimes] = useState([])
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const [slotIdToDelete, setSlotIdToDelete] = useState(null)
+  const [isDeleting, setIsDeleting] = useState(false)
   const { user } = useProfile()
 
   useEffect(() => {
     fetchSlots()
-  }, [user])
+  }, [user, slotCategory])
 
   // Fetch all slots
   // console.log({ user })
 
+  const slotDateKey = (slotDate) => {
+    if (!slotDate) return ''
+    if (typeof slotDate === 'string' && /^\d{4}-\d{2}-\d{2}/.test(slotDate)) {
+      return slotDate.slice(0, 10)
+    }
+    const d = new Date(slotDate)
+    if (Number.isNaN(d.getTime())) return ''
+    return d.toISOString().slice(0, 10)
+  }
+
   const fetchSlots = async () => {
+    if (!user?.uuid) return
     setLoading(true)
     try {
       const response = await customAxios.get(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/arrange-view/slots/all/${user?.uuid}`
+        `/arrange-view/slots/all/${user.uuid}?slotCategory=${encodeURIComponent(slotCategory)}`
       )
-      setSlots(response.data)
-      // setItems(response?.data?.times);
+      setSlots(Array.isArray(response.data) ? response.data : [])
     } catch (error) {
       toast.error('Error fetching slots.')
     } finally {
@@ -96,7 +112,9 @@ export const CreateViewingSlotTab = () => {
     }
 
     // Check if the selected date already has slots
-    const existingSlot = slots.find((slot) => slot.date === message.date)
+    const existingSlot = slots.find(
+      (slot) => slotDateKey(slot.date) === message.date
+    )
     if (existingSlot) {
       toast.error(
         'Slots already exist for this date. Please edit the existing slot or choose a different date.'
@@ -117,11 +135,12 @@ export const CreateViewingSlotTab = () => {
     setLoading(true)
     try {
       await customAxios.post(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/arrange-view/slots/add`,
+        `/arrange-view/slots/add`,
         {
           userUUID: user?.uuid,
           date: message.date,
           timeSlots: message.time,
+          slotCategory,
         }
       )
       toast.success('Slots saved successfully.')
@@ -172,25 +191,37 @@ export const CreateViewingSlotTab = () => {
 
   // Handle deleting a slot
   const handleConfirmDelete = async () => {
-    setLoading(true)
-    try {
-      // console.log({ slotIdToDelete })
+    if (!slotIdToDelete || isDeleting) return
 
+    setIsDeleting(true)
+    try {
       await customAxios.delete(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/arrange-view/slots/delete/${slotIdToDelete}`
+        `/arrange-view/slots/delete/${slotIdToDelete}`
       )
       toast.success('Slot deleted successfully.')
-      fetchSlots()
+      await fetchSlots()
       closeDeleteModal()
     } catch (error) {
-      toast.error('Error deleting slot.')
+      const message = error?.response?.data?.message || ''
+      if (/already deleted/i.test(message)) {
+        toast.success('Slot deleted successfully.')
+        await fetchSlots()
+        closeDeleteModal()
+      } else {
+        toast.error(message || 'Error deleting slot.')
+      }
     } finally {
-      setLoading(false)
+      setIsDeleting(false)
     }
   }
 
   // Generate the time options
   const timeOptions = generateTimeOptions()
+  const visiblePresetTimes = filterPastTimeLabelsForDate(times, message.date)
+  const visibleTimeOptions = filterPastTimeLabelsForDate(
+    timeOptions,
+    message.date,
+  )
 
   const handleAddCustomTime = () => {
     if (customTime) {
@@ -216,7 +247,7 @@ export const CreateViewingSlotTab = () => {
       loading ||
       !message.date ||
       message.time.length === 0 ||
-      slots.some((slot) => slot.date === message.date)
+      slots.some((slot) => slotDateKey(slot.date) === message.date)
     )
   }
 
@@ -227,7 +258,7 @@ export const CreateViewingSlotTab = () => {
         <div className='w-full'>
           <div className='primary-gradient flex items-center justify-between border border-black rounded py-3 px-4 overflow-x-auto'>
             <h2 className='text-white font-semibold sm:text-base text-sm lg:text-lg'>
-              Create Viewing Slots
+              {panelTitle}
             </h2>
           </div>
           <div className='w-full py-5 flex flex-col md:flex-row gap-5'>
@@ -249,7 +280,7 @@ export const CreateViewingSlotTab = () => {
                   />
                 </div>
                 {/* Display warning if date already has slots */}
-                {slots.some((slot) => slot.date === message.date) && (
+                {slots.some((slot) => slotDateKey(slot.date) === message.date) && (
                   <div className='text-red-500 text-sm mt-2 p-2 bg-red-50 border border-red-200 rounded'>
                     <strong>Warning:</strong> This date already has slots.
                     Please select a different date or edit the existing slot.
@@ -274,7 +305,7 @@ export const CreateViewingSlotTab = () => {
                     <option value='' disabled>
                       Select Time
                     </option>
-                    {timeOptions.map((time, index) => (
+                    {visibleTimeOptions.map((time, index) => (
                       <option
                         key={index}
                         className='text-blue/90'
@@ -316,14 +347,14 @@ export const CreateViewingSlotTab = () => {
                   Select Time Slots
                 </h2>
                 <div className='text-dune/70 grid grid-cols-3 lg:grid-cols-4 gap-3'>
-                  {times.map((time) => (
+                  {visiblePresetTimes.map((time) => (
                     <button
                       key={time}
                       value={time}
                       onClick={() => handleClickButton(time)}
                       className={`border py-2 flex items-center justify-center whitespace-nowrap md:px-6 px-3 text-xs sm:text-sm lg:text-base rounded-md w-full ${message.time.includes(time)
-                          ? 'primary-gradient text-prussianBlue/40 border-primaryBtn'
-                          : 'border-dune/10'
+                        ? 'primary-gradient text-prussianBlue/40 border-primaryBtn'
+                        : 'border-dune/10'
                         }`}
                     >
                       {time}
@@ -333,15 +364,15 @@ export const CreateViewingSlotTab = () => {
                 {message.time.length === 0 && (
                   <div className='text-amber-600 text-sm mt-2 p-2 bg-amber-50 border border-amber-200 rounded'>
                     <strong>Note:</strong> Please select at least one time slot
-                    to create viewing slots.
+                    to create {slotTypeLabel} slots.
                   </div>
                 )}
                 <div className='w-full mt-5 md:mt-10'>
                   <button
                     type='button'
                     className={`sm:text-base text-sm text-white rounded-lg py-2 px-3 md:px-5 ${isSaveDisabled()
-                        ? 'bg-gray-400 cursor-not-allowed'
-                        : 'primary-gradient hover:opacity-90'
+                      ? 'bg-gray-400 cursor-not-allowed'
+                      : 'primary-gradient hover:opacity-90'
                       }`}
                     onClick={handleSaveSlots}
                     disabled={isSaveDisabled()}
@@ -403,8 +434,8 @@ export const CreateViewingSlotTab = () => {
                         <span
                           key={timeSlot.uuid}
                           className={`${timeSlot.isBooked
-                              ? 'bg-black/50 cursor-not-allowed'
-                              : 'primary-gradient'
+                            ? 'bg-black/50 cursor-not-allowed'
+                            : 'primary-gradient'
                             } text-white py-2 sm:text-base text-sm lg:text-lg flex items-center justify-center px-2 rounded-lg`}
                         >
                           {timeSlot.time}
@@ -437,6 +468,7 @@ export const CreateViewingSlotTab = () => {
         <SlotTabDeleteModal
           handleConfirmDelete={handleConfirmDelete}
           closeDeleteModal={closeDeleteModal}
+          loading={isDeleting}
         />
       )}
     </>

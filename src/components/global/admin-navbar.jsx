@@ -35,7 +35,7 @@ export default function AdminNavBar() {
               </figure>
               <div>
                 <h2 className="text-prussianBlue text-xs font-semibold">
-                  {user?.name || "Loading..."}
+                  {user?.displayName || user?.name || "Loading..."}
                 </h2>
                 <span className="text-prussianBlue text-[10px] block text-start">
                   {user?.role}

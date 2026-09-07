@@ -4,7 +4,7 @@ import PriceListing from "../../../../components/smbDashboard/PriceListing";
 
 const page = () => {
   return (
-    <div>
+    <div className='min-w-0 max-w-full overflow-hidden'>
       <PriceListing />
     </div>
   );

@@ -16,11 +16,13 @@ const AD_HEIGHT = 395
 const todayKey = () => new Date().toISOString().slice(0, 10)
 
 /**
- * Quarter-Page Banner shown on listing pages to LOGGED-IN users only.
- * The backend serves an approved, viewer-targeted banner (matched by the
- * viewer's city / age-group / gender) and impressions/clicks bill the advertiser.
- * Renders nothing when logged out. Per-creative/day localStorage de-dup avoids
- * re-billing the same creative while browsing.
+ * Quarter-Page Banner shown on listing pages to EVERY visitor.
+ * Logged-in viewers get an approved, targeted banner (matched by the viewer's
+ * city / age-group / gender); logged-out visitors get untargeted ads only,
+ * since there's no profile to match them against.
+ * Impressions/clicks are only recorded for logged-in viewers — anonymous views
+ * are displayed but never billed to the advertiser. Per-creative/day
+ * localStorage de-dup avoids re-billing the same creative while browsing.
  */
 const QuarterPageBanner = ({ className = '' }) => {
   const user = useProfile()
@@ -39,17 +41,14 @@ const QuarterPageBanner = ({ className = '' }) => {
     saveToLocalStorage(key, map)
   }
 
-  // Fetch a targeted banner (logged-in only).
+  // Fetch a banner. The endpoint is public: sending a token unlocks targeted
+  // ads, omitting one returns untargeted ads.
   useEffect(() => {
-    if (!token) {
-      setAd(null)
-      return
-    }
     let active = true
     const load = async () => {
       try {
         const res = await axios.get(`${ROOT}/getAllLargeBanners`, {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
         })
         const doc = res?.data?.data?.[0]
         const creative = doc?.creatives?.[0]
@@ -74,7 +73,8 @@ const QuarterPageBanner = ({ className = '' }) => {
     }
   }, [token])
 
-  // Fire an impression when the banner scrolls into view.
+  // Fire an impression when the banner scrolls into view. Billing is tied to a
+  // user account, so anonymous views are deliberately not recorded.
   useEffect(() => {
     if (!ad || !token) return
     const el = containerRef.current
@@ -133,7 +133,7 @@ const QuarterPageBanner = ({ className = '' }) => {
     }
   }
 
-  if (!token || !ad || !ad.img) return null
+  if (!ad || !ad.img) return null
 
   return (
     <div

@@ -1,4 +1,13 @@
 const TransactionStatus = ({ data }) => {
+  if (!data?.length) {
+    return (
+      <div className="mt-20">
+        <h3 className="font-medium text-lg mb-3">Transaction Status</h3>
+        <p className="text-center text-black/50 py-8">No transactions found.</p>
+      </div>
+    )
+  }
+
   return (
     <div className="mt-20">
       <h3 className="font-medium text-lg mb-3">Transaction Status</h3>

@@ -1,19 +1,19 @@
 /* eslint-disable react/no-unescaped-entities */
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Modal2 from './Modal2'
 import 'react-toastify/dist/ReactToastify.css'
-import PhoneInput from 'react-phone-number-input'
-import 'react-phone-number-input/style.css'
 import DropDown from '../DropdownComponent/DropDown'
 import { toast } from 'react-toastify'
 
 import customAxios from '../../utils/apis/apis'
-import {
-
-  getTokenFromCookie,
-} from '../../utils/helper'
+import { initiateServiceSubscription } from '@/libs/initiateServiceSubscription'
+import { initiateClozerPayment, getClozerErrorMessage } from '@/libs/initiateClozerPayment'
+import PaymentChoiceModal from '@/components/payments/PaymentChoiceModal'
+import { applyFullPayDiscount } from '@/libs/paymentDiscount'
 import { useProfile } from '../../context/UserContext'
+import { clearServiceAppointmentSelection } from '@/libs/slotBooking'
+import BookingContactPhonePicker from '@/components/booking/BookingContactPhonePicker'
 
 const Modal = ({
   isOpen,
@@ -27,6 +27,7 @@ const Modal = ({
   userUUID,
   productId,
   productTitle,
+  listingPhone = '',
 }) => {
   const [isModalOpen, setModalOpen] = useState(false)
   const [isChecked, setIsChecked] = useState(false)
@@ -37,6 +38,8 @@ const Modal = ({
   const [price, setPrice] = useState()
   const [value, setValue] = useState()
   const { user } = useProfile()
+  const [showPaymentChoice, setShowPaymentChoice] = useState(false)
+  const [paymentLoading, setPaymentLoading] = useState(false)
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -51,6 +54,20 @@ const Modal = ({
     price: 0,
   })
 
+  useEffect(() => {
+    if (!isOpen) return
+    const uaePhone = user?.phone || ''
+    setFormData((prev) => ({
+      ...prev,
+      name: user?.displayName || user?.name || prev.name || '',
+      email: user?.email || prev.email || '',
+      phone: uaePhone || listingPhone || '',
+      productId,
+      productTitle,
+      assetType: type,
+    }))
+  }, [isOpen, user, listingPhone, productId, productTitle, type])
+
   const isFormValid =
     formData.name &&
     formData.email &&
@@ -59,64 +76,65 @@ const Modal = ({
     formData.assetType &&
     isChecked
 
-  const handleSave = async () => {
+  const buildPaymentPayload = () => {
+    const origin =
+      typeof window !== 'undefined'
+        ? window.location.origin
+        : process.env.NEXT_PUBLIC_UAE_PASS_REDIRECT_URI || ''
+    const returnPath =
+      typeof window !== 'undefined'
+        ? `${window.location.pathname}${window.location.search}`
+        : '/dashboard/property-listing'
+    localStorage.setItem('servicePaymentReturnUrl', returnPath)
+
+    return {
+      userUUID: user?.uuid,
+      service: '_3dwalkthrough',
+      price: formData?.price,
+      productTitle,
+      productId,
+      dateTime: formData?.dateTime,
+      phone: formData?.phone,
+      success_url: `${origin}/service-payment-success`,
+      cancel_url:
+        typeof window !== 'undefined'
+          ? window.location.href
+          : `${origin}/dashboard/property-listing`,
+      assetType: type,
+      category,
+      subCategory,
+      value,
+    }
+  }
+
+  const handleSave = () => {
     if (!isChecked) {
       setShowCheckboxError(true)
       return
     }
     setShowCheckboxError(false)
+    if (!user?.uuid) {
+      toast.error('User not found. Please login.')
+      return
+    }
+    setShowPaymentChoice(true)
+  }
+
+  const handlePaymentAbandoned = async () => {
+    await clearServiceAppointmentSelection(formData, setFormData)
+    setShowPaymentChoice(false)
+  }
+
+  const handleStripePay = async () => {
     try {
-      const origin =
-        typeof window !== 'undefined'
-          ? window.location.origin
-          : process.env.NEXT_PUBLIC_UAE_PASS_REDIRECT_URI || ''
-      const returnPath =
-        typeof window !== 'undefined'
-          ? `${window.location.pathname}${window.location.search}`
-          : '/dashboard/property-listing'
-      localStorage.setItem('servicePaymentReturnUrl', returnPath)
-
-      const currentUrl = `${origin}/service-payment-success`
-      const cancelUrl =
-        typeof window !== 'undefined'
-          ? window.location.href
-          : `${origin}/dashboard/property-listing`
-      const currentuserUUID = user?.uuid
-      const token = getTokenFromCookie()
-      if (!currentuserUUID) return toast.error('User not found. Please login.')
-
-      const APiRequestedData = {
-        userUUID: currentuserUUID,
-        service: '_3dwalkthrough',
-        price: formData?.price,
-        productTitle: productTitle,
-        productId: productId,
-        dateTime: formData?.dateTime,
-        phone: formData?.phone,
-        success_url: currentUrl,
-        cancel_url: cancelUrl,
-        assetType: type,
-        category: category,
-        subCategory: subCategory,
-        value: value,
-      }
-
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/services/subscribe`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
-          body: JSON.stringify(APiRequestedData),
-        }
-      )
-      const data = await response.json()
-
+      setPaymentLoading(true)
+      const APiRequestedData = buildPaymentPayload()
+      const data = await initiateServiceSubscription({
+        ...APiRequestedData,
+        price: applyFullPayDiscount(formData?.price).discounted,
+      })
       onSave(APiRequestedData)
-
-      if (response.status === 201 && data.url) {
+      if (data?.url) {
         if (data.sessionId) {
           localStorage.setItem('checkoutSessionId', data.sessionId)
         }
@@ -126,6 +144,32 @@ const Modal = ({
       }
     } catch (error) {
       toast.error(error?.message || 'Something went wrong!')
+    } finally {
+      setPaymentLoading(false)
+    }
+  }
+
+  const handleClozerPay = async () => {
+    try {
+      setPaymentLoading(true)
+      const origin =
+        typeof window !== 'undefined' ? window.location.origin : ''
+      const APiRequestedData = {
+        ...buildPaymentPayload(),
+        success_url: `${origin}/clozer-return`,
+      }
+      const data = await initiateClozerPayment(APiRequestedData)
+      onSave(APiRequestedData)
+      if (data?.redirectUrl) {
+        localStorage.setItem('clozerTransactionId', data.transaction_id)
+        window.location.href = data.redirectUrl
+      } else {
+        toast.error(data?.message || 'Installment payment could not be started.')
+      }
+    } catch (error) {
+      toast.error(getClozerErrorMessage(error))
+    } finally {
+      setPaymentLoading(false)
     }
   }
 
@@ -245,18 +289,14 @@ const Modal = ({
                 userUUID={userUUID}
               />
             </div>
-            <div className='flex flex-col'>
-              <label className='mb-1 text-xl'>Phone Number</label>
-              <PhoneInput
-                international
-                defaultCountry='AE'
-                name='phone'
-                value={formData.phone}
-                onChange={(value) => handleInputChange('phone', value)}
-                className='w-full p-2 border rounded'
-                placeholder='Enter phone number'
-              />
-            </div>
+            <BookingContactPhonePicker
+              idPrefix='walkthrough-phone'
+              uaePassPhone={user?.phone || ''}
+              listingPhone={listingPhone || ''}
+              value={formData.phone}
+              onChange={(phone) => handleInputChange('phone', phone)}
+              assetLabel={type || 'this asset'}
+            />
             <div className='flex flex-col'>
               <label className='mb-1 text-xl'>Asset Type</label>
               <input
@@ -368,13 +408,23 @@ const Modal = ({
           </div>
           <div className='absolute top-2 right-2 flex justify-end'>
             <button
-              className='px-4 py-2 bg-blue-500 text-prussianBlue rounded'
-              onClick={onClose}
               type='button'
+              className='flex h-8 w-8 items-center justify-center rounded border-2 border-light-gold text-light-gold font-semibold hover:bg-light-gold/10'
+              onClick={onClose}
+              aria-label='Close'
             >
               X
             </button>
           </div>
+
+          <PaymentChoiceModal
+            show={showPaymentChoice}
+            onClose={handlePaymentAbandoned}
+            amount={price}
+            loading={paymentLoading}
+            onPayFull={handleStripePay}
+            onPayInstallments={handleClozerPay}
+          />
         </div>
       </div>
     )

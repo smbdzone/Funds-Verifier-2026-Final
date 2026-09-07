@@ -7,39 +7,46 @@ import PaginationComponent from '../../Pagination'
 import useDebounce from '../../../../hooks/useDebounce'
 import { toast } from 'react-toastify'
 import GlobalLoader from '@/utils/GlobalLoader'
+import { filterListingsByMyListingTab } from '@/libs/filterMyListingTab'
 
-function AllListings({ listings, query, isFetchingAll }) {
-  const [allListings, setAllListings] = useState(listings || [])
+function AllListings({
+  listings,
+  query,
+  isFetchingAll,
+  isLoadingMore = false,
+  selectedTabIdx = 0,
+  onListingDeleted,
+}) {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const [listingToDelete, setListingToDelete] = useState(null)
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 10
   const debouncedQuery = useDebounce(query, 500)
 
-  useEffect(() => {
-    setAllListings(listings || [])
-  }, [listings])
+  const tabListings = useMemo(
+    () => filterListingsByMyListingTab(listings, selectedTabIdx),
+    [listings, selectedTabIdx],
+  )
 
   useEffect(() => {
     setCurrentPage(1)
-  }, [debouncedQuery])
+  }, [debouncedQuery, selectedTabIdx])
 
   const filteredListings = useMemo(() => {
     const q = (debouncedQuery || '').trim().toLowerCase()
-    if (!q) return allListings
-    return allListings.filter((listing) => {
+    if (!q) return tabListings
+    return tabListings.filter((listing) => {
       const title = (listing.title || '').toLowerCase()
       const country = (listing.country || '').toLowerCase()
       return title.includes(q) || country.includes(q)
     })
-  }, [allListings, debouncedQuery])
+  }, [tabListings, debouncedQuery])
 
-  const totalPages = Math.ceil(filteredListings.length / itemsPerPage)
+  const totalPages = Math.max(1, Math.ceil(filteredListings.length / itemsPerPage))
 
   const paginatedListings = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage
-    const endIndex = startIndex + itemsPerPage
-    return filteredListings.slice(startIndex, endIndex)
+    return filteredListings.slice(startIndex, startIndex + itemsPerPage)
   }, [filteredListings, currentPage])
 
   const handleDeleteClick = (listing) => {
@@ -47,7 +54,6 @@ function AllListings({ listings, query, isFetchingAll }) {
     setListingToDelete(listing)
   }
 
-  // API listing.assetType values match ListingCard (e.g. "Property For Sale", "Car For Sale")
   const getDeleteEndpoint = (assetType) => {
     const t = (assetType || '').toLowerCase()
     if (t.includes('car')) return '/car/'
@@ -57,30 +63,28 @@ function AllListings({ listings, query, isFetchingAll }) {
   }
 
   const handleDeleteConfirm = async () => {
-    if (!listingToDelete.uuid) return
+    if (!listingToDelete?.uuid) return
 
     const deleteEndpoint = getDeleteEndpoint(listingToDelete?.assetType)
 
     try {
       await customAxios.delete(`${deleteEndpoint}${listingToDelete.uuid}`)
 
-      // Remove the deleted listing from state
-      setAllListings((prev) =>
-        prev.filter((listing) => listing.uuid !== listingToDelete.uuid)
-      )
+      onListingDeleted?.(listingToDelete.uuid)
 
       setIsDeleteModalOpen(false)
       setListingToDelete(null)
 
-      // Show success message
       toast.success(
-        `Successfully deleted ${listingToDelete?.assetType || 'listing'}!`
+        `Successfully deleted ${listingToDelete?.assetType || 'listing'}!`,
       )
     } catch (error) {
       console.error('Failed to delete listing:', error)
       toast.error(
-        `Failed to delete listing: ${error?.response?.data?.message || error?.message || 'Unknown error'
-        }`
+        `Failed to delete listing: ${error?.response?.data?.message ||
+        error?.message ||
+        'Unknown error'
+        }`,
       )
     }
   }
@@ -95,11 +99,16 @@ function AllListings({ listings, query, isFetchingAll }) {
         <GlobalLoader />
       ) : (
         <div>
-          {allListings?.length === 0 ? (
+          {isLoadingMore ? (
+            <p className='text-center text-sm text-prussianBlue/60 mb-4'>
+              Loading more listings…
+            </p>
+          ) : null}
+          {tabListings.length === 0 ? (
             <p className='text-center text-xl font-medium text-dark-black'>
               No Listings found
             </p>
-          ) : filteredListings?.length === 0 ? (
+          ) : filteredListings.length === 0 ? (
             <p className='text-center text-xl font-medium text-dark-black'>
               No listings match your search.
             </p>

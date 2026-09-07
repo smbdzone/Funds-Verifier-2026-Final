@@ -10,6 +10,10 @@ import {
   jeweleryCategories,
 } from "@/constants/listing-data";
 import { normalizeCountriesResponse } from "@/libs/normalizeCountriesResponse";
+import {
+  filterCountriesToUaeOnly,
+  LISTING_COUNTRY_UAE_LABEL,
+} from "@/libs/dummyLocationData";
 
 const NewListing = ({ formData, setFormData }) => {
   //Static Data
@@ -60,7 +64,7 @@ const NewListing = ({ formData, setFormData }) => {
           next: { revalidate: 10 },
         });
         const data = await response.json();
-        setCountries(normalizeCountriesResponse(data));
+        setCountries(filterCountriesToUaeOnly(normalizeCountriesResponse(data)));
       } catch (error) {
         console.error("Error fetching countries data:", error);
       }
@@ -218,10 +222,15 @@ const NewListing = ({ formData, setFormData }) => {
         {/* Asset Type Dropdown */}
         <ListingDropdown
           label="Asset Type"
-          value={formData?.assetType || "Select Asset Type"}
+          value={
+            formData?.assetType === "Property For Sale"
+              ? "Ready Property For Sale"
+              : formData?.assetType || "Select Asset Type"
+          }
           options={[
-            "Property For Sale",
+            { value: "Property For Sale", label: "Ready Property For Sale" },
             "Property For Lease",
+            "Property Off Plan For Sale",
             "Car For Sale",
             "Boats For Sale",
             "Jewellery For Sale",
@@ -392,7 +401,8 @@ const NewListing = ({ formData, setFormData }) => {
 
         {/* Property Specific Fields */}
         {(formData.assetType === "Property For Sale" ||
-          formData.assetType === "Property For Lease") && (
+          formData.assetType === "Property For Lease" ||
+          formData.assetType === "Property Off Plan For Sale") && (
           <div className="relative border-r py-3 pr-4 w-full flex flex-col items-center justify-center">
             <button
               className="dropdownButton flex flex-col items-center text-light-blue"

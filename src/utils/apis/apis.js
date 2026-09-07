@@ -1,10 +1,24 @@
 import axios from 'axios'
-import { getCookie } from 'cookies-next'
 import { toast } from 'react-toastify'
 import { globalLogout } from '../../context/UserContext'
 import { getAccessToken, setAccessToken } from '../auth/accessTokenStore'
+import { getPublicApiHeaders } from '@/libs/publicApiClient'
+import { getCsrfHeaders } from '@/utils/csrf'
+
 let isRefreshing = false
 let failedQueue = []
+
+const SAFE_HTTP_METHODS = new Set(['get', 'head', 'options'])
+
+/** Auth endpoints authenticate via cookies/Bearer — do not fetch a public token for them. */
+const SKIP_PUBLIC_TOKEN_PATHS = [
+  '/user/me',
+  '/user/refresh',
+  '/user/logout',
+  '/user/login',
+  '/csrf-token',
+  '/public/get-public-token',
+]
 
 const normalizeRole = (role) => {
   if (!role) return role
@@ -29,20 +43,43 @@ const processQueue = (error, token = null) => {
   failedQueue = []
 }
 
+function requestNeedsCsrf(config) {
+  const method = String(config?.method || 'get').toLowerCase()
+  return !SAFE_HTTP_METHODS.has(method)
+}
+
+function requestNeedsPublicToken(config) {
+  const url = String(config?.url || '')
+  return !SKIP_PUBLIC_TOKEN_PATHS.some((path) => url.includes(path))
+}
+
 const customAxios = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_BASE_URL,
+  baseURL: (process.env.NEXT_PUBLIC_BASE_URL || '').trim(),
   withCredentials: true, // refresh token cookie
 })
 
 /* ================= REQUEST ================= */
-customAxios.interceptors.request.use((config) => {
+customAxios.interceptors.request.use(async (config) => {
+  if (requestNeedsCsrf(config)) {
+    const csrfHeaders = await getCsrfHeaders()
+    Object.assign(config.headers, csrfHeaders)
+  }
+
   const token = getAccessToken()
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
-    // Get role from cookie first, then localStorage fallback
-    const role = getCookie('role') || localStorage.getItem('role')
-    if (role) {
-      config.headers.role = role
+    delete config.headers['x-public-token']
+  } else {
+    delete config.headers.Authorization
+    if (requestNeedsPublicToken(config)) {
+      try {
+        const publicHeaders = await getPublicApiHeaders()
+        config.headers['x-public-token'] = publicHeaders['x-public-token']
+      } catch {
+        delete config.headers['x-public-token']
+      }
+    } else {
+      delete config.headers['x-public-token']
     }
   }
   return config
@@ -59,11 +96,27 @@ customAxios.interceptors.response.use(
       return Promise.reject(error)
     }
 
+    const requestUrl = originalRequest.url || ''
+
+    // Session probe: UserContext handles refresh — never logout here (wipes fresh UAE Pass cookies).
+    if (error.response.status === 401 && requestUrl.includes('/user/me')) {
+      return Promise.reject(error)
+    }
+
+    // Optional listing helpers must never force a full session logout.
+    if (
+      error.response.status === 401 &&
+      (requestUrl.includes('/user/service-providers/') ||
+        requestUrl.includes('/notifications/'))
+    ) {
+      return Promise.reject(error)
+    }
+
     // 🔁 ACCESS TOKEN EXPIRED
     if (
       error.response.status === 401 &&
       !originalRequest._retry &&
-      !originalRequest.url.includes('/user/refresh')
+      !requestUrl.includes('/user/refresh')
     ) {
       originalRequest._retry = true
 
@@ -90,9 +143,15 @@ customAxios.interceptors.response.use(
         return customAxios(originalRequest)
       } catch (err) {
         processQueue(err, null)
-        // /user/me is a session probe: 401 + failed refresh means "not logged in", not "log out + redirect"
-        const url = originalRequest.url || ''
-        if (!url.includes('/user/me')) {
+        if (requestUrl.includes('/user/switch-user')) {
+          /* keep session; switchUserRole shows the API error */
+        } else if (
+          // Optional listing helpers — never wipe the session if these fail.
+          requestUrl.includes('/user/service-providers/') ||
+          requestUrl.includes('/notifications/')
+        ) {
+          /* keep session */
+        } else {
           globalLogout()
         }
         return Promise.reject(err)
@@ -116,6 +175,7 @@ customAxios.interceptors.response.use(
 
 export const login = async (values, router) => {
   try {
+    const csrfHeaders = await getCsrfHeaders()
     const res = await axios.post(
       `${process.env.NEXT_PUBLIC_BASE_URL}/user/login`,
       {
@@ -123,13 +183,81 @@ export const login = async (values, router) => {
         password: values.password,
       },
       {
-        withCredentials: true, // refreshToken in cookie
+        withCredentials: true,
+        headers: csrfHeaders,
       },
     )
 
     const data = res.data
-    // console.log(data, "login");
 
+    // OTP-gated roles (Evaluator, Sub-Evaluator, ...): password was correct but
+    // no session is issued yet. The caller shows the OTP screen.
+    if (data?.otpRequired) {
+      toast.info(data?.message ?? 'Check your email for the verification code.')
+      return data
+    }
+
+    return finalizeLoginSession(data, router)
+  } catch (error) {
+    const errorData = error.response?.data
+
+    // Backend can fail after the password check (e.g. OTP email send failure)
+    // and still return otpRequired so the client shows the OTP step instead
+    // of a dead-end error.
+    if (errorData?.otpRequired) {
+      toast.error(
+        errorData?.message ??
+          'We could not send your verification code right now. Please try again.',
+      )
+      return errorData
+    }
+
+    toast.error(errorData?.message ?? 'Login failed')
+    console.error(error)
+    throw error
+  }
+}
+
+// ------------------ LOGIN OTP (step 2) ------------------
+export const verifyLoginOtp = async ({ email, otp }, router) => {
+  try {
+    const csrfHeaders = await getCsrfHeaders()
+    const res = await axios.post(
+      `${process.env.NEXT_PUBLIC_BASE_URL}/user/login/verify-otp`,
+      { email, otp },
+      { withCredentials: true, headers: csrfHeaders },
+    )
+
+    return finalizeLoginSession(res.data, router)
+  } catch (error) {
+    toast.error(error.response?.data?.message ?? 'Verification failed')
+    throw error
+  }
+}
+
+export const resendLoginOtp = async (email) => {
+  try {
+    const csrfHeaders = await getCsrfHeaders()
+    const res = await axios.post(
+      `${process.env.NEXT_PUBLIC_BASE_URL}/user/login/resend-otp`,
+      { email },
+      { withCredentials: true, headers: csrfHeaders },
+    )
+
+    toast.success(res.data?.message ?? 'A new code is on its way.')
+    return res.data
+  } catch (error) {
+    toast.error(error.response?.data?.message ?? 'Could not resend the code')
+    throw error
+  }
+}
+
+/**
+ * Store the session and route the user to their dashboard (or the deep link
+ * captured before sign-in). Shared by password login and OTP verification.
+ */
+const finalizeLoginSession = async (data, router) => {
+  try {
     // Removed userUUID from localStorage - using /me endpoint instead for security
 
     let assignedRole = normalizeRole(data?.role)
@@ -166,27 +294,19 @@ export const login = async (values, router) => {
       return // stop login flow
     }
 
-    // Keep role in client-visible storage so middleware and client agree
-    // immediately after login (especially for Evaluator -> SubEvaluator mapping).
-    if (assignedRole) {
-      localStorage.setItem('role', assignedRole)
-      document.cookie = `role=${assignedRole}; path=/`
-    }
-
-    // 🍪 Auth cookies are set by backend via Set-Cookie headers.
+    // 🍪 Auth cookies (accessToken, refreshToken, role) are set by backend via Set-Cookie.
     if (data?.accessToken) {
       setAccessToken(data.accessToken)
     }
     toast.success(data?.message)
 
-    // Honor an intended destination (e.g. "Get Started" from Advertise with Us)
+    // Honor an intended destination (e.g. email deep link or Advertise with Us)
     // captured before sign-in. Takes precedence over the role-based default below.
-    const redirectTo =
-      typeof window !== 'undefined'
-        ? localStorage.getItem('postLoginRedirect')
-        : null
+    const { consumePostLoginRedirect } = await import(
+      '@/utils/auth/postLoginRedirect'
+    )
+    const redirectTo = consumePostLoginRedirect()
     if (redirectTo) {
-      localStorage.removeItem('postLoginRedirect')
       router.replace(redirectTo)
       return data
     }
@@ -195,6 +315,12 @@ export const login = async (values, router) => {
       case 'Advertiser':
         router.replace('/advertiser-dashboard')
         break
+      case 'Developer': {
+        const developerUrl =
+          process.env.NEXT_PUBLIC_DEVELOPER_APP_URL || 'http://localhost:3012'
+        window.location.href = developerUrl.replace(/\/$/, '')
+        break
+      }
       case 'AssetHolder':
         router.replace('/seller-profile')
         break
@@ -222,7 +348,6 @@ export const login = async (values, router) => {
 
     return data
   } catch (error) {
-    toast.error(error.response?.data?.message ?? 'Login failed')
     console.error(error)
     throw error
   }

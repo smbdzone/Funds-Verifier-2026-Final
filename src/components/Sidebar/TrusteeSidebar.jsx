@@ -43,11 +43,6 @@ export default function Sidebar() {
     },
     {
       icon: <PrimaryDocument />,
-      name: "Viewing Management",
-      link: "/trustee/viewing",
-    },
-    {
-      icon: <PrimaryDocument />,
       name: "Create Slot",
       link: "/trustee/create-slot",
     },
@@ -73,7 +68,7 @@ export default function Sidebar() {
     },
     {
       icon: <PrimaryDocument />,
-      name: "Documents Storage",
+      name: "Document Management",
       link: "/trustee/document",
     },
     // {
@@ -98,7 +93,7 @@ export default function Sidebar() {
               />
             </figure>
             <h1 className="text-prussianBlue font-semibold md:text-xl text-lg lg:text-3xl">
-              {user?.name}
+              {user?.displayName || user?.name}
             </h1>
             <h2 className="lg:text-2xl md:text-lg text-base text-prussianBlue mb-3">
               Trustee

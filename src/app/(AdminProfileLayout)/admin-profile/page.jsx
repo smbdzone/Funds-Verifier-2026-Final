@@ -12,6 +12,8 @@ import { EvaluationTab } from '@/components/modules/Adminprofile/EvaluationTab'
 import { TransactionTrackerTab } from '@/components/modules/Adminprofile/TransactionTrackerTab'
 import { ClosedCaseTab } from '@/components/modules/Adminprofile/ClosedCaseTab'
 import { AssignRoleTab } from '@/components/modules/Adminprofile/AssignRoleTab'
+import { ReviewsManagementTab } from '@/components/modules/Adminprofile/ReviewsManagementTab'
+import AdminAllListingsTab from '@/components/modules/Adminprofile/AdminAllListingsTab'
 import {
   PrimaryLogout,
   PrimaryAssignIcon,
@@ -116,6 +118,11 @@ export default function Admin({
       index: 0,
     },
     {
+      icon: <PrimaryAssetDocument />,
+      name: 'All Listings',
+      index: 12,
+    },
+    {
       icon: <PrimaryAssignIcon />,
       name: 'Assign Role',
       index: 1,
@@ -152,6 +159,11 @@ export default function Admin({
           index: 8,
         },
       ],
+    },
+    {
+      icon: <PrimaryAssetDocument />,
+      name: 'Reviews',
+      index: 11,
     },
     {
       icon: <PrimarySecurity />,
@@ -202,18 +214,17 @@ export default function Admin({
           <div className='flex flex-col custom-shadow rounded py-5'>
             <div>
               <nav className='flex flex-col' aria-label='Tabs'>
-                {tabs.map((tab, i) =>
+                {tabs.map((tab) =>
                   tab.dropdown ? (
                     <div key={tab.name} className='relative'>
                       <div
-                        className={`${
-                          i === selectedTabIdx
-                            ? 'bg-whiteSmoke font-medium focus:outline-none'
-                            : 'border-transparent'
-                        } whitespace-nowrap flex gap-3 hover:bg-whiteSmoke hover:text-prussianBlue items-center py-2 px-8 cursor-pointer sm:text-xl`}
+                        className={`${tab.index === selectedTabIdx
+                          ? 'bg-whiteSmoke font-medium focus:outline-none'
+                          : 'border-transparent'
+                          } whitespace-nowrap flex gap-3 hover:bg-whiteSmoke hover:text-prussianBlue items-center py-2 px-8 cursor-pointer sm:text-xl`}
                         onClick={() => {
-                          setSelectedTabIdx(i)
-                          handleDropdownToggle()
+                          setSelectedTabIdx(tab.index)
+                          handleDropdownToggle(tab.index)
                         }}
                       >
                         {tab.icon}
@@ -239,13 +250,12 @@ export default function Admin({
                   ) : (
                     <div
                       key={tab.name}
-                      className={`${
-                        i === selectedTabIdx
-                          ? 'bg-whiteSmoke text-prussianBlue font-medium focus:outline-none'
-                          : 'border-transparent'
-                      } whitespace-nowrap flex gap-3 hover:bg-whiteSmoke hover:text-prussianBlue items-center py-2 px-8 cursor-pointer sm:text-xl`}
+                      className={`${tab.index === selectedTabIdx
+                        ? 'bg-whiteSmoke text-prussianBlue font-medium focus:outline-none'
+                        : 'border-transparent'
+                        } whitespace-nowrap flex gap-3 hover:bg-whiteSmoke hover:text-prussianBlue items-center py-2 px-8 cursor-pointer sm:text-xl`}
                       onClick={() => {
-                        setSelectedTabIdx(i)
+                        setSelectedTabIdx(tab.index)
                         setSelectedDropdownTab(null)
                       }}
                     >
@@ -260,6 +270,7 @@ export default function Admin({
         </div>
         <div className='grow'>
           {selectedTabIdx === 0 && <EvaluatorProfileTab />}
+          {selectedTabIdx === 12 && <AdminAllListingsTab />}
           {selectedTabIdx === 1 && <AssignRoleTab />}
           {selectedTabIdx === 2 && <ClosedCaseTab />}
           {selectedTabIdx === 3 && <TransactionTrackerTab />}
@@ -268,6 +279,7 @@ export default function Admin({
           {selectedDropdownTab === 6 && <CarsEvaluationTab />}
           {selectedDropdownTab === 7 && <BoatEvaluationTab />}
           {selectedDropdownTab === 8 && <JewelleryEvaluationTab />}
+          {selectedTabIdx === 11 && <ReviewsManagementTab />}
         </div>
         <Modal show={showModal} onClose={closeModal} onSave={handleSaveImage} />
       </div>

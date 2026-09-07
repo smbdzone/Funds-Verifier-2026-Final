@@ -6,18 +6,14 @@ import { GoDotFill } from 'react-icons/go'
 import { IoCheckmarkSharp } from 'react-icons/io5'
 import CompletePaymentComponent from '@/components/CheckoutLayoutComponent/CompletePaymentComponent'
 import {
-  FaceBookIcon,
-  InstaIcon,
-  TwitterIcon,
-  WhiteLinkdInIcon,
-  WhiteTickTokIcon,
-} from '../Icons'
-import { formatPriceUS } from '@/utils'
-import { formatNumberWithCommas } from '../../utils/global-functions/global'
-import {
   getListingImageSrc,
   getListingVideoSrc,
 } from '@/libs/listingCardMedia'
+import { getListingRef } from '@/libs/listingRef'
+import ListingSocialShare from '@/components/shared/ListingSocialShare'
+import { formatPriceUS } from '@/utils'
+import { formatNumberWithCommas } from '../../utils/global-functions/global'
+import { getListingAmenities } from '@/libs/listingAmenities'
 
 export default function CheckoutView({
   data,
@@ -81,7 +77,7 @@ export default function CheckoutView({
           <div className='sm:flex xl:flex-nowrap items-center sm:gap-6 gap-3 lg:gap-10 flex-wrap pt-10 lg:pt-24 pb-5'>
             <div className='flex items-stretch shrink-0 sm:flex-row flex-col gap-4'>
               {typeof previewMedia === 'string' &&
-              previewMedia.endsWith('.mp4') ? (
+                previewMedia.endsWith('.mp4') ? (
                 <video
                   controls
                   height={580}
@@ -116,7 +112,7 @@ export default function CheckoutView({
             </div>
             <div className='relative flex lg:h-[450px] items-start flex-col lg:space-y-0 space-y-5 lg:justify-between mt-6 sm:mt-0'>
               <span className='font-medium lg:text-[18px] sm:text-base text-sm block'>
-                Ref: {data?.uuid ? data.uuid.slice(0, 8) : 'N/A'}
+                Ref: {getListingRef(data)}
               </span>
               <h1 className='text-wrap text-blue capitalize lg:text-4xl sm:text-2xl text-lg font-semibold mb-1'>
                 {data?.title}
@@ -217,28 +213,12 @@ export default function CheckoutView({
                 </div>
               </div>
               <div className='flex justify-between w-full items-end'>
-                <div className='flex gap-5 font-medium text-lg items-center'>
-                  <span className='lg:text-base sm:text-sm text-xs'>
-                    Share:
-                  </span>
-                  <div className='flex gap-2'>
-                    <Link href='#'>
-                      <FaceBookIcon className='h-[16px] w-[16px]' />
-                    </Link>
-                    <Link href='#'>
-                      <InstaIcon className='h-[16px] w-[16px]' />
-                    </Link>
-                    <Link href='#'>
-                      <WhiteLinkdInIcon className='h-[16px] w-[16px]' />
-                    </Link>
-                    <Link href='#'>
-                      <TwitterIcon className='h-[16px] w-[16px]' />
-                    </Link>
-                    <Link href='#'>
-                      <WhiteTickTokIcon className='h-[16px] w-[16px]' />
-                    </Link>
-                  </div>
-                </div>
+                <ListingSocialShare
+                  listing={data}
+                  label='Share:'
+                  labelClassName='lg:text-base sm:text-sm text-xs'
+                  linkedinIcon='white'
+                />
               </div>
             </div>
           </div>
@@ -247,14 +227,14 @@ export default function CheckoutView({
             <button
               className={`flex-grow lg:w-[264px] lg:h-[50px] px-4 py-2 text-base flex justify-center items-center text-white btn-gradient border-0 focus:outline-none font-medium rounded `}
             >
-              Additional Information
+              Amenities
             </button>
 
             <>
-              {data.facilities && data.facilities.length !== 0 ? (
+              {getListingAmenities(data).length ? (
                 <div className='grid shadow rounded mt-5 sm:grid-cols-2 grid-cols-1 lg:grid-cols-4'>
-                  {data.facilities.map((item, columnIndex) => (
-                    <div key={columnIndex} className='col-span-1'>
+                  {getListingAmenities(data).map((item, columnIndex) => (
+                    <div key={`${item}-${columnIndex}`} className='col-span-1'>
                       <div className='sm:flex flex-wrap font-normal'>
                         <div className='flex lg:text-base sm:text-sm text-xs flex-row items-start lg:items-center p-2 space-x-2'>
                           <IoCheckmarkSharp
@@ -269,7 +249,7 @@ export default function CheckoutView({
                 </div>
               ) : (
                 <div className='w-full flex items-center justify-center text-prussianBlue text-xl py-5'>
-                  No Additional Facilities!
+                  No amenities listed.
                 </div>
               )}
             </>

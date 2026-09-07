@@ -6,13 +6,25 @@ import {
   handleThumbnailUpload,
   handleVideoUpload,
 } from '@/libs/uploadAsset'
+import { autoCapitalizeField } from '@/libs/autoCapitalizeText'
+import { flagListingPendingApprovalNotice } from '@/libs/listingPendingApprovalNotice'
 import {
   applyPremiumServiceRefs,
   listingMediaRef,
   premiumServiceRequestId,
+  stripEmptyObjectIdRefs,
 } from '@/libs/listingMediaRef'
+import {
+  isListingEvaluatorApprovedLocked,
+  buildApprovedAssetHolderUpdatePayload,
+} from '@/libs/listingEditLock'
+import {
+  hasConfirmedEvaluationPayment,
+  bookEvaluationTimeslotFromFormData,
+  stripEvaluationBookingMeta,
+} from '@/libs/evaluationBooking'
 import axios from 'axios'
-import { Suspense, useContext, useEffect, useState } from 'react'
+import { Suspense, useContext, useEffect, useMemo, useState } from 'react'
 import flags from 'react-phone-number-input/flags'
 import 'react-phone-number-input/style.css'
 import { toast, ToastContainer } from 'react-toastify'
@@ -26,6 +38,18 @@ import PayModal from '../../../../components/Modals/PayModal'
 import { useProfile } from '../../../../context/UserContext'
 import PaymentModal from '@/components/payments/PaymentModal'
 import StripeElement from '../../../../components/Stripe/StripeElement'
+import { useRefreshListingAfterServicePayment } from '@/hooks/useRefreshListingAfterServicePayment'
+import { useRestoreListingAfterClozerPayment } from '@/hooks/useRestoreListingAfterClozerPayment'
+import {
+  useRestorePendingListingDraft,
+  useRefetchListingOnReturn,
+} from '@/hooks/useRestorePendingListingDraft'
+import { useAutoFinalizeAfterEvaluationPayment } from '@/hooks/useAutoFinalizeAfterEvaluationPayment'
+import {
+  clearListingWorkspaceStorage,
+  hasPendingListingDraft,
+  isPendingDraftForListingRoute,
+} from '@/libs/pendingListingDraft'
 import customAxios from '../../../../utils/apis/apis'
 
 function Page() {
@@ -63,9 +87,10 @@ function Page() {
     sportsOutdoorPrice: '',
     warrenty: '',
     seats: '',
-    pictures: '',
+    pictures: null,
     video: null,
-    thumbnailImg: '',
+    thumbnailImg: null,
+    qrScan: null,
     evaluationCertificate: null,
     evaludationComponents: '',
     sportsOutdoorPrice: '',
@@ -74,8 +99,10 @@ function Page() {
     extras: [],
     category: '',
     model: '',
-    technicalReport: '',
+    technicalReport: null,
+    video3DWalkthrough: null,
     evaluationDateTime: '',
+    mapUrl: '',
   }
 
   const dropdownData = {
@@ -126,9 +153,12 @@ function Page() {
     errors,
     phoneNumber,
     thumbnail,
+    qrScan,
     handleOpenModal,
     handleThumbImageRemove,
     handleThumbImageChange,
+    handleQrScanChange,
+    handleQrScanRemove,
     handleCountryChange,
     selectedCountryPhone,
     maxLength,
@@ -148,6 +178,7 @@ function Page() {
     totalprice,
     handleClose1Modal,
     modalData,
+    resetPremiumPaymentDrafts,
     handleVideoChange,
     handlePhoneNumberChange,
     id,
@@ -160,7 +191,7 @@ function Page() {
     isValidState,
     handleFormData,
     setErrors,
-    video,
+    videos,
     file,
     handleScroll,
     setTotalPrice,
@@ -168,20 +199,74 @@ function Page() {
     fetchData,
     setSelectedModel,
     resetForm,
+    setImages,
+    setThumbnail,
+    setVideos,
+    setQrScan,
+    setSelectedCountry,
+    setSelectedCity,
+    setSelectedNeighbourhood,
+    setCountryCode,
+    setPhoneNumber,
   } = useContext(ListingContext)
 
-  useEffect(() => {
-    resetForm()
-    handleFormData(initialFormData, dropdownData)
-  }, [])
+  const listingDraftRestoreApi = useMemo(
+    () => ({
+      setFormData,
+      setImages,
+      setThumbnail,
+      setVideos,
+      setQrScan,
+      setSelectedCountry,
+      setSelectedCity,
+      setSelectedNeighbourhood,
+      setCountryCode,
+      setPhoneNumber,
+      setTotalPrice,
+      setSelectedCategory,
+      setSelectedModel,
+    }),
+    [
+      setFormData,
+      setImages,
+      setThumbnail,
+      setVideos,
+      setQrScan,
+      setSelectedCountry,
+      setSelectedCity,
+      setSelectedNeighbourhood,
+      setCountryCode,
+      setPhoneNumber,
+      setTotalPrice,
+      setSelectedModel,
+    ],
+  )
 
   useEffect(() => {
     if (id) {
       fetchData('boat')
-    } else {
-      setLoading(false)
+      return
     }
+
+    // Keep draft only when it belongs to boat listing (not property/car/jewelry).
+    if (hasPendingListingDraft() && isPendingDraftForListingRoute('boat')) {
+      setLoading(false)
+      return
+    }
+
+    if (hasPendingListingDraft()) {
+      clearListingWorkspaceStorage()
+    }
+
+    resetForm()
+    handleFormData(initialFormData, dropdownData)
+    setLoading(false)
   }, [searchParams])
+
+  useRefreshListingAfterServicePayment(id, 'boat', fetchData)
+  useRestoreListingAfterClozerPayment(listingDraftRestoreApi)
+  useRestorePendingListingDraft(id, listingDraftRestoreApi, 'boat')
+  useRefetchListingOnReturn(id, 'boat', fetchData)
 
   const handleTechnicalModal = () => {
     setIsTechnicalModalOpen(!isTechnicalModalOpen)
@@ -201,6 +286,9 @@ function Page() {
     if (images.length === 0) errors.pictures = 'Pictures are Required'
     if (!thumbnail) {
       errors.thumbnail = 'Thumbnail are Required'
+    }
+    if (!qrScan) {
+      errors.qrScan = 'QR Scan is required'
     }
     if (!data.assetType.trim() || data.assetType === 'Select Asset Type') {
       errors.assetType = 'Asset Type is required'
@@ -326,11 +414,6 @@ function Page() {
       //     error = "Evaluation is required";
       //   }
       //   break;
-      case 'brands':
-        if (!value.trim()) {
-          error = 'Brands is required'
-        }
-        break
       case 'age':
         if (!value.trim()) {
           error = 'Age is required'
@@ -339,11 +422,6 @@ function Page() {
       case 'usage':
         if (!value.trim()) {
           error = 'usage is required'
-        }
-        break
-      case 'sportsOutdoorPrice':
-        if (!value.trim()) {
-          error = 'Sports Outdoor Price is required'
         }
         break
       case 'warrenty':
@@ -372,23 +450,21 @@ function Page() {
   const submitConfirmation = async (e) => {
     const validationErrors = validateForm(formData)
 
-    // Skip evaluation date validation for edit flow (when id exists)
-    if (!id && !formData?.evaluationDateTime) {
+    if (id) {
+      finalizeSubmission()
+      return
+    }
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors)
+      setLoading(false)
+      handleScroll()
+      return
+    }
+    if (!formData?.evaluationDateTime) {
       toast.error('Evaluation Date and time is required!')
       return
     }
-
-    if (id) {
-      finalizeSubmission()
-    } else {
-      if (Object.keys(validationErrors).length === 0) {
-        setConfirmationModal(true)
-      } else {
-        setErrors(validationErrors)
-        setLoading(false)
-        handleScroll()
-      }
-    }
+    setConfirmationModal(true)
   }
 
   const handleSubmit = async (e) => {
@@ -412,10 +488,21 @@ function Page() {
         throw new Error('Thumbnail is required')
       }
 
-      if (!video) {
-        toast.error('Video is required.')
-        setLoading(false)
-        throw new Error('Video is required')
+      try {
+        const sessionRaw = localStorage.getItem('checkoutSession')
+        const session = sessionRaw ? JSON.parse(sessionRaw) : null
+        if (
+          hasConfirmedEvaluationPayment(formData) ||
+          hasConfirmedEvaluationPayment(session)
+        ) {
+          setLoading(true)
+          setConfirmationModal(false)
+          setShowPayment(false)
+          finalizeSubmission()
+          return
+        }
+      } catch {
+        /* ignore */
       }
 
       return setShowPayment(true)
@@ -463,7 +550,7 @@ function Page() {
       }
     } catch (error) {
       console.error('Error during form submission:', error)
-      toast.error('An error occurred. Please try again.')
+      toast.error(error?.message || 'An error occurred. Please try again.')
       setLoading(false)
     }
   }
@@ -518,10 +605,10 @@ function Page() {
 
       if (!id) {
         const checkoutSession = JSON.parse(
-          localStorage.getItem('checkoutSession') || {}
+          localStorage.getItem('checkoutSession') || 'null'
         )
-        if (!checkoutSession) {
-          return toast.error('Payment of 2 dirham is required!')
+        if (!hasConfirmedEvaluationPayment(checkoutSession)) {
+          return toast.error('Evaluation payment is required before submitting.')
         }
       }
 
@@ -530,21 +617,35 @@ function Page() {
       let imageID = formData?.pictures
       let thumbnailID = formData?.thumbnailImg
       let videoID = formData?.video
+      let qrScanID = formData?.qrScan
       // let fileID = formData?.evaluationCertificate
       // Upload new files only if creating a new property (no id)
       if (!id) {
-        const [uploadedImages, uploadedVideo, uploadedThumbnail] =
+        const [uploadedImages, uploadedVideo, uploadedThumbnail, uploadedQrScan] =
           await Promise.all([
             images.length > 0 ? handleImageUpload(images) : imageID,
-            video ? handleVideoUpload(video) : videoID,
+            videos.some((v) => v instanceof File)
+              ? handleVideoUpload(videos.filter((v) => v instanceof File))
+              : videoID,
             // file ? handleFileUpload(file) : fileID,
-            thumbnail ? handleThumbnailUpload(thumbnail) : thumbnailID,
+            thumbnail instanceof File
+              ? handleThumbnailUpload(thumbnail)
+              : thumbnailID,
+            qrScan ? handleImageUpload([qrScan]) : qrScanID,
           ])
 
         imageID = uploadedImages
         videoID = uploadedVideo
         // fileID = uploadedFile
         thumbnailID = uploadedThumbnail
+        qrScanID = uploadedQrScan
+      } else {
+        if (thumbnail instanceof File) {
+          thumbnailID = await handleThumbnailUpload(thumbnail)
+        }
+        if (qrScan instanceof File) {
+          qrScanID = await handleImageUpload([qrScan])
+        }
       }
 
       const updatedFormData = {
@@ -557,6 +658,7 @@ function Page() {
         thumbnailImg:
           listingMediaRef(thumbnailID) ??
           listingMediaRef(formData?.thumbnailImg),
+        qrScan: listingMediaRef(qrScanID) ?? listingMediaRef(formData?.qrScan),
         feedback: 'feedback',
       }
 
@@ -565,18 +667,32 @@ function Page() {
         technicalReportID,
       })
 
+      const listingPayload = stripEmptyObjectIdRefs(
+        stripEvaluationBookingMeta(updatedFormData),
+      )
+      const payloadToSave =
+        id && isListingEvaluatorApprovedLocked(formData)
+          ? stripEmptyObjectIdRefs(
+            buildApprovedAssetHolderUpdatePayload(listingPayload),
+          )
+          : listingPayload
+
+      if (!id) {
+        await bookEvaluationTimeslotFromFormData(formData)
+      }
+
       if (id) {
         requests.push(
           customAxios.put(
             `${process.env.NEXT_PUBLIC_BASE_URL}/boat/${id}`,
-            updatedFormData
+            payloadToSave
           )
         )
       } else {
         requests.push(
           customAxios.post(
             `${process.env.NEXT_PUBLIC_BASE_URL}/boat`,
-            updatedFormData
+            listingPayload
           )
         )
       }
@@ -589,20 +705,36 @@ function Page() {
             : 'Submitted successfully. Evaluator will evaluate it.'
         )
         if (!id) {
+          flagListingPendingApprovalNotice({ assetKind: 'boat' })
           resetForm()
           setFormData(initialFormData)
           localStorage.removeItem('FormPayment')
           localStorage.removeItem('checkoutSessionId')
+          localStorage.removeItem('checkoutSession')
+          localStorage.removeItem('pendingListingDraft')
         }
       }
       router.push('/seller-profile/my-listing')
     } catch (error) {
       console.error('Error during form submission:', error)
-      toast.error('An error occurred. Please try again.')
+      toast.error(
+        error?.message || 'An error occurred during submission. Please try again.',
+      )
     } finally {
       setLoading(false)
     }
   }
+
+  useAutoFinalizeAfterEvaluationPayment({
+    listingId: id,
+    formData,
+    images,
+    thumbnail,
+    finalizeSubmission,
+    setLoading,
+    setShowPayment,
+    setConfirmationModal,
+  })
 
   const handleExteriorCheckboxChange = (event) => {
     const { value, checked } = event.target
@@ -697,7 +829,7 @@ function Page() {
         setTotalPrice(formattedValue) // This will format the displayed price
       }
     } else {
-      setFormData({ ...formData, [name]: value })
+      setFormData({ ...formData, [name]: autoCapitalizeField(name, value) })
       setErrors({ ...errors, [name]: '' })
     }
   }
@@ -711,6 +843,7 @@ function Page() {
             technicalModalData={technicalModalData}
             setIsOpenModal={setIsOpenModal}
             isValidState={isValidState}
+            onPaymentAbandoned={resetPremiumPaymentDrafts}
           />
         )}
         <ToastContainer />
@@ -769,14 +902,17 @@ function Page() {
                   flags={flags}
                   phoneNumber={phoneNumber}
                   thumbnail={thumbnail}
+                  qrScan={qrScan}
                   handlePhoneNumberChange={handlePhoneNumberChange}
                   handleCountryChange={handleCountryChange}
                   selectedCountryPhone={selectedCountryPhone}
                   maxLength={maxLength}
                   handleThumbImageChange={handleThumbImageChange}
                   handleThumbImageRemove={handleThumbImageRemove}
+                  handleQrScanChange={handleQrScanChange}
+                  handleQrScanRemove={handleQrScanRemove}
                   images={images}
-                  video={video}
+                  videos={videos}
                   handleImageRemove={handleImageRemove}
                   handleImageChange={handleImageChange}
                   handleVideoRemove={handleVideoRemove}
@@ -943,6 +1079,9 @@ function Page() {
                     handleSubmit={handleSubmit}
                     setConfirmationModal={setConfirmationModal}
                     id={id}
+                    formData={formData}
+                    handleChange={handleChange}
+                    mapUrl={formData.mapUrl}
                   />
                 </div>
                 {!id && (

@@ -1,167 +1,133 @@
 'use client'
 import SearchInputs from '@/components/Inputs/SearchInputs'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import FundsTypeSlider from '@/components/sliders/funds-typeSlider'
 import ValuesSec from '@/components/home/valuesSec'
 import PropertiesSale from '@/components/home/properties-sale'
 import BoatsSale from '@/components/home/boats-sale'
 import CarsSale from '@/components/home/cars-sale'
+import JewelrySale from '@/components/home/jewelry-sale'
 import Testimonials from '@/components/home/testimonials'
 import Partners from '@/components/home/partners'
 import NewsTrends from '@/components/home/newsTrends'
 import InTouch from '@/components/home/inTouch'
-import { useRouter, useSearchParams } from 'next/navigation'
-import { getCookie, getCookies } from 'cookies-next'
+import { useSearchParams } from 'next/navigation'
 import { toast } from 'react-toastify'
-import Loader from '../../components/modules/EvaluatorProfile/requestCompoenets/Loader'
+import { HomePageSkeleton } from '@/components/home/HomeSectionSkeletons'
 import customAxios from '../../utils/apis/apis'
-import { getTokenFromCookie } from '../../utils/helper'
-import { useProfile } from '../../context/UserContext'
-import { deleteCookie } from 'cookies-next'
+import { useProfile } from '@/context/UserContext'
 import { setAccessToken } from '../../utils/auth/accessTokenStore'
+import { getRoleHomeRoute } from '@/utils/auth/roleHome'
+import { POST_LOGIN_BOOTSTRAP_KEY } from '@/utils/auth/uaePass'
+import { consumePostLoginRedirect } from '@/utils/auth/postLoginRedirect'
+import { parseUaePassName } from '@/utils/auth/parseUaePassName'
 
 export default function Login() {
-  const { user, setIsLoading: setLoading } = useProfile()
+  const { applyUserFromLogin, setIsLoading: setGlobalLoading } = useProfile()
   const [isLoading, setIsLoading] = useState(false)
   const searchParams = useSearchParams()
-  const router = useRouter()
   const code = searchParams.get('code')
+  const oauthStarted = useRef(false)
 
   useEffect(() => {
-    if (typeof window === 'undefined') return
-    if (user === undefined) return // wait for context
-    // Get role from user context (from /me endpoint)
-    const role = user?.role
-    // Get token from cookies (primary storage)
-    // const token = getTokenFromCookie()
-    // Get role from cookie as fallback
-    const cookieRole = getCookies('role')
-    console.log(!role && !cookieRole, role, cookieRole)
+    if (!code || oauthStarted.current) return
+    oauthStarted.current = true
+    exchangeUaePassCode(code)
+  }, [code])
 
-    // If OAuth code exists → fetch token
-    if (code) {
-      getToken()
-    }
-  }, [code, user])
-
-  // Fetch access token from backend
-  const getToken = async () => {
+  const exchangeUaePassCode = async (authCode) => {
     setIsLoading(true)
-    setLoading(true)
+    setGlobalLoading(true)
     try {
-      const res = await customAxios.post('/user/get-token', { code })
+      const res = await customAxios.post('/user/get-token', { code: authCode })
 
-      if (res?.data.message === 'User exist') {
-        await handleSubmit(res?.data.user)
-      } else if (res?.data) {
-        await handleSubmit(res?.data)
+      if (res?.data?.message === 'User exist' && res?.data?.user) {
+        await completeUaePassLogin(res.data.user)
+      } else if (res?.data?.email || res?.data?.uuid) {
+        await completeUaePassLogin(res.data)
       } else {
-        toast.error('Something went wrong')
+        toast.error(res?.data?.error || 'Something went wrong')
       }
     } catch (error) {
-      toast.error(`${error.message}`)
+      toast.error(
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        error.message ||
+        'UAE Pass login failed',
+      )
     } finally {
       setIsLoading(false)
-      setLoading(false)
+      setGlobalLoading(false)
     }
   }
 
-  // Handle login submission
-  const handleSubmit = async (user) => {
-    // If the user started from the advertiser sign-in, create them as an
-    // Advertiser account (hint stashed before the UAE Pass round-trip).
-    const signupRole =
-      typeof window !== 'undefined'
-        ? localStorage.getItem('uaePassSignupRole')
-        : null
-    if (signupRole) localStorage.removeItem('uaePassSignupRole')
+  const completeUaePassLogin = async (uaeUser) => {
+    const { firstName, lastName, fullName } = parseUaePassName(
+      uaeUser?.fullnameEN,
+      uaeUser?.lastnameEN,
+    )
 
     const payload = {
-      name: user?.fullnameEN,
-      lastname: user?.lastnameEN,
-      email: user?.email,
-      role: signupRole || 'DealHunter',
-      uuid: user?.uuid,
-      userType: user?.userType,
-      phone: user?.mobile,
-      // Ad-targeting attributes from UAE Pass when the profile provides them.
-      gender: user?.gender || undefined,
-      city: user?.city || user?.emirate || undefined,
-      dateOfBirth: user?.dateofbirth || user?.dob || user?.dateOfBirth || undefined,
+      name: fullName || firstName || uaeUser?.fullnameEN,
+      lastname: lastName || uaeUser?.lastnameEN,
+      email: uaeUser?.email,
+      role: 'DealHunter',
+      uuid: uaeUser?.uuid,
+      userType: uaeUser?.userType,
+      phone: uaeUser?.mobile,
     }
 
-    try {
-      if (user?.userType === 'SOP1') {
-        localStorage.setItem(
-          'error',
-          'You are not eligible to access this service.',
-        )
-        window.location.href = '/error'
-        return
-      }
-
-      const res = await customAxios.post('/user/store-user', payload, {
-        withCredentials: true, // ✅ IMPORTANT (refreshToken cookie)
-      })
-
-      const data = res.data
-
-      // 🍪 Cookies are set by backend via Set-Cookie headers
-      if (data?.accessToken) {
-        setAccessToken(data.accessToken)
-      }
-
-      toast.success('Login Successful!')
-      // const dataRes = await customAxios.get('/user/me', {
-      //   withCredentials: true,
-      // })
-      // console.log(dataRes, 'dataRes')
-
-      // -------------------------------
-      // 🚀 REDIRECT (SAME AS login)
-      // -------------------------------
-      // Honor an intended destination (e.g. "Get Started" from Advertise with Us)
-      // captured before sign-in. Survives the UAE Pass external round-trip via localStorage.
-      const redirectTo = localStorage.getItem('postLoginRedirect')
-      if (redirectTo) {
-        localStorage.removeItem('postLoginRedirect')
-        // Full navigation so middleware and UserContext see new HttpOnly cookies
-        window.location.href = redirectTo
-        return
-      }
-
-      const targetRoute =
-        data?.role === 'AssetHolder' ? '/seller-profile' : '/profile'
-
-      if (data?.role === 'DealHunter' || data?.role === 'AssetHolder') {
-        // Full navigation so middleware and UserContext see new HttpOnly cookies
-        window.location.href = targetRoute
-      } else {
-        window.location.href = '/'
-      }
-    } catch (error) {
-      toast.error(error.response?.data?.message || 'Login failed')
-      console.error(error)
+    if (uaeUser?.userType === 'SOP1') {
+      localStorage.setItem(
+        'error',
+        'You are not eligible to access this service.',
+      )
+      window.location.href = '/error'
+      return
     }
+
+    const res = await customAxios.post('/user/store-user', payload, {
+      withCredentials: true,
+    })
+
+    const data = res.data
+
+    if (data?.accessToken) {
+      setAccessToken(data.accessToken)
+      sessionStorage.setItem(POST_LOGIN_BOOTSTRAP_KEY, data.accessToken)
+    }
+
+    applyUserFromLogin?.(data)
+
+    toast.success(data?.message || 'Login Successful!')
+
+    const intended = consumePostLoginRedirect()
+    if (intended) {
+      window.location.replace(intended)
+      return
+    }
+
+    const role = data?.role === 'AssetHolder' ? 'AssetHolder' : 'DealHunter'
+    window.location.replace(getRoleHomeRoute(role))
   }
 
-  // Block UI until redirection
-  if (isLoading) return <Loader isOpen={true} />
+  if (isLoading) return <HomePageSkeleton />
 
   return (
     <main>
-      <div className='flex gap-8 flex-col md:pt-32 sm:pt-10 pb-20 xl:px-20 homeDiv md:top-[100px] w-full text-[60px] text-white'>
-        <div className='container mx-auto'>
-          <div className='my-5 mt-20'>
-            <p className='m-0 xl:text-[60px] lg:text-5xl text-3xl leading-[50px] font-semibold'>
-              Unlocking <br className='md:hidden block' /> Secure Asset
-            </p>
-            <p className='m-0 xl:text-[60px] lg:text-5xl leading-[50px] text-3xl font-semibold'>
-              Transactions <br className='md:hidden block' /> with Funds
-              <br className='md:hidden block' /> Verifier
-            </p>
+      <div className='homeDiv flex w-full flex-col gap-8 pb-16 pt-24 text-white sm:pb-20 sm:pt-28 md:top-[100px] md:pt-32 xl:px-20'>
+        <div className='container mx-auto px-4 sm:px-6'>
+          <div className='mt-6 sm:mt-10 md:mt-20'>
+            <h1 className='font-semibold tracking-tight'>
+              <span className='block text-[26px] leading-[31px] sm:text-3xl sm:leading-9 lg:text-5xl lg:leading-[1.15] xl:text-[60px] xl:leading-[68px]'>
+                Unlocking Secure Asset
+              </span>
+              <span className='mt-1 block text-[26px] leading-[31px] sm:mt-1.5 sm:text-3xl sm:leading-9 lg:mt-2 lg:text-5xl lg:leading-[1.15] xl:text-[60px] xl:leading-[68px]'>
+                Transactions with Funds Verifier
+              </span>
+            </h1>
           </div>
-          <p className='md:text-2xl text-sm tracking-wide'>
+          <p className='mt-3 max-w-sm text-sm leading-snug tracking-wide text-white/95 sm:mt-4 sm:max-w-md md:mt-5 md:max-w-none md:text-2xl md:leading-normal'>
             Simplify asset transactions with confidence on our trusted platform
           </p>
           <div className='lg:block hidden mt-5'>
@@ -175,6 +141,7 @@ export default function Login() {
       <PropertiesSale />
       <BoatsSale />
       <CarsSale />
+      <JewelrySale />
       <Testimonials />
       <Partners />
       <NewsTrends />

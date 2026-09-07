@@ -1,115 +1,87 @@
 'use client'
-import React, { useEffect, useState } from 'react'
-import AllTransactions from '../../../../components/modules/TrusteeProfile/AllTransactions'
-import { getTokenFromCookie } from '../../../../utils/helper'
 
-const fetchListingsData = async () => {
-  const token = getTokenFromCookie()
+import React, { useCallback, useEffect, useState } from 'react'
+import dynamic from 'next/dynamic'
+import { toast } from 'react-toastify'
+import customAxios from '@/utils/apis/apis'
+import { TransactionMange } from '@/components/modules/TrusteeProfile/TransactTionManage'
 
-  try {
-    const [boatResponse, propertyResponse, carResponse, jewelryResponse] =
-      await Promise.all([
-        fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/boat`, {
-          cache: 'no-store',
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }),
-        fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/property`, {
-          cache: 'no-store',
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }),
-        fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/car`, {
-          cache: 'no-store',
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }),
-        fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/jewelry`, {
-          cache: 'no-store',
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }),
-      ])
+const ViewerDetails = dynamic(
+  () => import('@/components/modules/SellerProfile/ViewerDetails'),
+  { ssr: false },
+)
 
-    if (
-      !boatResponse.ok ||
-      !propertyResponse.ok ||
-      !carResponse.ok ||
-      !jewelryResponse.ok
-    ) {
-      throw new Error('Failed to fetch listings data')
-    }
-
-    const [boatData, propertyData, carData, jewelryData] = await Promise.all([
-      boatResponse.json(),
-      propertyResponse.json(),
-      carResponse.json(),
-      jewelryResponse.json(),
-    ])
-
-    const filteredBoatListings = boatData.products.filter(
-      (item) =>
-        item.status === undefined || item.status === 1 || item.status === 0
-    )
-    const filteredPropertyListings = propertyData.products.filter(
-      (item) =>
-        item.status === undefined || item.status === 1 || item.status === 0
-    )
-    const filteredCarListings = carData.products.filter(
-      (item) =>
-        item.status === undefined || item.status === 1 || item.status === 0
-    )
-    const filteredJewelryListings = jewelryData.products.filter(
-      (item) =>
-        item.status === undefined || item.status === 1 || item.status === 0
-    )
-
-    return [
-      ...filteredPropertyListings.map((item) => ({
-        ...item,
-        type: 'property',
-      })),
-      ...filteredBoatListings.map((item) => ({ ...item, type: 'boat' })),
-      ...filteredCarListings.map((item) => ({ ...item, type: 'car' })),
-      ...filteredJewelryListings.map((item) => ({ ...item, type: 'jewelry' })),
-    ]
-  } catch (error) {
-    console.error('Error fetching listings:', error)
-    throw error
-  }
-}
+const ViewerDetailsErrorBoundary = dynamic(
+  () =>
+    import('@/components/modules/SellerProfile/ViewerDetailsErrorBoundary').then(
+      (module) => ({ default: module.ViewerDetailsErrorBoundary }),
+    ),
+  { ssr: false },
+)
 
 const Page = () => {
-  const [listings, setListings] = useState([])
+  const [transactions, setTransactions] = useState([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
+  const [openDetails, setOpenDetails] = useState(false)
+  const [selectedBookingId, setSelectedBookingId] = useState(null)
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true)
-        const data = await fetchListingsData()
-        setListings(data)
-      } catch (error) {
-        setError(error.message)
-      } finally {
-        setLoading(false)
-      }
+  const fetchTransactions = useCallback(async () => {
+    try {
+      setLoading(true)
+      const response = await customAxios.get('/arrange-view/transactions')
+      setTransactions(Array.isArray(response.data) ? response.data : [])
+    } catch (err) {
+      toast.error(
+        err?.response?.data?.message || 'Could not load transactions.',
+      )
+      setTransactions([])
+    } finally {
+      setLoading(false)
     }
-
-    fetchData()
   }, [])
 
-  if (loading) return <div>Loading...</div>
-  if (error) return <div>Error: {error}</div>
+  useEffect(() => {
+    fetchTransactions()
+  }, [fetchTransactions])
+
+  const handleViewTransaction = (bookingUuid) => {
+    setSelectedBookingId(bookingUuid)
+    setOpenDetails(true)
+  }
+
+  const handleCloseDetails = () => {
+    setOpenDetails(false)
+    setSelectedBookingId(null)
+    fetchTransactions()
+  }
+
+  if (loading) {
+    return <div className='p-4 text-slate-600'>Loading transactions...</div>
+  }
 
   return (
-    <div>
-      <AllTransactions listings={listings} />
+    <div className='min-w-0 max-w-full overflow-hidden'>
+      <p className='mb-4 text-sm text-slate-600'>
+        Deals that are under process or in the transfer / success-fee stage.
+        Open a row to manage transfer documents, fees, and payment proof.
+      </p>
+      <TransactionMange
+        transactions={transactions}
+        onView={handleViewTransaction}
+        onRefresh={fetchTransactions}
+      />
+      {openDetails && selectedBookingId ? (
+        <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4'>
+          <div className='max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-lg bg-white shadow-xl'>
+            <ViewerDetailsErrorBoundary onClose={handleCloseDetails}>
+              <ViewerDetails
+                bookingId={selectedBookingId}
+                handleClose={handleCloseDetails}
+              />
+            </ViewerDetailsErrorBoundary>
+          </div>
+        </div>
+      ) : null}
     </div>
   )
 }

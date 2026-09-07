@@ -77,6 +77,18 @@
   @apply pb-[9rem];
 }
 
+.work__slider .blog-mobile-swiper .swiper-slide {
+  @apply pb-12 h-auto;
+}
+
+.work__slider .blog-mobile-swiper {
+  @apply w-full overflow-hidden pb-2;
+}
+
+.work__slider .blog-mobile-swiper .swiper-pagination {
+  @apply bottom-0;
+}
+
 .work__slider .swiper-pagination-bullet-active {
   @apply h-[10px] w-[10px];
 }
@@ -178,6 +190,29 @@ form .relative-placeholder input:valid+.custom-placeholder {
   background-size: cover;
 }
 
+.blog-article-hero {
+  min-height: calc(100dvh - 88px);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  background-image: url("../assets/images/group-15@2x.png");
+  background-size: cover;
+  background-position: center;
+}
+
+.blog-article-prose img,
+.blog-article-prose video,
+.blog-article-prose iframe {
+  max-width: 100%;
+  height: auto;
+}
+
+.blog-article-prose table {
+  display: block;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
 .swiper-button-prev {
   width: 20px !important;
   height: 20px !important;
@@ -255,6 +290,76 @@ html {
   height: auto;
 }
 
+/* Listing / product cards: photo fills the frame and stays centered */
+.listing-card-media-swiper {
+  width: 100%;
+  max-width: 312px;
+  height: 200px !important;
+  min-height: 200px !important;
+  max-height: 200px !important;
+  flex-shrink: 0 !important;
+  overflow: hidden;
+  align-self: center;
+}
+
+@media (min-width: 640px) {
+  .listing-card-media-swiper {
+    width: 312px;
+    height: 220px !important;
+    min-height: 220px !important;
+    max-height: 220px !important;
+  }
+}
+
+.listing-card-media-swiper .swiper,
+.listing-card-media-swiper .swiper-wrapper {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.listing-card-media-swiper .swiper-slide img.listing-card-photo,
+.swiper-slide img.listing-card-photo {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  max-height: none !important;
+  object-fit: cover !important;
+  object-position: center center !important;
+}
+
+.listing-card-media-swiper .swiper-slide {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.listing-card-media-swiper .swiper-slide>div,
+.listing-card-media-swiper .swiper-slide>video,
+.listing-card-media-swiper .swiper-slide>img {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.listing-card-media-swiper .swiper-pagination {
+  display: flex !important;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+  row-gap: 6px;
+  width: 100%;
+  max-width: 100%;
+  padding: 0 8px 6px;
+}
+
+.listing-card-media-swiper .swiper-pagination-bullet {
+  flex-shrink: 0;
+  margin: 0 !important;
+}
+
 /* Testimonials thumbnail column: vertical Swiper slots stay aligned; global
    width:inherit on slide images was stretching avatars and crowding text. */
 .testimonials-thumb-swiper .swiper-slide {
@@ -285,38 +390,396 @@ html {
   flex-shrink: 0;
 }
 
+/* Listing card QR thumbs — beside title; override `.swiper-slide img { width: inherit }` */
+.listing-qr-thumb {
+  width: 72px !important;
+  height: 72px !important;
+  max-width: 72px !important;
+  max-height: 72px !important;
+  min-width: 72px !important;
+  object-fit: contain !important;
+  flex-shrink: 0 !important;
+}
+
+.listing-qr-thumb-lg {
+  width: 96px !important;
+  height: 96px !important;
+  max-width: 96px !important;
+  max-height: 96px !important;
+  min-width: 96px !important;
+}
+
+/* Equal-height listing cards in home/category swipers */
+.listing-cards-swiper.swiper,
+.listing-cards-swiper {
+  /* Clip neighboring slides so only the current page (e.g. 3 cards) shows */
+  overflow: hidden !important;
+  /* Vertical padding so top/bottom shadows still appear */
+  padding-top: 12px !important;
+  padding-bottom: 16px !important;
+}
+
+.listing-cards-swiper .swiper-wrapper {
+  display: flex !important;
+  align-items: stretch !important;
+}
+
+.listing-cards-swiper .swiper-slide,
+.listing-cards-swiper .listing-card-slide {
+  height: auto !important;
+  align-self: stretch !important;
+  display: flex !important;
+  align-items: stretch !important;
+  justify-content: flex-start !important;
+  box-sizing: border-box;
+  overflow: visible !important;
+  padding-top: 4px;
+  padding-bottom: 8px;
+}
+
+.listing-cards-swiper .swiper-slide>.listing-card {
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 100%;
+}
+
+.listing-card {
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100%;
+  overflow: visible !important;
+  border-radius: 6px;
+  background: #fff;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.15) !important;
+}
+
+.listing-card-body {
+  display: flex !important;
+  flex: 1 1 auto !important;
+  flex-direction: column !important;
+  min-height: 0;
+}
+
+/* Keep title / type / location block tall enough even without QR */
+.listing-card-meta {
+  min-height: 88px;
+  flex: 1 1 auto;
+  text-align: left !important;
+  gap: 12px;
+}
+
+/* Text stays left of QR and wraps — never overlays the QR */
+.listing-card-meta>div:first-child {
+  min-width: 0 !important;
+  flex: 1 1 auto !important;
+  max-width: 100%;
+  text-align: left !important;
+  align-items: flex-start !important;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.listing-card-meta a,
+.listing-card-meta p,
+.listing-card-meta h2,
+.listing-card-meta h3 {
+  text-align: left !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  max-width: 100%;
+}
+
+.listing-card-meta .listing-card-title,
+.listing-card-meta a.listing-card-title {
+  display: block;
+  line-height: 1.35;
+}
+
+.listing-card-meta .listing-card-location {
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: unset !important;
+}
+
+.listing-card-type {
+  min-height: 18px;
+  line-height: 1.3;
+}
+
+.listing-card-meta .listing-qr-thumb {
+  flex-shrink: 0 !important;
+  align-self: flex-start;
+}
+
+.listing-card-footer {
+  margin-top: auto !important;
+  flex-shrink: 0;
+}
+
 .select-wrapper {
   position: relative;
-  width: 209px;
+  flex: 1 1 0;
+  min-width: 132px;
+  max-width: 196px;
+}
+
+.select-wrapper-country {
+  min-width: 200px;
+  flex: 1.55 1 0;
+  max-width: 300px;
 }
 
 .select-custom {
   appearance: none;
   -moz-appearance: none;
-  /* Firefox */
   -webkit-appearance: none;
-  /* Safari and Chrome */
   display: block;
   width: 100%;
-  height: 64px;
-  /* Adjust based on your needs */
-  padding: 0px 0px 0px 20px;
-  background: rgba(255, 255, 255, 0.8);
+  height: 46px;
+  padding: 0 36px 0 14px;
+  background: rgba(255, 255, 255, 0.94);
   color: #002d4f;
-  border: none;
-  border-radius: 5px;
-  box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.1);
-  padding-right: 30px;
-  /* Make space for the custom arrow */
+  font-size: 0.875rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  line-height: 1.25;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  border-radius: 8px;
+  box-shadow:
+    0 1px 2px rgba(0, 45, 79, 0.06),
+    0 8px 24px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background-color 0.2s ease;
+}
+
+.select-custom:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.98);
+  border-color: rgba(162, 145, 62, 0.45);
+}
+
+.select-custom:focus {
+  outline: none;
+  border-color: rgba(162, 145, 62, 0.65);
+  box-shadow:
+    0 0 0 3px rgba(162, 145, 62, 0.18),
+    0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.select-custom:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 .select-arrow {
   position: absolute;
   top: 50%;
-  right: 10px;
+  right: 12px;
   transform: translateY(-50%);
   pointer-events: none;
-  /* Makes the arrow non-clickable, passing the event to the select */
+  opacity: 0.75;
+}
+
+.hero-search-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 10px;
+  width: 100%;
+}
+
+@media (max-width: 1279px) {
+  .hero-search-bar .select-wrapper {
+    flex: 1 1 calc(50% - 5px);
+    min-width: 0;
+    max-width: none;
+  }
+
+  .hero-search-bar .select-wrapper-city,
+  .hero-search-bar .select-wrapper-country {
+    flex: 1 1 100%;
+  }
+
+  .hero-search-bar .hero-search-bar__action {
+    flex: 1 1 100%;
+    display: flex;
+    justify-content: center;
+  }
+}
+
+@media (min-width: 1280px) {
+  .hero-search-bar {
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 12px;
+  }
+}
+
+.select-wrapper-city {
+  min-width: 132px;
+  flex: 1.2 1 0;
+  max-width: 180px;
+}
+
+.select-wrapper-country .hero-filter-select__value,
+.select-wrapper-country .hero-filter-select__menu li {
+  font-size: 0.8125rem;
+  letter-spacing: 0;
+}
+
+@media (min-width: 1280px) {
+
+  .select-wrapper-country .hero-filter-select__value,
+  .select-wrapper-country .hero-filter-select__menu li {
+    font-size: 0.875rem;
+  }
+}
+
+.hero-filter-select__trigger {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  text-align: left;
+}
+
+.hero-filter-select__value {
+  display: block;
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hero-filter-select__menu {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 4px);
+  z-index: 60;
+  margin: 0;
+  padding: 6px 0;
+  list-style: none;
+  max-height: 220px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  background: #ffffff;
+  border: 1px solid rgba(0, 45, 79, 0.12);
+  border-radius: 8px;
+  box-shadow:
+    0 10px 28px rgba(0, 45, 79, 0.16),
+    0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.hero-filter-select__menu li {
+  padding: 10px 14px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.35;
+  color: #002d4f;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.hero-filter-select__menu li:hover,
+.hero-filter-select__menu li.is-selected {
+  background: rgba(0, 45, 79, 0.08);
+}
+
+.hero-filter-select__menu li.is-selected {
+  color: #002d4f;
+  font-weight: 600;
+}
+
+.hero-filter-select__empty {
+  color: rgba(0, 45, 79, 0.55);
+  cursor: default;
+  pointer-events: none;
+}
+
+.hero-search-bar--modal .select-custom {
+  background: #ffffff;
+  border-color: rgba(0, 45, 79, 0.14);
+  box-shadow: 0 2px 10px rgba(0, 45, 79, 0.08);
+}
+
+.hero-filter-input {
+  cursor: text;
+  padding-right: 14px;
+}
+
+.hero-filter-input::-webkit-outer-spin-button,
+.hero-filter-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.hero-filter-input[type='number'] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.select-wrapper-roi {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 118px;
+  flex: 0.9 1 0;
+  max-width: 160px;
+}
+
+.hero-roi-input-wrap {
+  position: relative;
+  width: 100%;
+}
+
+.hero-roi-input {
+  padding-right: 30px;
+}
+
+.hero-roi-suffix {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #002d4f;
+  pointer-events: none;
+  line-height: 1;
+}
+
+.hero-search-bar--modal .hero-roi-suffix {
+  color: rgba(0, 45, 79, 0.7);
+}
+
+.hero-search-bar--modal h1 {
+  color: #002d4f;
+}
+
+.values-marquee-container {
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.values-marquee-content {
+  display: inline-block;
+  animation: marquee 18s linear infinite;
+  padding-right: 1.5rem;
+}
+
+.values-marquee-item {
+  display: inline-block;
+  min-width: 150px;
+  text-align: center;
+  color: #fff;
+  padding: 0 1rem;
+  vertical-align: top;
 }
 
 @keyframes marquee {
@@ -612,6 +1075,50 @@ input[type="range"]::-webkit-slider-thumb {
   /* IE and Edge */
   scrollbar-width: none;
   /* Firefox */
+}
+
+/* Shimmer skeleton — contact & shared loaders */
+@keyframes fv-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.fv-shimmer {
+  background: linear-gradient(105deg,
+      #e8edf4 0%,
+      #f4f7fb 35%,
+      #dce6f2 50%,
+      #f4f7fb 65%,
+      #e8edf4 100%);
+  background-size: 200% 100%;
+  animation: fv-shimmer 1.6s ease-in-out infinite;
+}
+
+.fv-shimmer-gold {
+  background: linear-gradient(105deg,
+      rgba(162, 145, 62, 0.1) 0%,
+      rgba(215, 197, 144, 0.28) 40%,
+      rgba(0, 45, 79, 0.06) 50%,
+      rgba(215, 197, 144, 0.28) 60%,
+      rgba(162, 145, 62, 0.1) 100%);
+  background-size: 200% 100%;
+  animation: fv-shimmer 1.8s ease-in-out infinite;
+}
+
+.fv-shimmer-light {
+  background: linear-gradient(105deg,
+      rgba(255, 255, 255, 0.06) 0%,
+      rgba(255, 255, 255, 0.2) 38%,
+      rgba(255, 255, 255, 0.1) 50%,
+      rgba(255, 255, 255, 0.2) 62%,
+      rgba(255, 255, 255, 0.06) 100%);
+  background-size: 200% 100%;
+  animation: fv-shimmer 1.6s ease-in-out infinite;
 }
 
 /* Add this in your global CSS file or within a <style> tag in your component */

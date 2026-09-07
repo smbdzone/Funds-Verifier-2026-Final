@@ -33,50 +33,85 @@ export default function Footer() {
               pages other software applications where content.
             </div>
             <div className="flex flex-row gap-3 justify-start items-center">
-              <Image
-                width={30}
-                height={30}
-                className="h-[30px] m-1 w-[30px] max-w-full overflow-hidden max-h-full"
-                alt=""
-                src={facebook.src}
-              />
-              <Image
-                width={30}
-                height={30}
-                className="h-[30px] m-1 w-[30px] max-w-full overflow-hidden max-h-full"
-                alt=""
-                src={instagram.src}
-              />
-              <Image
-                width={30}
-                height={30}
-                className="h-[30px] m-1 w-[30px] max-w-full overflow-hidden max-h-full"
-                alt=""
-                src={linkedin.src}
-              />
-              <Image
-                width={30}
-                height={30}
-                className="h-[30px] m-1 w-[30px] max-w-full overflow-hidden max-h-full"
-                alt=""
-                src={twitter.src}
-              />
-              <Image
-                width={30}
-                height={30}
-                className="h-[30px] m-1 w-[30px] max-w-full overflow-hidden max-h-full"
-                alt=""
-                src={tiktok.src}
-              />
+              <a
+                href="https://www.facebook.com/fundsverifier"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Facebook"
+              >
+                <Image
+                  width={30}
+                  height={30}
+                  className="h-[30px] m-1 w-[30px] max-w-full overflow-hidden max-h-full"
+                  alt="Facebook"
+                  src={facebook.src}
+                />
+              </a>
+              <a
+                href="https://www.instagram.com/fundsverifier"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Instagram"
+              >
+                <Image
+                  width={30}
+                  height={30}
+                  className="h-[30px] m-1 w-[30px] max-w-full overflow-hidden max-h-full"
+                  alt="Instagram"
+                  src={instagram.src}
+                />
+              </a>
+              <a
+                href="https://www.linkedin.com/company/fundsverifier"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="LinkedIn"
+              >
+                <Image
+                  width={30}
+                  height={30}
+                  className="h-[30px] m-1 w-[30px] max-w-full overflow-hidden max-h-full"
+                  alt="LinkedIn"
+                  src={linkedin.src}
+                />
+              </a>
+              <a
+                href="https://twitter.com/fundsverifier"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="X (Twitter)"
+              >
+                <Image
+                  width={30}
+                  height={30}
+                  className="h-[30px] m-1 w-[30px] max-w-full overflow-hidden max-h-full"
+                  alt="X"
+                  src={twitter.src}
+                />
+              </a>
+              <a
+                href="https://www.tiktok.com/@fundsverifier"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="TikTok"
+              >
+                <Image
+                  width={30}
+                  height={30}
+                  className="h-[30px] m-1 w-[30px] max-w-full overflow-hidden max-h-full"
+                  alt="TikTok"
+                  src={tiktok.src}
+                />
+              </a>
             </div>
           </div>
           <div className=" md:w-[24%] items-start flex flex-col p-3 justify-start text-21xl text-center text-white">
             <p className="text-2xl font-semibold tracking-wide">Quick Links</p>
             <Link href="/aboutus">
-            <p className="text-lg leading-8 mt-3 tracking-widest">About Us</p>
+              <p className="text-lg leading-8 mt-3 tracking-widest">About Us</p>
             </Link>
             <p className="text-lg leading-8 tracking-widest">How It Works</p>
-            <p className="text-lg leading-8 tracking-widest">News and Trends</p>
+            <p className="text-lg leading-8 tracking-widest">News & trends</p>
             <p className="text-lg leading-8 tracking-widest">
               Auctions <small className="text-xs">[coming soon]</small>
             </p>
@@ -122,7 +157,7 @@ export default function Footer() {
                 src={phone.src}
                 className="me-3 inline"
               />
-              +971 55 91 99 661
+              +971 56 129 0003
             </p>
             <p className="text-lg flex flex-row my-2 items-center leading-8 tracking-widest">
               <Image
@@ -131,7 +166,7 @@ export default function Footer() {
                 src={mail.src}
                 className="me-3  inline"
               />
-              smbdigitalzone@gmail.com
+              outlook@fundsverifier.com
             </p>
             <div className="flex flex-row items-start gap-2 justify-start mt-2">
               <Image
@@ -141,7 +176,7 @@ export default function Footer() {
                 className="me-3 inline mt-1.5"
               />
               <p className="text-lg text-start tracking-widest title-font">
-                Burj khalifa district, Dubai, United Arb emirates
+                Dubai, United Arab Emirates
               </p>
             </div>
           </div>

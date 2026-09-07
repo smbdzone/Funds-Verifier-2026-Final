@@ -1,5 +1,5 @@
 'use client'
-import { TrusteeViewingRequest } from '../../../components/modules/SellerProfile/TrusteeViewingRequest'
+import TrusteeViewingRequest from '../../../components/modules/SellerProfile/TrusteeViewingRequest'
 
 function Page() {
   return (

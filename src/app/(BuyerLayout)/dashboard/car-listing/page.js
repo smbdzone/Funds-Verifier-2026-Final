@@ -6,14 +6,22 @@ import {
   handleThumbnailUpload,
   handleVideoUpload,
 } from '@/libs/uploadAsset'
+import { autoCapitalizeField } from '@/libs/autoCapitalizeText'
+import { flagListingPendingApprovalNotice } from '@/libs/listingPendingApprovalNotice'
 import {
   applyPremiumServiceRefs,
   listingMediaRef,
   premiumServiceRequestId,
+  stripEmptyObjectIdRefs,
 } from '@/libs/listingMediaRef'
+import {
+  hasConfirmedEvaluationPayment,
+  bookEvaluationTimeslotFromFormData,
+  stripEvaluationBookingMeta,
+} from '@/libs/evaluationBooking'
 import { carBrands } from '@/utils'
 import axios from 'axios'
-import { Suspense, useContext, useEffect, useState } from 'react'
+import { Suspense, useContext, useEffect, useMemo, useState } from 'react'
 import flags from 'react-phone-number-input/flags'
 import 'react-phone-number-input/style.css'
 import { toast, ToastContainer } from 'react-toastify'
@@ -34,6 +42,22 @@ import { useRouter } from 'next/navigation'
 import PayModal from '../../../../components/Modals/PayModal'
 import { useProfile } from '../../../../context/UserContext'
 import StripeElement from '../../../../components/Stripe/StripeElement'
+import { useRefreshListingAfterServicePayment } from '@/hooks/useRefreshListingAfterServicePayment'
+import { useRestoreListingAfterClozerPayment } from '@/hooks/useRestoreListingAfterClozerPayment'
+import {
+  useRestorePendingListingDraft,
+  useRefetchListingOnReturn,
+} from '@/hooks/useRestorePendingListingDraft'
+import { useAutoFinalizeAfterEvaluationPayment } from '@/hooks/useAutoFinalizeAfterEvaluationPayment'
+import {
+  clearListingWorkspaceStorage,
+  hasPendingListingDraft,
+  isPendingDraftForListingRoute,
+} from '@/libs/pendingListingDraft'
+import {
+  isListingEvaluatorApprovedLocked,
+  buildApprovedAssetHolderUpdatePayload,
+} from '@/libs/listingEditLock'
 import customAxios from '../../../../utils/apis/apis'
 
 const initialFormData = {
@@ -70,6 +94,7 @@ const initialFormData = {
   pictures: null,
   video: null,
   thumbnailImg: null,
+  qrScan: null,
   VIN: '',
   exteriorColor: [String],
   interiorColor: [String],
@@ -77,6 +102,7 @@ const initialFormData = {
   extras: [String],
   technicalReport: '',
   evaluationDateTime: '',
+  mapUrl: '',
 }
 const dropdownData = {
   warranty: false,
@@ -144,9 +170,12 @@ function Page() {
     errors,
     phoneNumber,
     thumbnail,
+    qrScan,
     handleOpenModal,
     handleThumbImageRemove,
     handleThumbImageChange,
+    handleQrScanChange,
+    handleQrScanRemove,
     handleCountryChange,
     selectedCountryPhone,
     maxLength,
@@ -165,6 +194,7 @@ function Page() {
     handleRequestTechnicalModalData,
     handleClose1Modal,
     modalData,
+    resetPremiumPaymentDrafts,
     handleVideoChange,
     handlePhoneNumberChange,
     id,
@@ -177,7 +207,7 @@ function Page() {
     isValidState,
     handleFormData,
     setErrors,
-    video,
+    videos,
     file,
     handleScroll,
     setTotalPrice,
@@ -185,13 +215,83 @@ function Page() {
     fetchData,
     setVideo,
     resetForm,
+    setImages,
+    setThumbnail,
+    setVideos,
+    setQrScan,
+    setSelectedCountry,
+    setSelectedCity,
+    setSelectedNeighbourhood,
+    setCountryCode,
+    setPhoneNumber,
+    setSelectedModel,
   } = useContext(ListingContext)
 
+  const listingDraftRestoreApi = useMemo(
+    () => ({
+      setFormData,
+      setImages,
+      setThumbnail,
+      setVideos,
+      setQrScan,
+      setSelectedCountry,
+      setSelectedCity,
+      setSelectedNeighbourhood,
+      setCountryCode,
+      setPhoneNumber,
+      setTotalPrice,
+      setSelectedMake,
+      setSelectedModel,
+    }),
+    [
+      setFormData,
+      setImages,
+      setThumbnail,
+      setVideos,
+      setQrScan,
+      setSelectedCountry,
+      setSelectedCity,
+      setSelectedNeighbourhood,
+      setCountryCode,
+      setPhoneNumber,
+      setTotalPrice,
+      setSelectedModel,
+    ],
+  )
+
   useEffect(() => {
+    if (id) {
+      fetchData('car')
+      return
+    }
+
+    // Keep draft only when it belongs to car listing (not property/boat/jewelry).
+    if (hasPendingListingDraft() && isPendingDraftForListingRoute('car')) {
+      setLoading(false)
+      return
+    }
+
+    if (hasPendingListingDraft()) {
+      clearListingWorkspaceStorage()
+    }
+
     resetForm()
     setFormData(initialFormData)
     handleFormData(initialFormData, dropdownData)
-  }, [])
+    setLoading(false)
+  }, [searchParams])
+
+  useEffect(() => {
+    if (id && formData?.make) {
+      setSelectedMake(formData.make)
+    }
+  }, [id, formData?.make])
+
+  useRefreshListingAfterServicePayment(id, 'car', fetchData)
+  useRestoreListingAfterClozerPayment(listingDraftRestoreApi)
+  useRestorePendingListingDraft(id, listingDraftRestoreApi, 'car')
+  useRefetchListingOnReturn(id, 'car', fetchData)
+
   const handleTechnicalModal = () => {
     setIsTechnicalModalOpen(!isTechnicalModalOpen)
   }
@@ -199,14 +299,6 @@ function Page() {
   const handleCloseTechnicalModal = () => {
     setIsTechnicalModalOpen(false)
   }
-
-  useEffect(() => {
-    if (id) {
-      fetchData('car')
-    } else {
-      setLoading(false)
-    }
-  }, [searchParams])
 
   const filteredCountries = countries.filter((country) =>
     country.country.toLowerCase().includes(searchQuery.toLowerCase())
@@ -220,23 +312,21 @@ function Page() {
     e.preventDefault()
     const validationErrors = validateForm(formData)
 
-    // Skip evaluation date validation for edit flow (when id exists)
-    if (!id && !formData?.evaluationDateTime) {
+    if (id) {
+      finalizeSubmission()
+      return
+    }
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors)
+      setLoading(false)
+      handleScroll()
+      return
+    }
+    if (!formData?.evaluationDateTime) {
       toast.error('Evaluation Date and time is required!')
       return
     }
-
-    if (id) {
-      finalizeSubmission()
-    } else {
-      if (Object.keys(validationErrors).length === 0) {
-        setConfirmationModal(true)
-      } else {
-        setErrors(validationErrors)
-        setLoading(false)
-        handleScroll()
-      }
-    }
+    setConfirmationModal(true)
   }
 
   const handleSubmit = async (e) => {
@@ -260,10 +350,21 @@ function Page() {
         throw new Error('Thumbnail is required')
       }
 
-      if (!video) {
-        toast.error('Video is required.')
-        setLoading(false)
-        throw new Error('Video is required')
+      try {
+        const sessionRaw = localStorage.getItem('checkoutSession')
+        const session = sessionRaw ? JSON.parse(sessionRaw) : null
+        if (
+          hasConfirmedEvaluationPayment(formData) ||
+          hasConfirmedEvaluationPayment(session)
+        ) {
+          setLoading(true)
+          setConfirmationModal(false)
+          setShowPayment(false)
+          finalizeSubmission()
+          return
+        }
+      } catch {
+        /* ignore */
       }
 
       return setShowPayment(true)
@@ -301,7 +402,7 @@ function Page() {
       }
     } catch (error) {
       console.error('Error during form submission:', error?.message)
-      toast.error('An error occurred. Please try again.')
+      toast.error(error?.message || 'An error occurred. Please try again.')
       setLoading(false)
     }
   }
@@ -349,10 +450,10 @@ function Page() {
 
       if (!id) {
         const checkoutSession = JSON.parse(
-          localStorage.getItem('checkoutSession') || {}
+          localStorage.getItem('checkoutSession') || 'null'
         )
-        if (!checkoutSession) {
-          return toast.error('Payment of 2 dirham is required!')
+        if (!hasConfirmedEvaluationPayment(checkoutSession)) {
+          return toast.error('Evaluation payment is required before submitting.')
         }
       }
       setConfirmationModal(false)
@@ -362,25 +463,43 @@ function Page() {
       let thumbnailID = formData?.thumbnailImg
       let videoID = formData?.video
       let fileID = formData?.evaluationCertificate
+      let qrScanID = formData?.qrScan
       // Upload new files only if creating a new property (no id)
       if (!id) {
-        const [uploadedImages, uploadedVideo, uploadedFile, uploadedThumbnail] =
-          await Promise.all([
-            images.length > 0 ? handleImageUpload(images) : imageID,
-            video ? handleVideoUpload(video) : videoID,
-            file ? handleFileUpload(file) : fileID,
-            thumbnail ? handleThumbnailUpload(thumbnail) : thumbnailID,
-          ])
+        const [
+          uploadedImages,
+          uploadedVideo,
+          uploadedFile,
+          uploadedThumbnail,
+          uploadedQrScan,
+        ] = await Promise.all([
+          images.length > 0 ? handleImageUpload(images) : imageID,
+          videos.some((v) => v instanceof File)
+            ? handleVideoUpload(videos.filter((v) => v instanceof File))
+            : videoID,
+          file ? handleFileUpload(file) : fileID,
+          thumbnail instanceof File
+            ? handleThumbnailUpload(thumbnail)
+            : thumbnailID,
+          qrScan ? handleImageUpload([qrScan]) : qrScanID,
+        ])
 
         imageID = uploadedImages
         videoID = uploadedVideo
         fileID = uploadedFile
         thumbnailID = uploadedThumbnail
+        qrScanID = uploadedQrScan
       } else {
-        // ✅ For updates: only re-upload video or file if changed
-        if (video) videoID = await handleVideoUpload(video)
+        // For updates: only re-upload media that changed
+        const newVideoFiles = videos.filter((v) => v instanceof File)
+        if (newVideoFiles.length) videoID = await handleVideoUpload(newVideoFiles)
         if (file) fileID = await handleFileUpload(file)
-        // thumbnail and images will remain unchanged
+        if (thumbnail instanceof File) {
+          thumbnailID = await handleThumbnailUpload(thumbnail)
+        }
+        if (qrScan instanceof File) {
+          qrScanID = await handleImageUpload([qrScan])
+        }
       }
 
       // Prepare form data
@@ -396,6 +515,7 @@ function Page() {
         thumbnailImg:
           listingMediaRef(thumbnailID) ??
           listingMediaRef(formData?.thumbnailImg),
+        qrScan: listingMediaRef(qrScanID) ?? listingMediaRef(formData?.qrScan),
         feedback: 'feedback',
       }
 
@@ -414,24 +534,38 @@ function Page() {
       }
 
       // Submit data
+      const listingPayload = stripEmptyObjectIdRefs(
+        stripEvaluationBookingMeta(updatedFormData),
+      )
+      const payloadToSave =
+        id && isListingEvaluatorApprovedLocked(formData)
+          ? stripEmptyObjectIdRefs(
+            buildApprovedAssetHolderUpdatePayload(listingPayload),
+          )
+          : listingPayload
+
       if (id) {
         await customAxios.put(
           `${process.env.NEXT_PUBLIC_BASE_URL}/car/${id}`,
-          updatedFormData
+          payloadToSave
         )
         toast.success('Updated successfully.')
       } else {
+        await bookEvaluationTimeslotFromFormData(formData)
         await Promise.all([
           customAxios.post(
             `${process.env.NEXT_PUBLIC_BASE_URL}/car`,
-            updatedFormData
+            listingPayload
           ),
         ])
         toast.success('Submitted successfully. Evaluator will evaluate it.')
+        flagListingPendingApprovalNotice({ assetKind: 'car' })
         resetForm()
         setFormData(initialFormData)
         localStorage.removeItem('FormPayment')
         localStorage.removeItem('checkoutSessionId')
+        localStorage.removeItem('checkoutSession')
+        localStorage.removeItem('pendingListingDraft')
       }
 
       setLoading(false)
@@ -439,10 +573,23 @@ function Page() {
       // router.push("/");
     } catch (error) {
       console.error('Error during final form submission:', error)
-      toast.error('An error occurred. Please try again.')
+      toast.error(
+        error?.message || 'An error occurred during submission. Please try again.',
+      )
       setLoading(false)
     }
   }
+
+  useAutoFinalizeAfterEvaluationPayment({
+    listingId: id,
+    formData,
+    images,
+    thumbnail,
+    finalizeSubmission,
+    setLoading,
+    setShowPayment,
+    setConfirmationModal,
+  })
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -454,7 +601,7 @@ function Page() {
         setTotalPrice(formattedValue) // This will format the displayed price
       }
     } else {
-      setFormData({ ...formData, [name]: value })
+      setFormData({ ...formData, [name]: autoCapitalizeField(name, value) })
     }
   }
 
@@ -465,6 +612,7 @@ function Page() {
     //   errors.evaluationDateTime = "Please select a date and time.";
     // }
     if (!thumbnail) errors.thumbnail = 'Thumbnail are Required'
+    if (!qrScan) errors.qrScan = 'QR Scan is required'
     if (!data?.assetType || data?.assetType === 'Select Asset Type')
       errors.assetType = 'Asset Type is required'
     if (!data?.country) errors.country = 'Country is required'
@@ -608,11 +756,12 @@ function Page() {
               technicalModalData={technicalModalData}
               setIsOpenModal={setIsOpenModal}
               isValidState={isValidState}
+              onPaymentAbandoned={resetPremiumPaymentDrafts}
             />
           )}
           <ToastContainer />
           <h2 className='text-dark-grey text-center xl:text-[40px] lg:text-4xl md:text-3xl sm:text-2xl xxs:text-xl font-medium leading-normal pt-[60px]'>
-            Final Steps to / Listing Your Asset
+            Final Steps to Listing Your Asset
           </h2>
           <Listing
             formData={formData}
@@ -668,14 +817,17 @@ function Page() {
                 flags={flags}
                 phoneNumber={phoneNumber}
                 thumbnail={thumbnail}
+                qrScan={qrScan}
                 handlePhoneNumberChange={handlePhoneNumberChange}
                 handleCountryChange={handleCountryChange}
                 selectedCountryPhone={selectedCountryPhone}
                 maxLength={maxLength}
                 handleThumbImageChange={handleThumbImageChange}
                 handleThumbImageRemove={handleThumbImageRemove}
+                handleQrScanChange={handleQrScanChange}
+                handleQrScanRemove={handleQrScanRemove}
                 images={images}
-                video={video}
+                videos={videos}
                 type={'Car For Sale'}
                 // dropdown3D={carForSaleDropdown}
                 handleImageRemove={handleImageRemove}
@@ -723,6 +875,9 @@ function Page() {
                   handleSubmit={handleSubmit}
                   setConfirmationModal={setConfirmationModal}
                   id={id}
+                  formData={formData}
+                  handleChange={handleChange}
+                  mapUrl={formData.mapUrl}
                 />
               </div>
               {!id && (

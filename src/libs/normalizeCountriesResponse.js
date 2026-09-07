@@ -1,6 +1,7 @@
 import {
   LISTING_COUNTRY_UAE_LABEL,
   isUnitedArabEmiratesListingCountry,
+  formatCityLabel,
 } from '@/libs/dummyLocationData'
 
 /**
@@ -29,10 +30,27 @@ export function normalizeCountriesResponse(raw) {
 
 /**
  * Normalizes GET /api/country responses: Google wrapper `{ data: { predictions } }` or a raw array (e.g. `[]`).
+ * City labels are city-name only (strips ", United Arab Emirates").
  */
 export function normalizeCitiesResponse(raw) {
   if (raw == null) return []
-  if (Array.isArray(raw)) return raw
-  const preds = raw?.data?.predictions ?? raw.predictions
-  return Array.isArray(preds) ? preds : []
+  const list = Array.isArray(raw)
+    ? raw
+    : Array.isArray(raw?.data?.predictions)
+      ? raw.data.predictions
+      : Array.isArray(raw.predictions)
+        ? raw.predictions
+        : []
+
+  return list
+    .map((item) => {
+      if (typeof item === 'string') {
+        const description = formatCityLabel(item)
+        return description ? { description } : null
+      }
+      const description = formatCityLabel(item?.description || item?.name || '')
+      if (!description) return null
+      return { ...item, description }
+    })
+    .filter(Boolean)
 }

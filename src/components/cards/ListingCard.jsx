@@ -11,11 +11,14 @@ import { Swiper, SwiperSlide } from 'swiper/react'
 import 'swiper/css'
 import 'swiper/css/navigation'
 import 'swiper/css/pagination'
-import { Navigation, Pagination, Scrollbar, A11y } from 'swiper/modules'
+import { Pagination, Scrollbar, A11y } from 'swiper/modules'
 import Link from 'next/link'
 import Modal2 from '../product-modal/modal2'
 import Image from 'next/image'
 import { formatNumberWithCommas } from '@/utils/global-functions/global'
+import { formatCardPrice, formatListingCardPrice } from '@/libs/listingPriceDisplay'
+import { isOffPlanListing } from '@/libs/filterMyListingTab'
+import { formatPropertySizeDisplay } from '@/libs/propertySizeUnits'
 import Open3dModal from '@/components/3dModal/Open3dModal'
 import {
   getListingCarouselItems,
@@ -24,17 +27,27 @@ import {
   isListingCarouselPlaceholderSlide,
   PLACEHOLDER,
 } from '@/libs/listingCardMedia'
+import ListingCardQrThumb from '@/components/shared/ListingCardQrThumb'
 import {
   getListingPremiumDisplay,
   getListingWalkthroughUrl,
   LISTING_PREMIUM_BLUE_GRADIENT,
 } from '@/libs/listingPremiumStatus'
+import {
+  getListingEditPath,
+  getPendingEvaluationViewPath,
+} from '@/libs/listingEditPaths'
+import { getListingDetailId } from '@/libs/listingSlug'
+import { hasPendingDocumentRequests } from '@/utils/requestDocumentUtils'
+import ListingCarouselNavButton from '@/components/cards/ListingCarouselNavButton'
+import { useProfile } from '@/context/UserContext'
 
 const renderListingDetails = (listing, hasFeaturedStyling) => {
   switch (listing.assetType) {
     case 'Property For Lease':
     case 'Property For Sale':
     case 'Property Off Plan':
+    case 'Property Off Plan For Sale':
       return (
         <div className='flex flex-wrap gap-3 items-center mb-3'>
           <span className='bg-[#F5F5F5] shrink-0 rounded-full h-[25px] w-[25px] '></span>
@@ -62,7 +75,7 @@ const renderListingDetails = (listing, hasFeaturedStyling) => {
               : 'text-prussianBlue'
               }`}
           >
-            {formatNumberWithCommas(listing.sizeSQFT)} Sqft
+            {formatPropertySizeDisplay(listing)}
           </span>
         </div>
       )
@@ -155,23 +168,37 @@ const ListingCard = ({
   listings,
   usePendingEvaluation = false,
   handleDeleteClick,
+  showEdit,
 }) => {
-  const [preious] = useState(false)
-  const [next] = useState(false)
+  const { user } = useProfile() || {}
+  const roleNorm = String(user?.role || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_-]/g, '')
+  const isAdminViewer =
+    roleNorm === 'admin' || roleNorm === 'superadmin'
+  // Super Admin / Admin: same card look as asset holder, but no edit control
+  const canEdit = showEdit ?? !isAdminViewer
+
   const [walkthroughListingId, setWalkthroughListingId] = useState(null)
   const [walkthroughLink, setWalkthroughLink] = useState('')
   const [modalCardId, setModalCardId] = useState(null)
+  const [analyticsCardId, setAnalyticsCardId] = useState(null)
+  const [qrHoveredById, setQrHoveredById] = useState({})
 
   const getDynamicLink = (assetType, slug) => {
     if (usePendingEvaluation) {
-      return `/seller-profile/pending-evaluation/${slug}?assetType=${assetType}`
+      return getPendingEvaluationViewPath(assetType, slug)
     } else {
       let assetTypeText
       switch (assetType) {
         case 'Property For Lease':
         case 'Property For Sale':
-        case 'Property Off Plan For Sale':
           assetTypeText = 'property'
+          break
+        case 'Property Off Plan For Sale':
+        case 'Property Off Plan':
+          assetTypeText = 'offplan'
           break
         case 'Car For Sale':
           assetTypeText = 'car'
@@ -183,43 +210,28 @@ const ListingCard = ({
           assetTypeText = 'boat'
           break
         default:
-          assetTypeText = assetType.toLowerCase()
+          assetTypeText = String(assetType || '')
+            .toLowerCase()
+            .includes('off plan')
+            ? 'offplan'
+            : String(assetType || 'property').toLowerCase()
       }
       return `/${assetTypeText}/${slug}`
     }
   }
 
-  // Define openModal function to set the modalCardId
   const openModal = (cardId) => {
-    setModalCardId(cardId) // This sets the modal to open for a specific card
+    setModalCardId(cardId)
   }
 
-  // Define closeModal function to reset the modalCardId
   const closeModal = () => {
-    setModalCardId(null) // This will close the modal
+    setModalCardId(null)
   }
 
   const swiperRefs = useRef({})
 
   const getEditLink = (assetType, listingId) => {
-    if (usePendingEvaluation) {
-      return getDynamicLink(assetType, listingId)
-    } else {
-      switch (assetType) {
-        case 'Property For Lease':
-        // case 'Property Off Plan For Sale':
-        case 'Property For Sale':
-          return `/dashboard/property-listing?id=${listingId}`
-        case 'Car For Sale':
-          return `/dashboard/car-listing?id=${listingId}`
-        case 'Jewellery For Sale':
-          return `/dashboard/jewelry-listing?id=${listingId}`
-        case 'Boats For Sale':
-          return `/dashboard/boat-listing?id=${listingId}`
-        default:
-          return '#'
-      }
-    }
+    return getListingEditPath(assetType, listingId)
   }
 
   const handlePrevSlide = (id) => {
@@ -273,6 +285,7 @@ const ListingCard = ({
       const { hasFeaturedStyling, badge: premiumBadge, hasPaidTechnical } =
         getListingPremiumDisplay(listing)
       const technicalReportPending = hasPaidTechnical && !technicalReportSrc
+      const documentRequestedPending = hasPendingDocumentRequests(listing)
 
       const showDocIcons =
         usePendingEvaluation || listing.status !== 0
@@ -283,10 +296,16 @@ const ListingCard = ({
         listing?.technicalReport?.reportFile?.Certificate?.name ||
         'technical-report.pdf'
 
+      const isOffPlan = isOffPlanListing(listing)
+      const qrHovered = Boolean(qrHoveredById[listing.uuid])
+      const detailsVisibleClass = qrHovered
+        ? 'max-h-[480px] opacity-100'
+        : 'max-h-0 opacity-0 pointer-events-none'
+
       return (
         <>
           <div
-            className={`relative flex md:p-5 p-2 flex-col md:gap-4 gap-2 xl:gap-10 my-5 rounded-lg items-center md:flex-row custom-shadow overflow-x-hidden ${hasFeaturedStyling ? '' : 'bg-white'
+            className={`group relative flex md:p-5 p-2 flex-col md:gap-4 gap-2 xl:gap-10 my-5 rounded-lg items-center md:flex-row custom-shadow overflow-x-hidden ${hasFeaturedStyling ? '' : 'bg-white'
               }`}
             style={
               hasFeaturedStyling
@@ -294,77 +313,112 @@ const ListingCard = ({
                 : undefined
             }
           >
-            <div className='md:absolute top-2 w-full right-2 z-50 items-center justify-end flex gap-2'>
-              {/* status */}
-              {listing.status === 0 ? (
-                <>
+            <div className='md:absolute top-2 w-full right-2 z-50 flex flex-col items-end gap-1.5'>
+              <div className='flex w-full items-center justify-end gap-2'>
+                {documentRequestedPending ? (
                   <div className='relative group'>
-                    <button className='bg-blue-500 text-black py-2 rounded'>
-                      <Image
-                        src='/icons/pending1.svg'
-                        height={20}
-                        width={20}
-                        alt='Pending'
-                        className='cursor-pointer'
-                      />
-                    </button>
-                    <span className='absolute top-full left-1/2 transform bg-white shadow-md rounded -translate-x-1/2 mt-0 hidden group-hover:flex whitespace-nowrap bg-gray-800 text-black text-xs py-1 px-2'>
-                      Pending
+                    <span className='inline-flex items-center rounded bg-yellow-400 px-2.5 py-1 text-xs font-semibold text-black shadow-sm'>
+                      Document Requested
+                    </span>
+                    <span className='absolute top-full left-1/2 z-50 mt-1 hidden -translate-x-1/2 whitespace-nowrap rounded bg-white px-2 py-1 text-xs text-black shadow-md group-hover:flex'>
+                      Upload requested documents in Documents Storage
                     </span>
                   </div>
-                </>
-              ) : (
-                <button
-                  className='border rounded px-2 py-0.5 gradient text-white text-sm'
-                >
-                  {premiumBadge}
-                </button>
-              )}
-
-              {/* Edit Icon with Link */}
-              <Link href={getEditLink(listing.assetType, listing.uuid)}>
-                <IconButton
-                  style={{
-                    background: 'transparent',
-                  }}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                  }}
-                >
-                  <EditIcon className='py-1 text-[#8D7C3B]' />
-                </IconButton>
-              </Link>
-              {typeof handleDeleteClick === 'function' &&
-                !usePendingEvaluation && (
-                  <IconButton
-                    aria-label='Delete listing'
-                    style={{ background: 'transparent' }}
-                    onClick={(e) => {
-                      e.preventDefault()
-                      e.stopPropagation()
-                      handleDeleteClick(listing)
-                    }}
+                ) : null}
+                {String(listing?.offPlanApprovalFeeStatus || '') === 'requested' ? (
+                  <div className='relative group'>
+                    <span className='inline-flex items-center rounded bg-sky-500 px-2.5 py-1 text-xs font-semibold text-white shadow-sm'>
+                      Approval Fee Due
+                    </span>
+                    <span className='absolute top-full left-1/2 z-50 mt-1 hidden -translate-x-1/2 whitespace-nowrap rounded bg-white px-2 py-1 text-xs text-black shadow-md group-hover:flex'>
+                      Pay the optional off-plan approval fee under Invoices
+                    </span>
+                  </div>
+                ) : null}
+                {String(listing?.offPlanApprovalFeeStatus || '') === 'paid' ? (
+                  <div className='relative group'>
+                    <span className='inline-flex items-center rounded bg-emerald-600 px-2.5 py-1 text-xs font-semibold text-white shadow-sm'>
+                      Invoice
+                    </span>
+                    <span className='absolute top-full left-1/2 z-50 mt-1 hidden -translate-x-1/2 whitespace-nowrap rounded bg-white px-2 py-1 text-xs text-black shadow-md group-hover:flex'>
+                      Off-plan approval fee paid — view under Invoices
+                    </span>
+                  </div>
+                ) : null}
+                {/* status */}
+                {listing.status === 0 ? (
+                  <>
+                    <div className='relative group'>
+                      <button className='bg-blue-500 text-black py-2 rounded'>
+                        <Image
+                          src='/icons/pending1.svg'
+                          height={20}
+                          width={20}
+                          alt='Pending'
+                          className='cursor-pointer'
+                        />
+                      </button>
+                      <span className='absolute top-full left-1/2 transform bg-white shadow-md rounded -translate-x-1/2 mt-0 hidden group-hover:flex whitespace-nowrap bg-gray-800 text-black text-xs py-1 px-2'>
+                        Pending
+                      </span>
+                    </div>
+                  </>
+                ) : (
+                  <button
+                    className='border rounded px-2 py-0.5 gradient text-white text-sm'
                   >
-                    <DeleteIcon className='py-1 text-[#8D7C3B]' />
-                  </IconButton>
+                    {premiumBadge || 'Approved'}
+                  </button>
                 )}
+
+                {/* Edit — hidden for Super Admin / Admin */}
+                {canEdit ? (
+                  <Link href={getEditLink(listing.assetType, listing.uuid)}>
+                    <IconButton
+                      style={{
+                        background: 'transparent',
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                      }}
+                    >
+                      <EditIcon className='py-1 text-[#8D7C3B]' />
+                    </IconButton>
+                  </Link>
+                ) : null}
+                {typeof handleDeleteClick === 'function' &&
+                  !usePendingEvaluation && (
+                    <IconButton
+                      aria-label='Delete listing'
+                      style={{ background: 'transparent' }}
+                      onClick={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        handleDeleteClick(listing)
+                      }}
+                    >
+                      <DeleteIcon className='py-1 text-[#8D7C3B]' />
+                    </IconButton>
+                  )}
+              </div>
+              <ListingCardQrThumb
+                listing={listing}
+                onHoverChange={(hovered) =>
+                  setQrHoveredById((prev) => ({
+                    ...prev,
+                    [listing.uuid]: hovered,
+                  }))
+                }
+              />
             </div>
 
             <div className='xl:!max-w-[350px] relative'>
-              {/* Previous arrow */}
-              <div
-                onClick={() => handlePrevSlide(i)}
-                className={`absolute top-[30%] left-10 z-40 h-[100px] w-[25px] flex items-center justify-center ${preious ? 'bg-white' : 'bg-[#FFFFFF]'
-                  }`}
-              >
-                <div className=' px-2 py-1 rounded'>
-                  <img
-                    src={'/icons/golden-arrow-previous.png'}
-                    alt='previous'
-                    className=''
-                  />
-                </div>
-              </div>
+              {swiperSlides.length > 1 ? (
+                <ListingCarouselNavButton
+                  direction='prev'
+                  onClick={() => handlePrevSlide(i)}
+                />
+              ) : null}
               {/* Image slider */}
               <Swiper
                 spaceBetween={0}
@@ -375,8 +429,9 @@ const ListingCard = ({
                 loop={swiperSlides.length > 1}
                 pagination={{ clickable: true }}
                 scrollbar={{ draggable: true }}
-                style={{ maxWidth: '312px', width: '100%', height: '250px' }} // Adjusted height to match your design
-                modules={[Navigation, Pagination, Scrollbar, A11y]}
+                navigation={false}
+                style={{ maxWidth: '312px', width: '100%', height: '250px' }}
+                modules={[Pagination, Scrollbar, A11y]}
                 onSwiper={(swiper) => {
                   swiperRefs.current[i] = swiper
                 }}
@@ -402,214 +457,297 @@ const ListingCard = ({
                         />
                       </div>
                     ) : (
-                      <Image
-                        className='rounded-lg object-fill !h-[250px]'
-                        src={item.src}
-                        height={253}
-                        width={314}
-                        alt={listing.title}
-                      />
+                      <div className='relative h-[250px] w-full max-w-[312px] overflow-hidden rounded-lg'>
+                        <Image
+                          className='rounded-lg object-fill !h-[250px]'
+                          src={item.src}
+                          height={253}
+                          width={314}
+                          alt={listing.title}
+                        />
+                      </div>
                     )}
                   </SwiperSlide>
                 ))}
               </Swiper>
-              {/* Next arrow */}
-              <div
-                onClick={() => handleNextSlide(i)}
-                className={`absolute top-[30%] right-10 z-40 h-[100px] w-[25px] flex items-center justify-center ${next ? 'bg-white' : 'bg-[#FFFFFF]'
-                  }`}
-              >
-                <div className='px-2 py-1 rounded'>
-                  <img
-                    src={'/icons/golden-arrow-previous.png'}
-                    className='transform rotate-180'
-                    alt='next'
-                  />
-                </div>
-              </div>
+              {swiperSlides.length > 1 ? (
+                <ListingCarouselNavButton
+                  direction='next'
+                  onClick={() => handleNextSlide(i)}
+                />
+              ) : null}
             </div>
             {/* Details section */}
-            <div className='xl:!max-w-[450px] flex flex-col'>
+            <div className='xl:!max-w-[450px] flex w-full min-w-0 flex-1 flex-col md:pt-10'>
               <span
                 className={`capitalize lg:text-base text-sm${hasFeaturedStyling
                   ? 'text-gradient-custom text-light-gold capitalize'
                   : ''
                   }`}
               >
-                {assetTypeText} for Sale
+                {listing.assetType === 'Property Off Plan For Sale'
+                  ? 'Off Plan Property'
+                  : `${assetTypeText} for Sale`}
               </span>
 
-              <Link href={getDynamicLink(listing?.assetType, listing.uuid)}>
-                {hasFeaturedStyling ? (
-                  <div className='flex items-center'>
-                    <h2 className='text-gradient-custom lg:text-3xl sm:text-xl text-lg font-semibold capitalize'>
-                      {getShortTitle(listing.title)}
-                    </h2>
-                    <div className='ml-2 text-gradient-custom'>
-                      <BlueTickIcon className='text-light-gold' />
+              <div className='listing-card-meta flex w-full items-start justify-between gap-3'>
+                <div className='min-w-0 flex-1 break-words text-left'>
+                  <Link
+                    href={getDynamicLink(
+                      listing?.assetType,
+                      getListingDetailId(listing),
+                    )}
+                    className='listing-card-title block w-full break-words text-left'
+                  >
+                    {hasFeaturedStyling ? (
+                      <div className='flex flex-wrap items-start gap-2'>
+                        <h2 className='min-w-0 flex-1 break-words text-gradient-custom lg:text-3xl sm:text-xl text-lg font-semibold capitalize'>
+                          {listing.title}
+                        </h2>
+                        <div className='shrink-0 text-gradient-custom'>
+                          <BlueTickIcon className='text-light-gold' />
+                        </div>
+                      </div>
+                    ) : (
+                      <h2 className='break-words lg:text-3xl sm:text-xl text-lg font-semibold capitalize text-blue'>
+                        {listing.title}
+                      </h2>
+                    )}
+                  </Link>
+                </div>
+              </div>
+              <div
+                className={`overflow-hidden transition-all duration-300 ease-out ${detailsVisibleClass}`}
+                aria-hidden={!qrHovered}
+              >
+                <div className='flex flex-col'>
+                  <div className='flex flex-wrap items-center space-x-4'>
+                    <p
+                      className={`text-prussianBlue mb-2 lg:text-base text-sm font-medium ${hasFeaturedStyling ? 'text-gradient-custom' : 'text-blue'
+                        }`}
+                    >
+                      {isOffPlan ? 'Price Range:' : 'Price:'}{' '}
+                      {formatListingCardPrice(listing)}
+                    </p>
+                    {!isOffPlan ? (
+                      <p
+                        className={`mb-2 lg:text-base text-sm font-medium ${hasFeaturedStyling
+                          ? 'text-gradient-custom'
+                          : 'text-prussianBlue'
+                          }`}
+                      >
+                        Market Price:
+                        {formatCardPrice(listing.evaluationPrices)}
+                      </p>
+                    ) : null}
+                    {assetTypeText === 'property' && !isOffPlan && (
+                      <p
+                        className={`mb-2 lg:text-base text-sm font-medium ${hasFeaturedStyling
+                          ? 'text-gradient-custom'
+                          : 'text-prussianBlue'
+                          }`}
+                      >
+                        Roi: {listing?.roi || 0}%
+                      </p>
+                    )}
+                  </div>
+
+                  {renderListingDetails(listing, hasFeaturedStyling)}
+
+                  <div className='flex'>
+                    <div
+                      className={`flex gap-3 items-center mb-3 ${hasFeaturedStyling
+                        ? 'text-gradient-custom'
+                        : 'text-prussianBlue'
+                        }`}
+                    >
+                      <LocationIcon
+                        className={
+                          hasFeaturedStyling ? 'text-light-gold' : 'text-blue'
+                        }
+                      />
+
+                      <p className='whitespace-normal lg:text-base text-sm'>
+                        {listing.country}
+                      </p>
+                    </div>
+                    <div className='flex gap-3 ml-3 flex-wrap items-center'>
+                      {showDocIcons && technicalReportSrc ? (
+                        <>
+                          <div className='bg-[#E0E0E0] p-1 rounded relative group'>
+                            <img
+                              src='/icons/card1.png'
+                              className='w-[23px] h-[23px] cursor-pointer'
+                              alt='Technical report'
+                              onClick={() => openModal(technicalModalKey)}
+                            />
+                            <div className='absolute w-[200px] right-0 -top-12 transform -translate-y-1/2 bg-white text-black text-sm p-5 rounded-lg shadow-lg opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-300 z-50'>
+                              Technical Report
+                            </div>
+                          </div>
+                          <Modal2
+                            isOpen={modalCardId === technicalModalKey}
+                            onClose={closeModal}
+                            file2Url={technicalReportSrc}
+                            downloadFileName={technicalDownloadName}
+                            modalTitle='Technical Report'
+                          />
+                        </>
+                      ) : null}
+                      {showDocIcons && technicalReportPending ? (
+                        <div
+                          className='bg-[#E0E0E0] p-1 rounded relative group opacity-50 cursor-default'
+                          title='Technical report requested — PDF will appear when ready'
+                        >
+                          <img
+                            src='/icons/card1.png'
+                            alt='Technical report pending'
+                            className='w-[23px] h-[23px]'
+                          />
+                          <div className='absolute w-[220px] right-0 -top-12 transform -translate-y-1/2 bg-white text-black text-sm p-3 rounded-lg shadow-lg opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-300 z-50'>
+                            Technical report requested — awaiting PDF upload
+                          </div>
+                        </div>
+                      ) : null}
+
+                      {showDocIcons && evaluationCertificateSrc ? (
+                        <>
+                          <div className='bg-[#E0E0E0] p-1 rounded relative group'>
+                            <img
+                              src='/icons/card2.png'
+                              className='w-[23px] h-[23px] cursor-pointer'
+                              alt='Evaluation certificate'
+                              onClick={() => openModal(evalModalKey)}
+                            />
+                            <div className='absolute w-[200px] right-0 -top-12 transform -translate-y-1/2 bg-white text-black text-sm p-5 rounded-lg shadow-lg opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-300 z-50'>
+                              Evaluation Certificate
+                            </div>
+                          </div>
+                          <Modal2
+                            isOpen={modalCardId === evalModalKey}
+                            onClose={closeModal}
+                            file2Url={evaluationCertificateSrc}
+                            downloadFileName={
+                              listing?.evaluationCertificate?.Certificate?.name
+                            }
+                            modalTitle='Evaluation Certificate'
+                          />
+                        </>
+                      ) : null}
+                      {showDocIcons && hasWalkthrough ? (
+                        <>
+                          <div
+                            onClick={() => {
+                              setWalkthroughListingId(listing.uuid)
+                              setWalkthroughLink(walkthroughUrl)
+                            }}
+                            className='bg-[#E0E0E0] p-1 rounded relative group'
+                          >
+                            <img
+                              src='/icons/3dicon.png'
+                              className='w-[23px] h-[23px] cursor-pointer'
+                            />
+                            <div className='absolute w-[200px] right-0 -top-12 transform -translate-y-1/2 bg-white text-black lg:text-base text-sm p-5 rounded-lg shadow-lg opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-300 z-50'>
+                              3D Walkthrough
+                            </div>
+                          </div>
+                          {walkthroughListingId === listing.uuid && (
+                            <Open3dModal
+                              selectedMedia={true}
+                              setSelectedMedia={() => {
+                                setWalkthroughListingId(null)
+                                setWalkthroughLink('')
+                              }}
+                              link={walkthroughLink}
+                            />
+                          )}
+                        </>
+                      ) : null}
                     </div>
                   </div>
-                ) : (
-                  <h2 className='lg:text-3xl sm:text-xl text-lg font-semibold capitalize text-blue'>
-                    {getShortTitle(listing.title)}
-                  </h2>
-                )}
-              </Link>
-              <div className='flex flex-wrap items-center space-x-4'>
-                <p
-                  className={`text-prussianBlue mb-2 lg:text-base text-sm font-medium ${hasFeaturedStyling ? 'text-gradient-custom' : 'text-blue'
-                    }`}
-                >
-                  Price: {formatNumberWithCommas(listing.price)}
-                </p>
-                <p
-                  className={`mb-2 lg:text-base text-sm font-medium ${hasFeaturedStyling
-                    ? 'text-gradient-custom'
-                    : 'text-prussianBlue'
-                    }`}
-                >
-                  Market Price:
-                  {formatNumberWithCommas(listing.evaluationPrices)}
-                </p>
-                {assetTypeText === 'property' && (
-                  <p
-                    className={`mb-2 lg:text-base text-sm font-medium ${hasFeaturedStyling
-                      ? 'text-gradient-custom'
-                      : 'text-prussianBlue'
-                      }`}
-                  >
-                    Roi: {listing?.roi || 0}%
-                  </p>
-                )}
+
+                  {listing.projectName ? (
+                    <p
+                      className={`mb-3 lg:text-base text-sm ${hasFeaturedStyling ? 'text-gradient-custom' : 'text-prussianBlue'
+                        }`}
+                    >
+                      {listing.projectName}
+                      {listing.developer ? ` by ${listing.developer}` : ''}
+                    </p>
+                  ) : null}
+                </div>
               </div>
 
-              {renderListingDetails(listing, hasFeaturedStyling)}
-
-              <div className='flex'>
-                <div
-                  className={`flex gap-3 items-center mb-3 ${hasFeaturedStyling
-                    ? 'text-gradient-custom'
-                    : 'text-prussianBlue'
-                    }`}
+              <div className='relative'>
+                <button
+                  type='button'
+                  onClick={() =>
+                    setAnalyticsCardId(
+                      analyticsCardId === listing.uuid ? null : listing.uuid,
+                    )
+                  }
+                  className='flex gap-2 items-center cursor-pointer'
                 >
-                  <LocationIcon
+                  <Analytics
                     className={
                       hasFeaturedStyling ? 'text-light-gold' : 'text-blue'
                     }
                   />
-
-                  <p className='whitespace-normal lg:text-base text-sm'>
-                    {listing.country}
+                  <p
+                    className={
+                      hasFeaturedStyling
+                        ? 'text-light-gold lg:text-base text-sm'
+                        : 'text-blue lg:text-base text-sm'
+                    }
+                  >
+                    Analytics
+                    <span className='ml-1 text-xs opacity-80'>
+                      ({formatNumberWithCommas(
+                        listing?.analytics?.clicks ?? 0,
+                      )}{' '}
+                      views)
+                    </span>
                   </p>
-                </div>
-                <div className='flex gap-3 ml-3 flex-wrap items-center'>
-                  {showDocIcons && technicalReportSrc ? (
-                    <>
-                      <div className='bg-[#E0E0E0] p-1 rounded relative group'>
-                        <img
-                          src='/icons/card1.png'
-                          className='w-[23px] h-[23px]  cursor-pointer'
-                          onClick={() => openModal(technicalModalKey)}
-                        />
-                        <div className='absolute w-[200px] right-0 -top-12 transform -translate-y-1/2 bg-white text-black text-sm p-5 rounded-lg shadow-lg opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-300 z-50'>
-                          Technical Report
-                        </div>
-                      </div>
-                      <Modal2
-                        isOpen={modalCardId === technicalModalKey}
-                        onClose={closeModal}
-                        file2Url={technicalReportSrc}
-                        downloadFileName={technicalDownloadName}
-                        modalTitle='Technical Report'
-                      />
-                    </>
-                  ) : null}
-                  {showDocIcons && technicalReportPending ? (
+                </button>
+                {analyticsCardId === listing.uuid ? (
+                  <>
                     <div
-                      className='bg-[#E0E0E0] p-1 rounded relative group opacity-50 cursor-default'
-                      title='Technical report requested — PDF will appear when ready'
-                    >
-                      <img
-                        src='/icons/card1.png'
-                        alt='Technical report pending'
-                        className='w-[23px] h-[23px]'
-                      />
-                      <div className='absolute w-[220px] right-0 -top-12 transform -translate-y-1/2 bg-white text-black text-sm p-3 rounded-lg shadow-lg opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-300 z-50'>
-                        Technical report requested — awaiting PDF upload
+                      className='fixed inset-0 z-40'
+                      onClick={() => setAnalyticsCardId(null)}
+                    />
+                    <div className='absolute bottom-[calc(100%+10px)] left-0 z-50 w-[230px] rounded-lg border border-gray-100 bg-white p-4 shadow-lg'>
+                      <div className='mb-3 flex items-center justify-between'>
+                        <span className='text-sm font-semibold text-prussianBlue'>
+                          Listing analytics
+                        </span>
+                        <button
+                          type='button'
+                          onClick={() => setAnalyticsCardId(null)}
+                          className='text-sm font-semibold text-dark-grey/60 hover:text-dark-grey'
+                          aria-label='Close analytics'
+                        >
+                          ✕
+                        </button>
                       </div>
+                      <div className='space-y-2'>
+                        <div className='flex items-center justify-between'>
+                          <span className='text-sm text-dark-grey/80'>
+                            Views
+                          </span>
+                          <span className='text-sm font-semibold text-prussianBlue'>
+                            {formatNumberWithCommas(
+                              listing?.analytics?.clicks ?? 0,
+                            )}
+                          </span>
+                        </div>
+                      </div>
+                      <p className='mt-3 text-[11px] leading-4 text-dark-grey/60'>
+                        Views count when a visitor opens this listing only —
+                        not when it appears with other cards.
+                      </p>
                     </div>
-                  ) : null}
-
-                  {showDocIcons && evaluationCertificateSrc ? (
-                    <>
-                      <div className='bg-[#E0E0E0] p-1 rounded relative group'>
-                        <img
-                          src='/icons/card2.png'
-                          className='w-[23px] h-[23px] cursor-pointer'
-                          onClick={() => openModal(evalModalKey)}
-                        />
-                        <div className='absolute w-[200px] right-0 -top-12 transform -translate-y-1/2 bg-white text-black text-sm p-5 rounded-lg shadow-lg opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-300 z-50'>
-                          Evaluation Certificate
-                        </div>
-                      </div>
-                      <Modal2
-                        isOpen={modalCardId === evalModalKey}
-                        onClose={closeModal}
-                        file2Url={evaluationCertificateSrc}
-                        downloadFileName={
-                          listing?.evaluationCertificate?.Certificate?.name
-                        }
-                        modalTitle='Evaluation Certificate'
-                      />
-                    </>
-                  ) : null}
-                  {showDocIcons && hasWalkthrough ? (
-                    <>
-                      <div
-                        onClick={() => {
-                          setWalkthroughListingId(listing.uuid)
-                          setWalkthroughLink(walkthroughUrl)
-                        }}
-                        className='bg-[#E0E0E0] p-1 rounded relative group'
-                      >
-                        <img
-                          src='/icons/3dicon.png'
-                          className='w-[23px] h-[23px] cursor-pointer'
-                        />
-                        <div className='absolute w-[200px] right-0 -top-12 transform -translate-y-1/2 bg-white text-black lg:text-base text-sm p-5 rounded-lg shadow-lg opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-300 z-50'>
-                          3D Walkthrough
-                        </div>
-                      </div>
-                      {walkthroughListingId === listing.uuid && (
-                        <Open3dModal
-                          selectedMedia={true}
-                          setSelectedMedia={() => {
-                            setWalkthroughListingId(null)
-                            setWalkthroughLink('')
-                          }}
-                          link={walkthroughLink}
-                        />
-                      )}
-                    </>
-                  ) : null}
-                </div>
-              </div>
-
-              <div className='flex gap-2 items-center'>
-                <Analytics
-                  className={
-                    hasFeaturedStyling ? 'text-light-gold' : 'text-blue'
-                  }
-                />
-                <p
-                  className={
-                    hasFeaturedStyling
-                      ? 'text-light-gold lg:text-base text-sm'
-                      : 'text-blue lg:text-base text-sm'
-                  }
-                >
-                  Analytics
-                </p>
+                  </>
+                ) : null}
               </div>
             </div>
           </div>

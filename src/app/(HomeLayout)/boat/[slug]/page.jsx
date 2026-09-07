@@ -4,24 +4,64 @@ import BoatView from "@/components/modules/Boat/BoatView";
 import axios from "axios";
 import Link from "next/link";
 import GlobalLoader from "@/utils/GlobalLoader";
+import { getPublicApiHeaders } from '@/libs/publicApiClient'
+import { buildListingPageMetadata } from '@/libs/listingMetadata'
+import { cache } from 'react'
 
-const GetProductData = async ({ slug }) => {
+export const dynamic = 'force-dynamic'
+
+const GetProductData = cache(async ({ slug }) => {
   try {
-    const propertyResponse = await axios.get(`${process.env.NEXT_PUBLIC_BASE_URL}/boat/${slug}`);
-    // Fetch related property data
-    const propertyDataResponse = await axios.get(`${process.env.NEXT_PUBLIC_BASE_URL}/boat`);
+    const headers = await getPublicApiHeaders()
+    const [propertyResponse, relatedResponse] = await Promise.all([
+      axios.get(`${process.env.NEXT_PUBLIC_BASE_URL}/boat/${slug}`, {
+        headers,
+      }),
+      axios.get(`${process.env.NEXT_PUBLIC_BASE_URL}/boat/related-boat`, {
+        headers,
+        params: {
+          statusFilter: 1,
+          limit: 12,
+          excludeSlug: slug,
+        },
+      }),
+    ])
 
-    const boatInfo = propertyResponse?.data;
-    const boatData = propertyDataResponse?.data;
+    const boatInfo = propertyResponse?.data
+    const relatedProducts = relatedResponse?.data?.products || []
+    const products = relatedProducts.filter((boat) => {
+      if (boatInfo?.uuid && boat?.uuid === boatInfo.uuid) return false
+      if (boatInfo?.slug && boat?.slug && boat.slug === boatInfo.slug) {
+        return false
+      }
+      return true
+    })
 
-    return { boatInfo, boatData }
+    return {
+      boatInfo,
+      boatData: { products },
+    }
   } catch (error) {
     return null
   }
+})
+
+export async function generateMetadata({ params }) {
+  const { slug } = await params
+  const data = await GetProductData({ slug })
+
+  if (!data?.boatInfo) {
+    return { title: 'Boat not found | Funds Verifier' }
+  }
+
+  return buildListingPageMetadata(data.boatInfo, {
+    routeSegment: 'boat',
+    listingId: slug,
+  })
 }
 
 export default async function Page({ params }) {
-  const { slug } =await params;
+  const { slug } = await params;
 
   const data = await GetProductData({ slug });
   if (!data || !data.boatInfo) {
@@ -46,17 +86,19 @@ export default async function Page({ params }) {
               <span className="text-[#9b9b9b7c]">
                 <Link href="/"> Home </Link> / <Link href="/boat">Boats</Link> /
               </span>
-              {boatInfo?.title}
+              Listing details
             </p>
           </div>
         </div>
         <BoatView data={boatInfo} />
-        <div className="theme-container">
-          <h1 className="md:text-2xl text-lg mb-6 font-semibold text-left text-blue">
-            Related Boats
-          </h1>
-          <ButtomSlider data={boatData || []} />
-        </div>
+        {boatData?.products?.length > 0 ? (
+          <div className="theme-container mt-8 border-t border-reefGold pt-10 sm:mt-12 sm:pt-12">
+            <h1 className="md:text-2xl text-lg mb-6 font-semibold text-left text-blue">
+              Related Boats
+            </h1>
+            <ButtomSlider data={boatData} />
+          </div>
+        ) : null}
       </Suspense>
     </div>
   );

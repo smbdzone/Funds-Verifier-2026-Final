@@ -7,6 +7,7 @@ import { Pagination, Mousewheel } from "swiper/modules";
 import { IoIosArrowUp } from "react-icons/io";
 import { IoIosArrowDown } from "react-icons/io";
 import { getListingImageSrc } from "@/libs/listingCardMedia";
+import { swiperCanLoop } from "@/utils/swiperLoop";
 
 // Import Swiper styles
 import "swiper/css";
@@ -42,7 +43,7 @@ export default function BoatSlider({ setPreviewMedia, images }) {
         slidesPerView={3}
         spaceBetween={2}
         ref={swiperRef}
-        loop={true}
+        loop={swiperCanLoop(images?.length || 0, 3)}
         className="w-full h-[505px]"
       >
         {images &&

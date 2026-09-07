@@ -1,6 +1,5 @@
 import { montserrat } from "@/lib/fonts";
 import Image from "next/image";
-import Script from "next/script";
 import "./../globals.css";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -32,7 +31,6 @@ export default function RootLayout({ children }) {
         </div>
         {children}
       </body>
-      <Script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js" />
     </html>
   );
 }

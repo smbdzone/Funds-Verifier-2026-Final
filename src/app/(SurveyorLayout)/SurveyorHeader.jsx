@@ -7,9 +7,8 @@ import NotificationDropdown from '../../components/Buttons/Notifications'
 const NotificationItem = ({ alert, onClick }) => {
   return (
     <div
-      className={`w-full flex gap-3 p-3 ${
-        alert.isUnread ? 'bg-[#EBF3FF]' : 'bg-white'
-      } cursor-pointer`}
+      className={`w-full flex gap-3 p-3 ${alert.isUnread ? 'bg-[#EBF3FF]' : 'bg-white'
+        } cursor-pointer`}
       onClick={onClick}
     >
       <div className='rounded-full border border-prussianBlue w-[35px] h-[31px] overflow-hidden flex items-center justify-center'>
@@ -123,7 +122,7 @@ const SurveyorHeader = ({ setIsSidebarOpen, isSidebarOpen }) => {
             {openProfileModal && (
               <div className='absolute right-0 top-full mt-2 w-48 bg-white rounded-md shadow-md z-50 md:block lg:hidden'>
                 <div className='flex flex-col justify-center items-center p-4'>
-                  <p className='font-medium text-prussianBlue'>{user?.name}</p>
+                  <p className='font-medium text-prussianBlue break-words'>{user?.displayName || user?.name}</p>
                   <p className='font-light text-sm text-gray-500'>
                     {user?.email}
                   </p>
@@ -143,7 +142,7 @@ const SurveyorHeader = ({ setIsSidebarOpen, isSidebarOpen }) => {
                 <img src='/avatar/Avatars 2.png' alt='Profile Icon' />
               </div>
               <div className='flex flex-col items-start justify-center text-start text-sm'>
-                <p className='font-medium'>{user?.name}</p>
+                <p className='font-medium break-words'>{user?.displayName || user?.name}</p>
                 <p className='font-light text-prussianBlue'>{user?.email}</p>
               </div>
             </div>

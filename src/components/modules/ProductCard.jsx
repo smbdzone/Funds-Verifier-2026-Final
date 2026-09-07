@@ -1,29 +1,31 @@
 import React, { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import {
-  FaceBookIcon,
-  InstaIcon,
-  LocationIcon,
-  TwitterIcon,
-  LinkdInIcon,
-  WhatsAppIcon,
-} from '../Icons'
+import { LocationIcon } from '../Icons'
+import ListingSocialShare from '@/components/shared/ListingSocialShare'
 import Modal from '../product-modal/modal'
 import Modal2 from '../product-modal/modal2'
-import { Navigation, Pagination, Scrollbar, A11y } from 'swiper/modules'
+import { Pagination, Scrollbar, A11y } from 'swiper/modules'
 import { Swiper, SwiperSlide } from 'swiper/react'
 import 'swiper/css'
 import 'swiper/css/navigation'
 import 'swiper/css/pagination'
 import '@/components/modules/style.css'
-import { formatPriceUS } from '@/utils'
+import { swiperCanLoop } from '@/utils/swiperLoop'
 import {
   getListingCarouselItems,
   getListingDocumentSrc,
   isListingCarouselPlaceholderSlide,
   PLACEHOLDER,
 } from '@/libs/listingCardMedia'
+import { formatCardPrice, formatListingCardPrice } from '@/libs/listingPriceDisplay'
+import { getListingSharePath } from '@/libs/listingSocialShare'
+import { formatListingLocation } from '@/libs/listingLocationUtils'
+import { getListingPremiumDisplay } from '@/libs/listingPremiumStatus'
+import ListingCarouselNavButton from '@/components/cards/ListingCarouselNavButton'
+import ListingCardQrThumb from '@/components/shared/ListingCardQrThumb'
+import ListingCardViewCount from '@/components/shared/ListingCardViewCount'
+import ListingCardCertificates from '@/components/shared/ListingCardCertificates'
 
 const ProductCard = ({
   type,
@@ -49,24 +51,31 @@ const ProductCard = ({
     price,
     evaluationPrices,
     roi,
-    country,
     technicalReport,
     evaluationC,
     evaluationCertificate,
   } = item
 
   const [showROI, setShowROI] = useState(false)
+  const [qrHovered, setQrHovered] = useState(false)
   useState(() => {
     if (type === 'property') setShowROI(true)
   })
+  const carouselSlides = getListingCarouselItems(item)
+  const listingHref = getListingSharePath({ ...item, type })
+  const locationLabel = formatListingLocation(item)
+  const { badge: premiumBadge } = getListingPremiumDisplay(item)
   const hasAdditionalContent =
     getListingDocumentSrc(technicalReport) &&
     getListingDocumentSrc(evaluationCertificate) &&
     video3DWalkthrough?.link
+  const detailsVisibleClass = qrHovered
+    ? 'max-h-[480px] opacity-100'
+    : 'max-h-0 opacity-0 pointer-events-none'
   return (
     <div
       key={item.uuid}
-      className={`flex p-3 pr-0 flex-col gap-4 xl:gap-5 items-center sm:flex-row rounded-[12px] ${hasAdditionalContent ? 'custom-shadow' : 'bg-white'
+      className={`group relative flex p-3 pr-0 flex-col gap-4 xl:gap-5 items-center sm:flex-row rounded-[12px] ${hasAdditionalContent ? 'custom-shadow' : 'bg-white'
         }`}
       style={{
         background: hasAdditionalContent
@@ -74,27 +83,42 @@ const ProductCard = ({
           : 'white',
       }}
     >
+      <div className='absolute right-2 top-2 z-30 flex flex-col items-end gap-1.5'>
+        {premiumBadge ? (
+          <button
+            type='button'
+            className='rounded border px-1 gradient text-white'
+          >
+            {premiumBadge}
+          </button>
+        ) : null}
+        <ListingCardQrThumb
+          listing={item}
+          onHoverChange={setQrHovered}
+        />
+      </div>
       <div className='w-full sm:w-1/2 relative' style={{ maxWidth: '350px' }}>
-        <div
-          onClick={() => handlePrevSlide(item.uuid)}
-          className='absolute opacity-70 hover:opacity-100 top-[30%] left-2 px-2 py-12 bg-white rounded-bl-md z-40 h-fit w-fit flex items-center justify-center'
-        >
-          <img src='/icons/golden-arrow-previous.png' alt='previous' />
-        </div>
+        {carouselSlides.length > 1 ? (
+          <ListingCarouselNavButton
+            direction='prev'
+            onClick={() => handlePrevSlide(item.uuid)}
+          />
+        ) : null}
         <Swiper
           spaceBetween={0}
           slidesPerView={1}
           hashNavigation={{ watchState: true }}
-          loop={true}
+          loop={swiperCanLoop(carouselSlides.length, 1)}
           pagination={{ clickable: true }}
           scrollbar={{ draggable: true }}
+          navigation={false}
           style={{ maxWidth: '312px', width: '100%', height: '220px' }}
-          modules={[Navigation, Pagination, Scrollbar, A11y]}
+          modules={[Pagination, Scrollbar, A11y]}
           onSwiper={(swiper) => {
             swiperRefs.current[item.uuid] = swiper
           }}
         >
-          {getListingCarouselItems(item).map((slide, index) => (
+          {carouselSlides.map((slide, index) => (
             <SwiperSlide key={`slide-${index}-${slide.type}`}>
               {slide.type === 'video' ? (
                 <video
@@ -143,164 +167,91 @@ const ProductCard = ({
             </SwiperSlide>
           )}
         </Swiper>
-        <div
-          onClick={() => handleNextSlide(item.uuid)}
-          className='bg-white absolute opacity-70 hover:opacity-100 top-[30%] right-2 px-2 py-12 rounded-br-md z-40 h-fit w-fit flex items-center justify-center'
-        >
-          <img
-            src='/icons/golden-arrow-previous.png'
-            className='transform rotate-180'
-            alt='next'
+        {carouselSlides.length > 1 ? (
+          <ListingCarouselNavButton
+            direction='next'
+            onClick={() => handleNextSlide(item.uuid)}
           />
-        </div>
+        ) : null}
       </div>
       <div
-        className={`w-full text-base ${hasAdditionalContent ? 'text-white' : 'text-reef-gold'
+        className={`flex w-full flex-col gap-2.5 text-base ${hasAdditionalContent ? 'text-white' : 'text-reef-gold'
           }`}
       >
-        <div className='flex justify-between gap-2 w-full'>
-          <Link href={`/${type}/${item.uuid}`}>
+        <div className='flex flex-wrap items-center gap-2 text-left'>
+          <Link href={listingHref} className='min-w-0 max-w-full'>
             <h2
-              className={`text-xl font-semibold capitalize ${hasAdditionalContent ? 'text-white' : 'text-black'
+              className={`text-2xl font-semibold capitalize leading-snug ${hasAdditionalContent ? 'text-white' : 'text-black'
                 }`}
             >
               {getShortTitle(title)}
             </h2>
           </Link>
+          <ListingCardViewCount listing={item} />
         </div>
-        <div className='w-full flex gap-x-2 my-2'>
-          <p
-            className={`text-base ${hasAdditionalContent ? 'text-white' : 'text-reef-gold'
-              }`}
-          >
-            Selling Price: AED {formatPriceUS(price)}
-          </p>
-          <p
-            className={`text-base ${hasAdditionalContent ? 'text-white' : 'text-reef-gold'
-              }`}
-          >
-            Market Price: AED {formatPriceUS(evaluationPrices)}
-          </p>
-          {showROI && (
-            <p
-              className={`text-base ${hasAdditionalContent ? 'text-white' : 'text-reef-gold'
-                }`}
-            >
-              ROI: {roi ? roi : 5}%
-            </p>
-          )}
-        </div>
-        <div className='flex flex-wrap gap-3 items-center mb-3'>
-          {attributes?.map((attr, index) => (
-            <div key={index} className='flex w-fit items-center gap-1'>
-              <span className='bg-gradient-to-r from-[#a2913e] to-[#d7c590] rounded-full h-[16px] w-[16px] shrink-0'></span>
-              <span
-                className={`${hasAdditionalContent ? 'text-white' : 'text-reef-gold'
+        <div
+          className={`overflow-hidden transition-all duration-300 ease-out ${detailsVisibleClass}`}
+          aria-hidden={!qrHovered}
+        >
+          <div className='flex flex-col gap-2.5 pb-1'>
+            <div className='flex w-full flex-wrap gap-x-3 gap-y-1'>
+              <p
+                className={`text-base font-semibold ${hasAdditionalContent ? 'text-white' : 'text-reef-gold'
                   }`}
               >
-                {attr}
-              </span>
+                Selling Price: AED {formatListingCardPrice(item)}
+              </p>
+              <p
+                className={`text-base font-semibold ${hasAdditionalContent ? 'text-white' : 'text-reef-gold'
+                  }`}
+              >
+                Market Price: AED {formatCardPrice(evaluationPrices)}
+              </p>
+              {showROI && (
+                <p
+                  className={`text-base font-semibold ${hasAdditionalContent ? 'text-white' : 'text-reef-gold'
+                    }`}
+                >
+                  ROI: {roi ? roi : 5}%
+                </p>
+              )}
             </div>
-          ))}
-        </div>
-        <div className='flex'>
-          <div className='flex gap-3 items-center mb-3'>
-            <LocationIcon
-              className={` ${hasAdditionalContent ? 'text-white' : 'text-reef-gold'
-                }`}
+            <div className='flex flex-wrap items-center gap-x-3 gap-y-1.5'>
+              {attributes?.map((attr, index) => (
+                <div key={index} className='flex w-fit items-center gap-1'>
+                  <span className='bg-gradient-to-r from-[#a2913e] to-[#d7c590] rounded-full h-[16px] w-[16px] shrink-0'></span>
+                  <span
+                    className={`font-normal ${hasAdditionalContent ? 'text-white/80' : 'text-reef-gold/80'
+                      }`}
+                  >
+                    {attr}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <div className='flex flex-wrap items-center gap-3'>
+              <div className='flex items-center gap-3'>
+                <LocationIcon
+                  className={`${hasAdditionalContent ? 'text-white/80' : 'text-reef-gold/80'
+                    }`}
+                />
+                <p
+                  className={`font-normal ${hasAdditionalContent ? 'text-white/80' : 'text-reef-gold/80'
+                    }`}
+                >
+                  {locationLabel || '—'}
+                </p>
+              </div>
+              <ListingCardCertificates listing={item} />
+            </div>
+            <ListingSocialShare
+              listing={{ ...item, type }}
+              label='Share With:'
+              labelClassName={`mb-0 text-base font-normal ${hasAdditionalContent ? 'text-white/80' : 'text-reef-gold/80'}`}
+              iconClassName='h-[21px] w-[21px]'
+              iconGapClassName='gap-3'
+              stacked
             />
-            <p
-              className={`${hasAdditionalContent ? 'text-white' : 'text-reef-gold'
-                }`}
-            >
-              {country}
-            </p>
-          </div>
-          <div className='flex gap-3 ml-3'>
-            {technicalReport && technicalReport.trim() !== '' && (
-              <div className='p-1 rounded relative group'>
-                <img
-                  src='/icons/card1.png'
-                  className={`w-[23px] h-[23px] cursor-pointer ${hasAdditionalContent ? 'filter brightness-0 invert' : ''
-                    }`}
-                  onClick={() =>
-                    openTechnicalReport(convertToRelativeURL(technicalReport))
-                  }
-                />
-                <div
-                  className='absolute w-[170px] flex justify-center bg-blue-600 -left-4 transform -translate-y-1/2 text-white text-sm p-2 rounded-lg shadow-lg opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-300 z-50'
-                  style={{ top: '-20px' }}
-                >
-                  Technical Report
-                </div>
-                <Modal
-                  isOpen={isModalOpen}
-                  onClose={closeModal}
-                  fileUrl={pdfUrl}
-                />
-              </div>
-            )}
-            {evaluationC && evaluationC.trim() !== '' && (
-              <div className='p-1 rounded relative group'>
-                <img
-                  src='/icons/card2.png'
-                  className={`w-[23px] h-[23px] cursor-pointer ${hasAdditionalContent ? 'filter brightness-0 invert' : ''
-                    }`}
-                  onClick={() =>
-                    openEvaluationCertificate(convertToRelativeURL(evaluationC))
-                  }
-                />
-                <div
-                  className='absolute w-[170px] flex justify-center bg-blue-600 -left-4 transform -translate-y-1/2 text-white text-sm p-2 rounded-lg shadow-lg opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-300 z-50'
-                  style={{ top: '-20px' }}
-                >
-                  Evaluation Certificate
-                </div>
-                <Modal2
-                  isOpen={isModal2Open}
-                  onClose={closeModal2}
-                  file2Url={pdf2Url}
-                  downloadFileName={evaluationCertificate?.Certificate?.name}
-                />
-              </div>
-            )}
-            {video3DWalkthrough && video3DWalkthrough.trim() !== '' && (
-              <div className='p-1 rounded relative group'>
-                <img
-                  src='/icons/3dicon.png'
-                  className={`w-[23px] h-[23px] cursor-pointer ${hasAdditionalContent ? 'filter brightness-0 invert' : ''
-                    }`}
-                />
-                <div
-                  className='absolute w-[170px] flex justify-center bg-blue-600 -left-4 transform -translate-y-1/2 text-white text-sm p-2 rounded-lg shadow-lg opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-300 z-50'
-                  style={{ top: '-20px' }}
-                >
-                  3D Walkthrough
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-        <div>
-          <p className='mb-3 text-base'>Share With:</p>
-          <div className='flex justify-between'>
-            <div className='flex gap-3'>
-              <Link href='#'>
-                <FaceBookIcon className='h-[21px] w-[21px]' />
-              </Link>
-              <Link href='#'>
-                <InstaIcon className='h-[21px] w-[21px]' />
-              </Link>
-              <Link href='#'>
-                <LinkdInIcon className='h-[21px] w-[21px]' />
-              </Link>
-              <Link href='#'>
-                <TwitterIcon className='h-[21px] w-[21px]' />
-              </Link>
-              <Link href='#'>
-                <WhatsAppIcon className='h-[21px] w-[21px]' />
-              </Link>
-            </div>
           </div>
         </div>
       </div>

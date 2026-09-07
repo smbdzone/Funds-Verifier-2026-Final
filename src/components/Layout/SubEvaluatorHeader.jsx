@@ -4,12 +4,12 @@ import React, { Fragment, useState } from "react";
 import { Transition, Menu } from "@headlessui/react";
 import { NotificationIcon, ProfileDropDownIcon } from "../Icons";
 import Link from "next/link";
-import { useProfile } from "../../context/UserContext"; 
+import { useProfile } from "../../context/UserContext";
 import SubEvaluatorSidebar from "../Sidebar/SubEvaluatorSidebar";
 import NotificationDropdown from "../Buttons/Notifications";
 
 const SubEvaluatorHeader = () => {
-  const { user } = useProfile(); 
+  const { user } = useProfile();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const isSubEvaluator = !!user?.parentID;
@@ -33,13 +33,13 @@ const SubEvaluatorHeader = () => {
           </figure>
         </Link>
 
-        <div className="flex items-center gap-4 sm:gap-8">       
-                <NotificationDropdown />
+        <div className="flex items-center gap-4 sm:gap-8">
+          <NotificationDropdown />
           <Menu as="div" className="relative text-left z-100">
             <Menu.Button className="btn !min-w-max flex items-center gap-2">
               <div className="xl:block hidden">
-                <h2 className="text-prussianBlue capitalize text-xs font-semibold">
-                  {user?.name || "Loading..."}
+                <h2 className="text-prussianBlue capitalize text-xs font-semibold break-words text-left max-w-[220px]">
+                  {user?.displayName || user?.name || "Loading..."}
                 </h2>
                 <span className="text-prussianBlue text-[10px] block text-start">
                   {user && (user.role === "SubEvaluator" || (user.role === "Evaluator" && (user.parentEvaluator || user.parentID))) ? "Sub Evaluator" : user?.role}

@@ -1,5 +1,29 @@
 import Image from 'next/image'
-import React, { useMemo } from 'react'
+import React, { useEffect, useState } from 'react'
+import { getListingImageSrc } from '@/libs/listingCardMedia'
+import ListingImagePreviewModal from '@/components/ListingsImageComponent/ListingImagePreviewModal'
+
+const PLACEHOLDER = '/listing/camera.svg'
+
+function resolveThumbnailPreview(image) {
+  if (!image) return null
+
+  if (typeof image === 'string') {
+    if (image.startsWith('http') || image.startsWith('blob:') || image.startsWith('/')) {
+      return image
+    }
+    return null
+  }
+
+  if (image instanceof File || image instanceof Blob) {
+    return URL.createObjectURL(image)
+  }
+
+  const fromMedia = getListingImageSrc(image)
+  if (fromMedia && fromMedia !== PLACEHOLDER) return fromMedia
+
+  return null
+}
 
 const ListingsImageComponent = ({
   errors,
@@ -8,83 +32,114 @@ const ListingsImageComponent = ({
   handleImageRemove,
   handleThumbImageChange,
   disabled,
+  inputId = 'thumbnail',
+  uploadLabel = 'Upload Thumbnail',
 }) => {
-  const imageUrl = useMemo(() => {
-    if (!image) return null
-    if (typeof image?.signedUrl === 'string' && image?.signedUrl.startsWith('http')) {
-      return image?.signedUrl
+  const [previewUrl, setPreviewUrl] = useState(null)
+  const [lightboxOpen, setLightboxOpen] = useState(false)
+
+  useEffect(() => {
+    if (!image) {
+      setPreviewUrl(null)
+      setLightboxOpen(false)
+      return undefined
     }
-    if (typeof image?.url === 'string' && image?.url.startsWith('http')) {
-      return image?.url
-    } else if (typeof image === 'object') {
-      return URL.createObjectURL(image)
-    } else {
-      return null
+
+    if (image instanceof File || image instanceof Blob) {
+      const url = URL.createObjectURL(image)
+      setPreviewUrl(url)
+      return () => {
+        URL.revokeObjectURL(url)
+      }
     }
+
+    setPreviewUrl(resolveThumbnailPreview(image))
+    return undefined
   }, [image])
+
+  const handleInputChange = (event) => {
+    handleThumbImageChange?.(event)
+    event.target.value = ''
+  }
 
   return (
     <>
-      <div className='flex flex-wrap mt-2 w-[80%]'>
-        {image && (
-          <div className='w-2/5 p-2 relative group'>
-            <div className='h-[20px]'>
-              <Image
-                width={100}
-                height={100}
-                src={imageUrl}
-                alt='uploaded-image'
-                className='w-full bg-cover h-[100px] object-contain'
-              />
-            </div>
-            {!disabled && (
+      <div className='flex h-full min-h-0 items-stretch gap-3'>
+        <div className='min-w-0 flex-1 overflow-hidden'>
+          {previewUrl ? (
+            <div className='group relative h-[88px] w-[88px] overflow-hidden rounded-sm border border-dark-grey/15 bg-offwhite'>
               <button
-                onClick={() => handleImageRemove(image?.public_id)}
-                className='absolute top-0 right-0 w-6 flex justify-center items-center h-6 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity'
-                title='Remove image'
+                type='button'
+                onClick={() => setLightboxOpen(true)}
+                className='block h-full w-full cursor-zoom-in'
+                title='Click to preview watermark'
               >
-                &times;
+                <Image
+                  width={88}
+                  height={88}
+                  src={previewUrl}
+                  alt='Uploaded thumbnail'
+                  unoptimized
+                  className='h-full w-full object-cover'
+                />
               </button>
-            )}
-          </div>
-        )}
-      </div>
+              {!disabled && (
+                <button
+                  type='button'
+                  onClick={() =>
+                    handleImageRemove?.(image?.public_id || image?.s3Key)
+                  }
+                  className='absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-light-gold text-xs text-white opacity-0 transition-opacity group-hover:opacity-100'
+                  title='Remove image'
+                >
+                  &times;
+                </button>
+              )}
+            </div>
+          ) : null}
+        </div>
 
-      <input
-        type='file'
-        id='thumbnail'
-        className='opacity-0 absolute w-0 h-0'
-        accept='image/*'
-        disabled={disabled}
-        onChange={handleThumbImageChange}
-      />
+        <input
+          type='file'
+          id={inputId}
+          className='pointer-events-none absolute h-0 w-0 opacity-0'
+          accept='image/*'
+          disabled={disabled}
+          onChange={handleInputChange}
+        />
 
-      <div className='absolute right-[20px] xl:top-0 xxs:top-[55px]'>
         <label
-          htmlFor={!disabled ? 'thumbnail' : undefined} // ✅ Prevent click when disabled
-          className={`flex flex-col items-center justify-center w-[176px] xl:h-[154px] xxs:h-[110px] shadow-neonsm my-[19px] ${
-            disabled
-              ? 'cursor-not-allowed opacity-50 pointer-events-none' // ✅ disable interaction
-              : 'cursor-pointer'
-          }`}
+          htmlFor={!disabled ? inputId : undefined}
+          className={`flex h-[88px] w-[120px] shrink-0 flex-col items-center justify-center shadow-neonsm ${disabled
+            ? 'cursor-not-allowed opacity-50 pointer-events-none'
+            : 'cursor-pointer'
+            }`}
         >
           <Image
-            width={45}
-            height={45}
+            width={32}
+            height={32}
             src='/listing/camera.svg'
             alt='Upload Image'
           />
-          <span className='text-[17px] text-dark-grey font-normal pt-[18px]'>
-            Add Thumbnail
+          <span className='pt-2 text-center text-[13px] font-normal text-dark-grey'>
+            {uploadLabel}
           </span>
         </label>
       </div>
 
       {errors && (
-        <span className='text-red-500 lg:text-sm text-xs font-medium left-0 absolute top-[99%]'>
+        <span className='absolute left-0 top-[99%] text-xs font-medium text-red-500 lg:text-sm'>
           **{errorMessage}
         </span>
       )}
+
+      {lightboxOpen ? (
+        <ListingImagePreviewModal
+          src={previewUrl}
+          alt='Thumbnail preview'
+          onClose={() => setLightboxOpen(false)}
+        />
+      ) : null}
     </>
   )
 }
