@@ -44,6 +44,7 @@ const ProductCard = ({
     title,
     evaluationPrices,
     roi,
+    projectName,
   } = item
 
   const [showROI, setShowROI] = useState(false)
@@ -59,7 +60,10 @@ const ProductCard = ({
   const listingHref = getListingSharePath({ ...item, type })
   const locationLabel = formatListingLocation(item)
   const walkthroughUrl = getListingWalkthroughUrl(item)
-  const detailsVisibleClass = qrHovered
+  // Regular property listings have no QR-upload flow, so qrScan is always
+  // null here and the hover trigger can never appear — show details outright.
+  const alwaysShowDetails = type === 'property'
+  const detailsVisibleClass = alwaysShowDetails || qrHovered
     ? 'max-h-[480px] opacity-100'
     : 'max-h-0 opacity-0 pointer-events-none'
 
@@ -83,10 +87,10 @@ const ProductCard = ({
         />
       </div>
       <div className='listing-card-media-swiper relative mx-auto w-full shrink-0 overflow-hidden rounded-lg sm:mx-0'>
-        {title ? (
+        {projectName ? (
           <div className='absolute left-2 top-2 z-20 max-w-[calc(100%-1rem)] rounded-[2px] px-1.5 py-0.5 shadow-[0px_0px_8px_rgba(0,0,0,0.15)] [background:linear-gradient(90deg,#A2913E_0%,#D7C590_35.28%,#A2913E_68.99%,#D7C58F_100%)]'>
             <span className='line-clamp-1 break-words text-[9px] font-medium leading-3 text-prussianBlue lg:text-[10px]'>
-              {title}
+              {projectName}
             </span>
           </div>
         ) : null}
@@ -104,18 +108,18 @@ const ProductCard = ({
           pagination={{ clickable: true }}
           scrollbar={{ draggable: true }}
           navigation={false}
-          style={{ maxWidth: '312px', width: '100%', height: '220px' }}
+          className='listing-card-swiper-root !h-full w-full'
+          style={{ width: '100%', height: '100%' }}
           modules={[Pagination, Scrollbar, A11y]}
           onSwiper={(swiper) => {
             swiperRefs.current[item.uuid] = swiper
-          }
-          }
+          }}
         >
           {carouselSlides.map((slide, index) => (
-            <SwiperSlide key={`slide-${index}-${slide.type}`}>
+            <SwiperSlide key={`slide-${index}-${slide.type}`} className='!h-full'>
               {slide.type === 'video' ? (
                 <video
-                  className='rounded-lg !w-[314px] !h-[220px] bg-black'
+                  className='h-full w-full rounded-lg bg-black object-cover object-center'
                   controls
                   playsInline
                   preload='metadata'
@@ -124,7 +128,7 @@ const ProductCard = ({
                   Your browser does not support the video tag.
                 </video>
               ) : isListingCarouselPlaceholderSlide(slide) ? (
-                <div className='listing-carousel-placeholder listing-carousel-placeholder-frame flex h-[220px] min-h-[220px] w-full max-w-[314px] shrink-0 items-center justify-center overflow-hidden rounded-lg bg-gradient-to-br from-[#eef0f3] to-[#e2e6ec]'>
+                <div className='listing-carousel-placeholder listing-carousel-placeholder-frame flex h-full min-h-0 w-full shrink-0 items-center justify-center overflow-hidden rounded-lg bg-gradient-to-br from-[#eef0f3] to-[#e2e6ec]'>
                   <img
                     src={PLACEHOLDER}
                     alt=''
@@ -134,12 +138,12 @@ const ProductCard = ({
                   />
                 </div>
               ) : (
-                <div className='relative !h-[220px] !w-[314px] overflow-hidden rounded-lg'>
+                <div className='relative flex h-full w-full items-center justify-center overflow-hidden rounded-lg'>
                   <Image
-                    className='rounded-lg !w-[314px] !h-[220px]'
+                    className='listing-card-photo h-full w-full rounded-lg object-cover object-center'
                     src={slide.src}
-                    height={210}
-                    width={210}
+                    height={220}
+                    width={314}
                     alt={title}
                   />
                 </div>
@@ -147,12 +151,12 @@ const ProductCard = ({
             </SwiperSlide>
           ))}
           {walkthroughUrl && (
-            <SwiperSlide key='walkthrough-3d'>
-              <div className='rounded-lg !w-[314px] !h-[220px] flex items-center justify-center bg-gray-800 text-white'>
+            <SwiperSlide key='walkthrough-3d' className='!h-full'>
+              <div className='flex h-full w-full items-center justify-center rounded-lg bg-gray-800 text-white'>
                 <iframe
                   src={walkthroughUrl}
                   title='3D Video'
-                  className='rounded-lg !w-[314px] !h-[220px] border-none'
+                  className='h-full w-full rounded-lg border-none'
                   allowFullScreen
                 ></iframe>
               </div>
@@ -166,7 +170,7 @@ const ProductCard = ({
           />
         ) : null}
       </div>
-      <div className='flex w-full flex-col gap-2.5 text-base text-reef-gold'>
+      <div className='flex w-full min-w-0 flex-1 flex-col gap-2.5 text-base text-reefGold'>
         <div className='flex flex-wrap items-center gap-2 text-left'>
           <Link
             href={listingHref}
@@ -181,18 +185,18 @@ const ProductCard = ({
 
         <div
           className={`overflow-hidden transition-all duration-300 ease-out ${detailsVisibleClass}`}
-          aria-hidden={!qrHovered}
+          aria-hidden={!alwaysShowDetails && !qrHovered}
         >
           <div className='flex flex-col gap-2.5 pb-1'>
             <div className='flex w-full flex-wrap items-center gap-x-3 gap-y-1'>
-              <p className='text-xs font-semibold text-reef-gold md:text-sm lg:text-base'>
+              <p className='text-xs font-semibold text-black md:text-sm lg:text-base'>
                 Selling Price: AED {formatListingCardPrice(item)}
               </p>
-              <p className='text-xs font-semibold text-reef-gold md:text-sm lg:text-base'>
+              <p className='text-xs font-semibold text-black md:text-sm lg:text-base'>
                 Market Price: AED {formatCardPrice(evaluationPrices)}
               </p>
               {showROI && (
-                <p className='text-xs font-semibold text-reef-gold md:text-sm lg:text-base'>
+                <p className='text-xs font-semibold text-black md:text-sm lg:text-base'>
                   ROI: {roi ? roi : 5}%
                 </p>
               )}
@@ -204,16 +208,16 @@ const ProductCard = ({
                   className='flex w-fit flex-wrap items-center gap-1'
                 >
                   <span className='h-[16px] w-[16px] shrink-0 rounded-full bg-gradient-to-r from-[#a2913e] to-[#d7c590]'></span>
-                  <span className='text-xs font-normal text-reef-gold/80 md:text-sm lg:text-base'>
+                  <span className='text-xs font-normal text-black md:text-sm lg:text-base'>
                     {attr}
                   </span>
                 </div>
               ))}
             </div>
-            <div className='flex flex-wrap items-center gap-3'>
-              <div className='flex items-center gap-1 md:gap-3'>
-                <LocationIcon className='text-reef-gold/80' />
-                <p className='text-xs font-normal text-reef-gold/80 md:text-sm lg:text-base'>
+            <div className='flex w-full min-w-0 flex-col gap-2'>
+              <div className='flex min-w-0 items-center gap-1 md:gap-3'>
+                <LocationIcon className='shrink-0 text-reefGold/80' />
+                <p className='min-w-0 text-xs font-normal text-black md:text-sm lg:text-base'>
                   {locationLabel || '—'}
                 </p>
               </div>
@@ -223,7 +227,7 @@ const ProductCard = ({
             <ListingSocialShare
               listing={{ ...item, type }}
               label='Share With:'
-              labelClassName='mb-0 font-normal lg:text-base md:text-sm text-xs text-reef-gold/80'
+              labelClassName='mb-0 font-normal lg:text-base md:text-sm text-xs text-black'
               iconClassName='h-5 w-5'
               iconGapClassName='gap-3'
               stacked

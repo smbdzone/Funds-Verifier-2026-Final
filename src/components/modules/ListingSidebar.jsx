@@ -722,6 +722,26 @@ export const ListingSidebar = ({ initialData, isSidebarVisible }) => {
     updateSearchParams('grams', sortOrder)
   }
 
+  const [projectNameSearch, setProjectNameSearch] = useState(
+    searchParams.get('projectName') || '',
+  )
+
+  useEffect(() => {
+    setProjectNameSearch(searchParams.get('projectName') || '')
+  }, [searchParams])
+
+  useEffect(() => {
+    const current = searchParams.get('projectName') || ''
+    if (projectNameSearch === current) return
+
+    const timeout = setTimeout(() => {
+      updateSearchParams('projectName', projectNameSearch.trim() || null)
+    }, 500)
+
+    return () => clearTimeout(timeout)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectNameSearch])
+
   return (
     <div className='rounded-[12px] w-[300px] sm:w-[385px] flex flex-wrap lg:flex-nowrap gap-5 px-0 shadow-xl'>
       <aside className='custom-shadow w-full lg:w-[385px]'>
@@ -793,6 +813,16 @@ export const ListingSidebar = ({ initialData, isSidebarVisible }) => {
 
         {pathname === '/property' && (
           <>
+            <div className='border-b py-3 px-5'>
+              <div className='mb-1'>Search by Project Name</div>
+              <input
+                type='text'
+                value={projectNameSearch}
+                onChange={(e) => setProjectNameSearch(e.target.value)}
+                placeholder='e.g. Tannery Gardens'
+                className='w-full rounded bg-[#f5f5f5] p-2 px-3 text-sm outline-none md:text-base'
+              />
+            </div>
             <Extras
               title='Bedrooms'
               extras={bedroomsOptions}

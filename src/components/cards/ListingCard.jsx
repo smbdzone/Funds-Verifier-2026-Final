@@ -665,6 +665,16 @@ const ListingCard = ({
                       ) : null}
                     </div>
                   </div>
+
+                  {listing.projectName ? (
+                    <p
+                      className={`mb-3 lg:text-base text-sm ${hasFeaturedStyling ? 'text-gradient-custom' : 'text-prussianBlue'
+                        }`}
+                    >
+                      {listing.projectName}
+                      {listing.developer ? ` by ${listing.developer}` : ''}
+                    </p>
+                  ) : null}
                 </div>
               </div>
 

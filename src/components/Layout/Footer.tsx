@@ -35,10 +35,10 @@ const Footer = () => {
                 <figure className='mb-3'>
                   <Image
                     src='/assets/images/Group.png'
-                    height={78}
-                    width={305}
+                    height={77}
+                    width={82}
                     alt='Footer Logo'
-                    className='sm:h-[50px] sm:w-[70px] h-[40px] w-[50px]'
+                    className='sm:h-[52px] sm:w-[54px] h-[40px] w-[42px] object-contain'
                   />
                 </figure>
                 <h1 className='text-sm sm:text-lg font-semibold'>
@@ -186,10 +186,10 @@ const Footer = () => {
                 <figure>
                   <Image
                     src='/assets/images/Group.png'
-                    height={78}
-                    width={305}
+                    height={77}
+                    width={82}
                     alt='Footer Logo'
-                    className='h-[50px] w-[70px]'
+                    className='h-[52px] w-[54px] object-contain'
                   />
                 </figure>
                 <h1 className='text-lg font-semibold'>Funds Verifier</h1>
