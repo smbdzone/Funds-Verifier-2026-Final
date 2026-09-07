@@ -60,65 +60,26 @@ jobs:
     if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
-      - name: Deploy to EC2
-        uses: appleboy/ssh-action@v1.2.0
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Plain OpenSSH via webfactory/ssh-agent, not appleboy/ssh-action.
+      # Switched 2026-09-07: appleboy/ssh-action@v1.2.0 (drone-ssh)
+      # reliably killed the session a few seconds to ~20s in — regardless
+      # of what command was running at the time — matching multiple
+      # independent reports of a v1.2.0-specific regression (e.g.
+      # appleboy/ssh-action#348). Plain ssh had zero issues in manual
+      # testing, including multi-minute sessions.
+      - name: Load deploy key into ssh-agent
+        uses: webfactory/ssh-agent@v0.9.0
         with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          script: |
-            set -e
+          ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
 
-            echo "Starting Frontend Deployment"
+      - name: Trust EC2 host key
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H "${{ secrets.EC2_HOST }}" >> ~/.ssh/known_hosts
 
-            cd /home/ubuntu/Funds-Verifier-2026-Final
-
-            echo "Getting latest code"
-            git fetch origin fv-abbas
-            git reset --hard origin/fv-abbas
-
-            echo "Installing dependencies"
-            npm install
-
-            # `next build` is run detached from this SSH exec channel and
-            # polled via a marker file, rather than run as a foreground
-            # command on the channel directly. Confirmed (2026-09-07) that
-            # a foreground `npm run build` here gets killed partway through
-            # (SIGTERM, no error trace) even though the server itself has
-            # plenty of free memory/CPU and no OOM-killer or sshd timeout
-            # is involved — a plain polling loop over the same connection
-            # type survives fine, so it's specifically the long-lived
-            # foreground build process that's at risk, not the session.
-            echo "Building Next.js application (detached)"
-            rm -f /tmp/fv-frontend-build.log /tmp/fv-frontend-build.done
-            nohup bash -c 'npm run build > /tmp/fv-frontend-build.log 2>&1; echo $? > /tmp/fv-frontend-build.done' >/dev/null 2>&1 &
-            disown
-
-            echo "Waiting for build to finish..."
-            for i in $(seq 1 120); do
-              if [ -f /tmp/fv-frontend-build.done ]; then
-                break
-              fi
-              sleep 5
-            done
-
-            if [ ! -f /tmp/fv-frontend-build.done ]; then
-              echo "Build timed out after 10 minutes"
-              tail -n 80 /tmp/fv-frontend-build.log
-              exit 1
-            fi
-
-            BUILD_EXIT=$(cat /tmp/fv-frontend-build.done)
-            tail -n 40 /tmp/fv-frontend-build.log
-            if [ "$BUILD_EXIT" != "0" ]; then
-              echo "Build failed with exit code $BUILD_EXIT"
-              exit 1
-            fi
-            echo "Build succeeded"
-
-            echo "Restarting Frontend PM2"
-            pm2 restart fundsverifier-frontend
-
-            pm2 save
-
-            echo "Frontend Deployment Completed Successfully"
+      - name: Deploy to EC2
+        run: |
+          ssh -o BatchMode=yes "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}" 'bash -s' < .github/workflows/scripts/deploy-frontend.sh
