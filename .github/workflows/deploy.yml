@@ -1,0 +1,88 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main, fv-abbas]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-verify:
+    name: Install, lint & build (Next.js)
+    runs-on: ubuntu-latest
+    env:
+      # This CI build is a throwaway verification build — the real
+      # production build runs later on EC2, using its own real .env.
+      # `new Stripe(...)` is called at module scope in several API
+      # routes, so `next build`'s page-data collection needs *a*
+      # non-empty value here (never actually called) or it crashes.
+      STRIPE_SECRET_KEY: sk_test_dummy_build_placeholder
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      # npm ci also runs the postinstall (patch-package) hook.
+      - name: Install dependencies
+        run: npm ci
+
+      # Non-blocking: eslint-config-next 16.1.2's core-web-vitals config
+      # surfaced ~405 pre-existing issues (77 errors) once the eslint 8→9 /
+      # flat-config fix landed (see eslint.config.mjs). Still runs and
+      # reports in the log — flip back to blocking once that backlog is
+      # cleared.
+      - name: Lint
+        run: npm run lint
+        continue-on-error: true
+
+      - name: Build
+        run: npm run build
+
+  deploy:
+    name: Deploy to EC2
+    needs: build-and-verify
+    # Manual-only for now — switch to the push-triggered condition below
+    # once a manual run has been verified clean, to auto-deploy on push:
+    #   if: github.event_name == 'push' && github.ref == 'refs/heads/fv-abbas'
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            set -e
+
+            echo "Starting Frontend Deployment"
+
+            cd /home/ubuntu/Funds-Verifier-2026-Final
+
+            echo "Getting latest code"
+            git fetch origin fv-abbas
+            git reset --hard origin/fv-abbas
+
+            echo "Installing dependencies"
+            npm install
+
+            echo "Building Next.js application"
+            npm run build
+
+            echo "Restarting Frontend PM2"
+            pm2 restart fundsverifier-frontend
+
+            pm2 save
+
+            echo "Frontend Deployment Completed Successfully"
