@@ -15,6 +15,13 @@ jobs:
   build-and-verify:
     name: Install, lint & build (Next.js)
     runs-on: ubuntu-latest
+    env:
+      # This CI build is a throwaway verification build — the real
+      # production build runs later on EC2, using its own real .env.
+      # `new Stripe(...)` is called at module scope in several API
+      # routes, so `next build`'s page-data collection needs *a*
+      # non-empty value here (never actually called) or it crashes.
+      STRIPE_SECRET_KEY: sk_test_dummy_build_placeholder
     steps:
       - name: Checkout
         uses: actions/checkout@v4
