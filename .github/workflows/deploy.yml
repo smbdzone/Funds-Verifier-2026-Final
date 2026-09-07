@@ -9,7 +9,10 @@ on:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # false, not true: a queued run should wait its turn, not SIGTERM a
+  # deploy that's already mid-flight on the EC2 box (suspected cause of
+  # a run dying instantly with no script-visible reason on 2026-09-07).
+  cancel-in-progress: false
 
 jobs:
   build-and-verify:
