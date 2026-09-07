@@ -13,17 +13,21 @@ git reset --hard origin/main
 echo "Installing dependencies"
 npm install
 
-# `next build` is run detached from this SSH session and polled via a
-# marker file, rather than run as a foreground command directly on the
-# connection. Confirmed (2026-09-07) that a foreground `npm run build`
-# here gets killed partway through even though the server itself has
-# plenty of free memory/CPU and no OOM-killer or sshd timeout is
-# involved — a plain polling loop over the same connection survives
-# fine, so it's specifically the long-lived foreground build process
-# that's at risk, not the session.
+# `next build` is run in its own session (setsid), not just nohup'd,
+# and polled via a marker file rather than run as a foreground command
+# directly on the connection. Confirmed (2026-09-07) that a foreground
+# `npm run build` here gets killed partway through even with plenty of
+# free memory/CPU and no OOM-killer or sshd timeout involved — and that
+# plain nohup+disown isn't enough on its own: `next build` spawns its
+# own worker child processes ("Collecting page data using N workers"),
+# and a SIGHUP from the session's controlling terminal going away is
+# sent to the whole process *group* — nohup only makes the top-level
+# process immune to it, not those children. setsid detaches the entire
+# tree into a brand-new session so no signal from this SSH session
+# ending can reach any of it.
 echo "Building Next.js application (detached)"
 rm -f /tmp/fv-frontend-build.log /tmp/fv-frontend-build.done
-nohup bash -c 'npm run build > /tmp/fv-frontend-build.log 2>&1; echo $? > /tmp/fv-frontend-build.done' >/dev/null 2>&1 &
+setsid nohup bash -c 'npm run build > /tmp/fv-frontend-build.log 2>&1; echo $? > /tmp/fv-frontend-build.done' </dev/null >/dev/null 2>&1 &
 disown
 
 echo "Waiting for build to finish..."
