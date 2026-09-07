@@ -54,10 +54,12 @@ jobs:
   deploy:
     name: Deploy to EC2
     needs: build-and-verify
-    # Manual-only for now — switch to the push-triggered condition below
-    # once a manual run has been verified clean, to auto-deploy on push:
-    #   if: github.event_name == 'push' && github.ref == 'refs/heads/fv-abbas'
-    if: github.event_name == 'workflow_dispatch'
+    # Auto-deploys on push to main (verified clean via a manual run on
+    # 2026-09-07). Also runnable by hand via workflow_dispatch.
+    # NOTE: main was 88 commits behind fv-abbas when this was set — do
+    # not push to main until fv-abbas is merged in, or this will roll
+    # the live server back to that stale state.
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

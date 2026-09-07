@@ -6,8 +6,9 @@ echo "Starting Frontend Deployment"
 cd /home/ubuntu/Funds-Verifier-2026-Final
 
 echo "Getting latest code"
-git fetch origin fv-abbas
-git reset --hard origin/fv-abbas
+git fetch origin main
+git checkout -B main origin/main
+git reset --hard origin/main
 
 echo "Installing dependencies"
 npm install
