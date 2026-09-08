@@ -64,6 +64,10 @@ export async function POST(req) {
           id: responseData?.data?._id || responseData?.data?.uuid,
           adTitle: responseData?.data?.title || null,
           userUUID: responseData?.data?.userUUID || null,
+          // Carry the caller's real public origin so the post-payment redirect
+          // returns to it. Behind nginx, req.nextUrl.origin is the internal
+          // localhost address, so it can't be trusted for the redirect.
+          origin: returnOrigin,
         },
         // Return through the confirmation handler (marks the ad paid) which then
         // redirects to the dashboard on the same origin.
@@ -89,8 +93,6 @@ export async function POST(req) {
 
 export async function GET(req) {
   try {
-    const host = req.headers.get('x-forwarded-host') || req.headers.get('host')
-
     // Use the URL API to extract query parameters
     const { searchParams } = new URL(req.url)
     const session_id = searchParams.get('session_id')
@@ -103,7 +105,16 @@ export async function GET(req) {
 
     const session = await stripe.checkout.sessions.retrieve(session_id)
     const adId = session?.metadata?.id || null
-    const origin = req.nextUrl.origin
+
+    // Redirect back to the origin the user actually came from. Prefer the origin
+    // stored in the session at creation; fall back to the forwarded host (public
+    // host behind nginx); only then to req.nextUrl.origin (internal localhost).
+    const proto = req.headers.get('x-forwarded-proto') || 'https'
+    const fwdHost =
+      req.headers.get('x-forwarded-host') || req.headers.get('host')
+    const origin =
+      session?.metadata?.origin ||
+      (fwdHost ? `${proto}://${fwdHost}` : req.nextUrl.origin)
 
     // Trust Stripe's own view of the charge — not any client input. A zeroed
     // (100%-off coupon) checkout completes as 'no_payment_required'.
