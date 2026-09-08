@@ -199,7 +199,7 @@ const ProductCard = ({
                 className={`text-base font-semibold ${hasAdditionalContent ? 'text-white' : 'text-reef-gold'
                   }`}
               >
-                Selling Price: AED {formatListingCardPrice(item)}
+                Asking Price: AED {formatListingCardPrice(item)}
               </p>
               <p
                 className={`text-base font-semibold ${hasAdditionalContent ? 'text-white' : 'text-reef-gold'

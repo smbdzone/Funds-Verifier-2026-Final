@@ -100,7 +100,7 @@ export default function JewelleryView({ data }) {
 
           <div className='flex w-full flex-wrap gap-x-4 gap-y-1'>
             <p className='text-sm font-semibold text-reefGold md:text-base'>
-              Selling Price: AED {formatPriceUS(data?.price)}
+              Asking Price: AED {formatPriceUS(data?.price)}
             </p>
             <p className='text-sm font-semibold text-reefGold md:text-base'>
               Market Price: AED {formatNumberWithCommas(data?.evaluationPrices)}
