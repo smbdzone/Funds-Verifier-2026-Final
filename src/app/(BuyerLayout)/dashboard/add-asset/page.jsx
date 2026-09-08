@@ -40,7 +40,7 @@ import ConfirmationModal from '@/components/AddListing/ConfirmationModal'
 import ListingMapSection from '@/components/ListingsForm/ListingMapSection'
 import FacilitiesChecklist from '@/components/property-listing/FacilitiesChecklist'
 import { IoReload } from 'react-icons/io5'
-import propertyAd from '@/assets/images/advertisement.png'
+import FooterAdd from '@/components/advertisementComponent/FooterAdd'
 import { validateAsset, validateOffPlanAsset } from '../../../../utils/validateForms'
 import {
   handleImageUpload,
@@ -721,15 +721,9 @@ const Page = () => {
                       </div>
                     </div>
                   ))}
+                  {/* Live footer ad (renders nothing when no eligible ad). */}
                   <div className='grid col-span-2 place-items-center mt-[49px]'>
-                    <Image
-                      width={1500}
-                      quality={90}
-                      className='w-[98%]'
-                      height={700}
-                      src={propertyAd}
-                      alt='property'
-                    />
+                    <FooterAdd />
                   </div>
                 </>
               )}
@@ -753,15 +747,9 @@ const Page = () => {
                       />
                     </div>
                   ))}
+                {/* Live footer ad (renders nothing when no eligible ad). */}
                 <div className='grid col-span-2 place-items-center mt-[49px]'>
-                  <Image
-                    width={1500}
-                    quality={90}
-                    className='w-[98%]'
-                    height={700}
-                    src={propertyAd}
-                    alt='off-plan property'
-                  />
+                  <FooterAdd />
                 </div>
               </>
             )}

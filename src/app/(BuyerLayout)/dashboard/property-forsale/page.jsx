@@ -25,7 +25,7 @@ import {
 import 'react-phone-number-input/style.css'
 import PhoneInput from 'react-phone-number-input'
 import flags from 'react-phone-number-input/flags'
-import adImage from '@/assets/images/advertisement.png'
+import FooterAdd from '@/components/advertisementComponent/FooterAdd'
 import {
   ensureWithinSize,
   isCompressionConfigured,
@@ -2060,15 +2060,9 @@ function Page() {
                   </form>
                 </div>
                 {/* 4 end  */}
+                {/* Live footer ad (renders nothing when no eligible ad). */}
                 <div className='grid place-items-center mt-[49px]'>
-                  <Image
-                    width={1500}
-                    quality={90}
-                    className='w-[98%]'
-                    height={700}
-                    src={adImage}
-                    alt='car'
-                  />
+                  <FooterAdd />
                 </div>
                 {/* map  */}
                 <ListingMapSection
