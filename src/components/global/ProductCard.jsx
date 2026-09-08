@@ -190,7 +190,7 @@ const ProductCard = ({
           <div className='flex flex-col gap-2.5 pb-1'>
             <div className='flex w-full flex-wrap items-center gap-x-3 gap-y-1'>
               <p className='text-xs font-semibold text-black md:text-sm lg:text-base'>
-                Selling Price: AED {formatListingCardPrice(item)}
+                Asking Price: AED {formatListingCardPrice(item)}
               </p>
               <p className='text-xs font-semibold text-black md:text-sm lg:text-base'>
                 Market Price: AED {formatCardPrice(evaluationPrices)}
