@@ -68,8 +68,13 @@ function FooterAdd() {
       }
     }
     load()
+    // Rotate to another eligible ad every 20s so more advertisers get
+    // impressions within a single session. Re-billing is still prevented by the
+    // per-creative/day de-dup, so re-showing a creative won't double-charge.
+    const rotation = setInterval(load, 20000)
     return () => {
       active = false
+      clearInterval(rotation)
     }
   }, [token])
 
