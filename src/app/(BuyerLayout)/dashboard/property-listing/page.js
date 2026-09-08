@@ -3,7 +3,6 @@ import { Suspense, useState, useEffect, useContext, useMemo } from 'react'
 import axios from 'axios'
 import 'react-phone-number-input/style.css'
 import { isValidPhoneNumber } from 'libphonenumber-js'
-import adImage from '@/assets/images/advertisement.png'
 import Listing from '@/components/global/Listing'
 import Facilities from '../../../../components/property-listing/Facilities'
 import ReadyMarketLayoutDocuments from '@/components/property-listing/ReadyMarketLayoutDocuments'
@@ -1447,7 +1446,6 @@ const Page = () => {
                 loading={loading}
                 facilities={facilities}
                 setFormData={setFormData}
-                adImage={adImage}
                 id={id}
                 submitConfirmation={submitConfirmation}
                 confirmationModal={confirmationModal}

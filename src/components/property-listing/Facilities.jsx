@@ -1,7 +1,7 @@
 'use client'
 
-import Image from 'next/image'
 import React from 'react'
+import FooterAdd from '@/components/advertisementComponent/FooterAdd'
 import ConfirmationModal from '@/components/AddListing/ConfirmationModal'
 import ListingMapSection from '@/components/ListingsForm/ListingMapSection'
 import FacilitiesChecklist from '@/components/property-listing/FacilitiesChecklist'
@@ -15,7 +15,6 @@ const Facilities = React.memo(
     handleChange,
     setFormData,
     facilities,
-    adImage,
     submitConfirmation,
     loading,
     confirmationModal,
@@ -39,15 +38,9 @@ const Facilities = React.memo(
           />
         </div>
 
+        {/* Live footer ad (renders nothing when no eligible ad). */}
         <div className='grid place-items-center mt-[49px]'>
-          <Image
-            width={1500}
-            quality={90}
-            className='w-[98%]'
-            height={700}
-            src={adImage}
-            alt='car'
-          />
+          <FooterAdd />
         </div>
         <ListingMapSection
           mapUrl={formData?.mapUrl}
