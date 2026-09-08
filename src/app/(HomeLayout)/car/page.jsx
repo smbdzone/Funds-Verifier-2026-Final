@@ -3,7 +3,6 @@
 import { CarListingCard } from '@/components/modules/Car/Car-listing-card'
 import { Banner } from '@/components/modules/Banner'
 import CarWrapper from '../../../components/Wrappers/CarWrapper'
-import QuarterPageBanner from '@/components/advertisementComponent/QuarterPageBanner'
 import { Suspense } from 'react'
 import { ListingCardSkeleton } from '@/components/global/ListingCardSkeleton'
 export default function page({ searchParams }) {
@@ -19,8 +18,6 @@ export default function page({ searchParams }) {
       <CarWrapper>
         <CarListingCard />
       </CarWrapper>
-      {/* Ad banner sits at the bottom, directly above the footer. */}
-      <QuarterPageBanner />
     </div>
     </Suspense>
   )
