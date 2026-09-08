@@ -1,337 +1,159 @@
-"use client";
-import React, { useEffect, useState } from "react";
-import axios from "axios";
-import { useProfile } from "../../context/UserContext";
-import { getFromLocalStorage, getTokenFromCookie, saveToLocalStorage } from "../../utils/helper";
-import { GetUserIpAddress } from "@/utils/localization/GetUserLocalization";
+'use client'
+import { useEffect, useRef, useState } from 'react'
+import axios from 'axios'
+import {
+  getTokenFromCookie,
+  getFromLocalStorage,
+  saveToLocalStorage,
+} from '../../utils/helper'
+import { GetUserIpAddress } from '@/utils/localization/GetUserLocalization'
+import { useProfile } from '../../context/UserContext'
 
+const ROOT = `${process.env.NEXT_PUBLIC_BASE_URL}/advertisement`
+
+const todayKey = () => new Date().toISOString().slice(0, 10)
+
+/**
+ * Footer Banner shown to LOGGED-IN visitors on listing pages. The backend
+ * (getAllFooterBanners) serves one approved, paid, in-flight, in-budget footer
+ * ad that isn't the viewer's own. Impressions (on scroll-into-view) and clicks
+ * bill the advertiser; a per-creative/day localStorage guard avoids re-billing
+ * the same creative while browsing. Renders nothing when logged out or when
+ * there's no eligible ad.
+ */
 function FooterAdd() {
-  const [currentAdIndex, setCurrentAdIndex] = useState(0);
-  const [footerAds, setFooterAds] = useState([]);
-  const [largeQuarterAds, setLargeQuarterAds] = useState([]);
-  const [currentCreativeIndex, setCurrentCreativeIndex] = useState(0);
-  const [filterSidebarData, setFilterSidebarData] = useState([]);
-  const [getImgData, setImgData] = useState(null);
-  const [getAdLink, setAdLink] = useState(null);
-  const [getObjId, setObjId] = useState(null);
-  const [getAdvertiserId, setAdvertiserId] = useState(null);
-  const [getClicks, setClicks] = useState(null);
-  const [getImpressions, setImpressions] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [getUserAdvertisement, setGetUserAdvertisement] = useState([]);
-  const clicksLength = getClicks?.length ?? 0;
-  const impressionsLength = getImpressions?.length ?? 0;
-  const root = `${process.env.NEXT_PUBLIC_BASE_URL}/advertisement`;
+  const user = useProfile()
+  const [ad, setAd] = useState(null)
+  const containerRef = useRef(null)
 
-  const [ads, setAds] = useState([]);
-  const [clickedAds, setClickedAds] = useState([]);
-  const [watchedAds, setWatchedAds] = useState([]);
-  const user = useProfile();
-  const token = getTokenFromCookie();
+  const token = getTokenFromCookie() || user?.accessToken || null
 
+  const alreadyDone = (key, creativeId) => {
+    const map = getFromLocalStorage(key) || {}
+    return map[creativeId] === todayKey()
+  }
+  const markDone = (key, creativeId) => {
+    const map = getFromLocalStorage(key) || {}
+    map[creativeId] = todayKey()
+    saveToLocalStorage(key, map)
+  }
+
+  // Fetch one eligible footer ad (logged-in only).
   useEffect(() => {
-    const handleGetClickedAds = async () => {
-      const data = getFromLocalStorage("clickedAds") || [];
-      setClickedAds(data);
-    };
-    handleGetClickedAds();
-  }, [setClickedAds]);
-
-  useEffect(() => {
-    const handleGetWatchedAds = async () => {
-      const data = getFromLocalStorage("watchedAds") || [];
-      setWatchedAds(data);
-    };
-    handleGetWatchedAds();
-  }, [setWatchedAds]);
-
-  useEffect(() => {
-    if (ads) {
-      const formatAds = (format) =>
-        ads
-          .map((ad) => ({
-            advertisementId: ad.uuid,
-            creatives: ad.creatives.filter(
-              (creative) => creative.format === format
-            ),
-          }))
-          .filter((ad) => ad.creatives.length > 0);
-
-      setLargeQuarterAds(formatAds("Quarter-Page Banner"));
-      setFooterAds(formatAds("Footer Banner"));
+    if (!token) {
+      setAd(null)
+      return
     }
-  }, [ads]);
-
-  useEffect(() => {
-    const handleGetAds = async () => {
+    let active = true
+    const load = async () => {
       try {
-        const res = await axios.get(`${root}/byDateAndTime`);
-        setAds(res.data.data);
-      } catch (error) {
-        console.error("Error fetching ads:", error);
-      }
-    };
-    handleGetAds();
-  }, []);
-  useEffect(() => {
-    if (getUserAdvertisement && getUserAdvertisement.length > 0) {
-      let objectIndex = 0;
-      let creativeIndex = 0;
-
-    
-      creativeIndex =
-        creativeIndex === getUserAdvertisement[objectIndex].creatives.length - 1
-          ? 0
-          : creativeIndex + 1;
-
-      setImgData(
-        getUserAdvertisement[objectIndex].creatives[creativeIndex]?.img?.url ||
-        getUserAdvertisement[objectIndex].creatives[creativeIndex]?.img
-      );
-      setAdLink(
-        getUserAdvertisement[objectIndex].creatives[creativeIndex]?.adLink
-      );
-      setObjId(getUserAdvertisement[objectIndex].creatives[creativeIndex]?.uuid);
-      setAdvertiserId(getUserAdvertisement[objectIndex].uuid);
-      setClicks(
-        getUserAdvertisement[objectIndex].creatives[creativeIndex]?.clicks
-      );
-      setImpressions(
-        getUserAdvertisement[objectIndex].creatives[creativeIndex]?.impressions
-      );
-
-      if (
-        creativeIndex ===
-        getUserAdvertisement[objectIndex].creatives.length - 1
-      ) {
-        objectIndex =
-          objectIndex === getUserAdvertisement.length - 1 ? 0 : objectIndex + 1;
-        creativeIndex = 0;
-      }
-      setLoading(false);
-      
-    }
-  }, [getUserAdvertisement]);
-
-  useEffect(() => {
-    if (token) {
-      const handleGetAdvertisementUser = async (token) => {
-        try {
-          const res = await axios.get(`${root}/getAllFooterBanners`, {
-            headers: { Authorization: `Bearer ${token}`, },
-          });
-          if (res.data) {
-            const combinedData = [
-              ...res.data.data,
-            ];
-            setGetUserAdvertisement(combinedData);
-          }
-        } catch (error) {
-          console.error("Error fetching advertisement data:", error);
+        const res = await axios.get(`${ROOT}/getAllFooterBanners`, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        const doc = res?.data?.data?.[0]
+        const creative = doc?.creatives?.[0]
+        if (!active) return
+        if (doc && creative) {
+          setAd({
+            advertisementId: doc._id,
+            creativeId: creative._id, // backend arrayFilters match on _id
+            img: creative.signedImg || creative.img?.url || creative.img,
+            adLink: creative.adLink,
+          })
+        } else {
+          setAd(null)
         }
-      };
-      handleGetAdvertisementUser(token);
-      const intervalId = setInterval(() => {
-        handleGetAdvertisementUser(token);
-      }, 30000);
-      return () => clearInterval(intervalId);
+      } catch {
+        if (active) setAd(null)
+      }
     }
-  }, [token]);
+    load()
+    return () => {
+      active = false
+    }
+  }, [token])
 
-  const newArray = [
-    ...(footerAds || []),
-    {
-      advertisementId: getAdvertiserId,
-      creatives: [
-        {
-          img: getImgData,
-          adLink: getAdLink,
-          _id: getObjId,
-        },
-      ],
-    },
-  ];
+  // Fire an impression when the banner scrolls into view.
+  useEffect(() => {
+    if (!ad || !token) return
+    const el = containerRef.current
+    if (!el) return
 
-  const canDoImpression = (watchedAdTime) => {
-    const currentTimestamp = Date.now();
-    const tomorrow2OClock = new Date(watchedAdTime);
-    tomorrow2OClock.setDate(tomorrow2OClock.getDate() + 1);
-    tomorrow2OClock.setHours(2, 0, 0, 0);
-    return currentTimestamp >= tomorrow2OClock.getTime();
-  };
-
-  const handleImpressions = async (type, newArray, getObjId) => {
-    const newData = [...watchedAds, { creativeId: getObjId, time: new Date() }];
-    saveToLocalStorage("watchedAds", newData);
-    setWatchedAds(newData);
-
-    if (newArray[currentAdIndex].advertisementId !== getObjId) {
-      const creativeId =
-        newArray[currentAdIndex].creatives[currentCreativeIndex].uuid;
-
-      const isAlreadyWatched = watchedAds.some((ad) => {
-        return ad.creativeId === creativeId;
-      });
-
-      if (isAlreadyWatched) {
-        const ip = await GetUserIpAddress();
-        try {
-          const response = await axios.put(`${root}/updatedImpressions`,
-            {
-              type: type,
-              ip: ip,
-              advertisementId: newArray[currentAdIndex]?.advertisementId,
-              creativeId: getObjId,
-            },
-            { headers: { Authorization: `Bearer ${token}` } }
-          );
-          const newData = [
-            ...watchedAds,
-            { creativeId: getObjId, time: new Date() },
-          ];
-
-          saveToLocalStorage("watchedAds", newData);
-          setWatchedAds(newData);
-        } catch (error) {
-          console.error("Error updating impressions:", error);
-        }
-      } else {
-        const watchedAd = watchedAds.find((ad) => ad.creativeId === creativeId);
-        if (canDoImpression(watchedAd)) {
+    let fired = false
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach(async (entry) => {
+          if (!entry.isIntersecting || fired) return
+          fired = true
+          observer.disconnect()
+          if (alreadyDone('watchedFooterAds', ad.creativeId)) return
           try {
-            const ip = await GetUserIpAddress();
+            const ip = await GetUserIpAddress()
             await axios.put(
-              `${root}/updatedImpressions`,
+              `${ROOT}/updatedImpressions`,
               {
-                ip: ip,
-                type: type,
-                advertisementId: newArray[currentAdIndex].advertisementId,
-                creativeId: getObjId,
+                type: 'Footer Banner',
+                advertisementId: ad.advertisementId,
+                creativeId: ad.creativeId,
+                ip,
               },
-              {
-                headers: {
-                  Authorization: `Bearer ${token}`,
-                },
-              }
-            );
-            const newData = watchedAds.filter((ad) => ad.creativeId !== creativeId);
-            newData.push({ creativeId: getObjId, time: new Date() });
-
-            saveToLocalStorage("watchedAds", newData);
-            setWatchedAds(newData);
-          } catch (error) {
-            console.error("Error updating impressions:", error);
+              { headers: { Authorization: `Bearer ${token}` } },
+            )
+            markDone('watchedFooterAds', ad.creativeId)
+          } catch {
+            /* ignore tracking errors */
           }
-        }
-      }
-    }
-  };
+        })
+      },
+      { threshold: 0.5 },
+    )
+    observer.observe(el)
+    return () => observer.disconnect()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ad, token])
 
-  const handleClicks = async (
-    advertisementId,
-    creativeId,
-    type,
-    clickedAds,
-    setClickedAds
-  ) => {
+  const handleClick = async () => {
+    if (!ad || !token || alreadyDone('clickedFooterAds', ad.creativeId)) return
     try {
-      const ip = await GetUserIpAddress();
+      const ip = await GetUserIpAddress()
       await axios.put(
-        `${root}/updatedClicks`,
+        `${ROOT}/updatedClicks`,
         {
-          ip: ip,
-          type: type,
-          advertisementId,
-          creativeId,
+          type: 'Footer Banner',
+          advertisementId: ad.advertisementId,
+          creativeId: ad.creativeId,
+          ip,
         },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      const isAlreadyClicked = clickedAds.some(
-        (ad) => ad.creativeId === creativeId
-      );
-
-      if (!isAlreadyClicked) {
-        const newData = [...clickedAds, { creativeId, time: new Date() }];
-        saveToLocalStorage("clickedAds", newData);
-        setClickedAds(newData);
-      } else {
-        const clickedAd = clickedAds.find((ad) => ad.creativeId === creativeId);
-        if (canDoImpression(clickedAd.time)) {
-          const newDataClickedAds = clickedAds.filter(
-            (ad) => ad.creativeId !== creativeId
-          );
-          newDataClickedAds.push({ creativeId, time: new Date() });
-          saveToLocalStorage("clickedAds", newDataClickedAds);
-          setClickedAds(newDataClickedAds);
-        }
-      }
-    } catch (error) {
-      console.error("Error handling clicks:", error);
+        { headers: { Authorization: `Bearer ${token}` } },
+      )
+      markDone('clickedFooterAds', ad.creativeId)
+    } catch {
+      /* ignore tracking errors */
     }
-  };
+  }
 
-  const filterDataByTargetAudience = (targetedAudienceCountry) => {
-    return getUserAdvertisement.filter(
-      (advertisement) =>
-        advertisement.creatives.length > 0 &&
-        advertisement.creatives[0]?.format === targetedAudienceCountry
-    );
-  };
-
-  useEffect(() => {
-    if (newArray.length > 0 && getObjId !== null && getObjId !== undefined) {
-      handleImpressions("Footer Banner", newArray, getObjId);
-    }
-  }, [getUserAdvertisement]);
-
-  useEffect(() => {
-    if (getUserAdvertisement.length > 0) {
-      const filteredData = filterDataByTargetAudience("Footer Banner");
-      setFilterSidebarData(filteredData);
-    }
-  }, [getUserAdvertisement]);
-
-  if (loading || !getImgData) return null;
+  if (!token || !ad || !ad.img) return null
 
   return (
-    <>
-      {newArray && newArray.length > 0 && (
-        <div className="ads">
-          <div className="img-div">
-            <a
-              href={getAdLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={(e) => {
-                if (!getAdLink) {
-                  e.preventDefault();
-                } else {
-                  handleClicks(
-                    newArray[currentAdIndex].advertisementId,
-                    newArray[currentAdIndex].creatives[currentCreativeIndex]
-                      .uuid,
-                    "Footer Banner",
-                    clickedAds,
-                    setClickedAds
-                  );
-                }
-              }}
-            >
-              <img
-                src={getImgData}
-                alt="Footer Ad"
-                style={{ marginBottom: "15px" }}
-              />
-            </a>
-          </div>
-        </div>
-      )}
-    </>
-  );
+    <div ref={containerRef} className="ads">
+      <div className="img-div">
+        <a
+          href={ad.adLink || '#'}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={(e) => {
+            if (!ad.adLink) {
+              e.preventDefault()
+            } else {
+              handleClick()
+            }
+          }}
+        >
+          <img src={ad.img} alt="Footer Ad" style={{ marginBottom: '15px' }} />
+        </a>
+      </div>
+    </div>
+  )
 }
-export default FooterAdd;
+
+export default FooterAdd

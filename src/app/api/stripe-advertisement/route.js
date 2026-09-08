@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
+import { confirmAdPaid } from '@/libs/adPayment'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
 
@@ -41,7 +42,10 @@ export async function POST(req) {
             price_data: {
               currency: 'aed',
               product_data: { name: 'Advertisement' },
-              unit_amount: price * 100,
+              // Stripe requires an integer minor-unit amount. Round to fils so a
+              // decimal budget (e.g. 19.99 → 1999) doesn't throw and orphan the
+              // just-created ad row.
+              unit_amount: Math.round(Number(price) * 100),
             },
             quantity: 1,
           },
@@ -54,11 +58,12 @@ export async function POST(req) {
         // still marks the ad paid. Mutually exclusive with `discounts`.
         allow_promotion_codes: true,
         metadata: {
-          // Mongo _id so the confirmation handler's findById works.
+          // Mongo _id so the confirmation handler/webhook can mark the ad paid.
+          // NOTE: we deliberately do NOT put the user's JWT here anymore —
+          // confirmation is server-to-server via the internal secret.
           id: responseData?.data?._id || responseData?.data?.uuid,
           adTitle: responseData?.data?.title || null,
           userUUID: responseData?.data?.userUUID || null,
-          token,
         },
         // Return through the confirmation handler (marks the ad paid) which then
         // redirects to the dashboard on the same origin.
@@ -98,28 +103,25 @@ export async function GET(req) {
 
     const session = await stripe.checkout.sessions.retrieve(session_id)
     const adId = session?.metadata?.id || null
-    const token = session?.metadata?.token || null
-
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_BASE_URL}/advertisement/${adId}`,
-      {
-        method: 'PUT',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ status: 'completed', paymentStatus: 1 }),
-      }
-    )
-
-    const AdData = await response.json()
     const origin = req.nextUrl.origin
 
-    if (!response?.ok) {
-      // Payment succeeded on Stripe but confirming paymentStatus failed (e.g.
-      // the token expired during checkout). Don't strand the user on /error —
-      // send them to the dashboard; the paid status can be reconciled later.
-      console.error('Advertisement payment confirmation failed:', AdData)
+    // Trust Stripe's own view of the charge — not any client input. A zeroed
+    // (100%-off coupon) checkout completes as 'no_payment_required'.
+    const paid =
+      session?.payment_status === 'paid' ||
+      session?.payment_status === 'no_payment_required'
+
+    if (adId && paid) {
+      const paymentIntentId =
+        typeof session?.payment_intent === 'string'
+          ? session.payment_intent
+          : session?.payment_intent?.id
+      const result = await confirmAdPaid(adId, paymentIntentId)
+      if (!result.ok) {
+        // The Stripe webhook is the authoritative fallback, so don't strand the
+        // user — send them to the dashboard; the webhook reconciles paid status.
+        console.error('Checkout-return payment confirmation failed for', adId)
+      }
     }
 
     return NextResponse.redirect(`${origin}/advertiser-dashboard`, {

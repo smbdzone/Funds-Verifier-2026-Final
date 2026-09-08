@@ -1,4 +1,6 @@
-// Target output size for ad media (Large Quarter-Page Banner).
+// Target output size for ad media (Footer Banner). Adjust these two values if a
+// different footer aspect ratio is desired — the cropper and preview derive
+// everything from them.
 export const AD_MEDIA_WIDTH = 1080
 export const AD_MEDIA_HEIGHT = 395
 export const AD_MEDIA_ASPECT = AD_MEDIA_WIDTH / AD_MEDIA_HEIGHT

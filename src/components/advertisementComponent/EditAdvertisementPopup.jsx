@@ -239,6 +239,11 @@ const EditAdvertisementPopup = ({ onClose, EditableData }) => {
           targetedAudience: {
             country: locations?.map((loc) => loc?.countryName || loc?.country),
             city: locations?.map((loc) => loc?.cities || loc?.city),
+            // Preserve gender/age targeting on edit — the popup doesn't expose
+            // these fields, so carry the existing values through instead of
+            // letting $set wipe them.
+            gender: DefaultLocations?.gender || '',
+            ageGroup: DefaultLocations?.ageGroup || '',
             startAt: [startDate],
             endAt: [endDate],
           },
@@ -273,10 +278,16 @@ const EditAdvertisementPopup = ({ onClose, EditableData }) => {
   return (
     <div className='popup-container overflow-auto fixed top-0 left-0 w-full h-full flex justify-center items-center bg-black/[.3] from-black to-transparent bg-blend-multiply z-50'>
       <div className='relative bg-white w-[90%] md:w-[50%] p-6 rounded-[15px] shadow-lg max-h-[90vh] overflow-y-auto'>
-        {EditableData?.creative?.img && (
+        {(EditableData?.creative?.signedImg || EditableData?.creative?.img) && (
           <div className='flex justify-center items-center'>
             <Link href={EditableData?.creative?.adLink} target='_blank'>
-              <img src={EditableData?.creative?.img} alt='Banner' />
+              <img
+                src={
+                  EditableData?.creative?.signedImg ||
+                  EditableData?.creative?.img
+                }
+                alt='Banner'
+              />
             </Link>
           </div>
         )}

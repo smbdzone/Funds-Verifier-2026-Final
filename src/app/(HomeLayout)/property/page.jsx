@@ -3,7 +3,6 @@
 import React, { Suspense, useEffect } from 'react'
 import { Banner } from '@/components/modules/Banner'
 import ClientWrapper from '@/components/Wrappers/ClientWrapper'
-import QuarterPageBanner from '@/components/advertisementComponent/QuarterPageBanner'
 import { propertyType } from '../../../constants/listing-data'
 import { useSecureAxios } from '../../../utils/useSecureAxios'
 import { usePublicTokenContext } from '../../../utils/PublicTokenProvider.'
@@ -53,8 +52,6 @@ function PropertyPageContent({ params }) {
         subcatagory={propertyTypeValue || 'Apartment'}
       />
       <ClientWrapper params={params} />
-      {/* Ad banner sits at the bottom, directly above the footer. */}
-      <QuarterPageBanner />
     </div>
   )
 }

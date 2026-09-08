@@ -10,7 +10,6 @@ import {
   ClockIcon,
   CheckCircle2Icon,
   XCircleIcon,
-  WalletIcon,
 } from 'lucide-react'
 
 const root = `${process.env.NEXT_PUBLIC_BASE_URL}/advertisement`
@@ -19,7 +18,6 @@ const Overview = () => {
   const user = useProfile()
   const token = getTokenFromCookie() || user?.accessToken
   const [ads, setAds] = useState(null)
-  const [wallet, setWallet] = useState(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -35,21 +33,6 @@ const Overview = () => {
         const list = res?.data?.data || []
         if (!active) return
         setAds(list)
-
-        // The wallet is keyed by the advertiser's user id, which is stamped on
-        // every ad document (userId). Derive it from the ads response so we don't
-        // depend on the /me payload shape.
-        const ownerId = list?.[0]?.userId
-        if (ownerId) {
-          try {
-            const wRes = await axios.get(`${root}/user/wallet/${ownerId}`, {
-              headers: { Authorization: `Bearer ${token}` },
-            })
-            if (active) setWallet(wRes?.data?.wallet || null)
-          } catch {
-            if (active) setWallet(null)
-          }
-        }
       } catch (error) {
         console.error('Error loading overview:', error)
         if (active) setAds([])
@@ -96,19 +79,6 @@ const Overview = () => {
         >
           <PlusCircleIcon className='size-5' /> Create Advertisement
         </Link>
-      </div>
-
-      {/* Wallet */}
-      <div className='rounded-xl bg-[#002D4F] text-white p-6 mb-6 flex items-center justify-between'>
-        <div>
-          <p className='text-white/70 text-sm'>Ads Wallet Balance</p>
-          <p className='text-3xl font-bold mt-1'>
-            {loading
-              ? '—'
-              : `${Number(wallet?.total || 0).toFixed(4)} AED`}
-          </p>
-        </div>
-        <WalletIcon className='size-10 text-[#A2913E]' />
       </div>
 
       {/* Stat cards */}

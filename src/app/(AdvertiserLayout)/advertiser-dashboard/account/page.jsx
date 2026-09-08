@@ -1,11 +1,6 @@
 'use client'
-import { useEffect, useState } from 'react'
-import axios from 'axios'
 import { useProfile } from '@/context/UserContext'
-import { getTokenFromCookie } from '@/utils/helper'
-import { UserIcon, MailIcon, MapPinIcon, WalletIcon } from 'lucide-react'
-
-const root = `${process.env.NEXT_PUBLIC_BASE_URL}/advertisement`
+import { UserIcon, MailIcon, MapPinIcon } from 'lucide-react'
 
 const formatDate = (d) => {
   if (!d) return '—'
@@ -32,22 +27,6 @@ const Field = ({ label, value }) => (
 
 const AccountPage = () => {
   const { user } = useProfile()
-  const token = getTokenFromCookie() || null
-  const [wallet, setWallet] = useState(null)
-
-  useEffect(() => {
-    if (!token || !user?._id) return
-    let active = true
-    axios
-      .get(`${root}/user/wallet/${user._id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      .then((res) => active && setWallet(res?.data?.wallet || null))
-      .catch(() => active && setWallet(null))
-    return () => {
-      active = false
-    }
-  }, [token, user?._id])
 
   if (!user) return null
 
@@ -93,18 +72,6 @@ const AccountPage = () => {
           <Field label='Account status' value={cap(user.userState)} />
           <Field label='Account ID' value={user.uuid} />
           <Field label='Member since' value={formatDate(user.createdAt)} />
-        </div>
-      </div>
-
-      {/* Wallet */}
-      <div className='rounded-xl bg-white border border-gray-100 shadow-sm p-6 flex items-center justify-between'>
-        <div>
-          <p className='text-sm font-semibold text-[#002D4F] flex items-center gap-2'>
-            <WalletIcon className='size-4 text-[#A2913E]' /> Ads Wallet
-          </p>
-          <p className='text-2xl font-bold text-[#002D4F] mt-2'>
-            {wallet ? `${Number(wallet.total || 0).toFixed(4)} AED` : '0.0000 AED'}
-          </p>
         </div>
       </div>
     </div>

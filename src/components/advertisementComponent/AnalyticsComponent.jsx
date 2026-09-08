@@ -316,7 +316,7 @@ const AnalyticsComponent = ({ id, creativeId }) => {
             {firstCreative?.img && (
               <Link href={firstCreative?.adLink || "#"} target="_blank">
                 <img
-                  src={firstCreative?.img}
+                  src={firstCreative?.signedImg || firstCreative?.img}
                   alt="Ad Image"
                   className="mt-2 w-72 rounded-lg"
                 />
@@ -329,7 +329,7 @@ const AnalyticsComponent = ({ id, creativeId }) => {
             {firstCreative.img && (
               <Link href={firstCreative?.adLink || "#"} target="_blank">
                 <img
-                  src={firstCreative?.img}
+                  src={firstCreative?.signedImg || firstCreative?.img}
                   alt="Ad Image"
                   className="mt-2 w-72 rounded-lg"
                 />
@@ -342,7 +342,7 @@ const AnalyticsComponent = ({ id, creativeId }) => {
             {firstCreative.img && (
               <Link href={firstCreative?.adLink || "#"} target="_blank">
                 <img
-                  src={firstCreative?.img}
+                  src={firstCreative?.signedImg || firstCreative?.img}
                   alt="Ad Image"
                   className="mt-2 w-72 rounded-lg"
                 />
