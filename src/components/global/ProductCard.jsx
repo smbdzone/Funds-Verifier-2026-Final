@@ -170,7 +170,7 @@ const ProductCard = ({
           />
         ) : null}
       </div>
-      <div className='flex w-full min-w-0 flex-1 flex-col gap-2.5 text-base text-reefGold'>
+      <div className='flex w-full min-w-0 flex-1 flex-col gap-2.5 pr-2 text-base text-reefGold sm:pr-24'>
         <div className='flex flex-wrap items-center gap-2 text-left'>
           <Link
             href={listingHref}
