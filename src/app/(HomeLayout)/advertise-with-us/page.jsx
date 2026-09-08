@@ -42,7 +42,7 @@ const Page = () => {
                 <Image src='/pricing3.svg' alt='' width={100} height={100} />
                 <div className='text-2xl font-semibold mb-2'>Ad Formats</div>
                 <p className='text-gray-600'>
-                  Your campaign runs as a Large Quarter-Page Banner.
+                  Your campaign runs as a Footer Banner.
                 </p>
               </div>
             </div>
@@ -67,7 +67,7 @@ const Page = () => {
           <div className='grid grid-cols-1 md:grid-cols-2 gap-6 mb-10'>
             <div className='border-2 border-[#A2913E] p-6 rounded-lg'>
               <h4 className='text-xl font-bold mb-2'>
-                Large Quarter-Page Banner
+                Footer Banner
               </h4>
               <ul className='text-gray-700 list-disc list-inside'>
                 <li>Impression Fee: $0.1 (per 1000)</li>
