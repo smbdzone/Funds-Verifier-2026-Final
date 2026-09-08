@@ -1,6 +1,5 @@
 'use client'
 import Image from 'next/image'
-import Link from 'next/link'
 import AdvertiserUaePassButton from '@/components/auth/AdvertiserUaePassButton'
 
 /**
@@ -49,7 +48,7 @@ export default function AdvertiserLogin() {
               dashboard.
             </p>
 
-            {/* Advertiser UAE Pass sign-in / signup */}
+            {/* Advertiser UAE Pass sign-in / signup (only method) */}
             <div className='w-full'>
               <AdvertiserUaePassButton />
               <p className='text-[7.5px] sm:text-[12px] sm:text-center text-gray-500'>
@@ -57,19 +56,6 @@ export default function AdvertiserLogin() {
                 and visitors of UAE
               </p>
             </div>
-
-            {/* Email/password sign-in (the standard path). Advertiser accounts
-                that use a password rather than UAE Pass sign in here and are
-                redirected back to the advertiser dashboard by role. */}
-            <p className='text-[12px] text-center mt-6 text-gray-600'>
-              Prefer email &amp; password?{' '}
-              <Link
-                href='/user-login'
-                className='text-[rgba(141,124,59,1)] font-medium hover:underline'
-              >
-                Sign in with email
-              </Link>
-            </p>
           </div>
         </div>
       </div>
