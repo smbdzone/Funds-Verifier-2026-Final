@@ -37,7 +37,11 @@ export async function POST(req) {
         session?.payment_status === 'no_payment_required'
 
       if (adId && paid) {
-        await confirmAdPaid(adId)
+        const paymentIntentId =
+          typeof session?.payment_intent === 'string'
+            ? session.payment_intent
+            : session?.payment_intent?.id
+        await confirmAdPaid(adId, paymentIntentId)
       }
     }
   } catch (err) {

@@ -3,7 +3,7 @@
 // the Stripe checkout-return handler and the Stripe webhook. This is the ONLY
 // path that marks an ad paid — the general update endpoint no longer accepts
 // paymentStatus, so a client can't forge it.
-export async function confirmAdPaid(adId) {
+export async function confirmAdPaid(adId, paymentIntentId) {
   if (!adId) return { ok: false, error: 'missing adId' }
 
   const base = (process.env.NEXT_PUBLIC_BASE_URL || '').replace(/\/$/, '')
@@ -23,6 +23,10 @@ export async function confirmAdPaid(adId) {
         'Content-Type': 'application/json',
         'x-internal-secret': secret,
       },
+      // Stored so the ad can be refunded to the original card on deletion.
+      body: JSON.stringify(
+        paymentIntentId ? { paymentIntentId } : {},
+      ),
     })
     if (!res.ok) {
       const text = await res.text().catch(() => '')

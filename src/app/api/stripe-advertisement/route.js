@@ -112,7 +112,11 @@ export async function GET(req) {
       session?.payment_status === 'no_payment_required'
 
     if (adId && paid) {
-      const result = await confirmAdPaid(adId)
+      const paymentIntentId =
+        typeof session?.payment_intent === 'string'
+          ? session.payment_intent
+          : session?.payment_intent?.id
+      const result = await confirmAdPaid(adId, paymentIntentId)
       if (!result.ok) {
         // The Stripe webhook is the authoritative fallback, so don't strand the
         // user — send them to the dashboard; the webhook reconciles paid status.
