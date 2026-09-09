@@ -1,4 +1,4 @@
-const IDLE_TIMEOUT_MS = 10 * 60 * 1000
+const IDLE_TIMEOUT_MS = 30 * 60 * 1000
 const LAST_ACTIVE_KEY = 'fv.session.lastActiveAt'
 const USER_KEY = 'fv.session.idleUserUuid'
 

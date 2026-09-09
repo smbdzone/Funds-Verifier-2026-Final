@@ -24,7 +24,7 @@ export default function SessionIdleTimer({ className = '' }) {
             ? 'border-amber-400/50 bg-amber-50/95'
             : 'border-reefGold/40 bg-gradient-to-r from-white/95 via-reefGold/10 to-white/95'
         }`}
-      title='Session time — sign in again if you are away for 10 minutes'
+      title='Session time — sign in again if you are away for 30 minutes'
       aria-live='polite'
       aria-label={`Session time remaining ${formatSessionIdleTime(remainingMs)}`}
     >

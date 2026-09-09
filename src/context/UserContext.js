@@ -162,7 +162,7 @@ export const UserProvider = ({ children }) => {
         clearAccessToken()
         clearSessionIdle()
         toast.info(
-          'Your session ended after 10 minutes of inactivity. Please sign in again.',
+          'Your session ended after 30 minutes of inactivity. Please sign in again.',
           { autoClose: 5000 },
         )
         if (
