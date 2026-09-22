@@ -332,7 +332,17 @@ const Footer = () => {
           Copyright © {new Date().getFullYear()} - All rights reserved Funds
           Verifier
         </p>
-        <p>Designed & Developed by SMB Digital Zone</p>
+        <p>
+          Designed and Developed by{' '}
+          <Link
+            href='https://smbaxisproptech.com'
+            target='_blank'
+            rel='noopener noreferrer'
+            className='no-underline text-inherit'
+          >
+            smbaxisproptech.com
+          </Link>
+        </p>
       </div>
     </>
   )
