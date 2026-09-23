@@ -115,6 +115,8 @@ export const DUMMY_DUBAI_NEIGHBOURHOODS = toNeighbourhoodRows([
   'Al Nahda',
   'Dubai Maritime City',
   'Dubai Studio City',
+  'Arjan',
+  'Al Barsha South Third',
 ])
 
 export const DUMMY_SHARJAH_NEIGHBOURHOODS = toNeighbourhoodRows([
