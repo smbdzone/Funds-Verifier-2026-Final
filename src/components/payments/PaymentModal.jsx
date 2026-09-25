@@ -20,15 +20,17 @@ import {
   getFullPayDiscountPercent,
   loadFullPayDiscountPercent,
 } from '@/libs/paymentDiscount'
-import { clearAbandonedEvaluationPaymentDraft } from '@/libs/evaluationBooking'
+import { clearAbandonedEvaluationPaymentDraft, markEvaluationTopUpJustPaid } from '@/libs/evaluationBooking'
 import { savePendingListingDraft } from '@/libs/pendingListingDraft'
 import {
   handleImageUpload,
   handleThumbnailUpload,
   handleVideoUpload,
+  resolveListingGalleryAsset,
 } from '@/libs/uploadAsset'
 import { getCsrfHeaders } from '@/utils/csrf'
 import { CloseIcon } from '@/components/Icons'
+import SaleProceedObligationModal from '@/components/shared/SaleProceedObligationModal'
 
 const EVALUATION_CLOZER_AMOUNT = 2500
 
@@ -46,10 +48,14 @@ const PaymentModal = ({
   const [loading, setLoading] = useState(false)
   const [paymentStep, setPaymentStep] = useState('choice')
   const [clozerLoading, setClozerLoading] = useState(false)
+  const [obligationAccepted, setObligationAccepted] = useState(false)
 
   useEffect(() => {
-    if (!show) return
-    loadFullPayDiscountPercent().catch(() => {})
+    if (!show) {
+      setObligationAccepted(false)
+      return
+    }
+    loadFullPayDiscountPercent().catch(() => { })
   }, [show])
 
   useEffect(() => {
@@ -73,9 +79,12 @@ const PaymentModal = ({
   if (!show) return null
 
   const evaluationAmount =
-    Number(formData?.evaluationFeePrice) > 0
-      ? Number(formData.evaluationFeePrice)
-      : EVALUATION_CLOZER_AMOUNT
+    Number(formData?.evaluationTopUpAmount) > 0
+      ? Number(formData.evaluationTopUpAmount)
+      : Number(formData?.evaluationFeePrice) > 0
+        ? Number(formData.evaluationFeePrice)
+        : EVALUATION_CLOZER_AMOUNT
+  const isEvaluationTopUp = Number(formData?.evaluationTopUpAmount) > 0
 
   const handleClozerPay = async () => {
     if (!user?.uuid) {
@@ -113,7 +122,10 @@ const PaymentModal = ({
             (item) => item instanceof File || item instanceof Blob,
           )
           if (fileImages.length) {
-            const uploaded = await handleImageUpload(fileImages)
+            const uploaded = await resolveListingGalleryAsset(
+              fileImages,
+              draftForm.pictures,
+            )
             if (uploaded) {
               draftForm = { ...draftForm, pictures: uploaded }
               draftImages = uploaded?.images || draftImages
@@ -280,7 +292,9 @@ const PaymentModal = ({
         headers: csrfHeaders,
         credentials: 'include',
         body: JSON.stringify({
-          amount: 200,
+          amount: isEvaluationTopUp
+            ? Math.max(200, Math.round(evaluationAmount * 100))
+            : 200,
           customerId: user?.uuid,
           email: user.email.trim(),
         }),
@@ -309,6 +323,11 @@ const PaymentModal = ({
           EvaluationPaymentStatus: true,
           paymentMethod: paymentIntent.payment_method,
           customerId: clientIntent.customerId,
+          evaluationFeePaidAmount:
+            Number(prev?.evaluationFeePrice) ||
+            Number(prev?.evaluationFeePaidAmount) ||
+            0,
+          evaluationTopUpAmount: 0,
         }))
         localStorage.setItem(
           'checkoutSession',
@@ -319,6 +338,9 @@ const PaymentModal = ({
           }),
         )
         toast.success('Payment successful!')
+        if (isEvaluationTopUp) {
+          markEvaluationTopUpJustPaid()
+        }
         HandleFormSubmit()
         onClose()
       }
@@ -342,6 +364,7 @@ const PaymentModal = ({
       })
     }
     setPaymentStep('choice')
+    setObligationAccepted(false)
     onClose()
   }
 
@@ -363,6 +386,20 @@ const PaymentModal = ({
     if (typeof next === 'function') next()
   }
 
+  if (!obligationAccepted) {
+    return (
+      <SaleProceedObligationModal
+        show
+        context='listing'
+        assetType={formData?.assetType || ''}
+        listingTitle={formData?.title || ''}
+        listingUuid={formData?.uuid || ''}
+        onAgree={() => setObligationAccepted(true)}
+        onClose={handleClose}
+      />
+    )
+  }
+
   return (
     <>
       <div className='fixed inset-0 modal-bg z-10' />
@@ -379,7 +416,11 @@ const PaymentModal = ({
             onClose={handleClose}
             amount={evaluationAmount}
             loading={clozerLoading}
-            title='Payment for Evaluation'
+            title={
+              isEvaluationTopUp
+                ? 'Additional evaluation fee'
+                : 'Payment for Evaluation'
+            }
             onPayFull={() => {
               persistDraftThen(() => setPaymentStep('stripe'))
             }}
