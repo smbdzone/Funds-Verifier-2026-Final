@@ -10,6 +10,7 @@ import { NoSlotsAvailable } from '@/components/global/NoSlotsAvailable'
 import { getBookableSlotsForDate } from '@/libs/slotTimeFilters'
 import { isOwnListing } from '@/libs/isOwnListing'
 import { setPostLoginRedirect } from '@/utils/auth/postLoginRedirect'
+import { CONSUMER_ROLES } from '@/utils/auth/roleHome'
 import { usePathname, useRouter } from 'next/navigation'
 
 const resolveTrusteeFromListing = (product) => {
@@ -21,6 +22,33 @@ const resolveTrusteeFromListing = (product) => {
     product.dealer?.uuid ||
     (typeof product.dealer === 'string' ? product.dealer : null)
   )
+}
+
+/** Slim listing payload for /arrange-view/book — full off-plan docs can trip nginx/WAF 403. */
+function buildBookingProductPayload(product) {
+  if (!product || typeof product !== 'object') return product
+  const userUUID =
+    product.userUUID ||
+    product.assetHolderUUID ||
+    (typeof product.userId === 'string' ? product.userId : product.userId?.uuid) ||
+    ''
+  return {
+    uuid: product.uuid || '',
+    slug: product.slug || '',
+    title: product.title || '',
+    assetType: product.assetType || '',
+    userUUID,
+    trusteeUUID: resolveTrusteeFromListing(product) || '',
+    neighbourhood: product.neighbourhood || '',
+    city: product.city || '',
+    country: product.country || '',
+    phoneNumber: product.phoneNumber || '',
+    price: product.price ?? product.priceFrom ?? '',
+    priceFrom: product.priceFrom ?? '',
+    priceTo: product.priceTo ?? '',
+    developer: product.developer || '',
+    propertyType: product.propertyType || '',
+  }
 }
 
 const CalendarPopup = ({ onClose, productData }) => {
@@ -41,13 +69,19 @@ const CalendarPopup = ({ onClose, productData }) => {
   /** While we ask the API for slots for the selected calendar day */
   const [fetchingSlots, setFetchingSlots] = useState(false)
   const [slotsFetchError, setSlotsFetchError] = useState(null)
+  /** YYYY-MM-DD dates that still have at least one open viewing time */
+  const [availableDates, setAvailableDates] = useState(() => new Set())
+  const [availableDatesLoading, setAvailableDatesLoading] = useState(false)
   const { user, isAuthenticated, loading } = useProfile()
   const pathname = usePathname()
   const router = useRouter()
   const ownsListing = isOwnListing(productData, user)
 
   useEffect(() => {
-    if (loading || (isAuthenticated && user)) return
+    if (loading) return
+    const isConsumer =
+      isAuthenticated && user?.role && CONSUMER_ROLES.has(user.role)
+    if (isConsumer) return
 
     const returnTo =
       typeof window !== 'undefined'
@@ -57,7 +91,9 @@ const CalendarPopup = ({ onClose, productData }) => {
     setPostLoginRedirect(returnTo)
     toast.info('Please sign in with UAE Pass to arrange a viewing.')
     onClose?.()
-    router.push(`/login?redirect=${encodeURIComponent(returnTo)}`)
+    router.push(
+      `/login?redirect=${encodeURIComponent(returnTo)}&uaepass=1`,
+    )
   }, [isAuthenticated, loading, onClose, pathname, router, user])
 
   useEffect(() => {
@@ -65,6 +101,21 @@ const CalendarPopup = ({ onClose, productData }) => {
     toast.error('You cannot request a viewing for your own listing.')
     onClose?.()
   }, [ownsListing, onClose])
+
+  const formatApiDate = (date) => {
+    const correctedDate = new Date(
+      date.getTime() - date.getTimezoneOffset() * 60000,
+    )
+    return correctedDate.toISOString().split('T')[0]
+  }
+
+  const parseApiDateLocal = (dateStr) => {
+    const [y, m, d] = String(dateStr || '')
+      .split('-')
+      .map((n) => Number(n))
+    if (!y || !m || !d) return null
+    return new Date(y, m - 1, d)
+  }
 
   const loadTrustee = useCallback(async () => {
     setTrusteeLoading(true)
@@ -81,6 +132,7 @@ const CalendarPopup = ({ onClose, productData }) => {
       const response = await customAxios.get('/user/service-providers/Trustee')
       const providers = Array.isArray(response?.data) ? response.data : []
       if (providers.length > 0) {
+        // Backend ranks trustees with upcoming viewing slots first.
         setTrusteeUUID(providers[0].uuid)
       } else {
         setTrusteeUUID(null)
@@ -102,7 +154,7 @@ const CalendarPopup = ({ onClose, productData }) => {
   }, [isAuthenticated, loadTrustee, loading, user])
 
   const fetchAppointments = useCallback(async (date, ownerUUID) => {
-    if (!ownerUUID) return
+    if (!ownerUUID) return false
 
     setFetchingSlots(true)
     setSlotsFetchError(null)
@@ -112,10 +164,7 @@ const CalendarPopup = ({ onClose, productData }) => {
     setSelectedTimeSlotId('')
 
     try {
-      const correctedDate = new Date(
-        date.getTime() - date.getTimezoneOffset() * 60000
-      )
-      const formattedDate = correctedDate.toISOString().split('T')[0]
+      const formattedDate = formatApiDate(date)
 
       const response = await customAxios.get(
         `${process.env.NEXT_PUBLIC_BASE_URL}/arrange-view/slots/available?date=${formattedDate}&userUUID=${ownerUUID}&slotCategory=viewing`
@@ -131,8 +180,17 @@ const CalendarPopup = ({ onClose, productData }) => {
           setSelectedTime(openSlots[0].time)
           setTimeSlotId(openSlots[0].uuid)
           setSelectedTimeSlotId(daySlotGroupId)
+          return true
         }
       }
+      // Day has no bookable times — drop it from the selectable calendar set.
+      setAvailableDates((prev) => {
+        if (!prev.has(formattedDate)) return prev
+        const next = new Set(prev)
+        next.delete(formattedDate)
+        return next
+      })
+      return false
     } catch (error) {
       console.error('Error fetching appointments:', error)
       setSlotsFetchError('network')
@@ -140,17 +198,66 @@ const CalendarPopup = ({ onClose, productData }) => {
         error?.response?.data?.message ||
         'Could not check this date. Try again.',
       )
+      return false
     } finally {
       setFetchingSlots(false)
     }
   }, [])
 
+  const loadAvailableDates = useCallback(async (ownerUUID) => {
+    if (!ownerUUID) {
+      setAvailableDates(new Set())
+      return []
+    }
+    setAvailableDatesLoading(true)
+    try {
+      const today = getTodayStart()
+      const response = await customAxios.get(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/arrange-view/slots/available-dates?userUUID=${ownerUUID}&fromDate=${formatApiDate(today)}`,
+      )
+      const dates = Array.isArray(response?.data?.dates)
+        ? response.data.dates
+        : []
+      setAvailableDates(new Set(dates))
+      return dates
+    } catch (error) {
+      console.error('Error loading available viewing dates:', error)
+      setAvailableDates(new Set())
+      return []
+    } finally {
+      setAvailableDatesLoading(false)
+    }
+  }, [])
+
   useEffect(() => {
     if (!trusteeUUID || trusteeLoading) return
-    const today = getTodayStart()
-    setSelectedDate(today)
-    fetchAppointments(today, trusteeUUID)
-  }, [trusteeUUID, trusteeLoading, fetchAppointments])
+
+    const boot = async () => {
+      const dates = await loadAvailableDates(trusteeUUID)
+      if (!dates.length) {
+        setSelectedDate(getTodayStart())
+        setTimeSlots([])
+        return
+      }
+
+      const firstDate = parseApiDateLocal(dates[0]) || getTodayStart()
+      setSelectedDate(firstDate)
+      await fetchAppointments(firstDate, trusteeUUID)
+    }
+
+    boot()
+  }, [trusteeUUID, trusteeLoading, fetchAppointments, loadAvailableDates])
+
+  const isDateSelectable = useCallback(
+    (date) => {
+      const today = getTodayStart()
+      const day = new Date(date)
+      day.setHours(0, 0, 0, 0)
+      if (day < today) return false
+      return availableDates.has(formatApiDate(day))
+    },
+    [availableDates],
+  )
 
   const formatDay = (date) => {
     const options = { weekday: 'long' }
@@ -164,7 +271,9 @@ const CalendarPopup = ({ onClose, productData }) => {
 
   const handleSubmit = async (event) => {
     event.preventDefault()
-    if (!isAuthenticated || !user) {
+    const isConsumer =
+      isAuthenticated && user?.role && CONSUMER_ROLES.has(user.role)
+    if (!isConsumer) {
       const returnTo =
         typeof window !== 'undefined'
           ? `${window.location.pathname}${window.location.search}`
@@ -172,7 +281,9 @@ const CalendarPopup = ({ onClose, productData }) => {
       setPostLoginRedirect(returnTo)
       toast.info('Please sign in with UAE Pass to arrange a viewing.')
       onClose?.()
-      router.push(`/login?redirect=${encodeURIComponent(returnTo)}`)
+      router.push(
+        `/login?redirect=${encodeURIComponent(returnTo)}&uaepass=1`,
+      )
       return
     }
     if (ownsListing) {
@@ -196,7 +307,7 @@ const CalendarPopup = ({ onClose, productData }) => {
       })
 
       // Update the slot status
-      const res = await customAxios.put(
+      await customAxios.put(
         `${process.env.NEXT_PUBLIC_BASE_URL}/arrange-view/timeslot/update/${selectedTimeSlotId}`,
         { timeSlots: newUpdatedSlot }
       )
@@ -206,17 +317,19 @@ const CalendarPopup = ({ onClose, productData }) => {
         timeSlotId ||
         timeSlots.find((slot) => slot.time === selectedTime)?.uuid
 
+      const bookingProduct = buildBookingProductPayload(productData)
       const response = await customAxios.post(
         `${process.env.NEXT_PUBLIC_BASE_URL}/arrange-view/book`,
         {
           brokerId: `${user?.uuid}`,
           assetHolderId:
+            bookingProduct?.userUUID ||
             productData?.userUUID ||
             productData?.userId ||
             productData?.assetHolderUUID ||
             '',
           timeSlotId: activeTimeSlotId,
-          productData,
+          productData: bookingProduct,
         }
       )
       toast.success(response.data.message)
@@ -237,6 +350,10 @@ const CalendarPopup = ({ onClose, productData }) => {
   }
 
   if (loading || !isAuthenticated || !user || ownsListing) return null
+
+  const bookableTimes = getBookableSlotsForDate(timeSlots, selectedDate)
+  const scheduleLoading =
+    trusteeLoading || availableDatesLoading || fetchingSlots
 
   return (
     <>
@@ -273,14 +390,14 @@ const CalendarPopup = ({ onClose, productData }) => {
                 </div>
               </div>
               <div className='flex min-h-[120px] flex-col items-center justify-center gap-2 px-2'>
-                {trusteeLoading || fetchingSlots ? (
+                {scheduleLoading ? (
                   <div className='flex flex-col items-center gap-2 text-center text-white'>
                     <span
                       className='inline-block h-8 w-8 animate-spin rounded-full border-2 border-white border-t-transparent'
                       aria-hidden
                     />
                     <p className='text-sm font-medium leading-snug'>
-                      {trusteeLoading
+                      {trusteeLoading || availableDatesLoading
                         ? 'Loading trustee schedule…'
                         : 'Checking this date…'}
                     </p>
@@ -297,7 +414,12 @@ const CalendarPopup = ({ onClose, productData }) => {
                   <p className='max-w-[220px] text-center text-sm text-white'>
                     Could not load this date. Pick another day or try again.
                   </p>
-                ) : getBookableSlotsForDate(timeSlots, selectedDate).length > 0 ? (
+                ) : availableDates.size === 0 ? (
+                  <p className='max-w-[220px] text-center text-sm leading-relaxed text-white'>
+                    No viewing dates are open yet. Only days with trustee time
+                    slots appear on the calendar.
+                  </p>
+                ) : bookableTimes.length > 0 ? (
                   <>
                     <select
                       value={selectedTime}
@@ -312,16 +434,14 @@ const CalendarPopup = ({ onClose, productData }) => {
                       }}
                       className='mt-2 max-w-[220px] cursor-pointer rounded-[4px] bg-[#FFFFFF] px-3 py-2 text-[#8D7C3B]'
                     >
-                      {getBookableSlotsForDate(timeSlots, selectedDate).map(
-                        (slot) => (
-                          <option
-                            key={slot.uuid || slot.time}
-                            value={slot.time}
-                          >
-                            {slot.time}
-                          </option>
-                        ),
-                      )}
+                      {bookableTimes.map((slot) => (
+                        <option
+                          key={slot.uuid || slot.time}
+                          value={slot.time}
+                        >
+                          {slot.time}
+                        </option>
+                      ))}
                     </select>
                     <button
                       type='button'
@@ -340,11 +460,19 @@ const CalendarPopup = ({ onClose, productData }) => {
             <div className='flex-grow relative'>
               <Calendar
                 onChange={(date) => {
+                  if (!isDateSelectable(date)) return
                   setSelectedDate(date)
                   if (trusteeUUID) fetchAppointments(date, trusteeUUID)
                 }}
                 value={selectedDate}
                 minDate={getTodayStart()}
+                tileDisabled={({ date, view }) =>
+                  view === 'month' ? !isDateSelectable(date) : false
+                }
+                tileClassName={({ date, view }) => {
+                  if (view !== 'month') return null
+                  return isDateSelectable(date) ? 'has-viewing-slot' : null
+                }}
                 className='w-full h-full sm:rounded-tl-[24px] sm:rounded-bl-[24px] rounded-2xl arrange_viewing'
               />
               <button
