@@ -314,7 +314,7 @@ export const UserProvider = ({ children }) => {
   //       setIsSwitchingRole(false)
   //     }
   //   }
-  const switchUserRole = async (newRole) => {
+  const switchUserRole = async (newRole, { redirectTo } = {}) => {
     if (!user) return
 
     const userUuid = user.uuid
@@ -346,7 +346,7 @@ export const UserProvider = ({ children }) => {
       const finalRole = normalizeRole(updatedUser?.role || newRole)
       toast.success(`Switched role to ${finalRole}`)
 
-      window.location.href = getRoleHomeRoute(finalRole)
+      window.location.href = redirectTo || getRoleHomeRoute(finalRole)
     } catch (error) {
       const message =
         error.response?.data?.message ||
