@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import customAxios from '@/utils/apis/apis'
 import { useRouter } from 'next/navigation'
 import { SlArrowRight } from 'react-icons/sl'
@@ -19,9 +19,15 @@ import {
   isAssetAssignedToSubEvaluator,
   unassignAssetFromSubEvaluator,
 } from '@/libs/evaluatorAssign'
+import HistoryEvaluatedFilters, {
+  useHistoryEvaluatedFilters,
+} from './HistoryEvaluatedFilters'
+import { applyHistoryEvaluatedFilters } from '@/libs/filterHistoryEvaluatedListings'
+import EvaluationTableStatusRow from './EvaluationTableStatusRow'
 
 export const JewelleryEvaluationTab = () => {
   const [propertyListings, setPropertyListings] = useState([])
+  const [listingsLoading, setListingsLoading] = useState(true)
   const [subEvaluators, setSubEvaluators] = useState([])
   const [selected, setSelected] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
@@ -32,6 +38,19 @@ export const JewelleryEvaluationTab = () => {
   const debouncedQuery = useDebounce(searchTerm, 500)
   const menuAnchorRef = useRef(null)
   const router = useRouter()
+  const {
+    nameQuery,
+    setNameQuery,
+    dateFrom,
+    setDateFrom,
+    dateTo,
+    setDateTo,
+    sortOrder,
+    setSortOrder,
+    historyFilters,
+    historyFiltersActive,
+    resetHistoryFilters,
+  } = useHistoryEvaluatedFilters()
 
   const closeActionMenu = () => {
     setOpenDropdown(null)
@@ -59,6 +78,7 @@ export const JewelleryEvaluationTab = () => {
   }, [])
 
   const fetchListingsData = async () => {
+    setListingsLoading(true)
     try {
       const products = await fetchEvaluatorListings('jewelry', {
         sort: selected,
@@ -67,6 +87,8 @@ export const JewelleryEvaluationTab = () => {
       setPropertyListings(products.reverse())
     } catch (error) {
       console.error('Error fetching listings:', error)
+    } finally {
+      setListingsLoading(false)
     }
   }
 
@@ -161,6 +183,18 @@ export const JewelleryEvaluationTab = () => {
     setCertificateUrl('')
   }
 
+  const pendingListings = useMemo(
+    () =>
+      (propertyListings || []).filter(
+        (property) => property.status === 0 || !('status' in property),
+      ),
+    [propertyListings],
+  )
+  const historyListings = useMemo(
+    () => applyHistoryEvaluatedFilters(propertyListings, historyFilters),
+    [propertyListings, historyFilters],
+  )
+
   return (
     <>
       <div className='flex flex-wrap justify-between items-center mb-4'>
@@ -228,6 +262,20 @@ export const JewelleryEvaluationTab = () => {
                     </Disclosure.Button>
                     <Disclosure.Panel className='overflow-visible'>
                       <div className='overflow-x-auto md:px-5 px-3 pb-2'>
+                        {index === 1 ? (
+                          <HistoryEvaluatedFilters
+                            nameQuery={nameQuery}
+                            onNameQueryChange={setNameQuery}
+                            dateFrom={dateFrom}
+                            onDateFromChange={setDateFrom}
+                            dateTo={dateTo}
+                            onDateToChange={setDateTo}
+                            sortOrder={sortOrder}
+                            onSortOrderChange={setSortOrder}
+                            onReset={resetHistoryFilters}
+                            showReset={historyFiltersActive}
+                          />
+                        ) : null}
                         <table className='w-full text-sm sm:text-base bg-white'>
                           <thead>
                             <tr>
@@ -253,14 +301,8 @@ export const JewelleryEvaluationTab = () => {
                             </tr>
                           </thead>
                           <tbody>
-                            {propertyListings
-                              .filter((property) =>
-                                index === 0
-                                  ? property.status === 0 ||
-                                  !('status' in property)
-                                  : property.status === 1
-                              )
-                              .map((property) => {
+                            {!listingsLoading &&
+                              (index === 0 ? pendingListings : historyListings).map((property) => {
                                 const rawDateTime =
                                   property?.evaluationDateTime ||
                                   property?.updatedAt ||
@@ -318,97 +360,97 @@ export const JewelleryEvaluationTab = () => {
                                           </span>
                                         </td>
                                         <td className='py-3 px-4'>
-                                        <button
-                                          type='button'
-                                          aria-haspopup='menu'
-                                          aria-expanded={
-                                            openDropdown === property.uuid
-                                          }
-                                          onClick={(e) =>
-                                            toggleActionMenu(e, property.uuid)
-                                          }
-                                          className='inline-flex h-9 w-9 items-center justify-center rounded-md text-blue-600 hover:bg-blue-50'
-                                        >
-                                          <SlArrowRight />
-                                        </button>
-                                        <EvaluationActionDropdown
-                                          open={openDropdown === property.uuid}
-                                          onClose={closeActionMenu}
-                                          anchorRef={menuAnchorRef}
-                                          className='w-44 min-w-[11rem]'
-                                        >
-                                          {isAssetAssignedToSubEvaluator(property) ? (
-                                            <button
-                                              type='button'
-                                              onClick={() =>
-                                                handleUnassignEvaluator(
-                                                  property._id || property.uuid,
-                                                )
-                                              }
-                                              className={evaluationMenuItemClass}
-                                            >
-                                              Unassign
-                                            </button>
-                                          ) : (
-                                            <>
+                                          <button
+                                            type='button'
+                                            aria-haspopup='menu'
+                                            aria-expanded={
+                                              openDropdown === property.uuid
+                                            }
+                                            onClick={(e) =>
+                                              toggleActionMenu(e, property.uuid)
+                                            }
+                                            className='inline-flex h-9 w-9 items-center justify-center rounded-md text-blue-600 hover:bg-blue-50'
+                                          >
+                                            <SlArrowRight />
+                                          </button>
+                                          <EvaluationActionDropdown
+                                            open={openDropdown === property.uuid}
+                                            onClose={closeActionMenu}
+                                            anchorRef={menuAnchorRef}
+                                            className='w-44 min-w-[11rem]'
+                                          >
+                                            {isAssetAssignedToSubEvaluator(property) ? (
                                               <button
                                                 type='button'
                                                 onClick={() =>
-                                                  setAssignDropdownOpen((prev) =>
-                                                    prev === property.uuid
-                                                      ? null
-                                                      : property.uuid,
+                                                  handleUnassignEvaluator(
+                                                    property._id || property.uuid,
                                                   )
                                                 }
                                                 className={evaluationMenuItemClass}
                                               >
-                                                Assign To
+                                                Unassign
                                               </button>
-                                              {assignDropdownOpen ===
-                                                property.uuid && (
-                                                <div className='max-h-48 overflow-y-auto border-t border-gray-100'>
-                                                  {subEvaluators.map(
-                                                    (evaluator) => (
-                                                      <button
-                                                        key={
-                                                          evaluator._id ||
-                                                          evaluator.uuid
-                                                        }
-                                                        type='button'
-                                                        onClick={() =>
-                                                          handleAssignEvaluator(
-                                                            property._id ||
-                                                              property.uuid,
-                                                            evaluator._id ||
-                                                              evaluator.uuid,
-                                                          )
-                                                        }
-                                                        className='flex justify-between items-center w-full px-3 py-2 text-left text-sm text-gray-800 hover:bg-gray-100'
-                                                      >
-                                                        <span>
-                                                          {evaluator.name}
-                                                        </span>
-                                                      </button>
-                                                    ),
+                                            ) : (
+                                              <>
+                                                <button
+                                                  type='button'
+                                                  onClick={() =>
+                                                    setAssignDropdownOpen((prev) =>
+                                                      prev === property.uuid
+                                                        ? null
+                                                        : property.uuid,
+                                                    )
+                                                  }
+                                                  className={evaluationMenuItemClass}
+                                                >
+                                                  Assign To
+                                                </button>
+                                                {assignDropdownOpen ===
+                                                  property.uuid && (
+                                                    <div className='max-h-48 overflow-y-auto border-t border-gray-100'>
+                                                      {subEvaluators.map(
+                                                        (evaluator) => (
+                                                          <button
+                                                            key={
+                                                              evaluator._id ||
+                                                              evaluator.uuid
+                                                            }
+                                                            type='button'
+                                                            onClick={() =>
+                                                              handleAssignEvaluator(
+                                                                property._id ||
+                                                                property.uuid,
+                                                                evaluator._id ||
+                                                                evaluator.uuid,
+                                                              )
+                                                            }
+                                                            className='flex justify-between items-center w-full px-3 py-2 text-left text-sm text-gray-800 hover:bg-gray-100'
+                                                          >
+                                                            <span>
+                                                              {evaluator.name}
+                                                            </span>
+                                                          </button>
+                                                        ),
+                                                      )}
+                                                    </div>
                                                   )}
-                                                </div>
-                                              )}
-                                            </>
-                                          )}
-                                          <button
-                                            type='button'
-                                            onClick={() => {
-                                              router.push(
-                                                `/evaluator-profile/jewellery-evaluation/${property.uuid}`,
-                                              )
-                                              closeActionMenu()
-                                            }}
-                                            className={evaluationMenuItemClass}
-                                          >
-                                            Evaluate
-                                          </button>
-                                        </EvaluationActionDropdown>
-                                      </td>
+                                              </>
+                                            )}
+                                            <button
+                                              type='button'
+                                              onClick={() => {
+                                                router.push(
+                                                  `/evaluator-profile/jewellery-evaluation/${property.uuid}`,
+                                                )
+                                                closeActionMenu()
+                                              }}
+                                              className={evaluationMenuItemClass}
+                                            >
+                                              Evaluate
+                                            </button>
+                                          </EvaluationActionDropdown>
+                                        </td>
                                       </>
                                     ) : (
                                       <>
@@ -469,6 +511,20 @@ export const JewelleryEvaluationTab = () => {
                                   </tr>
                                 )
                               })}
+                            <EvaluationTableStatusRow
+                              loading={listingsLoading}
+                              isEmpty={
+                                (index === 0
+                                  ? pendingListings
+                                  : historyListings
+                                ).length === 0
+                              }
+                              emptyMessage={
+                                index === 1
+                                  ? 'No evaluated assets match these filters.'
+                                  : 'No pending evaluations.'
+                              }
+                            />
                           </tbody>
                         </table>
                       </div>
