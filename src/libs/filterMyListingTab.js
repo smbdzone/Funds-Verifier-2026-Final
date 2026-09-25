@@ -3,9 +3,10 @@
  * Tab index matches MyListingsTabClient tabs array.
  */
 export function isOffPlanListing(listing) {
-  return String(listing?.assetType || '')
+  const t = String(listing?.assetType || '')
     .toLowerCase()
-    .includes('off plan')
+    .replace(/[_-]+/g, ' ')
+  return t.includes('off plan') || t.includes('offplan')
 }
 
 export function filterListingsByMyListingTab(listings, tabIdx) {
