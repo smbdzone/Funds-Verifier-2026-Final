@@ -47,6 +47,24 @@ function buildListingMediaItems(property = {}) {
           video?.public_id ||
           video?.s3Key?.split('/').pop() ||
           `listing-video-${index + 1}.mp4`,
+        label: 'Video',
+      })
+    })
+
+    // QR scan images
+    ; (property?.qrScan?.images || []).forEach((image, index) => {
+      const src = getListingImageSrc(image)
+      if (!src || src === '/listing/camera.svg') return
+      items.push({
+        type: 'image',
+        id: image?.public_id || image?.s3Key || image?.originalName || `qr-${index}`,
+        src,
+        filename:
+          image?.name ||
+          image?.public_id ||
+          image?.s3Key?.split('/').pop() ||
+          `listing-qr-${index + 1}.jpg`,
+        label: 'QR Code',
       })
     })
 
@@ -56,7 +74,8 @@ function buildListingMediaItems(property = {}) {
 function hasListingMedia(property = {}) {
   const hasGallery =
     (property?.pictures?.images?.length ?? 0) > 0 ||
-    (property?.video?.videos?.length ?? 0) > 0
+    (property?.video?.videos?.length ?? 0) > 0 ||
+    (property?.qrScan?.images?.length ?? 0) > 0
   const hasThumb = Boolean(
     property?.thumbnailImg?.images?.[0]?.url ||
     property?.thumbnailImg?.images?.[0]?.signedUrl,
@@ -237,6 +256,11 @@ export default function EvaluatorListingMedia({
                       />
                     )}
                   </button>
+                  {media.label ? (
+                    <span className='absolute bottom-0 left-0 right-0 bg-black/60 px-1 py-0.5 text-center text-[10px] font-medium text-white'>
+                      {media.label}
+                    </span>
+                  ) : null}
                   <button
                     type='button'
                     title='Download'
