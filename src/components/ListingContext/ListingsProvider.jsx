@@ -36,6 +36,14 @@ import {
 } from '@/constants/listingUploadLimits'
 import { createDefaultOffPlanPaymentPlan, sanitizeOffPlanPaymentPlan, facilities, getExtraFacilities } from '@/constants/listing-data'
 import {
+  fetchCatalogCountries,
+  fetchCatalogCities,
+  fetchCatalogNeighbourhoods,
+  mergeCountryOptions,
+  mergeCityPredictions,
+  mergeNeighbourhoodRows,
+} from '@/libs/listingLocationCatalog'
+import {
   ensureWithinSize,
 } from '@/libs/imageCompression'
 import { applyListingWatermark } from '@/libs/applyListingWatermark'
@@ -311,11 +319,15 @@ const ListingsProvider = ({ children }) => {
           list = [...DUMMY_FALLBACK_COUNTRIES]
         }
         list = filterCountriesToUaeOnly(list)
-        setCountries(list)
+        const catalogCountries = await fetchCatalogCountries()
+        setCountries(mergeCountryOptions(list, catalogCountries))
         // Keep "Select Country" until the user picks — do not auto-fill UAE.
       } catch (error) {
         console.error('Error fetching countries data:', error)
-        setCountries([...DUMMY_FALLBACK_COUNTRIES])
+        const catalogCountries = await fetchCatalogCountries()
+        setCountries(
+          mergeCountryOptions([...DUMMY_FALLBACK_COUNTRIES], catalogCountries),
+        )
       }
     }
 
@@ -323,33 +335,68 @@ const ListingsProvider = ({ children }) => {
   }, [])
 
   useEffect(() => {
+    if (!formData?.country) return
+    const match = (countries || []).find(
+      (c) =>
+        String(c.country || '').toLowerCase() ===
+        String(formData.country).toLowerCase(),
+    )
+    if (match?.code && match.code !== countryCode) {
+      setCountryCode(match.code)
+    }
+  }, [countries, formData?.country])
+
+  useEffect(() => {
     fetchCities()
-  }, [searchQueryCity, countryCode])
+  }, [searchQueryCity, countryCode, selectedCountry])
 
   useEffect(() => {
     fetchNeighbourhoods()
   }, [isCity])
 
   const fetchCities = async () => {
-    if (!countryCode) {
+    const catalogCountry =
+      selectedCountry && selectedCountry !== 'Select Country'
+        ? selectedCountry
+        : ''
+    const iso = String(countryCode || '').toUpperCase()
+    const useGoogle = /^[A-Z]{2}$/.test(iso)
+
+    if (!iso && !catalogCountry) {
       setCities([])
       setLoading(false)
       return
     }
 
-    const applyDummyAeCities = () => {
-      setCities(filterDummyCitiesByQuery(DUMMY_UAE_CITY_PREDICTIONS, searchQueryCity))
+    const catalogCities = catalogCountry
+      ? await fetchCatalogCities(catalogCountry)
+      : []
+
+    const applyCities = (base) => {
+      setCities(mergeCityPredictions(base, catalogCities, searchQueryCity))
     }
 
-    if (isDummyUaeLocationsEnabled && countryCode === 'AE') {
+    const applyDummyAeCities = () => {
+      applyCities(
+        filterDummyCitiesByQuery(DUMMY_UAE_CITY_PREDICTIONS, searchQueryCity),
+      )
+    }
+
+    if (isDummyUaeLocationsEnabled && iso === 'AE') {
       applyDummyAeCities()
+      setLoading(false)
+      return
+    }
+
+    if (!useGoogle) {
+      applyCities([])
       setLoading(false)
       return
     }
 
     try {
       const response = await fetch(
-        `/api/country?name=${countryCode}&query=${searchQueryCity}`,
+        `/api/country?name=${iso}&query=${searchQueryCity}`,
         {
           next: { revalidate: 10 },
         },
@@ -361,37 +408,43 @@ const ListingsProvider = ({ children }) => {
       const data = await response.json()
 
       let normalized = normalizeCitiesResponse(data)
-      if (countryCode === 'AE' && normalized.length === 0) {
+      if (iso === 'AE' && normalized.length === 0) {
         normalized = filterDummyCitiesByQuery(
           DUMMY_UAE_CITY_PREDICTIONS,
           searchQueryCity,
         )
       }
-      setCities(normalized)
+      applyCities(normalized)
     } catch (error) {
       console.error('Error fetching cities:', error)
-      if (countryCode === 'AE') {
+      if (iso === 'AE') {
         applyDummyAeCities()
       } else {
-        setCities([])
+        applyCities([])
       }
     } finally {
       setLoading(false)
     }
   }
 
-  const fetchNeighbourhoods = async () => {
-    if (!isCity) return
+  const fetchNeighbourhoods = async (cityName) => {
+    const city = formatCityLabel(cityName || isCity)
+    if (!city) return
 
-    if (hasDummyNeighbourhoodsForCity(isCity)) {
-      setNeighbourhoods(getDummyNeighbourhoodsForCity(isCity))
+    const catalogRows = await fetchCatalogNeighbourhoods(city)
+    const apply = (base) => {
+      setNeighbourhoods(mergeNeighbourhoodRows(base, catalogRows))
+    }
+
+    if (hasDummyNeighbourhoodsForCity(city)) {
+      apply(getDummyNeighbourhoodsForCity(city))
       setLoading(false)
       return
     }
 
     try {
       const response = await fetch(
-        `/api/neighbourhoods?address=${encodeURIComponent(isCity)}`,
+        `/api/neighbourhoods?address=${encodeURIComponent(city)}`,
       )
 
       if (!response.ok) {
@@ -399,10 +452,10 @@ const ListingsProvider = ({ children }) => {
       }
       const data = await response.json()
       const places = Array.isArray(data?.places) ? data.places : []
-      setNeighbourhoods(places)
+      apply(places)
     } catch (error) {
       console.error('Error fetching neighbourhoods:', error)
-      setNeighbourhoods([])
+      apply([])
     } finally {
       setLoading(false)
     }
@@ -413,9 +466,8 @@ const ListingsProvider = ({ children }) => {
       toUnitedArabEmiratesListingCountryName(country.country) ||
       country.country
     setSelectedCountry(countryLabel)
-    setCountryCode(country.code)
+    setCountryCode(country.code || '')
     setIsOpen(false)
-    fetchCities(country.code)
     setSelectedCountryPhone(countryLabel)
     setFormData((prevFormData) => ({
       ...prevFormData,

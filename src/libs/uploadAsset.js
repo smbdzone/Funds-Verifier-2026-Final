@@ -3,8 +3,10 @@ import { getTokenFromCookie } from '../utils/helper'
 import {
   getUploadErrorMessage,
   LISTING_IMAGE_MAX_MB,
+  LISTING_VIDEO_CHUNK_BYTES,
   LISTING_VIDEO_MAX_MB,
 } from '../constants/listingUploadLimits'
+import { listingMediaObjectKey } from './listingCardMedia'
 
 const wrapUploadError = (error, fileType, maxMB) => {
   const message = getUploadErrorMessage(error, fileType, maxMB)
@@ -14,8 +16,25 @@ const wrapUploadError = (error, fileType, maxMB) => {
   throw wrapped
 }
 
+const isUploadableFile = (value) =>
+  typeof File !== 'undefined' && value instanceof File
+
+const galleryAssetId = (asset) => {
+  if (!asset) return ''
+  if (typeof asset === 'string') return asset.trim()
+  return String(asset._id || asset.id || asset.uuid || '').trim()
+}
+
+const isRetryableImageUploadError = (error) => {
+  const status = error?.response?.status
+  if (status === 413 || status === 500 || status === 502 || status === 503 || status === 504) {
+    return true
+  }
+  return !error?.response
+}
+
 const handleImageUpload = async (images, options = {}) => {
-  const files = Array.isArray(images) ? images.filter(Boolean) : []
+  const files = (Array.isArray(images) ? images : [images]).filter(isUploadableFile)
   if (!files.length) return null
 
   const appendToId =
@@ -35,50 +54,117 @@ const handleImageUpload = async (images, options = {}) => {
     return response.data
   }
 
-  try {
-    // One request → one ImageAsset (listing stores a single pictures ObjectId).
-    return await postBatch(files, appendToId)
-  } catch (error) {
-    // If the combined payload is too large, upload in small chunks and append
-    // into the same ImageAsset so all pictures stay on one gallery document.
-    if (error?.response?.status !== 413 || files.length <= 1) {
-      wrapUploadError(error, 'Image', LISTING_IMAGE_MAX_MB)
-    }
-
+  const uploadInChunks = async (startId) => {
     const chunkSize = 2
     let asset = null
+    for (let i = 0; i < files.length; i += chunkSize) {
+      const chunk = files.slice(i, i + chunkSize)
+      asset = await postBatch(chunk, galleryAssetId(asset) || startId || null)
+    }
+    return asset
+  }
+
+  // Car / high-res batches routinely exceed proxy body limits. Chunk by default
+  // so all additional pictures land on the same ImageAsset.
+  if (files.length > 2) {
     try {
-      for (let i = 0; i < files.length; i += chunkSize) {
-        const chunk = files.slice(i, i + chunkSize)
-        asset = await postBatch(chunk, asset?._id || appendToId || null)
-      }
-      return asset
+      return await uploadInChunks(appendToId)
+    } catch (error) {
+      wrapUploadError(error, 'Image', LISTING_IMAGE_MAX_MB)
+    }
+  }
+
+  try {
+    return await postBatch(files, appendToId)
+  } catch (error) {
+    if (!isRetryableImageUploadError(error) || files.length <= 1) {
+      wrapUploadError(error, 'Image', LISTING_IMAGE_MAX_MB)
+    }
+    try {
+      return await uploadInChunks(appendToId)
     } catch (chunkError) {
       wrapUploadError(chunkError, 'Image', LISTING_IMAGE_MAX_MB)
     }
   }
 }
 
-const handleVideoUpload = async (video) => {
+/**
+ * Keep an already-uploaded gallery (handleImageChange uploads immediately) and
+ * only POST leftover File objects, appending into that same ImageAsset.
+ * Returning null used to wipe pictures on submit because callers assigned it.
+ */
+const resolveListingGalleryAsset = async (images = [], existingAsset = null) => {
+  const files = (Array.isArray(images) ? images : []).filter(isUploadableFile)
+  const existingId = galleryAssetId(existingAsset)
+  if (!files.length) return existingAsset || null
+  return handleImageUpload(files, { appendToId: existingId || undefined })
+}
+
+const createVideoUploadId = () => {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID()
+  }
+  return `vid-${Date.now()}-${Math.random().toString(16).slice(2)}`
+}
+
+const postVideoChunks = async (file, appendToId) => {
+  const uploadId = createVideoUploadId()
+  const totalChunks = Math.max(1, Math.ceil(file.size / LISTING_VIDEO_CHUNK_BYTES))
+
+  for (let index = 0; index < totalChunks; index += 1) {
+    const start = index * LISTING_VIDEO_CHUNK_BYTES
+    const blob = file.slice(start, start + LISTING_VIDEO_CHUNK_BYTES)
+    const formData = new FormData()
+    formData.append('chunk', blob, file.name || 'video.mp4')
+    formData.append('uploadId', uploadId)
+    formData.append('chunkIndex', String(index))
+    formData.append('totalChunks', String(totalChunks))
+    formData.append('fileName', file.name || 'video.mp4')
+    formData.append('fileSize', String(file.size))
+    formData.append('fileType', file.type || 'video/mp4')
+    await customAxios.post('/upload-video/chunk', formData)
+  }
+
+  const response = await customAxios.post('/upload-video/complete', {
+    uploadId,
+    totalChunks,
+    fileName: file.name || 'video.mp4',
+    contentType: file.type || 'video/mp4',
+    size: file.size,
+    ...(galleryAssetId(appendToId) ? { assetId: galleryAssetId(appendToId) } : {}),
+  })
+  return response.data
+}
+
+const handleVideoUpload = async (video, options = {}) => {
   if (!video) return
 
-  const files = Array.isArray(video) ? video : [video]
+  const files = (Array.isArray(video) ? video : [video]).filter(isUploadableFile)
   if (!files.length) return
 
-  const formData = new FormData()
-  files.forEach((file) => {
-    formData.append('video', file)
-  })
-
   try {
-    const response = await customAxios.post(
-      `${process.env.NEXT_PUBLIC_BASE_URL}/upload-video`,
-      formData,
-    )
-    return response.data
+    let assetId = galleryAssetId(options.appendToId || options.assetId || null)
+    let asset = null
+    for (const file of files) {
+      asset = await postVideoChunks(file, assetId)
+      assetId = galleryAssetId(asset) || assetId
+    }
+    return asset
   } catch (error) {
     wrapUploadError(error, 'Video', LISTING_VIDEO_MAX_MB)
   }
+}
+
+/** Upload new video files; keep the existing asset when nothing changed. */
+const resolveListingVideoAsset = async (videos = [], existingVideo = null) => {
+  const list = Array.isArray(videos) ? videos : videos ? [videos] : []
+  const files = list.filter(isUploadableFile)
+  if (!list.length) return null
+  if (!files.length) return existingVideo
+  const uploaded = await handleVideoUpload(files, {
+    appendToId: galleryAssetId(existingVideo),
+  })
+  return uploaded ?? existingVideo
 }
 
 const handleFileUpload = async (file) => {
@@ -158,15 +244,67 @@ const handleThumbnailUpload = async (image) => {
   }
 }
 
-const handleDeleteImg = async (id) => {
+const handleDeleteImg = async (id, options = {}) => {
+  if (!id || typeof id !== 'string') return null
+  const assetId =
+    options.assetId && typeof options.assetId === 'object'
+      ? options.assetId._id || options.assetId.id
+      : options.assetId
   try {
-    const response = await customAxios.delete(
-      `${process.env.NEXT_PUBLIC_BASE_URL}/delete-imgs/${id}`
-    )
+    // s3Key often contains slashes — must go in the query string, not the path.
+    const response = await customAxios.delete(`/delete-imgs`, {
+      params: {
+        id,
+        ...(assetId ? { assetId: String(assetId) } : {}),
+      },
+    })
 
     return response.data
   } catch (error) {
     console.error('Error deleting image:', error)
+    return null
+  }
+}
+
+/** Persist additional-picture order (and removals) on the ImageAsset gallery. */
+const persistListingGalleryOrder = async (assetId, images = []) => {
+  const id = galleryAssetId(assetId)
+  if (!id) return null
+  const list = Array.isArray(images) ? images : []
+  const order = list
+    .filter(
+      (img) =>
+        img &&
+        !img?.isDeleted &&
+        !(typeof File !== 'undefined' && img instanceof File),
+    )
+    .map((img) => {
+      const key = listingMediaObjectKey(img)
+      return {
+        s3Key: img.s3Key || key || '',
+        public_id: img.public_id || '',
+        originalName: img.originalName || '',
+        size: img.size,
+        uploadedAt: img.uploadedAt,
+        signedUrl: String(img.signedUrl || img.url || '').split('?')[0],
+      }
+    })
+
+  // Never wipe a saved gallery just because the caller only had local File blobs.
+  const hadOnlyLocalFiles =
+    list.length > 0 &&
+    order.length === 0 &&
+    list.every(
+      (img) => typeof File !== 'undefined' && img instanceof File,
+    )
+  if (hadOnlyLocalFiles) return null
+
+  try {
+    const response = await customAxios.put(`/upload-imgs/${id}/order`, { order })
+    return response.data
+  } catch (error) {
+    console.warn('Could not persist gallery order', error)
+    return null
   }
 }
 
@@ -203,12 +341,15 @@ const fetchCertificateUrlByPublicId = async (publicId) => {
 
 export {
   handleImageUpload,
+  resolveListingGalleryAsset,
   handleVideoUpload,
+  resolveListingVideoAsset,
   handleFileUpload,
   resolveCertificateUploadUrl,
   fetchCertificateUrlByPublicId,
   handleThumbnailUpload,
   handleVerificationUpload,
   handleDeleteImg,
+  persistListingGalleryOrder,
   handleDownload,
 }

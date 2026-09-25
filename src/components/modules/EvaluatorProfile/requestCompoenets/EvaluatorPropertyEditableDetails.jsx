@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { IoCheckmarkSharp } from 'react-icons/io5'
 import {
   facilities,
@@ -8,8 +8,12 @@ import {
   bedroomsOptions,
   occupancyStatusOptions,
 } from '@/constants/listing-data'
+import { formatBedBathCount, parseBedBathCount } from '@/libs/bedBathCount'
 import { getListingAmenities } from '@/libs/listingAmenities'
 import { getListingSizeUnitForEvaluator } from './evaluatorPriceHandlers'
+import EvaluatorMapUrlField from './EvaluatorMapUrlField'
+import { shouldShowProjectNumber } from '@/libs/listingLocationUtils'
+import { shouldShowListingVisibility } from '@/libs/listingVisibilityThresholds'
 
 const editInputClass =
   'focus:outline-none mt-1 block w-full px-3 py-3 rounded-md bg-white text-gray-800 text-sm sm:text-base border border-[#8d7c3b]'
@@ -73,6 +77,11 @@ export default function EvaluatorPropertyEditableDetails({
     onDraftChange?.({ ...(draft || {}), [key]: value })
   }
 
+  const showProjectNumber = shouldShowProjectNumber({
+    ...property,
+    ...(draft || {}),
+  })
+
   const toggleAmenity = (name) => {
     const current = Array.isArray(draft?.facilities)
       ? [...draft.facilities]
@@ -81,6 +90,22 @@ export default function EvaluatorPropertyEditableDetails({
       ? current.filter((item) => item !== name)
       : [...current, name]
     setField('facilities', next)
+  }
+
+  const [customAmenity, setCustomAmenity] = useState('')
+  const [showCustomInput, setShowCustomInput] = useState(false)
+
+  const addCustomAmenity = () => {
+    const val = customAmenity.trim()
+    if (!val) return
+    const current = Array.isArray(draft?.facilities)
+      ? [...draft.facilities]
+      : [...selectedAmenities]
+    if (!current.includes(val)) {
+      setField('facilities', [...current, val])
+    }
+    setCustomAmenity('')
+    setShowCustomInput(false)
   }
 
   const isLease = isLeaseAsset(property)
@@ -95,7 +120,9 @@ export default function EvaluatorPropertyEditableDetails({
       sizeUnit === 'SQM' ? property.sizeSQMFrom : property.sizeSQFTFrom,
     ),
   )
-  const bedroomValue = String(pickValue(draft?.bedrooms, property.bedrooms))
+  const bedroomValue = formatBedBathCount(
+    pickValue(draft?.bedrooms, property.bedrooms),
+  )
   const bedroomChoices = useMemo(() => {
     if (bedroomValue && !bedroomsOptions.includes(bedroomValue)) {
       return [bedroomValue, ...bedroomsOptions]
@@ -171,7 +198,9 @@ export default function EvaluatorPropertyEditableDetails({
           <select
             className={editInputClass}
             value={bedroomValue}
-            onChange={(e) => setField('bedrooms', e.target.value)}
+            onChange={(e) =>
+              setField('bedrooms', parseBedBathCount(e.target.value))
+            }
           >
             <option value=''>Select bedrooms</option>
             {bedroomChoices.map((opt) => (
@@ -251,6 +280,11 @@ export default function EvaluatorPropertyEditableDetails({
           </select>
         </div>
 
+        {shouldShowListingVisibility(
+          'property',
+          pickValue(draft?.price, property.price, property.priceFrom),
+          pickValue(draft?.listing, property.listing),
+        ) ? (
         <div>
           <label className={labelClass}>Listing</label>
           <select
@@ -266,6 +300,7 @@ export default function EvaluatorPropertyEditableDetails({
             ))}
           </select>
         </div>
+        ) : null}
 
         {isLease ? (
           <div>
@@ -336,25 +371,30 @@ export default function EvaluatorPropertyEditableDetails({
           />
         </div>
 
-        <div>
-          <label className={labelClass}>DLD Number</label>
-          <input
-            type='text'
-            className={editInputClass}
-            value={pickValue(draft?.dldNumber, property.dldNumber)}
-            onChange={(e) => setField('dldNumber', e.target.value)}
-          />
-        </div>
+        {showProjectNumber ? (
+          <div>
+            <label className={labelClass}>DLD Number</label>
+            <input
+              type='text'
+              inputMode='numeric'
+              className={editInputClass}
+              value={pickValue(draft?.dldNumber, property.dldNumber)}
+              onChange={(e) =>
+                setField('dldNumber', e.target.value.replace(/[^\d]/g, ''))
+              }
+              onKeyDown={(e) => {
+                if (e.key === '-' || e.key === 'e' || e.key === 'E' || e.key === '+') {
+                  e.preventDefault()
+                }
+              }}
+            />
+          </div>
+        ) : null}
 
-        <div className='sm:col-span-2'>
-          <label className={labelClass}>Map URL</label>
-          <input
-            type='text'
-            className={editInputClass}
-            value={pickValue(draft?.mapUrl, property.mapUrl)}
-            onChange={(e) => setField('mapUrl', e.target.value)}
-          />
-        </div>
+        <EvaluatorMapUrlField
+          value={pickValue(draft?.mapUrl, property.mapUrl)}
+          onChange={(val) => setField('mapUrl', val)}
+        />
       </div>
 
       <div className='mt-4'>
@@ -381,11 +421,40 @@ export default function EvaluatorPropertyEditableDetails({
       </div>
 
       <div className='mt-5'>
-        <p className='mb-2 text-sm sm:text-base font-medium text-gray-700'>
-          Amenities
-        </p>
+        <div className='flex items-center gap-2 mb-2'>
+          <p className='text-sm sm:text-base font-medium text-gray-700'>
+            Amenities
+          </p>
+          <button
+            type='button'
+            onClick={() => setShowCustomInput((v) => !v)}
+            className='flex h-5 w-5 items-center justify-center rounded-full border border-[#8d7c3b] text-[#8d7c3b] text-sm font-bold hover:bg-[#8d7c3b]/10'
+            title='Add custom amenity'
+          >
+            +
+          </button>
+        </div>
+        {showCustomInput && (
+          <div className='mb-2 flex gap-2'>
+            <input
+              type='text'
+              value={customAmenity}
+              onChange={(e) => setCustomAmenity(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && addCustomAmenity()}
+              placeholder='Add custom amenity...'
+              className='flex-1 rounded-md border border-[#8d7c3b] px-3 py-1.5 text-sm focus:outline-none'
+            />
+            <button
+              type='button'
+              onClick={addCustomAmenity}
+              className='primary-gradient rounded-md px-3 py-1.5 text-sm text-white'
+            >
+              Add
+            </button>
+          </div>
+        )}
         <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 max-h-64 overflow-y-auto rounded-md border border-[#8d7c3b]/30 bg-white p-3'>
-          {facilities.map((item) => {
+          {[...new Set([...facilities, ...selectedAmenities])].map((item) => {
             const checked = selectedAmenities.includes(item)
             return (
               <label

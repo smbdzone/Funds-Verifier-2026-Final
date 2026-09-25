@@ -18,6 +18,7 @@ import customAxios from '../../utils/apis/apis'
 import { useProfile } from '@/context/UserContext'
 import { setAccessToken } from '../../utils/auth/accessTokenStore'
 import { getRoleHomeRoute } from '@/utils/auth/roleHome'
+import { resolveRoleSafeRedirect } from '@/utils/auth/roleAccess'
 import { POST_LOGIN_BOOTSTRAP_KEY } from '@/utils/auth/uaePass'
 import { consumePostLoginRedirect } from '@/utils/auth/postLoginRedirect'
 import { parseUaePassName } from '@/utils/auth/parseUaePassName'
@@ -102,13 +103,37 @@ export default function Login() {
     toast.success(data?.message || 'Login Successful!')
 
     const intended = consumePostLoginRedirect()
-    if (intended) {
-      window.location.replace(intended)
-      return
+    let role = data?.role === 'AssetHolder' ? 'AssetHolder' : 'DealHunter'
+
+    // Private-listing finance is Deal Hunter only. An existing Asset Holder
+    // account must switch so they land on /profile, not seller-profile.
+    const wantsDealHunterProfile =
+      typeof intended === 'string' && intended.startsWith('/profile')
+    if (wantsDealHunterProfile && role === 'AssetHolder' && data?.uuid) {
+      try {
+        const switched = await customAxios.put(
+          `/user/switch-user/${data.uuid}`,
+          { role: 'DealHunter' },
+          { withCredentials: true },
+        )
+        const nextUser = switched?.data?.user
+        if (switched?.data?.accessToken) {
+          setAccessToken(switched.data.accessToken)
+          sessionStorage.setItem(
+            POST_LOGIN_BOOTSTRAP_KEY,
+            switched.data.accessToken,
+          )
+        }
+        if (nextUser) applyUserFromLogin?.(nextUser)
+        role = 'DealHunter'
+      } catch (switchError) {
+        console.warn('Could not switch to Deal Hunter after UAE Pass', switchError)
+      }
     }
 
-    const role = data?.role === 'AssetHolder' ? 'AssetHolder' : 'DealHunter'
-    window.location.replace(getRoleHomeRoute(role))
+    window.location.replace(
+      resolveRoleSafeRedirect(intended, role) || getRoleHomeRoute(role),
+    )
   }
 
   if (isLoading) return <HomePageSkeleton />
@@ -130,7 +155,7 @@ export default function Login() {
           <p className='mt-3 max-w-sm text-sm leading-snug tracking-wide text-white/95 sm:mt-4 sm:max-w-md md:mt-5 md:max-w-none md:text-2xl md:leading-normal'>
             Simplify asset transactions with confidence on our trusted platform
           </p>
-          <div className='lg:block hidden mt-5'>
+          <div className='mt-5 block w-full max-w-full'>
             <SearchInputs />
           </div>
         </div>
