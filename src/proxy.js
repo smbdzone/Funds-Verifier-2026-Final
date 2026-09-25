@@ -1,7 +1,23 @@
 import { NextResponse } from 'next/server'
+import { isSafePostLoginPath } from '@/utils/auth/postLoginRedirect'
+import { isPathAllowedForRole } from '@/utils/auth/roleAccess'
 
 const LOGIN_ROUTES = ['/login', '/user-login']
 const CONSUMER_ROLES = new Set(['AssetHolder', 'DealHunter'])
+
+function resolvePostLoginTarget(request, role, fallbackPath) {
+  const raw = request.nextUrl.searchParams.get('redirect')
+  if (!raw) return fallbackPath
+  let decoded = raw
+  try {
+    decoded = decodeURIComponent(raw)
+  } catch {
+    decoded = raw
+  }
+  if (!isSafePostLoginPath(decoded)) return fallbackPath
+  if (!isPathAllowedForRole(decoded, role)) return fallbackPath
+  return decoded
+}
 
 const normalizeRole = (role) => {
   if (!role) return role
@@ -332,12 +348,36 @@ async function handleLoginRoutes(request, pathname) {
 
   const { role } = session
 
+  // Arrange Viewing: staff sessions must reach /login so UAE Pass can start.
+  // Private-listing finance: Asset Holder must not bounce to seller-profile.
+  const forceUaePass = request.nextUrl.searchParams.get('uaepass') === '1'
+  const wantsDealHunterProfile = String(
+    request.nextUrl.searchParams.get('redirect') || '',
+  ).includes('/profile')
+  if (forceUaePass && !CONSUMER_ROLES.has(role)) {
+    return NextResponse.next()
+  }
+  if (forceUaePass && role === 'AssetHolder' && wantsDealHunterProfile) {
+    return NextResponse.next()
+  }
+
   if (pathname === '/user-login' && CONSUMER_ROLES.has(role)) {
-    return redirectAuthenticated(request, session, getRoleHomeRoute(role))
+    const target = resolvePostLoginTarget(
+      request,
+      role,
+      getRoleHomeRoute(role),
+    )
+    return redirectAuthenticated(request, session, target)
   }
 
   if (pathname === '/login' || pathname === '/user-login') {
-    return redirectAuthenticated(request, session, getRoleHomeRoute(role))
+    // Honor ?redirect= only when this role can open that path.
+    const target = resolvePostLoginTarget(
+      request,
+      role,
+      getRoleHomeRoute(role),
+    )
+    return redirectAuthenticated(request, session, target)
   }
 
   return NextResponse.next()
@@ -380,6 +420,14 @@ export async function proxy(request) {
   const hasAccess = allowedRoutes.some((route) => pathname.startsWith(route))
 
   if (!hasAccess) {
+    // Wrong-role deep links after login used to dump users on /unauthorized.
+    // Send them to their dashboard instead.
+    const home = getRoleHomeRoute(role)
+    if (home && home.startsWith('/') && home !== pathname) {
+      const response = NextResponse.redirect(new URL(home, request.url))
+      applyPendingCookies(response, session.pendingCookies, session.cookieOptions)
+      return response
+    }
     return NextResponse.redirect(new URL('/unauthorized', request.url))
   }
 
