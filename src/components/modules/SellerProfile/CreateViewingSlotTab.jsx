@@ -42,6 +42,8 @@ export const CreateViewingSlotTab = ({
   const [editTimes, setEditTimes] = useState([])
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const [slotIdToDelete, setSlotIdToDelete] = useState(null)
+  const [slotIdsToDelete, setSlotIdsToDelete] = useState([])
+  const [selectedSlotIds, setSelectedSlotIds] = useState([])
   const [isDeleting, setIsDeleting] = useState(false)
   const { user } = useProfile()
 
@@ -69,7 +71,11 @@ export const CreateViewingSlotTab = ({
       const response = await customAxios.get(
         `/arrange-view/slots/all/${user.uuid}?slotCategory=${encodeURIComponent(slotCategory)}`
       )
-      setSlots(Array.isArray(response.data) ? response.data : [])
+      const nextSlots = Array.isArray(response.data) ? response.data : []
+      setSlots(nextSlots)
+      setSelectedSlotIds((prev) =>
+        prev.filter((id) => nextSlots.some((slot) => slot.uuid === id)),
+      )
     } catch (error) {
       toast.error('Error fetching slots.')
     } finally {
@@ -178,38 +184,90 @@ export const CreateViewingSlotTab = ({
     setEditTimes([])
   }
 
-  // Open delete modal
+  // Open delete modal (single or bulk)
   const openDeleteModal = (slotId) => {
     setSlotIdToDelete(slotId)
+    setSlotIdsToDelete([])
+    setIsDeleteModalOpen(true)
+  }
+
+  const openBulkDeleteModal = () => {
+    if (!selectedSlotIds.length) {
+      toast.error('Please select at least one slot to delete.')
+      return
+    }
+    setSlotIdToDelete(null)
+    setSlotIdsToDelete([...selectedSlotIds])
     setIsDeleteModalOpen(true)
   }
 
   const closeDeleteModal = () => {
     setSlotIdToDelete(null)
+    setSlotIdsToDelete([])
     setIsDeleteModalOpen(false)
   }
 
-  // Handle deleting a slot
+  const toggleSlotSelection = (slotId) => {
+    setSelectedSlotIds((prev) =>
+      prev.includes(slotId)
+        ? prev.filter((id) => id !== slotId)
+        : [...prev, slotId],
+    )
+  }
+
+  const allSelected =
+    slots.length > 0 && selectedSlotIds.length === slots.length
+
+  const toggleSelectAll = () => {
+    if (allSelected) {
+      setSelectedSlotIds([])
+      return
+    }
+    setSelectedSlotIds(slots.map((slot) => slot.uuid).filter(Boolean))
+  }
+
+  // Handle deleting one or many slots
   const handleConfirmDelete = async () => {
-    if (!slotIdToDelete || isDeleting) return
+    const ids =
+      slotIdsToDelete.length > 0
+        ? slotIdsToDelete
+        : slotIdToDelete
+          ? [slotIdToDelete]
+          : []
+    if (!ids.length || isDeleting) return
 
     setIsDeleting(true)
     try {
-      await customAxios.delete(
-        `/arrange-view/slots/delete/${slotIdToDelete}`
+      const results = await Promise.allSettled(
+        ids.map((id) =>
+          customAxios.delete(`/arrange-view/slots/delete/${id}`),
+        ),
       )
-      toast.success('Slot deleted successfully.')
+
+      const failed = results.filter((result) => {
+        if (result.status === 'fulfilled') return false
+        const message = result.reason?.response?.data?.message || ''
+        return !/already deleted/i.test(message)
+      })
+
+      if (failed.length === ids.length) {
+        toast.error(
+          failed[0]?.reason?.response?.data?.message || 'Error deleting slots.',
+        )
+        return
+      }
+
+      const deletedCount = ids.length - failed.length
+      toast.success(
+        deletedCount === 1
+          ? 'Slot deleted successfully.'
+          : `${deletedCount} slots deleted successfully.`,
+      )
+      setSelectedSlotIds((prev) => prev.filter((id) => !ids.includes(id)))
       await fetchSlots()
       closeDeleteModal()
     } catch (error) {
-      const message = error?.response?.data?.message || ''
-      if (/already deleted/i.test(message)) {
-        toast.success('Slot deleted successfully.')
-        await fetchSlots()
-        closeDeleteModal()
-      } else {
-        toast.error(message || 'Error deleting slot.')
-      }
+      toast.error(error?.response?.data?.message || 'Error deleting slots.')
     } finally {
       setIsDeleting(false)
     }
@@ -393,57 +451,102 @@ export const CreateViewingSlotTab = ({
 
           {/* View Available Slots */}
           <div className='w-full py-3 md:py-5'>
-            <h2 className='text-blue/90 lg:text-xl sm:text-base text-sm font-medium mb-2'>
-              Available Slots
-            </h2>
+            <div className='mb-3 flex flex-wrap items-center justify-between gap-3'>
+              <div className='flex flex-wrap items-center gap-3'>
+                <h2 className='text-blue/90 lg:text-xl sm:text-base text-sm font-medium'>
+                  Available Slots
+                </h2>
+                {slots.length > 0 ? (
+                  <label className='flex cursor-pointer items-center gap-2 text-sm text-prussianBlue'>
+                    <input
+                      type='checkbox'
+                      checked={allSelected}
+                      onChange={toggleSelectAll}
+                      className='h-4 w-4 accent-[#002d4f]'
+                    />
+                    <span>Select all</span>
+                  </label>
+                ) : null}
+                {selectedSlotIds.length > 0 ? (
+                  <span className='rounded-full bg-[#002d4f]/10 px-3 py-1 text-xs font-medium text-prussianBlue sm:text-sm'>
+                    {selectedSlotIds.length} selected
+                  </span>
+                ) : null}
+              </div>
+              {selectedSlotIds.length > 0 ? (
+                <button
+                  type='button'
+                  onClick={openBulkDeleteModal}
+                  disabled={loading || isDeleting}
+                  className='rounded-md border border-[#8D7C3B] px-3 py-1.5 text-sm font-medium text-[#8D7C3B] hover:bg-[#8D7C3B]/10 disabled:opacity-50'
+                >
+                  Delete selected ({selectedSlotIds.length})
+                </button>
+              ) : null}
+            </div>
             {loading ? (
               <div className='flex justify-center'>
                 <FaSpinner className='animate-spin text-2xl' />
               </div>
             ) : (
               <div className='flex flex-wrap gap-4 justify-start '>
-                {slots.map((slot) => (
-                  <div
-                    key={slot.uuid}
-                    className='border-2 w-[400px] border-dune/10 shadow-md md:px-4 px-2 md:py-3 py-2 rounded-md'
-                  >
-                    <div className='flex justify-between items-center'>
-                      <h3 className='text-dune/80 sm:text-base text-sm lg:text-lg'>
-                        {new Date(slot.date).toLocaleDateString('en-GB')}
-                      </h3>
-                      <div className='flex gap-2'>
-                        <button
-                          className='text-blue-500 sm:text-base text-sm lg:text-lg'
-                          onClick={() => {
-                            openEditModal(slot)
-                          }}
-                        >
-                          Update
-                        </button>
-                        <button
-                          className='text-prussianBlue sm:text-base text-sm lg:text-lg'
-                          onClick={() => openDeleteModal(slot.uuid)}
-                          disabled={loading}
-                        >
-                          Delete
-                        </button>
+                {slots.map((slot) => {
+                  const isSelected = selectedSlotIds.includes(slot.uuid)
+                  return (
+                    <div
+                      key={slot.uuid}
+                      className={`relative border-2 w-[400px] shadow-md md:px-4 px-2 md:py-3 py-2 rounded-md ${isSelected
+                          ? 'border-[#002d4f] bg-[#002d4f]/5'
+                          : 'border-dune/10'
+                        }`}
+                    >
+                      <label className='absolute left-2 top-2 z-10 flex cursor-pointer items-center'>
+                        <input
+                          type='checkbox'
+                          checked={isSelected}
+                          onChange={() => toggleSlotSelection(slot.uuid)}
+                          className='h-4 w-4 accent-[#002d4f]'
+                          aria-label={`Select slot ${slotDateKey(slot.date)}`}
+                        />
+                      </label>
+                      <div className='flex justify-between items-center pl-6'>
+                        <h3 className='text-dune/80 sm:text-base text-sm lg:text-lg'>
+                          {new Date(slot.date).toLocaleDateString('en-GB')}
+                        </h3>
+                        <div className='flex gap-2'>
+                          <button
+                            className='text-blue-500 sm:text-base text-sm lg:text-lg'
+                            onClick={() => {
+                              openEditModal(slot)
+                            }}
+                          >
+                            Update
+                          </button>
+                          <button
+                            className='text-prussianBlue sm:text-base text-sm lg:text-lg'
+                            onClick={() => openDeleteModal(slot.uuid)}
+                            disabled={loading}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                      <div className='grid grid-cols-3 md:grid-cols-3 lg:grid-cols-3 md:gap-2 sm:gap-x-5 gap-x-8 gap-y-2 mt-2'>
+                        {slot.times.map((timeSlot) => (
+                          <span
+                            key={timeSlot.uuid}
+                            className={`${timeSlot.isBooked
+                              ? 'bg-black/50 cursor-not-allowed'
+                              : 'primary-gradient'
+                              } text-white py-2 sm:text-base text-sm lg:text-lg flex items-center justify-center px-2 rounded-lg`}
+                          >
+                            {timeSlot.time}
+                          </span>
+                        ))}
                       </div>
                     </div>
-                    <div className='grid grid-cols-3 md:grid-cols-3 lg:grid-cols-3 md:gap-2 sm:gap-x-5 gap-x-8 gap-y-2 mt-2'>
-                      {slot.times.map((timeSlot) => (
-                        <span
-                          key={timeSlot.uuid}
-                          className={`${timeSlot.isBooked
-                            ? 'bg-black/50 cursor-not-allowed'
-                            : 'primary-gradient'
-                            } text-white py-2 sm:text-base text-sm lg:text-lg flex items-center justify-center px-2 rounded-lg`}
-                        >
-                          {timeSlot.time}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             )}
           </div>
@@ -469,6 +572,13 @@ export const CreateViewingSlotTab = ({
           handleConfirmDelete={handleConfirmDelete}
           closeDeleteModal={closeDeleteModal}
           loading={isDeleting}
+          count={
+            slotIdsToDelete.length > 0
+              ? slotIdsToDelete.length
+              : slotIdToDelete
+                ? 1
+                : 0
+          }
         />
       )}
     </>
