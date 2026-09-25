@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import customAxios from '@/utils/apis/apis'
 import { useRouter } from 'next/navigation'
 import { SearchIcon } from '../../Icons'
@@ -21,10 +21,16 @@ import {
   isAssetAssignedToSubEvaluator,
   unassignAssetFromSubEvaluator,
 } from '@/libs/evaluatorAssign'
+import HistoryEvaluatedFilters, {
+  useHistoryEvaluatedFilters,
+} from './HistoryEvaluatedFilters'
+import { applyHistoryEvaluatedFilters } from '@/libs/filterHistoryEvaluatedListings'
+import EvaluationTableStatusRow from './EvaluationTableStatusRow'
 
 export const PropertyEvaluationTab = () => {
   const { user } = useProfile()
   const [propertyListings, setPropertyListings] = useState([])
+  const [listingsLoading, setListingsLoading] = useState(true)
   const [subEvaluators, setSubEvaluators] = useState([])
   const [selected, setSelected] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
@@ -34,6 +40,19 @@ export const PropertyEvaluationTab = () => {
   const [certificateUrl, setCertificateUrl] = useState('')
   const debouncedQuery = useDebounce(searchTerm, 500)
   const menuAnchorRef = useRef(null)
+  const {
+    nameQuery,
+    setNameQuery,
+    dateFrom,
+    setDateFrom,
+    dateTo,
+    setDateTo,
+    sortOrder,
+    setSortOrder,
+    historyFilters,
+    historyFiltersActive,
+    resetHistoryFilters,
+  } = useHistoryEvaluatedFilters()
 
   const router = useRouter()
   const userRole = user?.role
@@ -64,6 +83,7 @@ export const PropertyEvaluationTab = () => {
   }, [])
 
   const fetchListingsData = async () => {
+    setListingsLoading(true)
     try {
       const products = await fetchEvaluatorListings('property', {
         sort: selected,
@@ -72,6 +92,8 @@ export const PropertyEvaluationTab = () => {
       setPropertyListings(products.reverse())
     } catch (error) {
       console.error('Error fetching listing data:', error)
+    } finally {
+      setListingsLoading(false)
     }
   }
 
@@ -169,6 +191,19 @@ export const PropertyEvaluationTab = () => {
     setCertificateUrl('')
   }
 
+  const pendingListings = useMemo(
+    () =>
+      (propertyListings || []).filter(
+        (property) =>
+          property.status === 0 || !property.hasOwnProperty('status'),
+      ),
+    [propertyListings],
+  )
+  const historyListings = useMemo(
+    () => applyHistoryEvaluatedFilters(propertyListings, historyFilters),
+    [propertyListings, historyFilters],
+  )
+
   return (
     <>
       <div className='flex flex-wrap justify-between items-center mb-4'>
@@ -228,6 +263,20 @@ export const PropertyEvaluationTab = () => {
                     </Disclosure.Button>
                     <Disclosure.Panel className='overflow-visible'>
                       <div className='overflow-x-auto md:px-5 px-3 pb-2'>
+                        {index === 1 ? (
+                          <HistoryEvaluatedFilters
+                            nameQuery={nameQuery}
+                            onNameQueryChange={setNameQuery}
+                            dateFrom={dateFrom}
+                            onDateFromChange={setDateFrom}
+                            dateTo={dateTo}
+                            onDateToChange={setDateTo}
+                            sortOrder={sortOrder}
+                            onSortOrderChange={setSortOrder}
+                            onReset={resetHistoryFilters}
+                            showReset={historyFiltersActive}
+                          />
+                        ) : null}
                         <table className='w-full text-sm sm:text-base bg-white'>
                           <thead>
                             <tr>
@@ -253,14 +302,8 @@ export const PropertyEvaluationTab = () => {
                             </tr>
                           </thead>
                           <tbody>
-                            {propertyListings
-                              .filter((property) =>
-                                index === 0
-                                  ? property.status === 0 ||
-                                  !property.hasOwnProperty('status')
-                                  : property.status === 1
-                              )
-                              .map((property) => {
+                            {!listingsLoading &&
+                              (index === 0 ? pendingListings : historyListings).map((property) => {
                                 const rawDateTime =
                                   property?.evaluationDateTime ||
                                   property?.updatedAt ||
@@ -471,6 +514,20 @@ export const PropertyEvaluationTab = () => {
                                   </tr>
                                 )
                               })}
+                            <EvaluationTableStatusRow
+                              loading={listingsLoading}
+                              isEmpty={
+                                (index === 0
+                                  ? pendingListings
+                                  : historyListings
+                                ).length === 0
+                              }
+                              emptyMessage={
+                                index === 1
+                                  ? 'No evaluated assets match these filters.'
+                                  : 'No pending evaluations.'
+                              }
+                            />
                           </tbody>
                         </table>
                       </div>
